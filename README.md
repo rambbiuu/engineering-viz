@@ -8,6 +8,7 @@ Small, self-contained interactive simulators for building engineering intuition.
 |---|---|
 | [4-antenna phase interferometry](tools/phase-interferometry.html) | Direction finding with an unequally spaced array: phase differences, wrapping, ambiguity resolution, and a working phases-to-angle solver |
 | [Phased-array beam pattern](tools/phased-array.html) | The reverse direction: phase-steering a beam, beamwidth vs aperture, sidelobes and grating lobes |
+| [Fourier series builder](tools/fourier-series.html) | Stack sine harmonics into square, triangle, and sawtooth waves; amplitude spectrum, convergence, and the Gibbs effect |
 
 ## Run locally
 

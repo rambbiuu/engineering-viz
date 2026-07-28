@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fourier series builder</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #378ADD; color: #378ADD; }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Fourier series builder</h1>
+<p class="sub">Any repeating wave &mdash; square, triangle, sawtooth &mdash; is secretly a stack of plain sine waves. Add them one at a time and watch the target shape appear. This is the idea underneath every spectrum, filter, and FFT you will ever meet.</p>
+
+<div class="row">
+  <span class="lbl">Target wave</span>
+  <button id="bsq" class="on">Square</button>
+  <button id="btr">Triangle</button>
+  <button id="bsw">Sawtooth</button>
+  <button id="pp" style="margin-left: auto;">Pause</button>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="hn" style="min-width: 128px;">Highest harmonic</label>
+  <input type="range" id="hn" min="1" max="31" step="1" value="5" style="flex: 1;">
+  <span id="hnv" style="font-size: 14px; font-weight: 500; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums;">5</span>
+</div>
+
+<p class="sec"><b>1 &middot; The build</b> <span>&mdash; dashed line = the target shape; thin lines = each sine ingredient; bold line = all ingredients added together</span></p>
+<canvas id="sum" style="height: 300px;"></canvas>
+
+<p class="sec"><b>2 &middot; The recipe</b> <span>&mdash; how much of each harmonic the target needs; solid bars are in the mix, faint bars are not yet included</span></p>
+<canvas id="spec" style="height: 190px;"></canvas>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Sine waves in the mix</div>
+    <div class="big" id="cN">&mdash;</div>
+    <div class="ft" id="cNn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Remaining mismatch</div>
+    <div class="big" id="cE">&mdash;</div>
+    <div class="ft">RMS difference from the target; the overshoot spikes at sharp jumps never fully disappear (Gibbs effect)</div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top: 2rem;">Watch what each shape demands: the square only wants odd harmonics, fading slowly (1/n) &mdash; that is why it needs so many and why its corners ring. The triangle also wants odd ones but they fade fast (1/n&sup2;), so a handful is enough. The sawtooth wants every harmonic. A sharp edge in time always means a long tail in frequency &mdash; the same trade your antenna receiver faces reading fast signals.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = { type: 'sq', N: 5, playing: true };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { S.playing = false; }
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+
+  function coef(n) {
+    if (S.type === 'sq') return n % 2 === 1 ? 4 / (Math.PI * n) : 0;
+    if (S.type === 'sw') return 2 / (Math.PI * n) * (n % 2 === 1 ? 1 : -1);
+    if (n % 2 === 0) return 0;
+    const s = ((n - 1) / 2) % 2 === 0 ? 1 : -1;
+    return 8 / (Math.PI * Math.PI * n * n) * s;
+  }
+
+  function target(th) {
+    if (S.type === 'sq') return Math.sin(th) >= 0 ? 1 : -1;
+    if (S.type === 'sw') return (((th + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) / Math.PI;
+    return 2 / Math.PI * Math.asin(Math.sin(th));
+  }
+
+  function partial(th) {
+    let y = 0;
+    for (let n = 1; n <= S.N; n++) y += coef(n) * Math.sin(n * th);
+    return y;
+  }
+
+  function updateUI() {
+    $('hnv').textContent = S.N;
+    const used = [];
+    for (let n = 1; n <= S.N; n++) if (coef(n) !== 0) used.push(n);
+    $('cN').textContent = used.length;
+    $('cNn').textContent = used.length <= 8 ? 'harmonics ' + used.join(', ') : 'harmonics ' + used.slice(0, 6).join(', ') + ', … ' + used[used.length - 1];
+    let se = 0, st = 0;
+    for (let i = 0; i < 400; i++) {
+      const th = i / 400 * 2 * Math.PI;
+      const d = partial(th) - target(th);
+      se += d * d; st += target(th) * target(th);
+    }
+    $('cE').textContent = (Math.sqrt(se / st) * 100).toFixed(1) + ' %';
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function drawSum(time) {
+    const c = $('sum'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 14, r = 14, t = 14, b = 14;
+    const yc = h / 2, ampl = (h - t - b) / 2 * 0.62;
+    const P = (w - l - r) / 2;
+    const phase = time * 0.0012;
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, yc); g.lineTo(w - r, yc); g.stroke();
+
+    g.strokeStyle = sub; g.lineWidth = 1.2; g.setLineDash([5, 4]);
+    g.beginPath();
+    for (let x = l; x <= w - r; x += 2) {
+      const th = (x - l) / P * 2 * Math.PI - phase;
+      const y = yc - target(th) * ampl;
+      if (x === l) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke(); g.setLineDash([]);
+
+    g.strokeStyle = '#378ADD'; g.globalAlpha = 0.22; g.lineWidth = 1;
+    for (let n = 1; n <= S.N; n++) {
+      if (coef(n) === 0) continue;
+      g.beginPath();
+      for (let x = l; x <= w - r; x += 2) {
+        const th = (x - l) / P * 2 * Math.PI - phase;
+        const y = yc - coef(n) * Math.sin(n * th) * ampl;
+        if (x === l) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+
+    g.strokeStyle = '#378ADD'; g.lineWidth = 2.2;
+    g.beginPath();
+    for (let x = l; x <= w - r; x += 1) {
+      const th = (x - l) / P * 2 * Math.PI - phase;
+      const y = yc - partial(th) * ampl;
+      if (x === l) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('time →', w - r, h - 2);
+  }
+
+  function drawSpec() {
+    const c = $('spec'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 40, r = 14, t = 12, b = 30;
+    const NMAX = 31;
+    const c1 = Math.abs(coef(1)) || 1;
+    const bw = (w - l - r) / NMAX;
+    const Y = v => t + (1 - v) * (h - t - b);
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
+
+    g.font = fnt(11); g.fillStyle = sub;
+    for (let n = 1; n <= NMAX; n++) {
+      const a = Math.abs(coef(n)) / c1;
+      const x = l + (n - 1) * bw + bw * 0.2;
+      if (a > 0.001) {
+        g.fillStyle = '#378ADD';
+        g.globalAlpha = n <= S.N ? 1 : 0.22;
+        g.fillRect(x, Y(a), bw * 0.6, Y(0) - Y(a));
+        g.globalAlpha = 1;
+      }
+      if (n === 1 || n % 5 === 0) {
+        g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillText(n, x + bw * 0.3, Y(0) + 6);
+      }
+    }
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('harmonic number (multiple of the base frequency)', l + (w - l - r) / 2, h - 2);
+  }
+
+  function setType(ty, btn) {
+    S.type = ty;
+    ['bsq', 'btr', 'bsw'].forEach(id => $(id).classList.remove('on'));
+    $(btn).classList.add('on');
+    updateUI();
+  }
+
+  $('bsq').addEventListener('click', () => setType('sq', 'bsq'));
+  $('btr').addEventListener('click', () => setType('tr', 'btr'));
+  $('bsw').addEventListener('click', () => setType('sw', 'bsw'));
+  $('hn').addEventListener('input', () => { S.N = +$('hn').value; updateUI(); });
+  $('pp').addEventListener('click', () => {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+  });
+  $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+
+  updateUI();
+  let animT = 0, last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    if (S.playing) animT += ts - last;
+    last = ts;
+    drawSum(animT);
+    drawSpec();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
