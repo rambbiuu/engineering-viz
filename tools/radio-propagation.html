@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HF, VHF and how radio waves travel</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #378ADD; color: #378ADD; }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.badge {
+  display: inline-block;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 2px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 46px;
+  text-align: center;
+}
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 18px; font-weight: 500; margin-top: 4px; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>HF, VHF and how radio waves travel</h1>
+<p class="sub">Below 30 MHz the sky is a mirror: the ionosphere &mdash; layers of charged air 60&ndash;400 km up &mdash; bends radio waves back to Earth, letting HF cross oceans with no infrastructure. Above 30 MHz the mirror turns to glass and waves fly straight through, so VHF and up live within line of sight. Slide the frequency across the boundary and watch the sky change its mind.</p>
+
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="fq" style="min-width: 78px;">Frequency</label>
+  <input type="range" id="fq" min="0" max="1" step="0.002" value="0.62" style="flex: 1;">
+  <span id="fqv" style="font-size: 14px; font-weight: 500; min-width: 76px; text-align: right; font-variant-numeric: tabular-nums;">&mdash;</span>
+  <span class="badge" id="band">&mdash;</span>
+  <button id="dn">Day</button>
+</div>
+
+<canvas id="cv" style="height: 430px;"></canvas>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Band</div>
+    <div class="big" id="cBand">&mdash;</div>
+    <div class="ft" id="cUse">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd" id="cRngHd">Coverage</div>
+    <div class="big" id="cRng">&mdash;</div>
+    <div class="ft" id="cRngN">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">What the sky is doing</div>
+    <div class="big" id="cSky" style="font-size: 14px; font-weight: 400; color: var(--text-secondary);">&mdash;</div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top: 2rem;">Things to try: park an MF frequency (1 MHz, AM radio) and flip day to night &mdash; the absorbing D layer evaporates and suddenly the sky wave bounces, which is why distant AM stations appear after sunset. Walk HF upward until the rays start punching through: steep rays escape first, shallow ones hold on longest, and past the maximum usable frequency the sky goes silent. Then jump to VHF and note the only thing left is the line-of-sight ray &mdash; FM, aircraft, and your 2&ndash;18 GHz geolocation work all live in this straight-line world. Heights are real kilometres; the physics is simplified (flat Earth, single-layer secant law) but the behaviour boundaries are honest.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = { u: 0.62, day: true };
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+
+  const fMHz = () => 0.1 * Math.pow(3000, S.u);
+  const foF2 = () => S.day ? 9 : 5;
+  const fLayer = () => S.day ? 300 : 350;
+  const ELEV = [15, 35, 60, 80];
+
+  function bandOf(f) {
+    if (f < 0.3) return ['LF', 'long wave — maritime beacons, time signals'];
+    if (f < 3) return ['MF', 'medium wave — AM broadcast'];
+    if (f < 30) return ['HF', 'shortwave — global broadcast, amateurs, OTH radar'];
+    return ['VHF', 'FM radio, aircraft, TV — and the road to your 2–18 GHz'];
+  }
+
+  function groundRange(f) {
+    return Math.min(1500, Math.max(0, 400 / Math.pow(f, 1.2)));
+  }
+
+  function hopKm(elevDeg) {
+    return 2 * fLayer() / Math.tan(elevDeg * Math.PI / 180);
+  }
+
+  function rayReturns(f, elevDeg) {
+    return f < foF2() / Math.sin(elevDeg * Math.PI / 180);
+  }
+
+  function dAbsorbed(f) {
+    return S.day && f >= 0.3 && f < 4;
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function draw(time) {
+    const c = $('cv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border-strong');
+    const f = fMHz();
+    const KMX = 3000, KMY = 470;
+    const gl = 46, gb = h - 40;
+    const X = km => gl + km / KMX * (w - gl - 10);
+    const Y = km => gb - km / KMY * (gb - 14);
+
+    const layers = S.day
+      ? [['D', 60, 90], ['E', 100, 140], ['F1', 170, 220], ['F2', 260, 340]]
+      : [['E', 100, 140], ['F', 260, 400]];
+    layers.forEach(L => {
+      g.fillStyle = '#7F77DD';
+      g.globalAlpha = L[0] === 'D' ? 0.22 : 0.13;
+      g.fillRect(gl, Y(L[2]), w - gl - 10, Y(L[1]) - Y(L[2]));
+      g.globalAlpha = 1;
+      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(L[0] + ' layer', 4, Y((L[1] + L[2]) / 2));
+    });
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText(S.day ? 'daytime ionosphere' : 'night ionosphere (D gone, F merged and higher)', gl + 4, Y(430));
+
+    g.strokeStyle = bd; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(gl - 20, gb); g.lineTo(w, gb); g.stroke();
+    g.fillStyle = sub; g.font = fnt(11);
+    [0, 1000, 2000, 3000].forEach(km => {
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(km + ' km', Math.min(X(km), w - 24), gb + 8);
+    });
+
+    g.strokeStyle = ink; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(0), gb - 16); g.stroke();
+    g.fillStyle = ink; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('tx', X(0) + 5, gb - 14);
+
+    const dash = (time * 0.02) % 24;
+
+    const gr = groundRange(f);
+    if (gr > 20) {
+      g.strokeStyle = '#1D9E75'; g.lineWidth = 3; g.globalAlpha = 0.85;
+      g.setLineDash([10, 7]); g.lineDashOffset = -dash;
+      g.beginPath(); g.moveTo(X(0), gb - 3); g.lineTo(X(Math.min(gr, KMX)), gb - 3); g.stroke();
+      g.setLineDash([]); g.globalAlpha = 1;
+      g.fillStyle = '#1D9E75'; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText('ground wave', X(20), gb - 8);
+    }
+
+    let firstLanding = null;
+    if (f < 30) {
+      ELEV.forEach(e => {
+        const er = e * Math.PI / 180;
+        if (dAbsorbed(f)) {
+          const dx = 75 / Math.tan(er);
+          g.strokeStyle = '#D85A30'; g.lineWidth = 1.6; g.globalAlpha = 0.8;
+          g.setLineDash([7, 5]); g.lineDashOffset = -dash;
+          g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(dx), Y(75)); g.stroke();
+          g.setLineDash([]); g.globalAlpha = 1;
+          g.fillStyle = '#D85A30'; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.fillText('✕', X(dx), Y(80));
+        } else if (rayReturns(f, e)) {
+          const hop = hopKm(e);
+          g.strokeStyle = '#378ADD'; g.lineWidth = 1.8;
+          g.setLineDash([9, 6]); g.lineDashOffset = -dash;
+          for (let k = 0; k < 3; k++) {
+            const x0 = k * hop, x1 = (k + 0.5) * hop, x2 = (k + 1) * hop;
+            if (x0 > KMX) break;
+            g.beginPath();
+            g.moveTo(X(x0), gb);
+            g.quadraticCurveTo(X(x1), Y(fLayer() * 1.25), X(x2), gb);
+            g.stroke();
+            if (firstLanding === null || x2 < firstLanding) {
+              if (k === 0) firstLanding = firstLanding === null ? x2 : Math.min(firstLanding, x2);
+            }
+          }
+          g.setLineDash([]);
+        } else {
+          const er2 = Math.tan(er);
+          const topKm = KMY;
+          const dx = topKm / er2;
+          g.strokeStyle = sub; g.lineWidth = 1.4; g.globalAlpha = 0.45;
+          g.setLineDash([7, 5]); g.lineDashOffset = -dash;
+          g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(Math.min(dx, KMX)), Y(Math.min(dx, KMX) * er2)); g.stroke();
+          g.setLineDash([]); g.globalAlpha = 1;
+        }
+      });
+      if (!dAbsorbed(f) && ELEV.some(e => !rayReturns(f, e))) {
+        g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
+        g.fillText('grey rays escape to space', w - 12, 14);
+      }
+    } else {
+      const dLos = 45;
+      g.strokeStyle = '#378ADD'; g.lineWidth = 2.2;
+      g.setLineDash([9, 6]); g.lineDashOffset = -dash;
+      g.beginPath(); g.moveTo(X(0), gb - 4); g.lineTo(X(dLos), gb - 1); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = '#378ADD'; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText('line of sight to the radio horizon (~45 km from a tall mast)', X(60), gb - 8);
+      ELEV.forEach(e => {
+        const er2 = Math.tan(e * Math.PI / 180);
+        const dx = KMY / er2;
+        g.strokeStyle = sub; g.lineWidth = 1.4; g.globalAlpha = 0.45;
+        g.setLineDash([7, 5]); g.lineDashOffset = -dash;
+        g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(Math.min(dx, KMX)), Y(Math.min(dx, KMX) * er2)); g.stroke();
+        g.setLineDash([]); g.globalAlpha = 1;
+      });
+      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
+      g.fillText('everything punches through the ionosphere', w - 12, 14);
+    }
+
+    if (f < 30 && !dAbsorbed(f) && firstLanding !== null && firstLanding > gr + 60) {
+      g.fillStyle = cvv('--text-warning') || sub; g.globalAlpha = 0.18;
+      g.fillRect(X(gr), gb - 6, X(Math.min(firstLanding, KMX)) - X(gr), 6);
+      g.globalAlpha = 1;
+      g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText('skip zone — hears nothing', X((gr + Math.min(firstLanding, KMX)) / 2), gb - 26);
+    }
+  }
+
+  function updateUI() {
+    const f = fMHz();
+    $('fqv').textContent = f < 1 ? (f * 1000).toFixed(0) + ' kHz' : f.toFixed(1) + ' MHz';
+    const b = bandOf(f);
+    $('band').textContent = b[0];
+    $('cBand').textContent = b[0] + (S.day ? ' · day' : ' · night');
+    $('cUse').textContent = b[1];
+
+    const gr = groundRange(f);
+    let landings = [];
+    if (f < 30 && !dAbsorbed(f)) {
+      ELEV.forEach(e => { if (rayReturns(f, e)) landings.push(hopKm(e)); });
+    }
+    const nearest = landings.length ? Math.min.apply(null, landings) : null;
+
+    if (f >= 30) {
+      $('cRngHd').textContent = 'Radio horizon';
+      $('cRng').textContent = '~45 km';
+      $('cRngN').textContent = 'd ≈ 4.12(√h₁ + √h₂) km — height buys distance, frequency does not';
+      $('cSky').textContent = 'transparent — the wave is too fast for the ionosphere to bend back';
+    } else if (dAbsorbed(f)) {
+      $('cRngHd').textContent = 'Coverage';
+      $('cRng').textContent = '~' + gr.toFixed(0) + ' km ground wave';
+      $('cRngN').textContent = 'sky wave absorbed by the D layer in daylight';
+      $('cSky').textContent = 'the D layer is eating every upward ray — wait for sunset';
+    } else if (nearest === null) {
+      $('cRngHd').textContent = 'Coverage';
+      $('cRng').textContent = gr > 20 ? '~' + gr.toFixed(0) + ' km ground wave' : 'almost nothing';
+      $('cRngN').textContent = 'above the maximum usable frequency — all sky rays escape';
+      $('cSky').textContent = 'silent: even the shallowest ray punches through the F layer';
+    } else if (nearest < gr + 60) {
+      $('cRngHd').textContent = 'Coverage';
+      $('cRng').textContent = 'continuous';
+      $('cRngN').textContent = 'steep rays return overhead (NVIS) — no skip zone at this frequency';
+      $('cSky').textContent = 'mirror even straight up: f is below the critical frequency (' + foF2() + ' MHz here)';
+    } else {
+      $('cRngHd').textContent = 'First hop lands at';
+      $('cRng').textContent = '~' + nearest.toFixed(0) + ' km';
+      $('cRngN').textContent = 'skip zone from ~' + gr.toFixed(0) + ' to ~' + nearest.toFixed(0) + ' km hears nothing';
+      $('cSky').textContent = 'mirror for shallow rays, glass for steep ones — hops can chain for thousands of km';
+    }
+  }
+
+  $('fq').addEventListener('input', () => { S.u = +$('fq').value; updateUI(); });
+  $('dn').addEventListener('click', () => {
+    S.day = !S.day;
+    $('dn').textContent = S.day ? 'Day' : 'Night';
+    updateUI();
+  });
+
+  updateUI();
+  function frame(ts) { draw(ts); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

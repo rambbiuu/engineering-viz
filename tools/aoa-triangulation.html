@@ -44,53 +44,72 @@ a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
 input, button { font: inherit; color: inherit; }
-input:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #378ADD; color: #378ADD; }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .lbl { font-size: 14px; color: var(--text-secondary); }
-.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var(--border); border-radius: var(--radius); }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>AoA triangulation</h1>
-<p class="sub">One DF station &mdash; like your 4-antenna interferometer &mdash; gives a direction, not a position: the emitter is somewhere along that bearing line. Two stations give two lines, and lines cross at exactly one place. That crossing is the fix.</p>
+<p class="sub">One receiver site &mdash; like your 4-antenna interferometer &mdash; gives a direction, not a position: the emitter is somewhere along that bearing line. Two sites give two lines, and lines cross at one place. Add more sites and the lines rarely agree perfectly, so the answer becomes a best fit rather than a single crossing.</p>
 
+<div class="row">
+  <span class="lbl">Receiver sites</span>
+  <button id="n2" class="on">2</button>
+  <button id="n3">3</button>
+  <button id="n4">4</button>
+  <button id="n5">5</button>
+</div>
 <div class="row" style="margin-bottom: 1.25rem;">
-  <label class="lbl" for="be" style="min-width: 190px;">Bearing accuracy of each station</label>
+  <label class="lbl" for="be" style="min-width: 176px;">Bearing accuracy of each site</label>
   <input type="range" id="be" min="0.5" max="10" step="0.5" value="2" style="flex: 1;">
   <span id="bev" style="font-size: 14px; font-weight: 500; min-width: 56px; text-align: right; font-variant-numeric: tabular-nums;">&plusmn;2.0&deg;</span>
 </div>
 
-<p class="sub" style="margin: 0 0 6px; font-size: 13px;">Click anywhere on the map to move the emitter.</p>
+<p class="sub" style="margin: 0 0 6px; font-size: 13px;">Click anywhere on the map to move the emitter. Map is 10 &times; 6 km.</p>
 <canvas id="map" style="height: 420px;"></canvas>
 
-<div class="cards">
-  <div class="card">
-    <div class="hd">Station 1 bearing</div>
-    <div class="big" id="b1" style="color: #378ADD;">&mdash;</div>
-    <div class="ft">measured from straight up (north), positive to the right</div>
-  </div>
-  <div class="card">
-    <div class="hd">Station 2 bearing</div>
-    <div class="big" id="b2" style="color: #1D9E75;">&mdash;</div>
-    <div class="ft">each shaded wedge is that station's &plusmn; uncertainty</div>
-  </div>
-</div>
+<div class="cards" id="cards"></div>
 
-<p class="sub" style="margin-top: 2rem;">Play with the geometry: with the emitter far away, even &plusmn;2&deg; wedges overlap in a huge diamond &mdash; angle error grows into position error with distance. Move the emitter between the two stations and the wedges cross nearly at right angles: tight fix. Directly above the line joining the stations, the wedges cross at a shallow angle and the diamond stretches badly. Real systems add a third station or fly a baseline for exactly this reason.</p>
+<p class="sub" style="margin-top: 2rem;">Play with the geometry: with the emitter far away, even &plusmn;2&deg; wedges overlap in a huge diamond &mdash; angle error grows into position error with distance. Two sites whose bearings cross at a shallow angle give a badly stretched fix; crossing near 90&deg; is ideal. Adding a third, fourth, or fifth site shrinks the overlap region fast, which is why real networks favour many cheap sites over one perfect one.</p>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const S = { ex: 0.55, ey: 0.28, err: 2 };
+  const S = { ex: 0.55, ey: 0.3, err: 2, n: 2 };
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const ST = [{ x: 0.16, y: 0.86, col: '#378ADD' }, { x: 0.84, y: 0.86, col: '#1D9E75' }];
+  const KMX = 10, KMY = 6;
+  const COLS = ['#378ADD', '#1D9E75', '#D85A30', '#7F77DD', '#D4537E'];
+
+  const LAYOUT = {
+    2: [[0.16, 0.86], [0.84, 0.86]],
+    3: [[0.12, 0.86], [0.5, 0.9], [0.88, 0.86]],
+    4: [[0.1, 0.86], [0.37, 0.9], [0.63, 0.9], [0.9, 0.86]],
+    5: [[0.08, 0.84], [0.29, 0.9], [0.5, 0.86], [0.71, 0.9], [0.92, 0.84]]
+  };
+  const sites = () => LAYOUT[S.n].map((p, i) => ({ x: p[0], y: p[1], col: COLS[i] }));
+
+  function bearing(st) {
+    return Math.atan2((S.ex - st.x) * KMX, (st.y - S.ey) * KMY) * 180 / Math.PI;
+  }
 
   function fit(c) {
     const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
@@ -100,27 +119,22 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
     return [r.width, r.height];
   }
 
-  const KMX = 10, KMY = 6;
-  function bearing(st) {
-    return Math.atan2((S.ex - st.x) * KMX, (st.y - S.ey) * KMY) * 180 / Math.PI;
-  }
-
   function draw() {
     const c = $('map'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
     const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const px = v => v * w, py = v => v * h;
+    const ST = sites();
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let i = 1; i < 6; i++) {
-      g.beginPath(); g.moveTo(w * i / 6, 0); g.lineTo(w * i / 6, h); g.stroke();
+    for (let i = 1; i < KMX; i++) {
+      g.beginPath(); g.moveTo(w * i / KMX, 0); g.lineTo(w * i / KMX, h); g.stroke();
     }
-    for (let i = 1; i < 5; i++) {
-      g.beginPath(); g.moveTo(0, h * i / 5); g.lineTo(w, h * i / 5); g.stroke();
+    for (let i = 1; i < KMY; i++) {
+      g.beginPath(); g.moveTo(0, h * i / KMY); g.lineTo(w, h * i / KMY); g.stroke();
     }
 
     ST.forEach(st => {
-      const sx = px(st.x), sy = py(st.y);
+      const sx = st.x * w, sy = st.y * h;
       const b = bearing(st) * Math.PI / 180;
       const e = S.err * Math.PI / 180;
       const L = 40;
@@ -129,53 +143,67 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
         const ky = st.y * KMY - Math.cos(a) * L;
         return [kx / KMX * w, ky / KMY * h];
       };
+      const p1 = proj(b - e), p2 = proj(b + e), pc = proj(b);
 
       g.fillStyle = st.col; g.globalAlpha = 0.11;
-      const p1 = proj(b - e), p2 = proj(b + e);
-      g.beginPath();
-      g.moveTo(sx, sy);
-      g.lineTo(p1[0], p1[1]);
-      g.lineTo(p2[0], p2[1]);
+      g.beginPath(); g.moveTo(sx, sy); g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]);
       g.closePath(); g.fill();
       g.globalAlpha = 1;
 
-      const pc = proj(b);
       g.strokeStyle = st.col; g.lineWidth = 1.2; g.setLineDash([6, 5]);
-      g.beginPath(); g.moveTo(sx, sy); g.lineTo(pc[0], pc[1]);
-      g.stroke(); g.setLineDash([]);
+      g.beginPath(); g.moveTo(sx, sy); g.lineTo(pc[0], pc[1]); g.stroke();
+      g.setLineDash([]);
     });
 
     ST.forEach((st, i) => {
-      const sx = px(st.x), sy = py(st.y);
+      const sx = st.x * w, sy = st.y * h;
       g.fillStyle = st.col;
       g.beginPath(); g.arc(sx, sy, 7, 0, 7); g.fill();
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('station ' + (i + 1) + ' (your DF array)', sx, sy + 12);
+      g.fillText('site ' + (i + 1), sx, sy + 12);
     });
 
-    const ex = px(S.ex), ey = py(S.ey);
+    const ex = S.ex * w, ey = S.ey * h;
     g.fillStyle = '#D4537E';
     g.beginPath(); g.arc(ex, ey, 6.5, 0, 7); g.fill();
     g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('emitter', ex, ey - 11);
 
     g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('where the wedges overlap = where the emitter can be', 10, 8);
+    g.fillText('where every wedge overlaps = where the emitter can be', 10, 8);
   }
 
   function updateUI() {
     $('bev').innerHTML = '&plusmn;' + S.err.toFixed(1) + '&deg;';
-    const b1 = bearing(ST[0]), b2 = bearing(ST[1]);
-    $('b1').textContent = (b1 >= 0 ? '+' : '') + b1.toFixed(1) + '°';
-    $('b2').textContent = (b2 >= 0 ? '+' : '') + b2.toFixed(1) + '°';
+    const ST = sites();
+    const box = $('cards');
+    box.innerHTML = '';
+    ST.forEach((st, i) => {
+      const b = bearing(st);
+      const rangeKm = Math.hypot((S.ex - st.x) * KMX, (st.y - S.ey) * KMY);
+      const cross = 2 * rangeKm * Math.tan(S.err * Math.PI / 180) * 1000;
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd"><span class="dot" style="background: ' + st.col + ';"></span>Site ' + (i + 1) + ' bearing</div>'
+        + '<div class="big" style="color: ' + st.col + ';">' + (b >= 0 ? '+' : '') + b.toFixed(1) + '&deg;</div>'
+        + '<div class="ft">' + rangeKm.toFixed(1) + ' km away &middot; wedge is ' + cross.toFixed(0) + ' m wide there</div>';
+      box.appendChild(el);
+    });
   }
 
+  ['n2', 'n3', 'n4', 'n5'].forEach((id, k) => {
+    $(id).addEventListener('click', () => {
+      S.n = k + 2;
+      ['n2', 'n3', 'n4', 'n5'].forEach(o => $(o).classList.remove('on'));
+      $(id).classList.add('on');
+      updateUI();
+    });
+  });
   $('be').addEventListener('input', () => { S.err = +$('be').value; updateUI(); });
   $('map').addEventListener('click', ev => {
     const r = $('map').getBoundingClientRect();
     S.ex = (ev.clientX - r.left) / r.width;
-    S.ey = (ev.clientY - r.top) / r.height;
-    S.ey = Math.min(S.ey, 0.8);
+    S.ey = Math.min((ev.clientY - r.top) / r.height, 0.78);
     updateUI();
   });
 

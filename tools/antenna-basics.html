@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antenna basics — shapes, beams and boresight</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 13px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #378ADD; color: #378ADD; }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13px; color: var(--text-secondary); margin-top: 1.25rem; }
+canvas { width: 100%; display: block; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Antenna basics &mdash; shapes, beams and boresight</h1>
+<p class="sub">An antenna does not radiate equally in all directions; its shape decides where the energy goes. The beam pattern is the map of that preference, and everything engineers argue about &mdash; gain, beamwidth, sidelobes, front-to-back ratio, where boresight actually points &mdash; is read off that one map. Pick a shape and watch its physical form, its radiation, and its pattern together.</p>
+
+<div class="row">
+  <span class="lbl">Antenna</span>
+  <button id="t0" class="on">Isotropic</button>
+  <button id="t1">Dipole</button>
+  <button id="t2">Monopole</button>
+  <button id="t3">Patch</button>
+  <button id="t4">Yagi</button>
+  <button id="t5">Horn</button>
+  <button id="t6">Dish</button>
+  <button id="t7">Array</button>
+</div>
+<div class="row">
+  <label class="lbl" for="mech" style="min-width: 152px;">Mechanical pointing</label>
+  <input type="range" id="mech" min="-90" max="90" step="1" value="0" style="flex: 1;">
+  <span id="mechv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">0&deg;</span>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="elec" style="min-width: 152px;">Electrical steering</label>
+  <input type="range" id="elec" min="-60" max="60" step="1" value="0" style="flex: 1;">
+  <span id="elecv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">0&deg;</span>
+</div>
+
+<p class="sec"><b>1 &middot; The antenna and what it throws out</b> <span>&mdash; the physical hardware, with the radiated energy shaded around it</span></p>
+<canvas id="phys" style="height: 300px;"></canvas>
+
+<p class="sec"><b>2 &middot; Beam pattern</b> <span>&mdash; the same radiation as a polar plot; rings are &minus;3, &minus;10, &minus;20 dB from the peak</span></p>
+<canvas id="pol" style="height: 380px;"></canvas>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Gain</div>
+    <div class="big" id="cG">&mdash;</div>
+    <div class="ft" id="cGn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Half-power beamwidth</div>
+    <div class="big" id="cB">&mdash;</div>
+    <div class="ft">angular width where power falls to half (&minus;3 dB) of peak</div>
+  </div>
+  <div class="card">
+    <div class="hd">Front-to-back ratio</div>
+    <div class="big" id="cF">&mdash;</div>
+    <div class="ft">how much quieter the antenna is behind than in front</div>
+  </div>
+  <div class="card">
+    <div class="hd">Boresight</div>
+    <div class="big" id="cBo" style="font-size: 20px;">&mdash;</div>
+    <div class="ft" id="cBon">&mdash;</div>
+  </div>
+</div>
+
+<div class="note" id="note">&mdash;</div>
+
+<p class="sub" style="margin-top: 2rem;">The boresight distinction is the subtle one. <b style="font-weight: 500;">Mechanical boresight</b> is where the metal physically aims &mdash; rotate the antenna and everything turns with it. <b style="font-weight: 500;">Electrical boresight</b> is where the beam actually peaks, which for a phased array you move by changing feed phases while the hardware sits still. On a fixed antenna the two coincide by definition; on an array they part company, and on any real antenna a manufacturing or cable error puts a small permanent offset between them &mdash; the boresight error you calibrate out. Try Array, leave mechanical at 0&deg;, and steer electrically: the metal never moves but the beam swings, exactly the trick the phased-array tool does in detail.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = { t: 0, mech: 0, elec: 0 };
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const rad = d => d * Math.PI / 180;
+
+  const TYPES = [
+    { key: 'iso', name: 'Isotropic', gain: 0, steer: false,
+      note: 'Isotropic — the imaginary reference antenna that radiates equally in every direction. Nothing real behaves this way, but every gain figure in RF is quoted against it, which is what the "i" in dBi means.' },
+    { key: 'dip', name: 'Half-wave dipole', gain: 2.15, steer: false,
+      note: 'Half-wave dipole — a wire λ/2 long. Its pattern is a doughnut: strong broadside to the wire, and a genuine null off each end. Cheap, predictable, and the second reference antenna in RF (gain in dBd is measured against this one, 2.15 dB below dBi).' },
+    { key: 'mon', name: 'Quarter-wave monopole', gain: 5.15, steer: false,
+      note: 'Quarter-wave monopole — half a dipole standing on a ground plane, which mirrors the missing half. All the energy goes into the upper hemisphere, so it gains 3 dB over a dipole. This is the whip on a car roof or a handheld radio.' },
+    { key: 'pat', name: 'Microstrip patch', gain: 7, steer: false,
+      note: 'Microstrip patch — a metal rectangle printed above a ground plane. Flat, cheap to mass-produce, radiates broadside off the face with a hemispherical beam. The building block of phone, GPS and satellite-terminal arrays.' },
+    { key: 'yag', name: 'Yagi-Uda', gain: 12, steer: false,
+      note: 'Yagi-Uda — one driven dipole plus a reflector behind and several directors in front. The parasitic elements re-radiate with phase shifts that reinforce forward and cancel backward, giving real gain from bare metal rods with no power source. The classic rooftop TV antenna.' },
+    { key: 'hor', name: 'Horn', gain: 17, steer: false,
+      note: 'Horn — a flared waveguide. The flare eases the wave from the guide into free space over a large aperture, giving a clean, well-behaved beam with very low sidelobes. Standard as a lab reference and as the feed for a dish.' },
+    { key: 'dsh', name: 'Parabolic dish', gain: 34, steer: false,
+      note: 'Parabolic dish — a reflector that turns the feed\'s spherical wave into a flat one. Gain scales with aperture area over λ², so a big dish at high frequency gives enormous gain and a pencil beam. Beamwidth ≈ 22/(F_GHz · D_m) degrees for a typical dish.' },
+    { key: 'arr', name: '8-element array', gain: 12, steer: true,
+      note: 'Phased array — eight elements spaced λ/2, each fed with a controlled phase. The beam it forms can be swung electronically with no moving parts, which is what "electrical steering" means below. Steer far off broadside and watch the beam widen and the sidelobes climb.' }
+  ];
+
+  function patt(thDeg) {
+    const t = TYPES[S.t].key;
+    const off = S.mech + (TYPES[S.t].steer ? S.elec : 0);
+    const a = rad(thDeg - off);
+    const ca = Math.cos(a), sa = Math.sin(a);
+    if (t === 'iso') return 1;
+    if (t === 'dip') {
+      const s = Math.abs(ca) < 1e-6 ? 1e-6 : ca;
+      return Math.abs(Math.cos(Math.PI / 2 * sa) / s);
+    }
+    if (t === 'mon') {
+      if (Math.abs(thDeg - off) > 90) return 0.02;
+      const s = Math.abs(ca) < 1e-6 ? 1e-6 : ca;
+      return Math.abs(Math.cos(Math.PI / 2 * sa) / s);
+    }
+    if (t === 'pat') {
+      if (Math.abs(thDeg - off) > 90) return 0.06;
+      return Math.pow(Math.max(ca, 0), 0.9);
+    }
+    if (t === 'yag') {
+      const main = Math.pow(Math.max(ca, 0), 9);
+      const back = 0.09 * Math.pow(Math.max(-ca, 0), 3);
+      const side = 0.11 * Math.abs(Math.sin(3.4 * a));
+      return Math.max(main, Math.max(back, side * Math.pow(Math.max(ca, 0), 0.6)));
+    }
+    if (t === 'hor' || t === 'dsh') {
+      const D = t === 'hor' ? 3.2 : 11;
+      const u = Math.PI * D * sa;
+      const sinc = Math.abs(u) < 1e-6 ? 1 : Math.sin(u) / u;
+      const taper = Math.max(ca, 0);
+      const spill = t === 'dsh' ? 0.012 : 0.02;
+      return Math.max(Math.abs(sinc) * taper, spill * (1 - taper * 0.8));
+    }
+    const N = 8, dsp = 0.5;
+    const psi = 2 * Math.PI * dsp * (Math.sin(rad(thDeg - S.mech)) - Math.sin(rad(S.elec)));
+    const den = Math.sin(psi / 2);
+    const af = Math.abs(den) < 1e-9 ? 1 : Math.abs(Math.sin(N * psi / 2) / (N * den));
+    return af * Math.max(Math.cos(rad(thDeg - S.mech)), 0.12);
+  }
+
+  function peakDir() {
+    let best = -180, bv = -1;
+    for (let a = -180; a < 180; a += 0.25) {
+      const v = patt(a);
+      if (v > bv) { bv = v; best = a; }
+    }
+    return { dir: best, val: bv };
+  }
+
+  function metrics() {
+    const pk = peakDir();
+    if (TYPES[S.t].key === 'iso') return { hpbw: null, ftb: 0, peak: 0, pkval: 1 };
+    let lo = pk.dir, hi = pk.dir;
+    const half = pk.val * 0.7071;
+    let guard = 0;
+    while (patt(lo) > half && guard++ < 1440) lo -= 0.25;
+    guard = 0;
+    while (patt(hi) > half && guard++ < 1440) hi += 0.25;
+    const hpbw = (hi - lo) >= 359 ? null : hi - lo;
+    const backDir = pk.dir + 180;
+    let bmax = 0;
+    for (let a = backDir - 45; a <= backDir + 45; a += 0.5) bmax = Math.max(bmax, patt(a));
+    const ftb = 20 * Math.log10(pk.val / Math.max(bmax, 1e-4));
+    return { hpbw: hpbw, ftb: ftb, peak: pk.dir, pkval: pk.val };
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function drawPhys(time) {
+    const c = $('phys'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border-strong');
+    const cx = w * 0.30, cy = h * 0.55;
+    const t = TYPES[S.t].key;
+    const pk = metrics();
+
+    const R = Math.min(w * 0.62, h * 0.42);
+    g.save();
+    g.translate(cx, cy);
+    g.rotate(rad(90));
+    for (let ring = 3; ring >= 1; ring--) {
+      g.fillStyle = '#378ADD';
+      g.globalAlpha = 0.05 + ring * 0.035;
+      g.beginPath();
+      for (let a = -180; a <= 180; a += 1.5) {
+        const r = patt(a) / Math.max(pk.pkval, 1e-6) * R * (0.45 + ring * 0.18);
+        const x = r * Math.cos(rad(a)), y = r * Math.sin(rad(a));
+        if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.closePath(); g.fill();
+    }
+    g.globalAlpha = 1;
+    g.restore();
+
+    const wob = (time * 0.0012) % 1;
+    g.save();
+    g.translate(cx, cy);
+    g.rotate(rad(90));
+    g.strokeStyle = '#378ADD'; g.globalAlpha = 0.5; g.lineWidth = 1.4;
+    for (let k = 0; k < 3; k++) {
+      const ph = (wob + k / 3) % 1;
+      g.globalAlpha = 0.45 * (1 - ph);
+      g.beginPath();
+      for (let a = -180; a <= 180; a += 1.5) {
+        const r = patt(a) / Math.max(pk.pkval, 1e-6) * R * (0.35 + ph * 0.75);
+        const x = r * Math.cos(rad(a)), y = r * Math.sin(rad(a));
+        if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.closePath(); g.stroke();
+    }
+    g.globalAlpha = 1;
+    g.restore();
+
+    g.save();
+    g.translate(cx, cy);
+    g.rotate(rad(S.mech));
+    g.strokeStyle = ink; g.fillStyle = ink; g.lineWidth = 2.4;
+    if (t === 'iso') {
+      g.beginPath(); g.arc(0, 0, 7, 0, 7); g.fill();
+      g.lineWidth = 1; g.setLineDash([3, 3]);
+      g.beginPath(); g.arc(0, 0, 16, 0, 7); g.stroke();
+      g.setLineDash([]);
+    } else if (t === 'dip') {
+      g.beginPath(); g.moveTo(0, -34); g.lineTo(0, -4); g.moveTo(0, 4); g.lineTo(0, 34); g.stroke();
+      g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(0, -4); g.lineTo(-12, 0); g.moveTo(0, 4); g.lineTo(-12, 2); g.stroke();
+    } else if (t === 'mon') {
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -40); g.stroke();
+      g.lineWidth = 2;
+      g.beginPath(); g.moveTo(-38, 0); g.lineTo(38, 0); g.stroke();
+      g.lineWidth = 1; g.globalAlpha = 0.5;
+      for (let i = -34; i <= 34; i += 9) {
+        g.beginPath(); g.moveTo(i, 0); g.lineTo(i - 5, 7); g.stroke();
+      }
+      g.globalAlpha = 1;
+    } else if (t === 'pat') {
+      g.lineWidth = 2;
+      g.strokeRect(-6, -26, 8, 52);
+      g.globalAlpha = 0.25; g.fillRect(-6, -26, 8, 52); g.globalAlpha = 1;
+      g.beginPath(); g.moveTo(4, -30); g.lineTo(4, 30); g.stroke();
+    } else if (t === 'yag') {
+      g.lineWidth = 2.2;
+      g.beginPath(); g.moveTo(-18, -34); g.lineTo(-18, 34); g.stroke();
+      g.beginPath(); g.moveTo(-4, -27); g.lineTo(-4, 27); g.stroke();
+      [10, 22, 34, 46].forEach((d, i) => {
+        const L = 23 - i * 2;
+        g.beginPath(); g.moveTo(d, -L); g.lineTo(d, L); g.stroke();
+      });
+      g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(-20, 0); g.lineTo(48, 0); g.stroke();
+    } else if (t === 'hor') {
+      g.lineWidth = 2.2;
+      g.beginPath();
+      g.moveTo(-26, -9); g.lineTo(-2, -9); g.lineTo(30, -30);
+      g.moveTo(-26, 9); g.lineTo(-2, 9); g.lineTo(30, 30);
+      g.stroke();
+      g.beginPath(); g.moveTo(30, -30); g.lineTo(30, 30); g.stroke();
+      g.beginPath(); g.moveTo(-26, -9); g.lineTo(-26, 9); g.stroke();
+    } else if (t === 'dsh') {
+      g.lineWidth = 2.4;
+      g.beginPath();
+      for (let y = -44; y <= 44; y += 2) {
+        const x = -22 + y * y / 120;
+        if (y === -44) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+      g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(-22, 0); g.lineTo(14, 0); g.stroke();
+      g.beginPath(); g.arc(14, 0, 5, 0, 7); g.stroke();
+    } else {
+      g.lineWidth = 2;
+      for (let i = 0; i < 8; i++) {
+        const y = -49 + i * 14;
+        g.beginPath(); g.moveTo(-2, y - 4); g.lineTo(-2, y + 4); g.stroke();
+        g.beginPath(); g.arc(-2, y, 3.2, 0, 7); g.fill();
+      }
+      g.lineWidth = 1.2; g.globalAlpha = 0.6;
+      g.beginPath(); g.moveTo(-10, -50); g.lineTo(-10, 50); g.stroke();
+      g.globalAlpha = 1;
+    }
+    g.restore();
+
+    const bl = 74;
+    g.save(); g.translate(cx, cy);
+    g.strokeStyle = sub; g.globalAlpha = 0.8; g.lineWidth = 1.2; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(0, 0);
+    g.lineTo(Math.sin(rad(S.mech)) * bl, -Math.cos(rad(S.mech)) * bl);
+    g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+    g.restore();
+
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText(TYPES[S.t].name, 10, 10);
+    g.textBaseline = 'bottom';
+    g.fillText('dashed line = where the metal points (mechanical boresight)', 10, h - 8);
+  }
+
+  function drawPolar() {
+    const c = $('pol'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
+    const cx = w / 2, cy = h / 2 + 6;
+    const R = Math.min(w / 2 - 46, h / 2 - 26);
+    const m = metrics();
+    const FLOOR = -30;
+    const toR = v => {
+      const db = 20 * Math.log10(Math.max(v / Math.max(m.pkval, 1e-9), 1e-6));
+      return Math.max(0, (db - FLOOR) / -FLOOR) * R;
+    };
+
+    g.font = fnt(11);
+    [[-3, '−3 dB'], [-10, '−10'], [-20, '−20']].forEach(ring => {
+      const rr = (ring[0] - FLOOR) / -FLOOR * R;
+      g.strokeStyle = ring[0] === -3 ? cvv('--border-strong') : bd;
+      g.lineWidth = ring[0] === -3 ? 1 : 0.5;
+      g.setLineDash(ring[0] === -3 ? [4, 4] : []);
+      g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(ring[1], cx + 3, cy - rr);
+    });
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.fillStyle = sub;
+    for (let a = 0; a < 360; a += 30) {
+      const x = cx + Math.sin(rad(a)) * R, y = cy - Math.cos(rad(a)) * R;
+      g.beginPath(); g.moveTo(cx, cy); g.lineTo(x, y); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      const lx = cx + Math.sin(rad(a)) * (R + 18), ly = cy - Math.cos(rad(a)) * (R + 18);
+      g.fillText((a > 180 ? a - 360 : a) + '°', lx, ly);
+    }
+
+    if (m.hpbw !== null) {
+      g.fillStyle = cvv('--text-warning') || sub; g.globalAlpha = 0.14;
+      g.beginPath(); g.moveTo(cx, cy);
+      for (let a = m.peak - m.hpbw / 2; a <= m.peak + m.hpbw / 2; a += 0.5) {
+        g.lineTo(cx + Math.sin(rad(a)) * R, cy - Math.cos(rad(a)) * R);
+      }
+      g.closePath(); g.fill(); g.globalAlpha = 1;
+    }
+
+    g.fillStyle = '#378ADD'; g.globalAlpha = 0.16;
+    g.beginPath();
+    for (let a = -180; a <= 180; a += 0.5) {
+      const r = toR(patt(a));
+      const x = cx + Math.sin(rad(a)) * r, y = cy - Math.cos(rad(a)) * r;
+      if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.closePath(); g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = '#378ADD'; g.lineWidth = 2;
+    g.beginPath();
+    for (let a = -180; a <= 180; a += 0.5) {
+      const r = toR(patt(a));
+      const x = cx + Math.sin(rad(a)) * r, y = cy - Math.cos(rad(a)) * r;
+      if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.closePath(); g.stroke();
+
+    g.strokeStyle = sub; g.lineWidth = 1.2; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(cx + Math.sin(rad(S.mech)) * R, cy - Math.cos(rad(S.mech)) * R);
+    g.stroke(); g.setLineDash([]);
+
+    if (m.hpbw !== null) {
+      g.strokeStyle = '#D85A30'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(cx, cy);
+      g.lineTo(cx + Math.sin(rad(m.peak)) * R, cy - Math.cos(rad(m.peak)) * R);
+      g.stroke();
+      g.fillStyle = '#D85A30'; g.font = fnt(11);
+      g.textAlign = 'center'; g.textBaseline = 'bottom';
+      const lx = cx + Math.sin(rad(m.peak)) * (R * 0.62);
+      const ly = cy - Math.cos(rad(m.peak)) * (R * 0.62);
+      g.fillText('electrical boresight', lx, ly - 4);
+    }
+
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('shaded wedge = half-power beamwidth', 6, 4);
+  }
+
+  function updateUI() {
+    const T = TYPES[S.t];
+    $('mechv').textContent = S.mech + '°';
+    $('elecv').textContent = S.elec + '°';
+    $('elec').disabled = !T.steer;
+    $('elec').style.opacity = T.steer ? 1 : 0.4;
+    const m = metrics();
+    $('cG').textContent = T.gain.toFixed(1) + ' dBi';
+    $('cGn').textContent = T.gain === 0
+      ? 'the reference — all other gains are quoted against this'
+      : (T.gain - 2.15).toFixed(1) + ' dBd · ' + Math.pow(10, T.gain / 10).toFixed(0) + '× the power of isotropic on boresight';
+    $('cB').textContent = m.hpbw === null ? 'none' : m.hpbw.toFixed(1) + '°';
+    $('cF').textContent = m.hpbw === null ? '0 dB' : (m.ftb > 40 ? '> 40 dB' : m.ftb.toFixed(1) + ' dB');
+    const off = m.peak - S.mech;
+    if (m.hpbw === null) {
+      $('cBo').textContent = 'no beam';
+      $('cBon').textContent = 'radiates the same in all directions, so there is nothing to point';
+    } else if (Math.abs(off) < 0.5) {
+      $('cBo').textContent = 'aligned';
+      $('cBon').textContent = 'beam peaks exactly where the metal points';
+    } else {
+      $('cBo').textContent = (off > 0 ? '+' : '') + off.toFixed(0) + '° off';
+      $('cBon').textContent = 'beam peaks ' + Math.abs(off).toFixed(0) + '° away from where the metal points';
+    }
+    $('note').textContent = T.note;
+  }
+
+  TYPES.forEach((T, i) => {
+    $('t' + i).addEventListener('click', () => {
+      S.t = i;
+      TYPES.forEach((_, k) => $('t' + k).classList.remove('on'));
+      $('t' + i).classList.add('on');
+      if (!T.steer) { S.elec = 0; $('elec').value = 0; }
+      updateUI();
+    });
+  });
+  $('mech').addEventListener('input', () => { S.mech = +$('mech').value; updateUI(); });
+  $('elec').addEventListener('input', () => { S.elec = +$('elec').value; updateUI(); });
+
+  updateUI();
+  function frame(ts) { drawPhys(ts); drawPolar(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

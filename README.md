@@ -13,8 +13,10 @@ Small, self-contained interactive simulators for building engineering intuition.
 | [Sampling and aliasing](tools/sampling-aliasing.html) | The Nyquist rule: undersample a sine and a low-frequency ghost fits the same samples |
 | [Modulation playground](tools/modulation.html) | AM, FM, OOK, FSK, BPSK, QPSK side by side — amplitude, frequency, and phase as information carriers |
 | [IQ constellation explorer](tools/iq-constellation.html) | BPSK to 16QAM constellations under noise, phase offset, and frequency offset |
-| [AoA triangulation](tools/aoa-triangulation.html) | Two DF bearing lines cross-fixing an emitter, with bearing-error wedges |
-| [TDoA geolocation](tools/tdoa.html) | Three time-synced stations, hyperbolic position curves crossing at the emitter |
+| [AoA triangulation](tools/aoa-triangulation.html) | Two to five bearing lines cross-fixing an emitter, with bearing-error wedges |
+| [TDoA geolocation](tools/tdoa.html) | Three to five time-synced sites, hyperbolic position curves crossing at the emitter |
+| [Antenna basics](tools/antenna-basics.html) | Dipole, monopole, patch, Yagi, horn, dish and array: physical form, radiation, beam pattern, gain, HPBW, front-to-back, and mechanical vs electrical boresight |
+| [HF, VHF and how radio waves travel](tools/radio-propagation.html) | Ground wave, sky wave, and line of sight against a live day/night ionosphere with skip zones and the MUF |
 
 ## Run locally
 

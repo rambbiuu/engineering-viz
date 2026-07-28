@@ -43,7 +43,20 @@ h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+input, button { font: inherit; color: inherit; }
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #378ADD; color: #378ADD; }
+button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
 .card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
@@ -55,47 +68,50 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>TDoA geolocation</h1>
-<p class="sub">The other big way to find an emitter &mdash; no antenna arrays, no bearings. Three stations timestamp the same signal; it arrives earliest at the nearest one. Each pair's arrival-time difference draws a curve of possible positions (a hyperbola), and the curves cross at one point: the emitter. Map is 10 &times; 6 km.</p>
+<p class="sub">The other big way to find an emitter &mdash; no antenna arrays, no bearings. Several receiver sites timestamp the same signal; it arrives earliest at the nearest one. Each pair's arrival-time difference draws a curve of possible positions (a hyperbola), and the curves cross at one point: the emitter. Map is 10 &times; 6 km.</p>
+
+<div class="row" style="margin-bottom: 1.25rem;">
+  <span class="lbl">Receiver sites</span>
+  <button id="n3" class="on">3</button>
+  <button id="n4">4</button>
+  <button id="n5">5</button>
+  <span style="font-size: 13px; color: var(--text-muted);">each extra site adds another independent curve</span>
+</div>
 
 <p class="sub" style="margin: 0 0 6px; font-size: 13px;">Click anywhere on the map to move the emitter.</p>
 <canvas id="map" style="height: 420px;"></canvas>
 
-<div class="cards">
-  <div class="card">
-    <div class="hd"><span class="dot" style="background: #7F77DD;"></span>&Delta;t stations 1&ndash;2</div>
-    <div class="big" id="d12">&mdash;</div>
-    <div class="ft" id="n12">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd"><span class="dot" style="background: #1D9E75;"></span>&Delta;t stations 1&ndash;3</div>
-    <div class="big" id="d13">&mdash;</div>
-    <div class="ft" id="n13">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd"><span class="dot" style="background: #D85A30;"></span>&Delta;t stations 2&ndash;3</div>
-    <div class="big" id="d23">&mdash;</div>
-    <div class="ft" id="n23">&mdash;</div>
-  </div>
-</div>
+<div class="cards" id="cards"></div>
 
-<p class="sub" style="margin-top: 2rem;">Compare with AoA triangulation: TDoA needs no knowledge of the signal's frequency and no antenna spacing tricks &mdash; but it demands the three stations share clocks synchronized to nanoseconds (1 &micro;s of clock error = 300 m of position error), and a signal with sharp timing structure to timestamp. AoA needs neither, but needs the phase-coherent array you have been studying. Real systems often run both and fuse the answers.</p>
+<p class="sub" style="margin-top: 2rem;">Compare with AoA triangulation: TDoA needs no knowledge of the signal's frequency and no antenna spacing tricks &mdash; but it demands that the sites share clocks synchronized to nanoseconds (1 &micro;s of clock error = 300 m of position error), and a signal with sharp timing structure to timestamp. AoA needs neither, but needs the phase-coherent array you have been studying. Note that three sites is the practical minimum in a plane, and extra sites overdetermine the fix &mdash; which is what lets a real system detect and reject a bad measurement.</p>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const S = { ex: 0.5, ey: 0.3 };
+  const S = { ex: 0.5, ey: 0.3, n: 3 };
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
   const KMX = 10, KMY = 6;
-  const ST = [{ x: 0.18, y: 0.82 }, { x: 0.82, y: 0.82 }, { x: 0.5, y: 0.16 }];
-  const PAIRS = [
-    { a: 0, b: 1, col: '#7F77DD', ids: ['d12', 'n12'] },
-    { a: 0, b: 2, col: '#1D9E75', ids: ['d13', 'n13'] },
-    { a: 1, b: 2, col: '#D85A30', ids: ['d23', 'n23'] }
-  ];
+  const COLS = ['#7F77DD', '#1D9E75', '#D85A30', '#378ADD'];
 
-  const km = p => ({ x: p.x * KMX, y: p.y * KMY });
+  const LAYOUT = {
+    3: [[0.18, 0.82], [0.82, 0.82], [0.5, 0.16]],
+    4: [[0.16, 0.84], [0.84, 0.84], [0.84, 0.16], [0.16, 0.16]],
+    5: [[0.16, 0.84], [0.84, 0.84], [0.9, 0.4], [0.5, 0.12], [0.1, 0.4]]
+  };
+  const sites = () => LAYOUT[S.n];
+
+  const km = p => ({ x: p[0] * KMX, y: p[1] * KMY });
   const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+  const emitterKm = () => ({ x: S.ex * KMX, y: S.ey * KMY });
+
+  function pairs() {
+    const ST = sites(), out = [];
+    for (let i = 1; i < ST.length; i++) {
+      out.push({ a: 0, b: i, col: COLS[(i - 1) % COLS.length] });
+    }
+    return out;
+  }
 
   function fit(c) {
     const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
@@ -119,8 +135,7 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
     for (let t = -3.2; t <= 3.2; t += 0.04) {
       const xp = aS * Math.cosh(t), yp = b * Math.sinh(t);
       const gx = mx + ux * xp + vx * yp, gy = my + uy * xp + vy * yp;
-      const sx = X(gx), sy = Y(gy);
-      if (first) { g.moveTo(sx, sy); first = false; } else g.lineTo(sx, sy);
+      if (first) { g.moveTo(X(gx), Y(gy)); first = false; } else g.lineTo(X(gx), Y(gy));
     }
     g.stroke();
   }
@@ -129,6 +144,7 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
     const c = $('map'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
     const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const ST = sites();
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
     for (let i = 1; i < KMX; i++) {
@@ -138,20 +154,21 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
       g.beginPath(); g.moveTo(0, h * i / KMY); g.lineTo(w, h * i / KMY); g.stroke();
     }
 
-    const E = km({ x: S.ex, y: S.ey });
-    PAIRS.forEach(p => {
+    const E = emitterKm();
+    pairs().forEach(p => {
       const F1 = km(ST[p.a]), F2 = km(ST[p.b]);
       const aS = (dist(E, F1) - dist(E, F2)) / 2;
       drawHyperbola(g, w, h, F1, F2, aS, p.col);
     });
 
     ST.forEach((st, i) => {
-      const sx = st.x * w, sy = st.y * h;
+      const sx = st[0] * w, sy = st[1] * h;
       g.fillStyle = cvv('--text-primary');
       g.beginPath(); g.arc(sx, sy, 7, 0, 7); g.fill();
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center';
-      g.textBaseline = i === 2 ? 'bottom' : 'top';
-      g.fillText('station ' + (i + 1), sx, i === 2 ? sy - 12 : sy + 12);
+      const above = st[1] < 0.5;
+      g.textBaseline = above ? 'bottom' : 'top';
+      g.fillText('site ' + (i + 1), sx, above ? sy - 12 : sy + 12);
     });
 
     const ex = S.ex * w, ey = S.ey * h;
@@ -165,18 +182,29 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
   }
 
   function updateUI() {
-    const E = km({ x: S.ex, y: S.ey });
-    PAIRS.forEach(p => {
+    const ST = sites(), E = emitterKm();
+    const box = $('cards');
+    box.innerHTML = '';
+    pairs().forEach(p => {
       const F1 = km(ST[p.a]), F2 = km(ST[p.b]);
-      const dd = dist(E, F1) - dist(E, F2);
-      const us = dd / 0.299792458;
-      $(p.ids[0]).textContent = (us >= 0 ? '+' : '') + us.toFixed(2) + ' µs';
-      $(p.ids[1]).textContent = us >= 0
-        ? 'arrives at station ' + (p.b + 1) + ' first'
-        : 'arrives at station ' + (p.a + 1) + ' first';
+      const us = (dist(E, F1) - dist(E, F2)) / 0.299792458;
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd"><span class="dot" style="background: ' + p.col + ';"></span>&Delta;t sites ' + (p.a + 1) + '&ndash;' + (p.b + 1) + '</div>'
+        + '<div class="big">' + (us >= 0 ? '+' : '') + us.toFixed(2) + ' &micro;s</div>'
+        + '<div class="ft">arrives at site ' + (us >= 0 ? p.b + 1 : p.a + 1) + ' first</div>';
+      box.appendChild(el);
     });
   }
 
+  ['n3', 'n4', 'n5'].forEach((id, k) => {
+    $(id).addEventListener('click', () => {
+      S.n = k + 3;
+      ['n3', 'n4', 'n5'].forEach(o => $(o).classList.remove('on'));
+      $(id).classList.add('on');
+      updateUI();
+    });
+  });
   $('map').addEventListener('click', ev => {
     const r = $('map').getBoundingClientRect();
     S.ex = (ev.clientX - r.left) / r.width;
