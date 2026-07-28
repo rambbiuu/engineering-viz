@@ -297,6 +297,14 @@ canvas { width: 100%; display: block; }
     g.beginPath(); g.moveTo(x0, t); g.lineTo(x0, h - b); g.stroke();
     g.setLineDash([]);
 
+    g.globalAlpha = 0.3; g.setLineDash([2, 6]);
+    for (let k = Math.ceil((lx - x0) / lp); x0 + k * lp <= rx; k++) {
+      const xk = x0 + k * lp;
+      if (k === 0 || xk < lx) continue;
+      g.beginPath(); g.moveTo(xk, t); g.lineTo(xk, h - b); g.stroke();
+    }
+    g.setLineDash([]); g.globalAlpha = 1;
+
     for (let i = 0; i < 4; i++) {
       const yc = t + rh * i + rh / 2;
       g.strokeStyle = bd; g.lineWidth = 0.5;
