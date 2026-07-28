@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sampling and aliasing</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+input:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Sampling and aliasing</h1>
+<p class="sub">A digital receiver never sees the whole wave &mdash; only snapshots taken f&#8347; times per second. Take them fast enough (more than twice the signal frequency, the Nyquist rule) and the snapshots pin down the true wave. Too slow, and a fake low-frequency ghost fits the same dots.</p>
+
+<div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; margin-bottom: 1.25rem;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <label class="lbl" for="fs1" style="min-width: 118px;">Signal frequency</label>
+    <input type="range" id="fs1" min="1" max="20" step="0.5" value="3" style="flex: 1;">
+    <span id="fs1v" style="font-size: 14px; font-weight: 500; min-width: 56px; text-align: right; font-variant-numeric: tabular-nums;">3.0 Hz</span>
+  </div>
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <label class="lbl" for="fsr">Sample rate</label>
+    <input type="range" id="fsr" min="2" max="40" step="1" value="20" style="flex: 1;">
+    <span id="fsrv" style="font-size: 14px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums;">20 Sa/s</span>
+  </div>
+</div>
+
+<p class="sec"><b>1 &middot; Time view</b> <span>&mdash; blue = the real signal; dots = the only thing the ADC keeps; dashed = the wave the receiver reconstructs from those dots</span></p>
+<canvas id="tv" style="height: 280px;"></canvas>
+
+<p class="sec"><b>2 &middot; Frequency view</b> <span>&mdash; the shaded zone is what this sample rate can represent (0 to f&#8347;/2); anything outside folds back inside as a ghost</span></p>
+<canvas id="fv" style="height: 190px;"></canvas>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Nyquist limit (f&#8347;/2)</div>
+    <div class="big" id="cNy">&mdash;</div>
+    <div class="ft">highest frequency this sample rate can capture truthfully</div>
+  </div>
+  <div class="card">
+    <div class="hd">What the ADC believes it sees</div>
+    <div class="big" id="cAl">&mdash;</div>
+    <div class="ft" id="cAln">&mdash;</div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top: 2rem;">Try it: leave the signal at 3 Hz and drag the sample rate down below 6 Sa/s &mdash; watch the dashed ghost appear and the spike jump inside the shaded zone. This is why your 2&ndash;18 GHz receiver either needs a blisteringly fast ADC or must mix the signal down to a lower frequency first: an emitter above the Nyquist limit does not disappear, it shows up disguised at the wrong frequency.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = { f: 3, fs: 20 };
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+
+  function folded() {
+    const n = Math.round(S.f / S.fs);
+    return S.f - n * S.fs;
+  }
+
+  function updateUI() {
+    $('fs1v').textContent = S.f.toFixed(1) + ' Hz';
+    $('fsrv').textContent = S.fs + ' Sa/s';
+    $('cNy').textContent = (S.fs / 2).toFixed(1) + ' Hz';
+    const fa = Math.abs(folded());
+    const ok = S.f <= S.fs / 2;
+    $('cAl').textContent = fa.toFixed(1) + ' Hz';
+    $('cAl').style.color = ok ? '' : 'var(--text-warning)';
+    $('cAln').innerHTML = ok
+      ? 'correct — the sample rate is fast enough'
+      : '<span style="color: var(--text-warning);">aliased! the real ' + S.f.toFixed(1) + ' Hz signal is disguised as ' + fa.toFixed(1) + ' Hz</span>';
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function drawTime() {
+    const c = $('tv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 14, r = 14, t = 14, b = 24;
+    const yc = (h - b + t) / 2, ampl = (h - t - b) / 2 * 0.8;
+    const T = 1;
+    const X = tt => l + tt / T * (w - l - r);
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, yc); g.lineTo(w - r, yc); g.stroke();
+
+    g.strokeStyle = '#378ADD'; g.lineWidth = 2;
+    g.beginPath();
+    for (let x = l; x <= w - r; x++) {
+      const tt = (x - l) / (w - l - r) * T;
+      const y = yc - Math.sin(2 * Math.PI * S.f * tt) * ampl;
+      if (x === l) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    const ff = folded();
+    const aliased = Math.abs(Math.abs(ff) - S.f) > 0.01;
+    if (aliased) {
+      g.strokeStyle = '#D85A30'; g.lineWidth = 2; g.setLineDash([6, 5]);
+      g.beginPath();
+      for (let x = l; x <= w - r; x++) {
+        const tt = (x - l) / (w - l - r) * T;
+        const y = yc - Math.sin(2 * Math.PI * ff * tt) * ampl;
+        if (x === l) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    }
+
+    g.strokeStyle = ink; g.fillStyle = ink; g.globalAlpha = 0.85;
+    for (let k = 0; k * (1 / S.fs) <= T; k++) {
+      const tt = k / S.fs;
+      const y = yc - Math.sin(2 * Math.PI * S.f * tt) * ampl;
+      g.lineWidth = 1;
+      g.beginPath(); g.moveTo(X(tt), yc); g.lineTo(X(tt), y); g.stroke();
+      g.beginPath(); g.arc(X(tt), y, 4, 0, 7); g.fill();
+    }
+    g.globalAlpha = 1;
+
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('1 second of time', w - r, h - 4);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = '#378ADD'; g.fillText('real signal ' + S.f.toFixed(1) + ' Hz', 14, 6);
+    if (aliased) {
+      g.fillStyle = '#D85A30';
+      g.fillText('ghost the receiver believes: ' + Math.abs(ff).toFixed(1) + ' Hz', 14, 22);
+    }
+  }
+
+  function drawFreq() {
+    const c = $('fv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 14, r = 14, t = 16, b = 34;
+    const FMAX = 42;
+    const X = f => l + f / FMAX * (w - l - r);
+    const Y0 = h - b, Y1 = t + 8;
+
+    g.fillStyle = '#378ADD'; g.globalAlpha = 0.08;
+    g.fillRect(X(0), t, X(S.fs / 2) - X(0), Y0 - t);
+    g.globalAlpha = 1;
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, Y0); g.lineTo(w - r, Y0); g.stroke();
+    g.font = fnt(11); g.fillStyle = sub;
+    for (let f = 0; f <= FMAX - 2; f += 5) {
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(f, X(f), Y0 + 6);
+    }
+    g.textAlign = 'center';
+    g.fillText('frequency (Hz)', l + (w - l - r) / 2, h - 12);
+
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(X(S.fs / 2), t); g.lineTo(X(S.fs / 2), Y0); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('Nyquist ' + (S.fs / 2).toFixed(1) + ' Hz', X(S.fs / 2) + 5, t);
+
+    g.globalAlpha = 0.35; g.strokeStyle = '#D85A30'; g.lineWidth = 2;
+    for (let k = 1; k <= 4; k++) {
+      [k * S.fs - S.f, k * S.fs + S.f].forEach(fi => {
+        if (fi > 0.01 && fi <= FMAX && Math.abs(fi - S.f) > 0.01) {
+          g.beginPath(); g.moveTo(X(fi), Y0); g.lineTo(X(fi), Y1 + 24); g.stroke();
+        }
+      });
+    }
+    g.globalAlpha = 1;
+
+    const fa = Math.abs(folded());
+    if (Math.abs(fa - S.f) > 0.01) {
+      g.strokeStyle = '#D85A30'; g.lineWidth = 2.5;
+      g.beginPath(); g.moveTo(X(fa), Y0); g.lineTo(X(fa), Y1 + 12); g.stroke();
+      g.fillStyle = '#D85A30'; g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText('ghost ' + fa.toFixed(1) + ' Hz', X(fa) + 5, Y1 + 12);
+    }
+
+    g.strokeStyle = '#378ADD'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(X(S.f), Y0); g.lineTo(X(S.f), Y1); g.stroke();
+    g.fillStyle = '#378ADD'; g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('signal ' + S.f.toFixed(1) + ' Hz', X(S.f) + 5, Y1);
+  }
+
+  function recalc() {
+    S.f = +$('fs1').value;
+    S.fs = +$('fsr').value;
+    updateUI();
+  }
+  ['fs1', 'fsr'].forEach(id => $(id).addEventListener('input', recalc));
+  recalc();
+  function frame() { drawTime(); drawFreq(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

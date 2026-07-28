@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AoA triangulation</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+input:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var(--border); border-radius: var(--radius); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>AoA triangulation</h1>
+<p class="sub">One DF station &mdash; like your 4-antenna interferometer &mdash; gives a direction, not a position: the emitter is somewhere along that bearing line. Two stations give two lines, and lines cross at exactly one place. That crossing is the fix.</p>
+
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="be" style="min-width: 190px;">Bearing accuracy of each station</label>
+  <input type="range" id="be" min="0.5" max="10" step="0.5" value="2" style="flex: 1;">
+  <span id="bev" style="font-size: 14px; font-weight: 500; min-width: 56px; text-align: right; font-variant-numeric: tabular-nums;">&plusmn;2.0&deg;</span>
+</div>
+
+<p class="sub" style="margin: 0 0 6px; font-size: 13px;">Click anywhere on the map to move the emitter.</p>
+<canvas id="map" style="height: 420px;"></canvas>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Station 1 bearing</div>
+    <div class="big" id="b1" style="color: #378ADD;">&mdash;</div>
+    <div class="ft">measured from straight up (north), positive to the right</div>
+  </div>
+  <div class="card">
+    <div class="hd">Station 2 bearing</div>
+    <div class="big" id="b2" style="color: #1D9E75;">&mdash;</div>
+    <div class="ft">each shaded wedge is that station's &plusmn; uncertainty</div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top: 2rem;">Play with the geometry: with the emitter far away, even &plusmn;2&deg; wedges overlap in a huge diamond &mdash; angle error grows into position error with distance. Move the emitter between the two stations and the wedges cross nearly at right angles: tight fix. Directly above the line joining the stations, the wedges cross at a shallow angle and the diamond stretches badly. Real systems add a third station or fly a baseline for exactly this reason.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = { ex: 0.55, ey: 0.28, err: 2 };
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const ST = [{ x: 0.16, y: 0.86, col: '#378ADD' }, { x: 0.84, y: 0.86, col: '#1D9E75' }];
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function bearing(st) {
+    return Math.atan2(S.ex - st.x, st.y - S.ey) * 180 / Math.PI;
+  }
+
+  function draw() {
+    const c = $('map'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const px = v => v * w, py = v => v * h;
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (let i = 1; i < 6; i++) {
+      g.beginPath(); g.moveTo(w * i / 6, 0); g.lineTo(w * i / 6, h); g.stroke();
+    }
+    for (let i = 1; i < 5; i++) {
+      g.beginPath(); g.moveTo(0, h * i / 5); g.lineTo(w, h * i / 5); g.stroke();
+    }
+
+    ST.forEach(st => {
+      const sx = px(st.x), sy = py(st.y);
+      const b = bearing(st) * Math.PI / 180;
+      const e = S.err * Math.PI / 180;
+      const L = w + h;
+
+      g.fillStyle = st.col; g.globalAlpha = 0.11;
+      g.beginPath();
+      g.moveTo(sx, sy);
+      g.lineTo(sx + Math.sin(b - e) * L, sy - Math.cos(b - e) * L);
+      g.lineTo(sx + Math.sin(b + e) * L, sy - Math.cos(b + e) * L);
+      g.closePath(); g.fill();
+      g.globalAlpha = 1;
+
+      g.strokeStyle = st.col; g.lineWidth = 1.2; g.setLineDash([6, 5]);
+      g.beginPath(); g.moveTo(sx, sy);
+      g.lineTo(sx + Math.sin(b) * L, sy - Math.cos(b) * L);
+      g.stroke(); g.setLineDash([]);
+    });
+
+    ST.forEach((st, i) => {
+      const sx = px(st.x), sy = py(st.y);
+      g.fillStyle = st.col;
+      g.beginPath(); g.arc(sx, sy, 7, 0, 7); g.fill();
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText('station ' + (i + 1) + ' (your DF array)', sx, sy + 12);
+    });
+
+    const ex = px(S.ex), ey = py(S.ey);
+    g.fillStyle = '#D4537E';
+    g.beginPath(); g.arc(ex, ey, 6.5, 0, 7); g.fill();
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('emitter', ex, ey - 11);
+
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('where the wedges overlap = where the emitter can be', 10, 8);
+  }
+
+  function updateUI() {
+    $('bev').innerHTML = '&plusmn;' + S.err.toFixed(1) + '&deg;';
+    const b1 = bearing(ST[0]), b2 = bearing(ST[1]);
+    $('b1').textContent = (b1 >= 0 ? '+' : '') + b1.toFixed(1) + '°';
+    $('b2').textContent = (b2 >= 0 ? '+' : '') + b2.toFixed(1) + '°';
+  }
+
+  $('be').addEventListener('input', () => { S.err = +$('be').value; updateUI(); });
+  $('map').addEventListener('click', ev => {
+    const r = $('map').getBoundingClientRect();
+    S.ex = (ev.clientX - r.left) / r.width;
+    S.ey = (ev.clientY - r.top) / r.height;
+    S.ey = Math.min(S.ey, 0.8);
+    updateUI();
+  });
+
+  updateUI();
+  function frame() { draw(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

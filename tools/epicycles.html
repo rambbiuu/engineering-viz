@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spinning circles draw your wave</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #378ADD; color: #378ADD; }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+canvas { width: 100%; display: block; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Spinning circles draw your wave</h1>
+<p class="sub">One point riding a spinning circle traces a perfect sine in time. Stack more circles &mdash; each smaller and spinning faster, tip to tip &mdash; and the last tip traces squares, triangles, sawtooths. Every repeating shape is just circles riding circles: the same fact as the Fourier series, seen with your own eyes.</p>
+
+<div class="row">
+  <span class="lbl">Shape to draw</span>
+  <button id="bsi" class="on">Sine</button>
+  <button id="bsq">Square</button>
+  <button id="btr">Triangle</button>
+  <button id="bsw">Sawtooth</button>
+  <button id="pp" style="margin-left: auto;">Pause</button>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="hn" style="min-width: 128px;">Circles in the stack</label>
+  <input type="range" id="hn" min="1" max="12" step="1" value="4" style="flex: 1;">
+  <span id="hnv" style="font-size: 14px; font-weight: 500; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums;">4</span>
+</div>
+
+<canvas id="cv" style="height: 380px;"></canvas>
+
+<p class="sub" style="margin-top: 2rem;">Watch how the stack behaves: for the sine one circle is already perfect. The square needs many circles &mdash; and they only come in odd speeds (1&times;, 3&times;, 5&times;&hellip;), each smaller by that factor. The sawtooth uses every speed. Slide the circle count up and the trace sharpens; this is literally the Fourier series builder from the other tool, with the recipe bars replaced by spinning radii.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = { type: 'si', N: 4, playing: true };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { S.playing = false; }
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+
+  function terms() {
+    const out = [];
+    if (S.type === 'si') { out.push({ n: 1, a: 1 }); return out; }
+    let count = 0, n = 1;
+    while (count < S.N) {
+      let a = 0;
+      if (S.type === 'sq') { if (n % 2 === 1) a = 4 / (Math.PI * n); }
+      else if (S.type === 'sw') { a = 2 / (Math.PI * n) * (n % 2 === 1 ? 1 : -1); }
+      else { if (n % 2 === 1) a = 8 / (Math.PI * Math.PI * n * n) * (((n - 1) / 2) % 2 === 0 ? 1 : -1); }
+      if (a !== 0) { out.push({ n: n, a: a }); count++; }
+      n++;
+      if (n > 99) break;
+    }
+    return out;
+  }
+
+  const hist = [];
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function draw(theta) {
+    const c = $('cv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
+    const yc = h / 2;
+    const cx = Math.min(160, w * 0.22);
+    const scale = Math.min(cx - 24, h / 2 - 24) / 1.35;
+    const waveL = cx * 2 + 20, waveR = w - 10;
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(waveL, yc); g.lineTo(waveR, yc); g.stroke();
+
+    let px = cx, py = yc;
+    const T = terms();
+    T.forEach(tm => {
+      const r = Math.abs(tm.a) * scale;
+      const ang = tm.n * theta + (tm.a < 0 ? Math.PI : 0);
+      g.strokeStyle = sub; g.globalAlpha = 0.35; g.lineWidth = 1;
+      g.beginPath(); g.arc(px, py, r, 0, 7); g.stroke();
+      g.globalAlpha = 1;
+      const nx = px + r * Math.cos(ang), ny = py - r * Math.sin(ang);
+      g.strokeStyle = '#378ADD'; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(px, py); g.lineTo(nx, ny); g.stroke();
+      px = nx; py = ny;
+    });
+
+    g.fillStyle = '#D85A30';
+    g.beginPath(); g.arc(px, py, 4.5, 0, 7); g.fill();
+
+    if (S.playing || hist.length === 0) hist.unshift(py);
+    const maxH = Math.floor(waveR - waveL);
+    if (hist.length > maxH) hist.length = maxH;
+
+    g.strokeStyle = sub; g.globalAlpha = 0.6; g.lineWidth = 1; g.setLineDash([3, 4]);
+    g.beginPath(); g.moveTo(px, py); g.lineTo(waveL, hist[0]); g.stroke();
+    g.setLineDash([]); g.globalAlpha = 1;
+
+    g.strokeStyle = '#D85A30'; g.lineWidth = 2;
+    g.beginPath();
+    for (let i = 0; i < hist.length; i++) {
+      const x = waveL + i;
+      if (i === 0) g.moveTo(x, hist[i]); else g.lineTo(x, hist[i]);
+    }
+    g.stroke();
+
+    g.fillStyle = sub; g.font = fnt(11);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('the circle stack', cx, h - 20);
+    g.textAlign = 'right';
+    g.fillText('time →  (what a scope would show)', waveR, h - 20);
+  }
+
+  function setType(ty, btn) {
+    S.type = ty;
+    ['bsi', 'bsq', 'btr', 'bsw'].forEach(id => $(id).classList.remove('on'));
+    $(btn).classList.add('on');
+    hist.length = 0;
+  }
+
+  $('bsi').addEventListener('click', () => setType('si', 'bsi'));
+  $('bsq').addEventListener('click', () => setType('sq', 'bsq'));
+  $('btr').addEventListener('click', () => setType('tr', 'btr'));
+  $('bsw').addEventListener('click', () => setType('sw', 'bsw'));
+  $('hn').addEventListener('input', () => { S.N = +$('hn').value; $('hnv').textContent = S.N; hist.length = 0; });
+  $('pp').addEventListener('click', () => {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+  });
+  $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+
+  let theta = 0, last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    if (S.playing) theta += (ts - last) * 0.0016;
+    last = ts;
+    draw(theta);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IQ constellation explorer</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #378ADD; color: #378ADD; }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>IQ constellation explorer</h1>
+<p class="sub">A receiver reduces every symbol it hears to one dot: how much of the carrier (I) and how much of the 90&deg;-shifted carrier (Q) it contains. Plot the dots and the modulation scheme appears as a pattern of clusters &mdash; the constellation. Clean channel: tight clusters. Real channel: noise blurs them, a phase error rotates them, a frequency error spins them.</p>
+
+<div class="row">
+  <span class="lbl">Scheme</span>
+  <button id="b1" class="on">BPSK</button>
+  <button id="b2">QPSK</button>
+  <button id="b3">8PSK</button>
+  <button id="b4">16QAM</button>
+  <button id="pp" style="margin-left: auto;">Pause</button>
+</div>
+<div class="row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 24px; margin-bottom: 1.25rem;">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <label class="lbl" for="snr">SNR</label>
+    <input type="range" id="snr" min="5" max="30" step="1" value="18" style="flex: 1;">
+    <span id="snrv" style="font-size: 13px; font-weight: 500; min-width: 44px; font-variant-numeric: tabular-nums;">18 dB</span>
+  </div>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <label class="lbl" for="pho">Phase error</label>
+    <input type="range" id="pho" min="-45" max="45" step="1" value="0" style="flex: 1;">
+    <span id="phov" style="font-size: 13px; font-weight: 500; min-width: 40px; font-variant-numeric: tabular-nums;">0&deg;</span>
+  </div>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <label class="lbl" for="fro">Freq error</label>
+    <input type="range" id="fro" min="0" max="1" step="0.05" value="0" style="flex: 1;">
+    <span id="frov" style="font-size: 13px; font-weight: 500; min-width: 52px; font-variant-numeric: tabular-nums;">0.00 Hz</span>
+  </div>
+</div>
+
+<canvas id="cv" style="height: 400px;"></canvas>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Bits per symbol</div>
+    <div class="big" id="cB">&mdash;</div>
+    <div class="ft" id="cBn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Symbol errors right now</div>
+    <div class="big" id="cS">&mdash;</div>
+    <div class="ft">dots that drifted closer to the wrong cluster than their own</div>
+  </div>
+  <div class="card">
+    <div class="hd">Why it matters</div>
+    <div class="big" style="font-size: 15px;">denser = faster = fussier</div>
+    <div class="ft">more clusters pack more bits, but sit closer together &mdash; the same noise causes more mistakes</div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top: 2rem;">Three experiments: drop the SNR to 8 dB on 16QAM and watch errors explode while BPSK stays clean &mdash; that is why deep-space links use simple schemes. Give it a phase error and see the whole picture rotate: this is exactly an uncalibrated cable in your DF array, one fixed phase offset on a channel. Give it a tiny frequency error and the constellation spins continuously &mdash; two radios whose local oscillators disagree by a fraction of a hertz. Receivers run carrier-tracking loops precisely to freeze this spin.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = { scheme: 'bpsk', snr: 18, pho: 0, fro: 0, playing: true };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { S.playing = false; }
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const NSYM = 400;
+
+  function ideal() {
+    if (S.scheme === 'bpsk') return [[1, 0], [-1, 0]];
+    if (S.scheme === 'qpsk') {
+      const a = 1 / Math.sqrt(2);
+      return [[a, a], [-a, a], [-a, -a], [a, -a]];
+    }
+    if (S.scheme === '8psk') {
+      const out = [];
+      for (let k = 0; k < 8; k++) out.push([Math.cos(k * Math.PI / 4), Math.sin(k * Math.PI / 4)]);
+      return out;
+    }
+    const out = [], L = [-3, -1, 1, 3], s = 1 / Math.sqrt(10);
+    L.forEach(i => L.forEach(q => out.push([i * s, q * s])));
+    return out;
+  }
+
+  let syms = [];
+  function gauss() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  function regen() {
+    const pts = ideal();
+    const sigma = Math.pow(10, -S.snr / 20) / Math.sqrt(2);
+    syms = [];
+    for (let i = 0; i < NSYM; i++) {
+      const idx = Math.floor(Math.random() * pts.length);
+      syms.push({
+        idx: idx,
+        x: pts[idx][0] + gauss() * sigma,
+        y: pts[idx][1] + gauss() * sigma
+      });
+    }
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function draw(rot) {
+    const c = $('cv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const cx = w / 2, cy = h / 2;
+    const U = Math.min(w, h) / 2 / 1.55;
+    const X = x => cx + x * U, Y = y => cy - y * U;
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(0, cy); g.lineTo(w, cy); g.stroke();
+    g.beginPath(); g.moveTo(cx, 0); g.lineTo(cx, h); g.stroke();
+    g.beginPath(); g.arc(cx, cy, U, 0, 7); g.stroke();
+
+    g.fillStyle = sub; g.font = fnt(11);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('Q (90° shifted part)', cx + 8, 6);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('I (in-phase part)', w - 8, cy - 6);
+
+    const pts = ideal();
+    const cr = Math.cos(rot), sr = Math.sin(rot);
+    let errs = 0;
+    g.fillStyle = '#378ADD'; g.globalAlpha = 0.5;
+    syms.forEach(s0 => {
+      const x = s0.x * cr - s0.y * sr, y = s0.x * sr + s0.y * cr;
+      g.beginPath(); g.arc(X(x), Y(y), 3, 0, 7); g.fill();
+      let best = 0, bd2 = 1e9;
+      pts.forEach((p, i) => {
+        const d2 = (x - p[0]) * (x - p[0]) + (y - p[1]) * (y - p[1]);
+        if (d2 < bd2) { bd2 = d2; best = i; }
+      });
+      if (best !== s0.idx) errs++;
+    });
+    g.globalAlpha = 1;
+
+    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 1.6;
+    pts.forEach(p => {
+      g.beginPath(); g.arc(X(p[0]), Y(p[1]), 7, 0, 7); g.stroke();
+    });
+
+    $('cS').textContent = (errs / NSYM * 100).toFixed(1) + ' %';
+    $('cS').style.color = errs ? 'var(--text-warning)' : '';
+  }
+
+  function updateUI() {
+    $('snrv').textContent = S.snr + ' dB';
+    $('phov').textContent = S.pho + '°';
+    $('frov').textContent = S.fro.toFixed(2) + ' Hz';
+    const bits = { bpsk: 1, qpsk: 2, '8psk': 3, '16qam': 4 }[S.scheme];
+    $('cB').textContent = bits;
+    $('cBn').textContent = bits === 1 ? 'the baseline' : bits + '× the data of BPSK in the same bandwidth';
+  }
+
+  function setScheme(sc, btn) {
+    S.scheme = sc;
+    ['b1', 'b2', 'b3', 'b4'].forEach(id => $(id).classList.remove('on'));
+    $(btn).classList.add('on');
+    regen(); updateUI();
+  }
+
+  $('b1').addEventListener('click', () => setScheme('bpsk', 'b1'));
+  $('b2').addEventListener('click', () => setScheme('qpsk', 'b2'));
+  $('b3').addEventListener('click', () => setScheme('8psk', 'b3'));
+  $('b4').addEventListener('click', () => setScheme('16qam', 'b4'));
+  $('snr').addEventListener('input', () => { S.snr = +$('snr').value; regen(); updateUI(); });
+  $('pho').addEventListener('input', () => { S.pho = +$('pho').value; updateUI(); });
+  $('fro').addEventListener('input', () => { S.fro = +$('fro').value; updateUI(); });
+  $('pp').addEventListener('click', () => {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+  });
+  $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+
+  regen(); updateUI();
+  let spin = 0, last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    if (S.playing) spin += (ts - last) / 1000 * 2 * Math.PI * S.fro;
+    last = ts;
+    draw(S.pho * Math.PI / 180 + spin);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
