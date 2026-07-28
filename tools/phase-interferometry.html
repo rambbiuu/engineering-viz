@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4-antenna phase interferometry sim</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19;
+  --text-primary: #ececea;
+  --text-secondary: #b4b2a9;
+  --text-muted: #888780;
+  --text-warning: #FAC775;
+  --border: #34342f;
+  --border-strong: #56554e;
+  --surface-1: #262624;
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
+h2 { font-size: 17px; font-weight: 500; margin: 3rem 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.sm { font-size: 13px; color: var(--text-secondary); }
+.pair { display: flex; align-items: center; gap: 6px; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+canvas { width: 100%; display: block; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<h1>4-antenna phase interferometry</h1>
+<p class="sub">One equation runs everything here: &Delta;&phi; = 360&deg; &middot; d &middot; sin&theta; / &lambda;, wrapped to &plusmn;180&deg;. Four antennas on one line, spaced unequally, turn that into an angle of arrival.</p>
+
+<div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <label class="lbl" for="th" style="min-width: 96px;">Emitter angle</label>
+    <input type="range" id="th" min="-90" max="90" step="1" value="30" style="flex: 1;">
+    <span id="thv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">30&deg;</span>
+  </div>
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <label class="lbl" for="fr">Frequency</label>
+    <input type="range" id="fr" min="0.5" max="18" step="0.1" value="2" style="flex: 1;">
+    <input type="number" id="frn" min="0.5" max="18" step="0.1" value="2" style="width: 78px;">
+    <span class="sm">GHz</span>
+  </div>
+</div>
+<div class="row">
+  <span class="lbl">Antenna positions (cm)</span>
+  <span class="pair"><label class="sm">A1</label><input type="number" value="0" disabled style="width: 60px;"></span>
+  <span class="pair"><label class="sm" for="p2">A2</label><input type="number" id="p2" value="2.4" step="0.1" min="0" max="200" style="width: 60px;"></span>
+  <span class="pair"><label class="sm" for="p3">A3</label><input type="number" id="p3" value="10" step="0.1" min="0" max="200" style="width: 60px;"></span>
+  <span class="pair"><label class="sm" for="p4">A4</label><input type="number" id="p4" value="30" step="0.1" min="0" max="200" style="width: 60px;"></span>
+  <button id="pp" style="margin-left: auto;">Pause</button>
+</div>
+
+<p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, pink dot = emitter</span></p>
+<canvas id="geo" style="height: 290px;"></canvas>
+
+<p class="sec"><b>2 &middot; Measured phase differences</b> <span>&mdash; the numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
+<div class="cards">
+  <div class="card">
+    <div class="hd"><span class="dot" style="background: #7F77DD;"></span>A2 &minus; A1</div>
+    <div class="big" id="w2">&mdash;</div>
+    <div class="ft" id="s2">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd"><span class="dot" style="background: #1D9E75;"></span>A3 &minus; A1</div>
+    <div class="big" id="w3">&mdash;</div>
+    <div class="ft" id="s3">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd"><span class="dot" style="background: #D85A30;"></span>A4 &minus; A1</div>
+    <div class="big" id="w4">&mdash;</div>
+    <div class="ft" id="s4">&mdash;</div>
+  </div>
+</div>
+
+<p class="sec"><b>3 &middot; Scope view</b> <span>&mdash; voltage out of each antenna cable vs time; the slide between traces is the phase difference (dashed line tracks one crest of A1)</span></p>
+<canvas id="scope" style="height: 310px;"></canvas>
+
+<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>&mdash; sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
+<canvas id="ch" style="height: 230px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background: #7F77DD;"></span><span id="lg2">A2 &minus; A1</span></span>
+  <span><span class="dot" style="background: #1D9E75;"></span><span id="lg3">A3 &minus; A1</span></span>
+  <span><span class="dot" style="background: #D85A30;"></span><span id="lg4">A4 &minus; A1</span></span>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const PC = ['#7F77DD', '#1D9E75', '#D85A30'];
+  const S = { th: 30, f: 2, pos: [0, 2.4, 10, 30], playing: true };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { S.playing = false; }
+  const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+
+  function readState() {
+    S.th = +$('th').value;
+    S.pos = [0, +$('p2').value || 0, +$('p3').value || 0, +$('p4').value || 0];
+  }
+
+  function truePhases() {
+    const lam = 30 / S.f;
+    return S.pos.slice(1).map(p => 360 * p * Math.sin(S.th * Math.PI / 180) / lam);
+  }
+
+  function updateUI() {
+    $('thv').textContent = S.th + '°';
+    const lam = 30 / S.f;
+    truePhases().forEach((t, i) => {
+      const d = S.pos[i + 1];
+      $('w' + (i + 2)).textContent = wrap(t).toFixed(0) + '°';
+      const amb = d > lam / 2 ? ' · <span style="color: var(--text-warning);">ambiguous</span>' : '';
+      $('s' + (i + 2)).innerHTML = 'true ' + t.toFixed(0) + '° · d ' + d.toFixed(1) + ' cm = ' + (d / lam).toFixed(2) + ' λ' + amb;
+      $('lg' + (i + 2)).textContent = 'A' + (i + 2) + ' − A1 (' + d.toFixed(1) + ' cm)';
+    });
+  }
+
+  function setF(v) {
+    S.f = Math.min(18, Math.max(0.5, v));
+    $('fr').value = S.f;
+    $('frn').value = S.f.toFixed(1);
+    updateUI();
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function arrow(g, x, y, dx, dy, sz) {
+    const a = Math.atan2(dy, dx);
+    g.beginPath();
+    g.moveTo(x, y);
+    g.lineTo(x - sz * Math.cos(a - 0.4), y - sz * Math.sin(a - 0.4));
+    g.moveTo(x, y);
+    g.lineTo(x - sz * Math.cos(a + 0.4), y - sz * Math.sin(a + 0.4));
+    g.stroke();
+  }
+
+  function drawGeo(time) {
+    const c = $('geo'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border-strong');
+    const th = S.th * Math.PI / 180, lam = 30 / S.f;
+    const ml = 50, mr = 50, cy = h - 52;
+    const mn = Math.min.apply(null, S.pos), mx = Math.max.apply(null, S.pos);
+    const scale = (w - ml - mr) / Math.max(mx - mn, 1);
+    const ax = S.pos.map(p => ml + (p - mn) * scale);
+    const lp = lam * scale;
+    const cx = (ml + w - mr) / 2;
+    const px = -Math.sin(th), py = Math.cos(th);
+    const qx = Math.cos(th), qy = Math.sin(th);
+    const R = Math.hypot(w, h);
+
+    g.save();
+    g.beginPath(); g.rect(0, 0, w, cy); g.clip();
+    g.strokeStyle = '#378ADD'; g.globalAlpha = 0.4; g.lineWidth = 1.5;
+    const off = (time * 0.05) % lp;
+    for (let k = -2; k * lp < R * 1.2; k++) {
+      const s = k * lp - off;
+      const bx = cx - px * s, by = cy - py * s;
+      g.beginPath();
+      g.moveTo(bx - qx * R, by - qy * R);
+      g.lineTo(bx + qx * R, by + qy * R);
+      g.stroke();
+    }
+    g.restore();
+    g.globalAlpha = 1;
+
+    const R2 = Math.min(w / 2 - 46, cy - 46);
+    const ex = cx + Math.sin(th) * R2, ey = cy - Math.cos(th) * R2;
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([5, 5]);
+    g.beginPath(); g.moveTo(ex, ey); g.lineTo(cx, cy); g.stroke();
+    g.setLineDash([]);
+    arrow(g, cx - px * 30, cy - py * 30, px, py, 9);
+
+    if (Math.abs(S.th) > 1) {
+      const a = Math.atan2(-Math.cos(th), Math.sin(th));
+      g.strokeStyle = sub;
+      g.beginPath(); g.arc(cx, cy, 40, -Math.PI / 2, a, S.th < 0); g.stroke();
+      const m = (-Math.PI / 2 + a) / 2;
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('θ = ' + S.th + '°', cx + Math.cos(m) * 62, cy + Math.sin(m) * 62);
+    }
+
+    g.fillStyle = '#D4537E';
+    g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('emitter', ex, ey - 11);
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(ml - 14, cy); g.lineTo(w - mr + 14, cy); g.stroke();
+    const dotCol = [ink, PC[0], PC[1], PC[2]];
+    ax.forEach((x, i) => {
+      g.fillStyle = dotCol[i];
+      g.beginPath(); g.arc(x, cy, 5, 0, 7); g.fill();
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText('A' + (i + 1), x, cy + 12);
+    });
+
+    g.fillStyle = '#378ADD'; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('λ = ' + lam.toFixed(1) + ' cm · each blue line = one crest seen from above', 12, 10);
+  }
+
+  function drawScope(time) {
+    const c = $('scope'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
+    const ph = [0].concat(truePhases());
+    const cols = [ink, PC[0], PC[1], PC[2]];
+    const lx = 96, rx = w - 12, t = 16, b = 26;
+    const rh = (h - t - b) / 4;
+    const lp = (rx - lx) / 3;
+    const amp = rh * 0.3;
+    const scroll = (time * 0.04) % lp;
+    const x0 = lx + lp + ((0.25 * lp + scroll) % lp + lp) % lp;
+
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(x0, t); g.lineTo(x0, h - b); g.stroke();
+    g.setLineDash([]);
+
+    for (let i = 0; i < 4; i++) {
+      const yc = t + rh * i + rh / 2;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(lx, yc); g.lineTo(rx, yc); g.stroke();
+
+      g.strokeStyle = cols[i]; g.lineWidth = 1.8;
+      g.beginPath();
+      for (let x = lx; x <= rx; x += 2) {
+        const y = yc - amp * Math.sin(2 * Math.PI * (x - x0) / lp + Math.PI / 2 + ph[i] * Math.PI / 180);
+        if (x === lx) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+
+      const xc = x0 - wrap(ph[i]) / 360 * lp;
+      g.fillStyle = cols[i];
+      g.beginPath(); g.arc(xc, yc - amp, 4.5, 0, 7); g.fill();
+      if (i === 0) {
+        g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+        g.fillText('crest (top of the bump)', xc + 9, yc - amp - 3);
+      }
+
+      if (i > 0 && Math.abs(x0 - xc) > 6) {
+        const ay = yc - amp - 12;
+        g.strokeStyle = cols[i]; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x0, ay); g.lineTo(xc, ay); g.stroke();
+        const dir = xc > x0 ? 1 : -1;
+        g.beginPath();
+        g.moveTo(xc, ay);
+        g.lineTo(xc - dir * 6, ay - 3);
+        g.moveTo(xc, ay);
+        g.lineTo(xc - dir * 6, ay + 3);
+        g.stroke();
+      }
+
+      g.fillStyle = cols[i]; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText('A' + (i + 1), 12, yc - 8);
+      g.fillStyle = sub; g.font = fnt(12);
+      g.fillText(i === 0 ? 'ref' : wrap(ph[i]).toFixed(0) + '°', 12, yc + 10);
+      const turns = Math.round((ph[i] - wrap(ph[i])) / 360);
+      if (turns !== 0) {
+        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(11);
+        g.fillText((turns > 0 ? '+' : '') + turns + ' turn hidden', 12, yc + 26);
+      }
+    }
+
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('time →', lx + (rx - lx) / 2, h - 6);
+  }
+
+  function drawChart() {
+    const c = $('ch'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 56, r = 14, t = 12, b = 34;
+    const X = a => l + (a + 90) / 180 * (w - l - r);
+    const Y = v => t + (180 - v) / 360 * (h - t - b);
+    const lam = 30 / S.f;
+
+    g.font = fnt(11); g.fillStyle = sub;
+    [-180, -90, 0, 90, 180].forEach(v => {
+      g.strokeStyle = bd; g.lineWidth = v === 0 ? 1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v + '°', l - 8, Y(v));
+    });
+    [-90, -45, 0, 45, 90].forEach(a => {
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(a + '°', X(a), h - b + 8);
+    });
+    g.textAlign = 'center';
+    g.fillText('emitter angle', l + (w - l - r) / 2, h - 13);
+
+    for (let j = 0; j < 3; j++) {
+      const d = S.pos[j + 1];
+      g.strokeStyle = PC[j]; g.lineWidth = 1.8;
+      g.beginPath();
+      let prev = null;
+      for (let a = -90; a <= 90; a += 0.25) {
+        const v = wrap(360 * d * Math.sin(a * Math.PI / 180) / lam);
+        if (prev === null || Math.abs(v - prev) > 180) g.moveTo(X(a), Y(v));
+        else g.lineTo(X(a), Y(v));
+        prev = v;
+      }
+      g.stroke();
+    }
+
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(X(S.th), t); g.lineTo(X(S.th), h - b); g.stroke();
+    g.setLineDash([]);
+    truePhases().forEach((tp, j) => {
+      g.fillStyle = PC[j];
+      g.beginPath(); g.arc(X(S.th), Y(wrap(tp)), 4, 0, 7); g.fill();
+    });
+  }
+
+  ['th', 'p2', 'p3', 'p4'].forEach(id => $(id).addEventListener('input', () => { readState(); updateUI(); }));
+  $('fr').addEventListener('input', () => setF(+$('fr').value));
+  $('frn').addEventListener('change', () => setF(+$('frn').value || 2));
+  $('pp').addEventListener('click', () => {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+  });
+  $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+
+  readState();
+  updateUI();
+  let animT = 0, last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    if (S.playing) animT += ts - last;
+    last = ts;
+    drawGeo(animT);
+    drawScope(animT);
+    drawChart();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<h2>5 &middot; DF mode &mdash; phases in, angle out</h2>
+<p class="sub" style="margin-bottom: 1rem;">The inverse direction, the one a real receiver runs: type the phase readings and the measured frequency, and the algorithm recovers the angle of arrival.</p>
+
+<div class="row">
+  <span class="lbl">Measured frequency</span>
+  <input type="number" id="f2" min="0.5" max="18" step="0.1" value="2" style="width: 74px;">
+  <span class="sm">GHz</span>
+  <span class="lbl" style="margin-left: 16px;">Positions (cm)</span>
+  <span class="pair"><label class="sm" for="e2">A2</label><input type="number" id="e2" value="2.4" step="0.1" min="0.1" max="200" style="width: 58px;"></span>
+  <span class="pair"><label class="sm" for="e3">A3</label><input type="number" id="e3" value="10" step="0.1" min="0.1" max="200" style="width: 58px;"></span>
+  <span class="pair"><label class="sm" for="e4">A4</label><input type="number" id="e4" value="30" step="0.1" min="0.1" max="200" style="width: 58px;"></span>
+</div>
+<div class="row">
+  <span class="lbl">Phase readings (&deg;)</span>
+  <span class="pair"><label style="font-size: 13px; color: #7F77DD;" for="q2">A2&minus;A1</label><input type="number" id="q2" value="29" step="1" min="-180" max="180" style="width: 68px;"></span>
+  <span class="pair"><label style="font-size: 13px; color: #1D9E75;" for="q3">A3&minus;A1</label><input type="number" id="q3" value="120" step="1" min="-180" max="180" style="width: 68px;"></span>
+  <span class="pair"><label style="font-size: 13px; color: #D85A30;" for="q4">A4&minus;A1</label><input type="number" id="q4" value="0" step="1" min="-180" max="180" style="width: 68px;"></span>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <span style="font-size: 13px; color: var(--text-muted);">or simulate a reading:</span>
+  <input type="range" id="ta" min="-90" max="90" step="1" value="30" style="flex: 1; max-width: 220px;">
+  <span id="tav" style="font-size: 13px; font-weight: 500; min-width: 38px; font-variant-numeric: tabular-nums;">30&deg;</span>
+  <button id="fill">Fill readings from this emitter</button>
+</div>
+<div class="cards">
+  <div class="card">
+    <div class="hd">Step 1 &middot; coarse from A2</div>
+    <div class="big" id="st1" style="font-size: 15px;">&mdash;</div>
+    <div class="ft" id="sb1">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Step 2 &middot; refine with A3</div>
+    <div class="big" id="st2" style="font-size: 15px;">&mdash;</div>
+    <div class="ft" id="sb2">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Step 3 &middot; refine with A4</div>
+    <div class="big" id="st3" style="font-size: 15px;">&mdash;</div>
+    <div class="ft" id="sb3">&mdash;</div>
+  </div>
+</div>
+<p class="sec"><b>Candidate angles per pair</b> <span>&mdash; hollow dots = every angle that pair's reading could mean; filled dot = the lap the algorithm picked; they only line up in one column</span></p>
+<canvas id="cand" style="height: 190px;"></canvas>
+<div style="display: flex; align-items: baseline; gap: 14px; margin-top: 1.25rem; flex-wrap: wrap;">
+  <span class="lbl">Estimated angle of arrival</span>
+  <span id="res" style="font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums;">&mdash;</span>
+  <span id="fitn" style="font-size: 13px; color: var(--text-muted);">&mdash;</span>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const PC = ['#7F77DD', '#1D9E75', '#D85A30'];
+  const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const D = { d: [2.4, 10, 30], q: [29, 120, 0], f: 2, sol: null };
+
+  function readState() {
+    D.f = Math.min(18, Math.max(0.5, +$('f2').value || 2));
+    D.d = [+$('e2').value || 2.4, +$('e3').value || 10, +$('e4').value || 30];
+    D.q = [wrap(+$('q2').value || 0), wrap(+$('q3').value || 0), wrap(+$('q4').value || 0)];
+  }
+
+  function solve() {
+    const lam = 30 / D.f;
+    const asinDeg = s => Math.asin(Math.max(-1, Math.min(1, s))) * 180 / Math.PI;
+    let sin1 = D.q[0] * lam / (360 * D.d[0]);
+    const clamped = Math.abs(sin1) > 1;
+    sin1 = Math.max(-1, Math.min(1, sin1));
+    const steps = [{ th: asinDeg(sin1), k: 0, clamped: clamped }];
+    let sinEst = sin1;
+    for (let i = 1; i < 3; i++) {
+      const predicted = 360 * D.d[i] * sinEst / lam;
+      const k = Math.round((predicted - D.q[i]) / 360);
+      const truePhi = D.q[i] + 360 * k;
+      sinEst = Math.max(-1, Math.min(1, truePhi * lam / (360 * D.d[i])));
+      steps.push({ th: asinDeg(sinEst), k: k });
+    }
+    const cands = D.d.map((d, i) => {
+      const list = [];
+      const kmax = Math.ceil(d / lam) + 1;
+      for (let k = -kmax; k <= kmax; k++) {
+        const s = (D.q[i] + 360 * k) * lam / (360 * d);
+        if (Math.abs(s) <= 1) list.push({ th: asinDeg(s), k: k });
+      }
+      return list;
+    });
+    const thF = steps[2].th;
+    let fit = 0;
+    D.d.forEach((d, i) => {
+      const exp = wrap(360 * d * Math.sin(thF * Math.PI / 180) / lam);
+      fit = Math.max(fit, Math.abs(wrap(D.q[i] - exp)));
+    });
+    D.sol = { steps: steps, cands: cands, thF: thF, fit: fit, lam: lam };
+  }
+
+  function updateUI() {
+    const s = D.sol;
+    $('st1').textContent = s.steps[0].th.toFixed(1) + '° (rough)';
+    $('sb1').textContent = D.q[0] + '° on ' + D.d[0].toFixed(1) + ' cm' + (s.steps[0].clamped ? ' · impossible reading, clamped' : ' · ' + s.cands[0].length + ' candidate' + (s.cands[0].length > 1 ? 's' : ''));
+    for (let i = 1; i < 3; i++) {
+      $('st' + (i + 1)).textContent = s.steps[i].th.toFixed(1) + '°';
+      $('sb' + (i + 1)).textContent = 'laps added back k = ' + (s.steps[i].k > 0 ? '+' : '') + s.steps[i].k + ' · ' + s.cands[i].length + ' candidates';
+    }
+    $('res').textContent = s.thF.toFixed(1) + '°';
+    $('fitn').textContent = s.fit <= 15 ? 'fit error ' + s.fit.toFixed(1) + '° — readings consistent' : 'fit error ' + s.fit.toFixed(0) + '° — readings do not agree on one angle';
+    $('fitn').style.color = s.fit <= 15 ? 'var(--text-muted)' : 'var(--text-warning)';
+  }
+
+  function drawCand() {
+    const c = $('cand'), r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = r.width, h = r.height;
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 96, rt = 14, t = 10, b = 30;
+    const X = a => l + (a + 90) / 180 * (w - l - rt);
+    const s = D.sol;
+
+    g.font = fnt(11); g.fillStyle = sub;
+    [-90, -45, 0, 45, 90].forEach(a => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(a + '°', X(a), h - b + 8);
+    });
+
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(X(s.thF), t); g.lineTo(X(s.thF), h - b); g.stroke();
+    g.setLineDash([]);
+
+    const rh = (h - t - b) / 3;
+    for (let i = 0; i < 3; i++) {
+      const yc = t + rh * i + rh / 2;
+      g.fillStyle = PC[i]; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText('A' + (i + 2) + '−A1 (' + D.d[i].toFixed(1) + ')', 10, yc);
+      const pick = s.steps[i].k;
+      s.cands[i].forEach(cd => {
+        const x = X(cd.th);
+        if (cd.k === pick) {
+          g.fillStyle = PC[i];
+          g.beginPath(); g.arc(x, yc, 6, 0, 7); g.fill();
+        } else {
+          g.strokeStyle = PC[i]; g.lineWidth = 1.5;
+          g.beginPath(); g.arc(x, yc, 5, 0, 7); g.stroke();
+        }
+      });
+    }
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('angle', l + (w - l - rt) / 2, h - 4);
+  }
+
+  function recalc() { readState(); solve(); updateUI(); }
+
+  ['f2', 'e2', 'e3', 'e4', 'q2', 'q3', 'q4'].forEach(id => $(id).addEventListener('input', recalc));
+  $('ta').addEventListener('input', () => { $('tav').textContent = $('ta').value + '°'; });
+  $('fill').addEventListener('click', () => {
+    readState();
+    const lam = 30 / D.f;
+    const th = +$('ta').value * Math.PI / 180;
+    ['q2', 'q3', 'q4'].forEach((id, i) => {
+      $(id).value = wrap(360 * D.d[i] * Math.sin(th) / lam).toFixed(0);
+    });
+    recalc();
+  });
+
+  recalc();
+  function frame() { drawCand(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>

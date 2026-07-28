@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phased-array beam pattern</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.sm { font-size: 13px; color: var(--text-secondary); }
+.pair { display: flex; align-items: center; gap: 6px; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0.5rem; }
+.chip {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+</style>
+</head>
+<body>
+<h1>Phased-array beam pattern</h1>
+<p class="sub">The same 4 antennas run in reverse. Direction finding reads phase differences to learn an angle; a phased array writes phase differences to choose one. Feed each element the right phase and the four ripples add up in only one direction &mdash; the beam.</p>
+
+<div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <label class="lbl" for="st" style="min-width: 92px;">Steer beam to</label>
+    <input type="range" id="st" min="-90" max="90" step="1" value="20" style="flex: 1;">
+    <span id="stv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">20&deg;</span>
+  </div>
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <label class="lbl" for="fr">Frequency</label>
+    <input type="range" id="fr" min="0.5" max="18" step="0.1" value="3" style="flex: 1;">
+    <input type="number" id="frn" min="0.5" max="18" step="0.1" value="3" style="width: 78px;">
+    <span class="sm">GHz</span>
+  </div>
+</div>
+<div class="row">
+  <span class="lbl">Element positions (cm)</span>
+  <span class="pair"><label class="sm">A1</label><input type="number" value="0" disabled style="width: 60px;"></span>
+  <span class="pair"><label class="sm" for="p2">A2</label><input type="number" id="p2" value="2.4" step="0.1" min="0" max="200" style="width: 60px;"></span>
+  <span class="pair"><label class="sm" for="p3">A3</label><input type="number" id="p3" value="10" step="0.1" min="0" max="200" style="width: 60px;"></span>
+  <span class="pair"><label class="sm" for="p4">A4</label><input type="number" id="p4" value="30" step="0.1" min="0" max="200" style="width: 60px;"></span>
+  <button id="bDF">DF array</button>
+  <button id="bU">Uniform &lambda;/2</button>
+</div>
+
+<p class="sec"><b>1 &middot; Beam shape</b> <span>&mdash; how strongly the array radiates in each direction; dashed line = where you asked the beam to point</span></p>
+<canvas id="pol" style="height: 300px;"></canvas>
+
+<p class="sec"><b>2 &middot; Same pattern, flat</b> <span>&mdash; radiated strength vs angle, 1.0 = all four elements adding perfectly in phase</span></p>
+<canvas id="rc" style="height: 220px;"></canvas>
+
+<p class="sec"><b>3 &middot; Feed phases</b> <span>&mdash; the phase shift each element is driven with to steer the beam (this is the DF measurement run backwards)</span></p>
+<div class="chips" id="chips"></div>
+
+<div class="cards" style="margin-top: 1.5rem;">
+  <div class="card">
+    <div class="hd">3 dB beamwidth</div>
+    <div class="big" id="mBW">&mdash;</div>
+    <div class="ft">how sharp the main beam is &mdash; set by the total aperture (A1 to A4)</div>
+  </div>
+  <div class="card">
+    <div class="hd">Highest sidelobe</div>
+    <div class="big" id="mSL">&mdash;</div>
+    <div class="ft" id="mSLn">energy leaking in unwanted directions &mdash; the transmit twin of phase ambiguity</div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top: 2rem;">Try the two presets: the sparse DF spacing (0, 2.4, 10, 30) makes a razor-thin beam but leaks big sidelobes &mdash; the same reason its long baselines wrap ambiguously when receiving. The uniform &lambda;/2 array is clean but blunt. Sparse = sharp and ambiguous, dense = clean and wide; there is no free lunch, only trade-offs.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const COLS = ['#888', '#7F77DD', '#1D9E75', '#D85A30'];
+  const S = { st: 20, f: 3, pos: [0, 2.4, 10, 30] };
+  const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const rad = d => d * Math.PI / 180;
+
+  function readState() {
+    S.st = +$('st').value;
+    S.pos = [0, +$('p2').value || 0, +$('p3').value || 0, +$('p4').value || 0];
+  }
+
+  function af(thDeg) {
+    const lam = 30 / S.f;
+    const dSin = Math.sin(rad(thDeg)) - Math.sin(rad(S.st));
+    let re = 0, im = 0;
+    S.pos.forEach(x => {
+      const a = 2 * Math.PI * x * dSin / lam;
+      re += Math.cos(a); im += Math.sin(a);
+    });
+    return Math.hypot(re, im) / S.pos.length;
+  }
+
+  function metrics() {
+    const step = 0.1;
+    let lo = S.st, hi = S.st;
+    while (lo > -90 && af(lo) > 0.7071) lo -= step;
+    while (hi < 90 && af(hi) > 0.7071) hi += step;
+    const bw = (lo <= -90 || hi >= 90) ? null : hi - lo;
+    let nLo = S.st, nHi = S.st;
+    while (nLo > -90 && af(nLo - step) < af(nLo)) nLo -= step;
+    while (nHi < 90 && af(nHi + step) < af(nHi)) nHi += step;
+    let sl = 0;
+    for (let a = -90; a < nLo; a += step) sl = Math.max(sl, af(a));
+    for (let a = nHi; a <= 90; a += step) sl = Math.max(sl, af(a));
+    return { bw: bw, sl: (nLo <= -90 && nHi >= 90) ? null : sl };
+  }
+
+  function updateUI() {
+    $('stv').textContent = S.st + '°';
+    const lam = 30 / S.f;
+    const ch = $('chips');
+    ch.innerHTML = '';
+    S.pos.forEach((x, i) => {
+      const p = wrap(-360 * x * Math.sin(rad(S.st)) / lam);
+      const el = document.createElement('span');
+      el.className = 'chip';
+      el.style.color = COLS[i];
+      el.textContent = 'A' + (i + 1) + ': ' + p.toFixed(0) + '°';
+      ch.appendChild(el);
+    });
+    const m = metrics();
+    $('mBW').textContent = m.bw === null ? 'very wide' : m.bw.toFixed(1) + '°';
+    if (m.sl === null) {
+      $('mSL').textContent = '—';
+    } else if (m.sl > 0.99) {
+      $('mSL').textContent = 'grating lobe';
+      $('mSL').style.color = 'var(--text-warning)';
+    } else {
+      $('mSL').textContent = (20 * Math.log10(Math.max(m.sl, 1e-4))).toFixed(1) + ' dB';
+      $('mSL').style.color = '';
+    }
+  }
+
+  function setF(v) {
+    S.f = Math.min(18, Math.max(0.5, v));
+    $('fr').value = S.f;
+    $('frn').value = S.f.toFixed(1);
+    updateUI();
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function drawPolar() {
+    const c = $('pol'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border'), bds = cvv('--border-strong');
+    const cx = w / 2, cy = h - 34, R = Math.min(w / 2 - 40, h - 70);
+
+    [0.25, 0.5, 0.75, 1].forEach(r => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.arc(cx, cy, R * r, Math.PI, 2 * Math.PI); g.stroke();
+    });
+    g.font = fnt(11); g.fillStyle = sub;
+    [-90, -60, -30, 0, 30, 60, 90].forEach(a => {
+      const x = cx + R * Math.sin(rad(a)), y = cy - R * Math.cos(rad(a));
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(cx, cy); g.lineTo(x, y); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText(a + '°', cx + (R + 18) * Math.sin(rad(a)), cy - (R + 18) * Math.cos(rad(a)) + 5);
+    });
+    g.strokeStyle = bds; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx - R - 8, cy); g.lineTo(cx + R + 8, cy); g.stroke();
+
+    g.strokeStyle = '#378ADD'; g.lineWidth = 2; g.fillStyle = '#378ADD';
+    g.globalAlpha = 0.15;
+    g.beginPath();
+    g.moveTo(cx, cy);
+    for (let a = -90; a <= 90; a += 0.25) {
+      const r = af(a) * R;
+      g.lineTo(cx + r * Math.sin(rad(a)), cy - r * Math.cos(rad(a)));
+    }
+    g.closePath(); g.fill();
+    g.globalAlpha = 1;
+    g.beginPath();
+    for (let a = -90; a <= 90; a += 0.25) {
+      const r = af(a) * R;
+      const x = cx + r * Math.sin(rad(a)), y = cy - r * Math.cos(rad(a));
+      if (a === -90) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([5, 5]);
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(cx + R * Math.sin(rad(S.st)), cy - R * Math.cos(rad(S.st)));
+    g.stroke(); g.setLineDash([]);
+
+    const mn = Math.min.apply(null, S.pos), mx = Math.max.apply(null, S.pos);
+    const span = Math.max(mx - mn, 1);
+    S.pos.forEach((p, i) => {
+      const x = cx + ((p - mn) / span - 0.5) * R * 0.7;
+      g.fillStyle = COLS[i];
+      g.beginPath(); g.arc(x, cy + 12, 4.5, 0, 7); g.fill();
+    });
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('the four elements', cx, cy + 21);
+  }
+
+  function drawRect() {
+    const c = $('rc'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 46, r = 14, t = 12, b = 34;
+    const X = a => l + (a + 90) / 180 * (w - l - r);
+    const Y = v => t + (1 - v) * (h - t - b);
+
+    g.font = fnt(11); g.fillStyle = sub;
+    [0, 0.25, 0.5, 0.75, 1].forEach(v => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(2), l - 8, Y(v));
+    });
+    [-90, -45, 0, 45, 90].forEach(a => {
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(a + '°', X(a), h - b + 8);
+    });
+    g.textAlign = 'center';
+    g.fillText('direction', l + (w - l - r) / 2, h - 13);
+
+    g.strokeStyle = '#378ADD'; g.lineWidth = 1.8;
+    g.beginPath();
+    for (let a = -90; a <= 90; a += 0.25) {
+      const x = X(a), y = Y(af(a));
+      if (a === -90) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(X(S.st), t); g.lineTo(X(S.st), h - b); g.stroke();
+    g.setLineDash([]);
+  }
+
+  function recalc() { readState(); updateUI(); }
+
+  ['st', 'p2', 'p3', 'p4'].forEach(id => $(id).addEventListener('input', recalc));
+  $('fr').addEventListener('input', () => { readState(); setF(+$('fr').value); });
+  $('frn').addEventListener('change', () => { readState(); setF(+$('frn').value || 3); });
+  $('bDF').addEventListener('click', () => {
+    $('p2').value = 2.4; $('p3').value = 10; $('p4').value = 30; recalc();
+  });
+  $('bU').addEventListener('click', () => {
+    const half = 15 / S.f;
+    $('p2').value = half.toFixed(1);
+    $('p3').value = (2 * half).toFixed(1);
+    $('p4').value = (3 * half).toFixed(1);
+    recalc();
+  });
+
+  recalc();
+  function frame() { drawPolar(); drawRect(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
