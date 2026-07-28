@@ -246,6 +246,12 @@ canvas { width: 100%; display: block; }
     g.setLineDash([]);
     arrow(g, cx - px * 30, cy - py * 30, px, py, 9);
 
+    g.strokeStyle = sub; g.globalAlpha = 0.7; g.lineWidth = 1; g.setLineDash([3, 5]);
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, Math.max(12, cy - R2 - 8)); g.stroke();
+    g.setLineDash([]); g.globalAlpha = 1;
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('0° (straight ahead)', cx, Math.max(12, cy - R2 - 12));
+
     if (Math.abs(S.th) > 1) {
       const a = Math.atan2(-Math.cos(th), Math.sin(th));
       g.strokeStyle = sub;
@@ -305,10 +311,10 @@ canvas { width: 100%; display: block; }
       g.stroke();
 
       const xm = x0 - ph[i] / 360 * lp;
-      g.globalAlpha = 0.45; g.fillStyle = cols[i];
+      g.globalAlpha = 0.7; g.fillStyle = cols[i];
       for (let k = Math.ceil((lx - xm) / lp); xm + k * lp <= rx; k++) {
         const cxk = xm + k * lp;
-        if (cxk >= lx) { g.beginPath(); g.arc(cxk, yc - amp, 3, 0, 7); g.fill(); }
+        if (cxk >= lx) { g.beginPath(); g.arc(cxk, yc - amp, 3.5, 0, 7); g.fill(); }
       }
       g.globalAlpha = 1;
       const xc = x0 - wrap(ph[i]) / 360 * lp;
