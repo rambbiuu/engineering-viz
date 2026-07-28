@@ -100,8 +100,9 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
     return [r.width, r.height];
   }
 
+  const KMX = 10, KMY = 6;
   function bearing(st) {
-    return Math.atan2(S.ex - st.x, st.y - S.ey) * 180 / Math.PI;
+    return Math.atan2((S.ex - st.x) * KMX, (st.y - S.ey) * KMY) * 180 / Math.PI;
   }
 
   function draw() {
@@ -122,19 +123,25 @@ canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var
       const sx = px(st.x), sy = py(st.y);
       const b = bearing(st) * Math.PI / 180;
       const e = S.err * Math.PI / 180;
-      const L = w + h;
+      const L = 40;
+      const proj = a => {
+        const kx = st.x * KMX + Math.sin(a) * L;
+        const ky = st.y * KMY - Math.cos(a) * L;
+        return [kx / KMX * w, ky / KMY * h];
+      };
 
       g.fillStyle = st.col; g.globalAlpha = 0.11;
+      const p1 = proj(b - e), p2 = proj(b + e);
       g.beginPath();
       g.moveTo(sx, sy);
-      g.lineTo(sx + Math.sin(b - e) * L, sy - Math.cos(b - e) * L);
-      g.lineTo(sx + Math.sin(b + e) * L, sy - Math.cos(b + e) * L);
+      g.lineTo(p1[0], p1[1]);
+      g.lineTo(p2[0], p2[1]);
       g.closePath(); g.fill();
       g.globalAlpha = 1;
 
+      const pc = proj(b);
       g.strokeStyle = st.col; g.lineWidth = 1.2; g.setLineDash([6, 5]);
-      g.beginPath(); g.moveTo(sx, sy);
-      g.lineTo(sx + Math.sin(b) * L, sy - Math.cos(b) * L);
+      g.beginPath(); g.moveTo(sx, sy); g.lineTo(pc[0], pc[1]);
       g.stroke(); g.setLineDash([]);
     });
 

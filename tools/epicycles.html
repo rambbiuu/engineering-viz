@@ -189,7 +189,7 @@ canvas { width: 100%; display: block; }
   let theta = 0, last = null;
   function frame(ts) {
     if (last === null) last = ts;
-    if (S.playing) theta += (ts - last) * 0.0016;
+    if (S.playing) theta += Math.min(ts - last, 50) * 0.0016;
     last = ts;
     draw(theta);
     requestAnimationFrame(frame);
