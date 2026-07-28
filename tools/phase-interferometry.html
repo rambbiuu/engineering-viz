@@ -304,6 +304,13 @@ canvas { width: 100%; display: block; }
       }
       g.stroke();
 
+      const xm = x0 - ph[i] / 360 * lp;
+      g.globalAlpha = 0.45; g.fillStyle = cols[i];
+      for (let k = Math.ceil((lx - xm) / lp); xm + k * lp <= rx; k++) {
+        const cxk = xm + k * lp;
+        if (cxk >= lx) { g.beginPath(); g.arc(cxk, yc - amp, 3, 0, 7); g.fill(); }
+      }
+      g.globalAlpha = 1;
       const xc = x0 - wrap(ph[i]) / 360 * lp;
       g.fillStyle = cols[i];
       g.beginPath(); g.arc(xc, yc - amp, 4.5, 0, 7); g.fill();
@@ -333,6 +340,10 @@ canvas { width: 100%; display: block; }
       if (turns !== 0) {
         g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(11);
         g.fillText((turns > 0 ? '+' : '') + turns + ' turn hidden', 12, yc + 26);
+        if (xm >= lx && xm <= rx) {
+          g.strokeStyle = cvv('--text-warning') || sub; g.lineWidth = 1.5;
+          g.beginPath(); g.arc(xm, yc - amp, 8.5, 0, 7); g.stroke();
+        }
       }
     }
 
