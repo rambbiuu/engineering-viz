@@ -306,6 +306,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   <ul class="legend-note">
     <li><span class="sw" style="background:var(--series-1)"></span>pattern cut</li>
     <li><span class="sw dash" style="color:var(--warn)"></span>&minus;3 dB, half power</li>
+    <li><span class="sw" style="background:var(--warn);opacity:0.28"></span>shaded &mdash; half-power window</li>
     <li><span class="sw dash" style="color:var(--series-4)"></span>first sidelobe</li>
     <li><span class="sw" style="background:var(--series-3)"></span>look direction</li>
   </ul>
@@ -1200,8 +1201,8 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       { min: lo, max: hi, unit: '°', label: 'direction', fmt: v => fmtNum(wrap(v), span < 4 ? 1 : 0) },
       { min: FLOOR, max: 0, unit: 'dB', label: 'relative power' }, { fontSize: fs });
 
-    /* the region below the tallest sidelobe is where nothing useful lives */
-    if (M.q.sllDb > FLOOR + 0.5 && M.q.sllDb < -0.2) band(g, P, P.Y(FLOOR), P.Y(M.q.sllDb), t.s4, 'y');
+    /* the half-power window: the angles this antenna actually serves */
+    if (M.q.hpbw < 359) band(g, P, P.X(M.q.aLo + S.mech), P.X(M.q.aHi + S.mech), t.warn);
 
     P.clip(g);
     g.strokeStyle = t.warn; g.lineWidth = 1.2; g.setLineDash([6, 4]);

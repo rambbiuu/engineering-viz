@@ -766,7 +766,8 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       '<li>' + F[S.type] + '</li>' +
       '<li>' + bl.join(', ') + ', &hellip;</li>' +
       '<li>f<sub>1</sub> = ' + fmtEng(S.f1, 'Hz', 0) + ' &rarr; period ' + fmtEng(periodMs(), 'ms', 2) + '</li>' +
-      '<li>harmonics up to <span class="var">n</span> = ' + S.N + ' &rarr; ' + used.length + ' sines in the mix</li>' +
+      '<li>harmonics up to <span class="var">n</span> = ' + S.N + ' &rarr; ' + used.length +
+        (used.length === 1 ? ' sine' : ' sines') + ' in the mix</li>' +
       '<li>remaining mismatch = ' + (isFinite(rms) ? fmtNum(rms, 1) : '&mdash;') + ' % (rms)</li>' +
       '<li>edge overshoot = ' + fmtNum(peakOvershoot(), 1) + ' %</li>';
   }

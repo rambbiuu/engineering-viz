@@ -735,16 +735,19 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
   function metrics() {
     const M = 1024;
-    let se = 0, st = 0, mx = -Infinity, mt = -Infinity;
+    let se = 0, st = 0, mx = -Infinity, mn = Infinity, mt = -Infinity;
     for (let i = 0; i < M; i++) {
       const th = TAU * i / M, s = unit(th), q = target(th);
       se += (s - q) * (s - q); st += q * q;
       if (s > mx) mx = s;
+      if (s < mn) mn = s;
       if (q > mt) mt = q;
     }
+    if (!isFinite(mx)) mx = 1;
+    if (!isFinite(mn)) mn = -1;
     const rms = st > 1e-12 ? Math.sqrt(se / st) * 100 : 0;
     const ov = mt > 1e-9 ? (mx - mt) / mt * 100 : 0;
-    return { rms: isFinite(rms) ? rms : 0, ov: isFinite(ov) ? Math.max(0, ov) : 0 };
+    return { rms: isFinite(rms) ? rms : 0, ov: isFinite(ov) ? Math.max(0, ov) : 0, mx: mx, mn: mn };
   }
 
   function reach() { let r = 0; for (let i = 0; i < T.length; i++) r += Math.abs(T[i].a); return r * S.A; }
@@ -781,9 +784,11 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
     const Tp = 1 / Math.max(0.05, S.f1);
     const Wsec = S.win * Tp;
+    const Rt = Math.max(1e-6,
+      Math.max(Math.abs(S.dc + S.A * MET.mx), Math.abs(S.dc + S.A * MET.mn)) * 1.18);
     const Ptr = graticule(g, btr,
       { min: 0, max: Wsec, unit: 's', label: 'time before now' },
-      { min: -R, max: R, unit: 'V', label: 'amplitude' },
+      { min: -Rt, max: Rt, unit: 'V', label: 'amplitude' },
       { padL: pL, padR: pR, padT: pT, padB: pB, fontSize: FS, title: 'what a scope would show' });
 
     const ppu = Pp.X(1) - Pp.X(0);
@@ -819,13 +824,21 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     /* peak-to-peak span of the pen, dimensioned */
     const spanX = Pp.x0 + Pp.w * 0.09;
     dimension(g, spanX, Pp.Y(Math.min(R, S.dc + reach())), spanX, Pp.Y(Math.max(-R, S.dc - reach())),
-      fmtEng(2 * reach(), 'V', 2), { size: AN - 1 });
+      fmtNum(2 * reach(), 2) + ' V', { size: AN - 1 });
 
-    leader(g, Pp.X(rx), Pp.Y(ry), 'pen ' + fmtEng(v0, 'V', 2),
+    leader(g, Pp.X(rx), Pp.Y(ry), 'pen ' + fmtNum(v0, 2) + ' V',
       { box: Pp, colour: t.s2, size: AN, dx: -32, dy: -30 });
 
     /* --- the trace --- */
     Ptr.clip(g);
+    g.strokeStyle = t.s2; g.lineWidth = 2;
+    g.beginPath();
+    for (let p = Ptr.x0; p <= Ptr.x1; p++) {
+      const tau = (p - Ptr.x0) / Ptr.w * Wsec;
+      const y = Ptr.Y(series(TH - TAU * S.f1 * tau));
+      if (p === Ptr.x0) g.moveTo(p, y); else g.lineTo(p, y);
+    }
+    g.stroke();
     if (S.target) {
       g.strokeStyle = t.s3; g.lineWidth = 1.4; g.setLineDash([6, 4]);
       g.beginPath();
@@ -836,14 +849,6 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       }
       g.stroke(); g.setLineDash([]);
     }
-    g.strokeStyle = t.s2; g.lineWidth = 2;
-    g.beginPath();
-    for (let p = Ptr.x0; p <= Ptr.x1; p++) {
-      const tau = (p - Ptr.x0) / Ptr.w * Wsec;
-      const y = Ptr.Y(series(TH - TAU * S.f1 * tau));
-      if (p === Ptr.x0) g.moveTo(p, y); else g.lineTo(p, y);
-    }
-    g.stroke();
     g.fillStyle = t.s2;
     g.beginPath(); g.arc(Ptr.x0, Ptr.Y(v0), dotR, 0, TAU); g.fill();
     Ptr.unclip(g);

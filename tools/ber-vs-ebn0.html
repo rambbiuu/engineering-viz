@@ -980,13 +980,27 @@ ol.work code { font-family: ui-monospace, "SF Mono", Consolas, monospace;
     }
   }
 
-  function tagCurve(g, P, x, y, text, col) {
+  function tagCurve(g, P, x, y, text, col, placed) {
     var t = theme(), size = Math.max(10, P.fs);
     g.save();
     g.font = t.font(size);
     var tw = g.measureText(text).width;
     var tx = clamp(x - tw / 2, P.x0 + 3, Math.max(P.x0 + 3, P.x1 - tw - 3));
     var ty = clamp(y - 6, P.y0 + size + 2, P.y1 - 3);
+    if (placed) {
+      var hits = function (yy) {
+        for (var q = 0; q < placed.length; q++) {
+          var b = placed[q];
+          if (tx < b.x + b.w && tx + tw > b.x && yy - size < b.y && yy > b.y - size) return true;
+        }
+        return false;
+      };
+      for (var tries = 0; tries < 5 && hits(ty); tries++) {
+        ty = (ty - size * 1.4 < P.y0 + size + 2) ? ty + size * 1.4 : ty - size * 1.4;
+      }
+      ty = clamp(ty, P.y0 + size + 2, P.y1 - 3);
+      placed.push({ x: tx, y: ty, w: tw, h: size });
+    }
     g.globalAlpha = 0.86; g.fillStyle = t.plot;
     g.fillRect(tx - 3, ty - size * 0.85, tw + 6, size * 1.3);
     g.globalAlpha = 1; g.fillStyle = col;
@@ -1053,9 +1067,9 @@ ol.work code { font-family: ui-monospace, "SF Mono", Consolas, monospace;
     g.beginPath(); g.arc(opX, opY, clamp(P.h * 0.011, 2.6, 4.6), 0, 6.2832); g.fill();
     P.unclip(g);
 
-    for (i = 0; i < tags.length; i++) tagCurve(g, P, tags[i].x, tags[i].y, tags[i].lab, tags[i].c);
-
-    tagCurve(g, P, P.x0 + P.w * 0.14, P.Y(target) - 2, 'target ' + fmtTarget(S.tgExp), t.axis);
+    var placed = [];
+    tagCurve(g, P, P.x0 + P.w * 0.14, P.Y(target) - 2, 'target ' + fmtTarget(S.tgExp), t.axis, placed);
+    for (i = 0; i < tags.length; i++) tagCurve(g, P, tags[i].x, tags[i].y, tags[i].lab, tags[i].c, placed);
 
     if (isFinite(R.reqCur) && R.reqCur >= 0 && R.reqCur <= xmax) {
       leader(g, P.X(R.reqCur), P.Y(target), 'needs ' + fx(R.reqCur, 1) + ' dB',

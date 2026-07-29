@@ -1064,7 +1064,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     for (i = 1; i <= nD; i++) { if (Math.abs(P.J[i]) > aPk) { aPk = Math.abs(P.J[i]); nPk = i; } }
     if (aPk > 0) {
       leader(g, Pl.X(nPk * S.fm), Pl.Y(S.ac * aPk),
-        'n = ' + nPk + ', ' + fmtEng(S.ac * aPk, 'V', 3),
+        'n = ' + nPk + ', ' + fmtEng(S.ac * aPk, 'V', 2),
         { box: Pl, colour: t.s1, size: Z.ann, dy: -26, dx: 34 });
     }
     if (S.am) {
@@ -1242,7 +1242,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       : 'no sideband reaches 1 %';
     $('kW').textContent = F(P.inb * 100, 2) + ' %';
     $('kWf').textContent = 'over |n| ≤ ' + P.nCar + ', ΣJ' + sub('n') + '² = ' + F(P.tot, 6);
-    $('kJ').textContent = fmtEng(S.ac * Math.abs(P.J[0]), 'V', 4);
+    $('kJ').textContent = fmtEng(S.ac * Math.abs(P.J[0]), 'V', 2);
     $('kJf').textContent = 'J' + sub('0') + '(β) = ' + F(P.J[0], 4) + (P.J[0] < 0 ? ', inverted' : '');
     $('kL').textContent = F(2 * P.np + 1, 0);
 
