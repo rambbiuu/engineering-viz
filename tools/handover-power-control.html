@@ -173,13 +173,14 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   <ol class="work" id="work"></ol>
 </details>
 
-<h2>What the controls are teaching</h2>
+<details class="wordy"><summary>What the controls are teaching</summary>
 <p class="sub">The handover margin &Delta; and the hysteresis H fail in opposite directions, and a real network is tuned between them. Push &Delta; up and the threshold P<sub>min</sub> + &Delta; sits high above the floor, so the trigger arms far from the boundary and fires again every time shadowing moves the two levels past one another: frequent, unnecessary handovers, each one a signalling transaction and a brief gap in the speech. Pull &Delta; down to zero and the trigger only arms when the link is already at the point of failure, leaving no time to complete the switch, which is the course's second failure mode and the one that shows up as dropped calls. H is the separate question of how much better the neighbour has to be before the switch is worth making: at zero it lets every shadow crossing start a handover, and the ping-pong counter climbs; too large and the mobile is dragged deep into the next cell on a dying link. The running average is what makes any of it workable, because it turns a trace that crosses the threshold dozens of times into one that crosses it once.</p>
 <p class="sub">Three system-level results sit behind the same picture. Cell splitting is visible on the base station power card: the transmitter is sized so the received level at the cell vertex hits P<sub>min</sub> plus a 6 dB margin, so halving R cuts the required power by 10 n log<sub>10</sub>2, which is 12.0 dB at n = 4 &mdash; and buys four times the capacity per unit area, paid for with twice as many handovers along any route and twice as many base stations along it. Sectorisation cuts the first-tier interferers from six to two at 120 degrees, worth 10 log<sub>10</sub>3 = 4.77 dB of SIR, and to one at 60 degrees; on its own it also fragments the channel pool and hurts trunking efficiency, so it pays only when it is combined with a smaller cluster. Closed-loop power control changes nothing about the geometry but takes several decibels off what every mobile radiates, which is why a CDMA system, where every user shares the band, cannot work without it.</p>
 <p class="sub">Honest limits of this model. Propagation is one log-distance slope, P<sub>r</sub> = P<sub>t</sub> + G<sub>t</sub> + G<sub>r</sub> &minus; [PL(d<sub>0</sub>) + 10 n log<sub>10</sub>(d/d<sub>0</sub>)] + X<sub>&sigma;</sub>, with a free-space reference at d<sub>0</sub> = 1 m and 900 MHz; the shadowing of the two cells is generated independently, where real terrain correlates them; the sector antennas are the course's ideal wedges seeing exactly 6, 2 or 1 first-tier interferer; the SIR card is the simplified variant with all interferers placed at the reuse distance for N = 7, so it reads several decibels above the practical and conservative variants; the fast fading pattern used in panel 3 repeats every 682 m; and the clock runs eight times faster than real time so that a drive across a cell takes seconds rather than minutes.</p>
 <p class="pre" style="margin-top:1.5rem">Next: <a href="cellular-reuse.html">Cellular frequency reuse</a> for where N = 7 and the reuse distance come from, and <a href="link-budget.html">Link budget</a> for what sets P<sub>min</sub> in the first place.</p>
 
-<h2>Glossary</h2>
+</details>
+<details class="wordy"><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Handover</dt><dd>Moving a call in progress from one base station to another without dropping it. Called handoff in North American texts.</dd>
   <dt>P<sub>min</sub></dt><dd>The weakest received level at which the link still works. The course quotes &minus;100 to &minus;90 dBm.</dd>
@@ -200,6 +201,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   <dt>Near-far problem</dt><dd>A close mobile drowning a distant one. Severe in CDMA, where everyone shares the band, which is why its power control runs at 800 or 1500 Hz.</dd>
 </dl>
 
+</details>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };

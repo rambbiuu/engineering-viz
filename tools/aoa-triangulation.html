@@ -154,15 +154,17 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
   <p class="legend-note" style="margin-top:8px">Bearings run clockwise from north, 000&deg; to 360&deg;. Offset is the error this realisation drew for that site; residual is how far the fitted position still sits off that measured line, in degrees.</p>
 </details>
 
-<h2>The arithmetic, with the current numbers substituted in</h2>
+<details class="wordy"><summary>The arithmetic, with the current numbers substituted in</summary>
 <ol class="work" id="work"></ol>
 
-<h2>What the controls are teaching</h2>
+</details>
+<details class="wordy"><summary>What the controls are teaching</summary>
 <p class="sub">Two sites are a trap. Two lines in a plane always cross somewhere, so the residual is exactly zero and the fit looks perfect, yet the crossing sits wherever the two errors happened to push it and nothing on the screen warns you. The third bearing is the first one that can disagree, which is why it is the first one that gives you a residual to check the other two against. After that each mast buys less: the ellipse shrinks roughly as one over the square root of the number of sites, while moving one mast to fix a shallow crossing angle can halve it in a single drag.</p>
 <p class="sub">Watch what geometry does on its own. Drag two masts close together and their bearings become nearly parallel; the ellipse stretches along the line of sight until the fix is useless in range while still being sharp in cross-range, and the GDOP card climbs to say so. Push the emitter to the top of the map and every wedge widens in proportion, because an angle error is a distance error multiplied by range &mdash; that is the straight line in section 4, and it is the reason a network of cheap nearby sites beats one very accurate distant one.</p>
 <p class="sub">Four honest limits. The bearing errors here are independent, zero-mean and Gaussian, which real direction finding is not &mdash; multipath puts a bias on a bearing, and a bias does not average away with more sites. The ellipse is a linearised covariance, exact only while the angle errors are small enough that the bearing lines are locally straight in the fit; at 10&deg; rms it is indicative rather than precise. CEP = 0.59(&sigma;<sub>maj</sub> + &sigma;<sub>min</sub>) is the standard approximation, good to about one per cent while &sigma;<sub>min</sub>/&sigma;<sub>maj</sub> stays above 0.25 and optimistic below that. And the fit treats each bearing as a full line rather than a ray, so residuals are reported modulo 180&deg;; where the geometry collapses &mdash; a crossing angle under about five degrees, or a fix landing on a site &mdash; the tool reports no fix instead of a confident number it cannot support.</p>
 
-<h2>Glossary</h2>
+</details>
+<details class="wordy"><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Angle of arrival</dt><dd>The direction a signal came from, as measured at one receiving site. It fixes a line, not a point.</dd>
   <dt>Bearing</dt><dd>That direction expressed as an angle clockwise from north, 000&deg; to 360&deg;.</dd>
@@ -179,6 +181,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
   <dt>Baseline</dt><dd>The separation between two sites. A longer baseline gives a wider crossing angle and a rounder ellipse.</dd>
 </dl>
 
+</details>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };

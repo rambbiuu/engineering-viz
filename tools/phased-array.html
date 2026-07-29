@@ -162,7 +162,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   </div>
 </div>
 
-<h2>The arithmetic, with the numbers you have set</h2>
+<details class="wordy"><summary>The arithmetic, with the numbers you have set</summary>
 <ol class="work">
   <li>The aperture is the distance from the first element to the last: (N &minus; 1) &times; d = <b id="w1">&mdash;</b>.</li>
   <li>To steer to &theta;<sub>0</sub>, each element lags its neighbour by &minus;360&deg; &times; (d/&lambda;) &times; sin&thinsp;&theta;<sub>0</sub> = <b id="w2">&mdash;</b>. The clock hands in section 1 step by exactly that much.</li>
@@ -174,7 +174,8 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <p class="sub">What is modelled and what is not: the plot is the <i>array factor</i> for isotropic elements, so the true pattern of a real array is this multiplied by the pattern of one element, which pulls the far-out lobes down. Directivity is computed exactly for isotropic elements from the element weights and spacing, then multiplied by cos&thinsp;&theta;<sub>0</sub> for the projected aperture &mdash; that is the n = 1 scan-loss model; real arrays with directive elements fall closer to cos<sup>2.5</sup>&thinsp;&theta;<sub>0</sub>, so treat the scan-loss card as the optimistic bound. Mutual coupling between elements, quantised phase shifters and amplitude errors are not modelled.</p>
 <p class="sub">Next: the same four antennas run backwards, reading phase differences instead of writing them, in <a href="phase-interferometry.html">phase interferometry</a>.</p>
 
-<h2>Glossary</h2>
+</details>
+<details class="wordy"><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Wavelength &lambda;</dt><dd>The distance from one wave peak to the next. Every spacing here is quoted in wavelengths, so the tool works at any frequency: at 3 GHz, &lambda; = 10 cm, so d = 0.5 &lambda; is 5 cm.</dd>
   <dt>Phase</dt><dd>Where a wave is in its cycle, in degrees. 360&deg; is one whole cycle; a 90&deg; phase shift is a delay of a quarter of a wave.</dd>
@@ -189,6 +190,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <dt>Scan loss</dt><dd>The gain lost when the beam is steered away from broadside, because the array looks narrower from an angle than it does head on.</dd>
 </dl>
 
+</details>
 <script>
 (function () {
   'use strict';

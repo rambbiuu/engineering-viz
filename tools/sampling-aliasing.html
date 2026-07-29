@@ -150,10 +150,11 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
   </div>
 </div>
 
-<h2>The arithmetic, with the current numbers</h2>
+<details class="wordy"><summary>The arithmetic, with the current numbers</summary>
 <ol class="work" id="work"></ol>
 
-<h2>Glossary</h2>
+</details>
+<details class="wordy"><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Sample</dt><dd>One measurement of the wave's height, taken at one instant. Between samples the converter knows nothing at all.</dd>
   <dt>Sample rate, f<sub>s</sub></dt><dd>How many samples are taken each second, in samples per second (Sa/s). Written in hertz too, since it is a rate of repetition.</dd>
@@ -174,6 +175,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
 <p class="sub" style="margin-top: 2rem;">The rule is short and it is strict: f<sub>s</sub> must be greater than 2f, not equal to it. Step 2 of the tour shows why the equality case fails &mdash; with f<sub>s</sub> = 2f every sample can land on a zero crossing, and a wave whose samples are all zero cannot be told from silence. Two practical consequences follow. First, the only defence is a filter <i>in front of</i> the converter: aliasing is not a processing error you can undo later, because the impostor and the original produce byte-for-byte identical data. Second, real designs do not sit near the limit; audio uses 44.1 kSa/s for a 20 kHz band, about 1.1&times;, and only gets away with it because the anti-alias filter is very steep, while instrumentation commonly runs 5&times; or more so that a gentle, cheap filter suffices. One deliberate exception is worth knowing: radio receivers sometimes sample <i>on purpose</i> below the carrier frequency, letting a known band fold down to baseband, which is the same arithmetic used as a tool rather than suffered as a fault. The model here uses a single sine wave and an ideal converter with no quantisation noise and no jitter; add those and the picture gets worse, never better.</p>
 <p class="hint" style="margin-top:1rem">Next: see what happens once information is written onto a carrier, in <a href="modulation.html">the modulation playground</a>, then look at the receiver's-eye view in <a href="iq-constellation.html">the IQ constellation explorer</a>.</p>
 
+</details>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };

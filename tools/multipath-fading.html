@@ -154,15 +154,17 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   <div class="card"><div class="hd">Average fade duration</div><div class="big" id="cAfd">&mdash;</div><div class="ft">how long one dropout lasts, milliseconds</div></div>
 </div>
 
-<h2>The arithmetic, with the current numbers substituted in</h2>
+<details class="wordy"><summary>The arithmetic, with the current numbers substituted in</summary>
 <ol class="work" id="work"></ol>
 
-<h2>What the sliders are teaching</h2>
+</details>
+<details class="wordy"><summary>What the sliders are teaching</summary>
 <p class="sub">Delay spread and Doppler are two independent axes of the same channel, and they hurt in different ways. Delay spread is about distance: it sets the coherence bandwidth, and once the signal is wider than that, no amount of transmit power helps &mdash; the notch is inside the signal, and the fix is an equaliser, a rake receiver, or splitting the signal into narrow subcarriers as OFDM does. Doppler is about speed: it sets how fast the pattern moves past the car, so a 30 dB fade at walking pace lasts long enough to lose a whole packet, while the same fade at 200 km/h is over in a millisecond and interleaving plus coding rides straight through it. Push the K factor to +20 dB and both problems shrink at once, because a dominant direct path leaves the reflections too weak to cancel it &mdash; which is exactly why a line of sight is worth so much more than the link budget alone suggests.</p>
 <p class="sub">Two honest limits of this model. The envelope drawn in section 4 is the exact vector sum of the handful of paths you set, so its statistics only approach the Rayleigh distribution as you add taps &mdash; with two paths it is a deterministic interference pattern, not a random one. And the outage, crossing rate and fade duration cards use the classical Rayleigh formulas, which assume many equal scatterers arriving from all directions; they are the numbers an engineer designs to, and the footnote on the outage card shows what the drawn waveform actually did so you can see the two disagree when there are too few paths.</p>
 <p class="pre" style="margin-top:1.5rem">Next: <a href="link-budget.html">Link budget</a> to see what the fade margin costs, and <a href="cellular-reuse.html">Cellular frequency reuse</a> for the system that has to live with all of this.</p>
 
-<h2>Glossary</h2>
+</details>
+<details class="wordy"><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Multipath</dt><dd>The signal reaching the receiver by several routes at once, having reflected off buildings, ground or hills.</dd>
   <dt>Tap</dt><dd>One arriving copy in the model, described by its delay, its amplitude and its phase.</dd>
@@ -182,6 +184,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   <dt>Average fade duration</dt><dd>The mean length of one of those dropouts.</dd>
 </dl>
 
+</details>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };

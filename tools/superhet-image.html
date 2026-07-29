@@ -171,10 +171,11 @@ summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; margin
   </div>
 </div>
 
-<h2>Worked example, following the controls above</h2>
+<details class="wordy"><summary>Worked example, following the controls above</summary>
 <ol class="work" id="work"></ol>
 
-<h2>When two strong signals make a third</h2>
+</details>
+<details class="wordy"><summary>When two strong signals make a third</summary>
 <p class="note">The image is a frequency problem, and a filter fixes it. Intermodulation is a <i>level</i> problem, and no filter can fix it. Push a mixer or an amplifier hard enough and it stops being linear: two tones going in produce sums and differences at every combination n&middot;f&#8321; &plusmn; m&middot;f&#8322;, and the order of each product is n + m. Even orders land near DC or near twice the carrier and filter out easily. The odd orders do not: third order, 2f&#8321;&minus;f&#8322; and 2f&#8322;&minus;f&#8321;, falls one channel spacing outside the pair, inside the very passband you were protecting. The law that matters is that the third-order product rises 3 dB for every 1 dB the drive rises, so the clear space between wanted signal and rubbish closes at 2 dB per dB. Drag the nearby-signal slider and watch the two lines converge.</p>
 
 <p class="sec"><b>4 &middot; The 3:1 slope and the intercept</b> <span>&mdash; fundamental at slope 1, third order at slope 3, extrapolated to the point where they would meet</span></p>
@@ -190,7 +191,8 @@ summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; margin
 
 <p class="note">Next: <a href="modulation.html">modulation</a> shows what the signal sitting at that intermediate frequency actually carries.</p>
 
-<h2>Glossary</h2>
+</details>
+<details class="wordy"><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Superheterodyne (superhet)</dt><dd>A receiver that shifts every incoming channel to one fixed frequency before filtering and detecting it, instead of building a tunable filter for each channel.</dd>
   <dt>Mixer</dt><dd>A deliberately non-linear device fed with the incoming signal and the local oscillator. Its output contains the sum and difference of their frequencies.</dd>
@@ -209,6 +211,7 @@ summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; margin
   <dt>1 dB compression point</dt><dd>The output level at which real gain has sagged 1 dB below the straight line. A rule of thumb puts it about 10 dB below OIP3.</dd>
 </dl>
 
+</details>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
