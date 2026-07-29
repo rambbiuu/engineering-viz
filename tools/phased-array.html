@@ -71,10 +71,10 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Phased arrays — beam steering, sidelobes and grating lobes</h1>
-<p class="sub">A phased array is a row of small antennas that behave as one big one. Nothing rotates: each element is fed the same signal with a slightly different time delay, written as a phase shift, and the waves reinforce in one chosen direction and cancel in the rest. That is how a radar sweeps the sky in microseconds and how a 5G base station follows a moving handset. The price is paid in sidelobes, in beam broadening as you steer away from straight ahead, and in extra beams called grating lobes if the elements are spaced too far apart.</p>
+<p class="sub">A phased array steers a beam by feeding each element a slightly different phase &mdash; nothing rotates. The price is sidelobes, beam broadening off broadside, and extra beams called grating lobes.</p>
 <p class="sub" style="margin-bottom: 1rem;">If phase, dBi or beamwidth are unfamiliar, start with <a href="antenna-basics.html">antenna basics</a> first.</p>
 
-<p class="note"><b>An everyday version.</b> Picture a line of people clapping. If everyone claps at exactly the same instant, the sound is loudest to whoever stands straight in front of the line. Now ask each person to clap a fixed fraction of a beat after their neighbour: the loudest direction tilts to one side, and the further along the line you go, the further behind the beat you are. The array does the same thing with radio waves, and the fraction of a beat is the phase shift.</p>
+<p class="note"><b>An everyday version.</b> A line of people clapping in step is loudest straight ahead; ask each to clap a fixed fraction of a beat after their neighbour and the loudest direction tilts.</p>
 
 <div class="tour">
   <button id="t1">Step 1 &middot; straight ahead</button>
@@ -113,25 +113,25 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <p class="sec"><b>1 &middot; The array face</b> <span>&mdash; the hardware: N elements in a line, the phase each one is driven with, and the direction that phase pattern points the beam</span></p>
 <canvas id="cFace" style="height: 274px;"></canvas>
 <ul class="legend-note">
-  <li><span class="sw" style="background: var(--s1)"></span>The blue bars are the elements. Bar length is how hard each one is driven &mdash; the amplitude taper. Uniform drives them all equally.</li>
-  <li><span class="sw" style="background: var(--s2)"></span>The clock hands are the feed phases, measured clockwise from 12 o'clock. Steering makes them step evenly along the row; a flat row of 12 o'clock hands points the beam straight ahead.</li>
-  <li>The arrow is the direction those phases steer the beam, and the two short bars crossing it are the wavefront the array launches.</li>
+  <li><span class="sw" style="background: var(--s1)"></span>bars &mdash; drive amplitude per element</li>
+  <li><span class="sw" style="background: var(--s2)"></span>clock hands &mdash; feed phases</li>
+  <li><span class="sw" style="background: var(--s2)"></span>arrow &mdash; steered beam direction</li>
 </ul>
 
 <p class="sec"><b>2 &middot; Where the power goes</b> <span>&mdash; the array factor drawn as a polar plot: distance from the centre is field strength in that direction</span></p>
 <canvas id="cPol" style="height: 344px;"></canvas>
 <ul class="legend-note">
-  <li>The filled blue shape is the array factor. Radius 1.0 means every element arrives in phase in that direction; radius 0 means they cancel exactly.</li>
-  <li><span class="sw" style="background: var(--s2)"></span>The two green marks are the half-power edges of the main beam. The angle between them is the beamwidth on the first card.</li>
-  <li><span class="sw" style="background: var(--s3)"></span>An orange spoke marks a grating lobe: a second beam, just as strong as the one you wanted, pointing somewhere you did not ask for.</li>
+  <li><span class="sw" style="background: var(--s1)"></span>filled shape &mdash; array factor</li>
+  <li><span class="sw" style="background: var(--s2)"></span>green marks &mdash; half-power edges</li>
+  <li><span class="sw" style="background: var(--s3)"></span>orange spoke &mdash; grating lobe</li>
 </ul>
 
 <p class="sec"><b>3 &middot; The same pattern in decibels</b> <span>&mdash; a log scale, because the sidelobes are far too small to see on a linear plot</span></p>
 <canvas id="cRect" style="height: 308px;"></canvas>
 <ul class="legend-note">
-  <li>0 dB is the top of the main beam. Every 10 dB down is a factor of ten less power, so a &minus;13 dB sidelobe carries about 5 % of the peak.</li>
-  <li><span class="sw" style="background: var(--s2)"></span>The dashed green line sits at the highest sidelobe. Tapering pushes it down; phase errors push it back up.</li>
-  <li><span class="sw" style="background: var(--s3)"></span>Any orange band is a grating-lobe region. When there is none, the tool says so in the corner.</li>
+  <li><span class="sw" style="background: var(--s1)"></span>blue curve &mdash; pattern, dB scale</li>
+  <li><span class="sw" style="background: var(--s2)"></span>dashed green &mdash; highest sidelobe</li>
+  <li><span class="sw" style="background: var(--s3)"></span>orange band &mdash; grating-lobe region</li>
 </ul>
 
 <div class="cards">

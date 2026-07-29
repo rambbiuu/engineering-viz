@@ -74,10 +74,13 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>OFDM subcarriers and the cyclic prefix</h1>
-<p class="sub">Orthogonal frequency-division multiplexing (OFDM) splits one wide channel into many narrow ones that overlap without interfering. Each subcarrier is a tone whose spectrum is a sinc, and the tones are spaced so that every peak lands exactly on every other one's null &mdash; that is what "orthogonal" means here. Wi-Fi, LTE, 5G, DAB and DVB all work this way. Two things break it: an echo arriving late, and a receiver tuned slightly off frequency.</p>
+<p class="sub">Orthogonal frequency-division multiplexing (OFDM) spaces many narrow subcarriers so every peak lands on every other's null. Two things break it: an echo arriving late, and a receiver tuned slightly off frequency.</p>
 <p class="sub" style="margin-bottom: 1rem;">New to this? Start with <a href="sampling-aliasing.html">sampling and aliasing</a> and <a href="iq-constellation.html">the I/Q constellation</a>, which explain the sinc shape and the constellation dots used below.</p>
 
-<div class="note"><b>An everyday picture.</b> Think of a choir where each singer holds a note that fits a whole number of times into one bar. Over a full bar every other singer's contribution averages to nothing, so you can pick out any one voice cleanly. If one singer drifts slightly off pitch, their note no longer cancels &mdash; it smears into everyone else's part. That smearing is intercarrier interference, and the frequency-offset slider below creates it.</div>
+<details>
+  <summary>An everyday picture</summary>
+  <div class="note">Think of a choir where each singer holds a note that fits a whole number of times into one bar. Over a full bar every other singer's contribution averages to nothing, so you can pick out any one voice cleanly. If one singer drifts slightly off pitch, their note no longer cancels &mdash; it smears into everyone else's part. That smearing is intercarrier interference, and the frequency-offset slider below creates it.</div>
+</details>
 
 <p class="sec"><b>Guided tour</b> <span>&mdash; each step moves the controls for you and says what changed</span></p>
 <div class="row">
@@ -113,10 +116,10 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <p class="sec"><b>1 &middot; The symbol in time, and the echo that arrives late</b> <span>&mdash; the guard is a copy of the symbol's own tail, pasted on the front</span></p>
 <canvas id="cT" style="height: 340px;"></canvas>
 <ul class="legend-note">
-  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> is the transmitted waveform &mdash; the real part of the sum of all N subcarriers.</li>
-  <li><span class="sw" style="background: var(--series-3)"></span> <b>yellow blocks</b> are the cyclic prefix: the last T<sub>cp</sub> of each symbol, copied to its front. Nothing new is sent there.</li>
-  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> is the same signal arriving late down a reflected path. While its delay stays inside the yellow block, the receiver's window sees only the current symbol and nothing is lost.</li>
-  <li>When the echo runs past the guard, the shaded red strip marks the part of the receiver's window still carrying the <i>previous</i> symbol. That is intersymbol interference.</li>
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> &mdash; transmitted waveform</li>
+  <li><span class="sw" style="background: var(--series-3)"></span> <b>yellow</b> &mdash; cyclic prefix, the copied tail</li>
+  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> &mdash; the delayed echo</li>
+  <li><span class="sw" style="background: var(--series-7)"></span> <b>red strip</b> &mdash; intersymbol interference</li>
 </ul>
 
 <p class="sec"><b>2 &middot; Why the subcarriers do not interfere</b> <span>&mdash; peaks on nulls in frequency, whole cycles in time</span></p>
@@ -130,17 +133,16 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <p class="sec"><b>3 &middot; What the channel does to each subcarrier</b> <span>&mdash; the same echoes, seen as a frequency response</span></p>
 <canvas id="cH" style="height: 250px;"></canvas>
 <ul class="legend-note">
-  <li>Each stem is one subcarrier's channel gain |H<sub>k</sub>| in decibels. The taps are normalised so the channel's average power gain across <i>all</i> frequencies is 0 dB; across this one narrow band the average can sit well above or below that.</li>
-  <li><span class="sw" style="background: var(--series-7)"></span> <b>red stems</b> are subcarriers more than 6 dB down &mdash; they sit in a notch, and the receiver has to amplify their noise to recover them.</li>
-  <li>With a short delay spread the whole band rides on one gentle hump: the channel is flat. Drag the delay spread up and the notches appear.</li>
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>stems</b> &mdash; per-subcarrier gain |H<sub>k</sub>|</li>
+  <li><span class="sw" style="background: var(--series-7)"></span> <b>red stems</b> &mdash; faded below &minus;6 dB</li>
 </ul>
 
 <p class="sec"><b>4 &middot; The constellation the receiver actually sees</b> <span>&mdash; after one-tap equalisation, every subcarrier plotted together</span></p>
 <canvas id="cC" style="height: 300px;"></canvas>
 <ul class="legend-note">
-  <li>Grey crosses are the ideal transmitted points. Each dot is one subcarrier of one symbol after dividing out its own channel gain.</li>
-  <li><span class="sw" style="background: var(--series-7)"></span> <b>red dots</b> come from the faded subcarriers marked in section 3. Dividing by a small gain multiplies their noise, so they scatter furthest.</li>
-  <li>Intercarrier interference from a frequency offset blurs <i>every</i> dot at once, because it does not depend on the channel.</li>
+  <li><b>grey crosses</b> &mdash; ideal transmitted points</li>
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue dots</b> &mdash; received subcarriers, equalised</li>
+  <li><span class="sw" style="background: var(--series-7)"></span> <b>red dots</b> &mdash; from faded subcarriers</li>
 </ul>
 
 <div class="cards">
@@ -152,14 +154,17 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <div class="card"><div class="hd">Peak-to-average power</div><div class="big" id="cPAPR">&mdash;</div><div class="ft" id="cPAPRn">&mdash;</div></div>
 </div>
 
-<p class="sec"><b>Worked example</b> <span>&mdash; the arithmetic for the settings on screen right now</span></p>
-<ol class="work" id="work"></ol>
+<details>
+  <summary>Worked example &mdash; the arithmetic for the settings on screen</summary>
+  <ol class="work" id="work"></ol>
 
-<p class="sub" style="margin-top: 2rem;">Three trade-offs live in these sliders. Packing more subcarriers into the same bandwidth makes each one narrower and each symbol longer, so a guard of the same percentage covers a longer echo &mdash; that is why a channel with a lot of delay spread pushes designers towards large fast Fourier transforms. The guard itself is pure overhead: at 25 % of the symbol you throw away a fifth of your capacity to buy immunity, and the only way to get it back is to shorten the guard until the echoes start bleeding through. And a frequency offset of a few percent of the subcarrier spacing puts a hard ceiling on signal-to-noise ratio that no amount of transmit power can lift, which is why OFDM receivers spend so much effort on synchronisation. Watch the peak-to-average number as you raise N: many subcarriers occasionally line up in phase, and the power amplifier has to stay linear over that peak or it clips and regrows the spectrum into the neighbours' band.</p>
+  <p class="sub" style="margin-top: 2rem;">Three trade-offs live in these sliders. Packing more subcarriers into the same bandwidth makes each one narrower and each symbol longer, so a guard of the same percentage covers a longer echo &mdash; that is why a channel with a lot of delay spread pushes designers towards large fast Fourier transforms. The guard itself is pure overhead: at 25 % of the symbol you throw away a fifth of your capacity to buy immunity, and the only way to get it back is to shorten the guard until the echoes start bleeding through. And a frequency offset of a few percent of the subcarrier spacing puts a hard ceiling on signal-to-noise ratio that no amount of transmit power can lift, which is why OFDM receivers spend so much effort on synchronisation. Watch the peak-to-average number as you raise N: many subcarriers occasionally line up in phase, and the power amplifier has to stay linear over that peak or it clips and regrows the spectrum into the neighbours' band.</p>
 
-<p class="sub">Where this model is simplified, and it is simplified in four places. The channel taps are given zero phase and an exponential power profile rather than random phases, so this is a deterministic delay profile rather than one realisation of Rayleigh fading &mdash; the companion multipath tool is the place for that. The interference from an echo that overruns the guard is estimated as 2&middot;a<sup>2</sup>&middot;(&tau;&nbsp;&minus;&nbsp;T<sub>cp</sub>)/T<sub>u</sub> summed over the taps that overrun, the standard small-overrun approximation; the exact value depends on which data the previous symbol carried. The intercarrier interference power 1&nbsp;&minus;&nbsp;sinc<sup>2</sup>(&epsilon;) is the large-N limit, and it is quoted relative to the total power falling on the subcarrier rather than to the surviving wanted part, so the true wanted-to-interference ratio is a few tenths of a decibel lower. Finally the equaliser is given perfect knowledge of the channel; a real receiver estimates it from pilots and the estimate is worst exactly where the channel is deepest in a notch.</p>
+  <p class="sub">Where this model is simplified, and it is simplified in four places. The channel taps are given zero phase and an exponential power profile rather than random phases, so this is a deterministic delay profile rather than one realisation of Rayleigh fading &mdash; the companion multipath tool is the place for that. The interference from an echo that overruns the guard is estimated as 2&middot;a<sup>2</sup>&middot;(&tau;&nbsp;&minus;&nbsp;T<sub>cp</sub>)/T<sub>u</sub> summed over the taps that overrun, the standard small-overrun approximation; the exact value depends on which data the previous symbol carried. The intercarrier interference power 1&nbsp;&minus;&nbsp;sinc<sup>2</sup>(&epsilon;) is the large-N limit, and it is quoted relative to the total power falling on the subcarrier rather than to the surviving wanted part, so the true wanted-to-interference ratio is a few tenths of a decibel lower. Finally the equaliser is given perfect knowledge of the channel; a real receiver estimates it from pilots and the estimate is worst exactly where the channel is deepest in a notch.</p>
+</details>
 
-<p class="sec"><b>Glossary</b></p>
+<details>
+  <summary>Glossary</summary>
 <dl class="glossary">
   <dt>Subcarrier</dt><dd>One of the N narrow tones that make up an OFDM signal. Each carries its own data symbol.</dd>
   <dt>Subcarrier spacing &Delta;f</dt><dd>The frequency step between neighbouring subcarriers, in hertz. It is fixed by the symbol length: &Delta;f = 1/T<sub>u</sub>.</dd>
@@ -175,6 +180,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <dt>Peak-to-average power ratio (PAPR)</dt><dd>The ratio of the highest instantaneous power in a symbol to its mean power, in decibels. It sets how much headroom the transmit amplifier needs.</dd>
   <dt>Decibel (dB)</dt><dd>A ratio on a logarithmic scale: 10&middot;log<sub>10</sub> of a power ratio. Ten decibels is ten times the power, 3 dB is roughly double.</dd>
 </dl>
+</details>
 
 <p class="sub" style="margin-top: 1.5rem;">Next: <a href="cellular-reuse.html">cellular reuse and interference</a> shows what happens when many of these carriers have to share one spectrum allocation across a network.</p>
 
@@ -660,8 +666,6 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     g.strokeStyle = c7; g.lineWidth = 1; g.setLineDash([4, 3]);
     g.beginPath(); g.moveTo(l, Y(FADE_DB)); g.lineTo(w - r, Y(FADE_DB)); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = c7; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('−6 dB — below here a subcarrier counts as faded', l + 4, Y(FADE_DB) - 3);
 
     const bw2 = Math.max((w - l - r) / N * 0.5, 1);
     for (let i = 0; i < N; i++) {
@@ -670,6 +674,14 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       g.beginPath(); g.moveTo(X(i), Y(0)); g.lineTo(X(i), Y(v)); g.stroke();
       if (N <= 64) { g.fillStyle = fd ? c7 : c1; g.beginPath(); g.arc(X(i), Y(v), 2, 0, TAU); g.fill(); }
     }
+
+    g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    const fadeLbl = '−6 dB — below here a subcarrier counts as faded';
+    const flw = g.measureText(fadeLbl).width;
+    g.fillStyle = cvv('--plot-bg');
+    g.fillRect(l + 6, Y(FADE_DB) - 15, flw + 6, 14);
+    g.fillStyle = c7;
+    g.fillText(fadeLbl, l + 9, Y(FADE_DB) - 3);
 
     g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
     const step = N / 8;
@@ -745,13 +757,14 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 
   function legendSpec() {
     if (S.view === 'freq') {
-      return '<li>Each curve is one subcarrier’s spectrum, |sinc((f − kΔf)Tᵤ)|. The <b>blue</b> one is the subcarrier being received; the <b>purple</b> ones are its neighbours.</li>'
-        + '<li>The dashed vertical lines are the instants the receiver samples the spectrum. With no offset they land exactly on every neighbour’s null.</li>'
-        + '<li><span class="sw" style="background: var(--series-2)"></span> <b>orange dots</b> show what each neighbour contributes at the sampling instant. They are the intercarrier interference, and they are zero only when ε = 0.</li>';
+      return '<li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> — the received subcarrier’s spectrum</li>'
+        + '<li><span class="sw" style="background: var(--series-4)"></span> <b>purple</b> — its neighbours</li>'
+        + '<li><b>dashed lines</b> — the receiver’s sampling instants</li>'
+        + '<li><span class="sw" style="background: var(--series-2)"></span> <b>orange dots</b> — neighbour leakage, the ICI</li>';
     }
-    return '<li>The <b>blue</b> and <b>purple</b> waves are two subcarriers over one useful symbol time. Each fits a whole number of cycles into Tᵤ.</li>'
-      + '<li>The <b>grey</b> trace is their product; the <span class="sw" style="background: var(--series-5)"></span> <b>green</b> trace is the running average of that product.</li>'
-      + '<li>The green trace returning to exactly zero at the right-hand edge is the definition of orthogonality. Add a frequency offset and the cycle count stops being a whole number, so it no longer returns to zero.</li>';
+    return '<li><span class="sw" style="background: var(--series-1)"></span> <b>blue, purple</b> — two subcarriers over Tᵤ</li>'
+      + '<li><b>grey</b> — their product</li>'
+      + '<li><span class="sw" style="background: var(--series-5)"></span> <b>green</b> — running average; zero = orthogonal</li>';
   }
 
   function fmtDb(v, unit) { return v.toFixed(1) + (unit || ' dB'); }

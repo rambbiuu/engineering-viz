@@ -65,12 +65,25 @@ input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-
 .card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 canvas { width: 100%; display: block; }
+h2 { font-size: 15px; font-weight: 500; margin: 1.4rem 0 0.35rem; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.85rem; margin: 1.25rem 0 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.7rem; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.4rem 0 0; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0.6rem 0 0; }
+ul.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 7px 0 0; padding: 0.6rem 0.9rem 0.65rem 1.9rem; background: var(--surface-1); border-radius: var(--radius); list-style: disc; }
+ul.legend-note li { margin: 3px 0; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; font-variant-numeric: tabular-nums; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.4rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 9px; }
+dl.glossary dd { margin: 0; color: var(--text-secondary); }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Fourier series builder</h1>
-<p class="sub">Any repeating wave &mdash; square, triangle, sawtooth &mdash; is secretly a stack of plain sine waves. Add them one at a time and watch the target shape appear. This is the idea underneath every spectrum, filter, and FFT you will ever meet.</p>
+<p class="sub">Any repeating wave &mdash; square, triangle, sawtooth &mdash; is secretly a stack of plain sine waves. Add them one at a time and watch the target shape appear.</p>
 
 <div class="row">
   <span class="lbl">Target wave</span>
@@ -85,11 +98,37 @@ canvas { width: 100%; display: block; }
   <span id="hnv" style="font-size: 14px; font-weight: 500; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums;">5</span>
 </div>
 
-<p class="sec"><b>1 &middot; The build</b> <span>&mdash; dashed line = the target shape; thin lines = each sine ingredient; bold line = all ingredients added together</span></p>
-<canvas id="sum" style="height: 300px;"></canvas>
+<h2>A guided tour</h2>
+<div class="steps">
+  <button class="tourbtn" id="t0">1 &middot; One sine</button>
+  <button class="tourbtn" id="t1">2 &middot; Five harmonics</button>
+  <button class="tourbtn" id="t2">3 &middot; Thirty-one</button>
+  <button class="tourbtn" id="t3">4 &middot; Triangle</button>
+  <button class="tourbtn" id="t4">5 &middot; Sawtooth</button>
+</div>
+<p class="tour-note" id="tourNote">Press step 1 &mdash; the steps drive the controls for you.</p>
 
-<p class="sec"><b>2 &middot; The recipe</b> <span>&mdash; how much of each harmonic the target needs; solid bars are in the mix, faint bars are not yet included</span></p>
+<p class="sec"><b>1 &middot; The sound picture</b> <span>&mdash; one buzzy note is several pure tones</span></p>
+<canvas id="snd" style="height: 210px;"></canvas>
+<ul class="legend-note">
+  <li><b style="font-weight:500;color:#378ADD">thin blue</b> &mdash; three pure tones</li>
+  <li><b style="font-weight:500;color:#378ADD">bold blue</b> &mdash; their sum, one note</li>
+</ul>
+
+<p class="sec"><b>2 &middot; The build</b> <span>&mdash; sines stacking into the target</span></p>
+<canvas id="sum" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li><b style="font-weight:500">dashed grey</b> &mdash; the target shape</li>
+  <li><b style="font-weight:500;color:#378ADD">thin blue</b> &mdash; each sine ingredient</li>
+  <li><b style="font-weight:500;color:#378ADD">bold blue</b> &mdash; all added together</li>
+</ul>
+
+<p class="sec"><b>3 &middot; The recipe</b> <span>&mdash; how much of each harmonic</span></p>
 <canvas id="spec" style="height: 190px;"></canvas>
+<ul class="legend-note">
+  <li><b style="font-weight:500;color:#378ADD">solid bars</b> &mdash; in the mix</li>
+  <li><b style="font-weight:500;color:#378ADD">faint bars</b> &mdash; not yet included</li>
+</ul>
 
 <div class="cards">
   <div class="card">
@@ -100,11 +139,25 @@ canvas { width: 100%; display: block; }
   <div class="card">
     <div class="hd">Remaining mismatch</div>
     <div class="big" id="cE">&mdash;</div>
-    <div class="ft">RMS difference from the target; the overshoot spikes at sharp jumps never fully disappear (Gibbs effect)</div>
+    <div class="ft">RMS difference from the target</div>
   </div>
 </div>
 
-<p class="sub" style="margin-top: 2rem;">Watch what each shape demands: the square only wants odd harmonics, fading slowly (1/n) &mdash; that is why it needs so many and why its corners ring. The triangle also wants odd ones but they fade fast (1/n&sup2;), so a handful is enough. The sawtooth wants every harmonic. A sharp edge in time always means a long tail in frequency &mdash; the same trade your antenna receiver faces reading fast signals.</p>
+<details><summary>The recipe, with the current numbers</summary>
+<ol class="work" id="work"></ol>
+<p class="sub" style="margin: 0.7rem 0 0;">A sharp edge in time always means a long tail in frequency.</p>
+</details>
+<details><summary>Glossary</summary>
+<dl class="glossary">
+  <dt>Fundamental</dt><dd>The base sine wave, one cycle per repeat of the target. Every other ingredient is a multiple of it.</dd>
+  <dt>Harmonic n</dt><dd>A sine wave at n times the fundamental frequency.</dd>
+  <dt>Coefficient, b<sub>n</sub></dt><dd>How much of harmonic n the recipe calls for. A negative value means the sine goes in upside down.</dd>
+  <dt>Fourier series</dt><dd>The recipe itself: the full list of coefficients that rebuilds the repeating wave exactly.</dd>
+  <dt>Spectrum</dt><dd>The recipe drawn as a bar chart, one bar per harmonic. Section 3 is a spectrum.</dd>
+  <dt>Gibbs effect</dt><dd>The overshoot spikes beside any sharp jump. Adding more harmonics makes them narrower but never shorter &mdash; about 9 % overshoot remains.</dd>
+  <dt>RMS</dt><dd>Root mean square &mdash; an average size for a wiggly difference, ignoring its sign.</dd>
+</dl>
+</details>
 
 <script>
 (function () {
@@ -113,6 +166,7 @@ canvas { width: 100%; display: block; }
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { S.playing = false; }
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const num = (v, d) => v.toFixed(d).replace('-', '−');
 
   function coef(n) {
     if (S.type === 'sq') return n % 2 === 1 ? 4 / (Math.PI * n) : 0;
@@ -146,7 +200,20 @@ canvas { width: 100%; display: block; }
       const d = partial(th) - target(th);
       se += d * d; st += target(th) * target(th);
     }
-    $('cE').textContent = (Math.sqrt(se / st) * 100).toFixed(1) + ' %';
+    const rms = st > 0 ? (Math.sqrt(se / st) * 100).toFixed(1) + ' %' : '&mdash;';
+    $('cE').textContent = st > 0 ? (Math.sqrt(se / st) * 100).toFixed(1) + ' %' : '—';
+    const F = {
+      sq: 'square: b<sub>n</sub> = 4 &divide; (&pi;&middot;n), odd n only',
+      tr: 'triangle: b<sub>n</sub> = 8 &divide; (&pi;&sup2;&middot;n&sup2;), odd n only, sign alternating',
+      sw: 'sawtooth: b<sub>n</sub> = 2 &divide; (&pi;&middot;n), every n, sign alternating'
+    };
+    const bl = [];
+    for (let n = 1; n <= 5; n++) bl.push('b<sub>' + n + '</sub> = ' + num(coef(n), 3));
+    $('work').innerHTML =
+      '<li>' + F[S.type] + '</li>' +
+      '<li>' + bl.join(', ') + ', &hellip;</li>' +
+      '<li>harmonics up to n = ' + S.N + ' &rarr; ' + used.length + ' sines in the mix</li>' +
+      '<li>remaining mismatch = ' + rms + ' (RMS)</li>';
   }
 
   function fit(c) {
@@ -155,6 +222,72 @@ canvas { width: 100%; display: block; }
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
     c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
     return [r.width, r.height];
+  }
+
+  function drawSound() {
+    const c = $('snd'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
+    const x0 = 12, x1 = w * 0.38;
+    const rows = [
+      { n: 1, a: 1, y: h * 0.22, lab: 'pure tone at f — loud' },
+      { n: 3, a: 1 / 3, y: h * 0.54, lab: '3f — one third as loud' },
+      { n: 5, a: 1 / 5, y: h * 0.86, lab: '5f — one fifth as loud' }
+    ];
+    const A = h * 0.10;
+    g.font = fnt(11);
+    rows.forEach(rw => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(x0, rw.y); g.lineTo(x1, rw.y); g.stroke();
+      g.strokeStyle = '#378ADD'; g.lineWidth = 1;
+      g.beginPath();
+      for (let x = x0; x <= x1; x += 1) {
+        const th = (x - x0) / (x1 - x0) * 4 * Math.PI;
+        const y = rw.y - Math.sin(rw.n * th) * rw.a * A;
+        if (x === x0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+      g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText(rw.lab, x0 + 2, rw.y - A - 4);
+    });
+
+    const xs = w * 0.53, xe = w * 0.80, yc = h * 0.52, amp = h * 0.24;
+    g.strokeStyle = sub; g.lineWidth = 1;
+    const ax0 = x1 + 10, ax1 = xs - 10;
+    g.beginPath(); g.moveTo(ax0, yc); g.lineTo(ax1, yc); g.stroke();
+    g.beginPath(); g.moveTo(ax1, yc); g.lineTo(ax1 - 6, yc - 4); g.moveTo(ax1, yc); g.lineTo(ax1 - 6, yc + 4); g.stroke();
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('add', (ax0 + ax1) / 2, yc - 6);
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(xs, yc); g.lineTo(xe, yc); g.stroke();
+    g.strokeStyle = '#378ADD'; g.lineWidth = 2;
+    g.beginPath();
+    for (let x = xs; x <= xe; x += 1) {
+      const th = (x - xs) / (xe - xs) * 4 * Math.PI;
+      const s = Math.sin(th) + Math.sin(3 * th) / 3 + Math.sin(5 * th) / 5;
+      const y = yc - s * amp / 1.2;
+      if (x === xs) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('one buzzy note', (xs + xe) / 2, yc + amp + 6);
+
+    const bx = w * 0.845, cw = w * 0.030, cm = w * 0.065;
+    g.strokeStyle = ink; g.lineWidth = 1;
+    g.strokeRect(bx, yc - h * 0.06, cw, h * 0.12);
+    g.beginPath();
+    g.moveTo(bx + cw, yc - h * 0.06);
+    g.lineTo(bx + cm, yc - h * 0.15);
+    g.lineTo(bx + cm, yc + h * 0.15);
+    g.lineTo(bx + cw, yc + h * 0.06);
+    g.closePath(); g.stroke();
+    g.strokeStyle = sub;
+    for (let i = 1; i <= 2; i++) {
+      g.beginPath(); g.arc(bx + cm, yc, h * 0.07 * i, -0.6, 0.6); g.stroke();
+    }
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('speaker', bx + cm / 2, yc + h * 0.17);
   }
 
   function drawSum(time) {
@@ -253,12 +386,29 @@ canvas { width: 100%; display: block; }
   });
   $('pp').textContent = S.playing ? 'Pause' : 'Continue';
 
+  const TOUR = [
+    { ty: 'sq', btn: 'bsq', n: 1, msg: 'Step 1 — one sine: the roundest possible guess at a square.' },
+    { ty: 'sq', btn: 'bsq', n: 5, msg: 'Step 2 — five harmonics: corners forming, ripple shrinking.' },
+    { ty: 'sq', btn: 'bsq', n: 31, msg: 'Step 3 — thirty-one: flat tops, but the edge spikes stay.' },
+    { ty: 'tr', btn: 'btr', n: 5, msg: 'Step 4 — a triangle needs only a handful; smooth shapes fade fast.' },
+    { ty: 'sw', btn: 'bsw', n: 31, msg: 'Step 5 — the sawtooth wants every harmonic, odd and even.' }
+  ];
+  TOUR.forEach((st, i) => {
+    $('t' + i).addEventListener('click', () => {
+      $('hn').value = st.n; S.N = st.n;
+      setType(st.ty, st.btn);
+      $('tourNote').textContent = st.msg;
+      for (let j = 0; j < TOUR.length; j++) $('t' + j).classList.toggle('on', j === i);
+    });
+  });
+
   updateUI();
   let animT = 0, last = null;
   function frame(ts) {
     if (last === null) last = ts;
-    if (S.playing) animT += ts - last;
+    if (S.playing) animT += Math.min(ts - last, 50);
     last = ts;
+    drawSound();
     drawSum(animT);
     drawSpec();
     requestAnimationFrame(frame);

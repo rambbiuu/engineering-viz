@@ -68,11 +68,11 @@ summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; margin
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>The superheterodyne receiver and its image</h1>
-<p class="sub">Nearly every radio built since 1920 slides the signal it wants down to one fixed frequency &mdash; the intermediate frequency, or IF &mdash; before doing any real work on it, because sharp filters and quiet amplifiers are far cheaper to build at one frequency than across a whole band. The device that does the sliding is a mixer, and a mixer can only measure the <i>size</i> of a frequency gap, never its direction. So a second, unwanted frequency slides down onto exactly the same IF and becomes inseparable from the wanted one. That frequency is the image, and stopping it before the mixer is the entire job of the filter at the front of the radio.</p>
+<p class="sub">Nearly every radio slides the wanted signal down to one fixed intermediate frequency (IF) before doing any real work on it. A second, unwanted frequency &mdash; the image &mdash; slides down onto exactly the same IF.</p>
 
-<p class="note">Everyday analogy: two people stand 3 m either side of you and shout. If all you can measure is that a voice came from 3 m away, you cannot say which one spoke &mdash; and once both voices reach your ears together, no amount of listening harder will separate them. You have to turn one of them away before they arrive. That is what the front-end filter does.</p>
+<p class="note">Analogy: two people shout from 3 m either side of you &mdash; equal distance, so you cannot tell which side spoke.</p>
 
-<p class="note">If decibels and dBm are unfamiliar, start with <a href="link-budget.html">link budget</a>, which builds them up from scratch. Everything below is in MHz for frequency and dBm for power.</p>
+<p class="note">If dB and dBm are unfamiliar, start with <a href="link-budget.html">link budget</a>.</p>
 
 <div class="tour">
   <span class="lbl">Guided tour</span>
@@ -115,27 +115,28 @@ summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; margin
 <p class="sec"><b>1 &middot; The receiver, block by block</b> <span>&mdash; what the hardware is, and what the signal looks like at three points along the chain</span></p>
 <canvas id="cvChain" style="height: 250px;"></canvas>
 <ul class="legend-note">
-  <li>The green line is the wanted signal. The orange line is a strong neighbour sitting on the image frequency.</li>
-  <li>The three small pictures are spectra &mdash; a plot of how much power sits at each frequency. Height is power in dB, so a shorter line means a weaker signal.</li>
-  <li>Between the first and second picture the front-end filter has knocked the orange line down. Between the second and third the mixer has moved both of them onto the same IF, where they overlap exactly.</li>
-  <li>The local oscillator (LO) is the receiver's own internal tone. Tuning the radio means moving the LO, not the filters.</li>
+  <li>Green &mdash; wanted signal.</li>
+  <li>Orange &mdash; neighbour on the image frequency.</li>
+  <li>Small plots &mdash; power vs frequency, three taps.</li>
+  <li>LO &mdash; the receiver's own tone.</li>
 </ul>
 
 <p class="sec"><b>2 &middot; What arrives at the antenna</b> <span>&mdash; the wanted signal, the image 2 &times; IF away, and how far the front-end filter pushes the image down</span></p>
 <canvas id="cvRF" style="height: 300px;"></canvas>
 <ul class="legend-note">
-  <li>The blue curve is the front-end filter response, drawn as the level a neighbour of the chosen strength would still have after passing through it. It is flat at the top across the filter's passband and falls away either side.</li>
-  <li>The faint orange line is the image signal as it arrives at the antenna; the solid orange line is what is left of it after the filter. The vertical gap between them, marked on the plot, is the image rejection.</li>
-  <li>The green line is the wanted signal, held at a fixed &minus;70 dBm so the comparison stays honest while you move the sliders.</li>
-  <li>The bar along the bottom measures 2 &times; IF, the gap between wanted and image. Raise the IF and the image walks further out into the filter's skirt.</li>
+  <li>Blue &mdash; front-end filter response.</li>
+  <li>Dashed orange &mdash; image before the filter.</li>
+  <li>Solid orange &mdash; image after the filter.</li>
+  <li>Green &mdash; wanted, fixed &minus;70 dBm.</li>
+  <li>Bottom bar &mdash; the 2 &times; IF gap.</li>
 </ul>
 
 <p class="sec"><b>3 &middot; What comes out of the mixer</b> <span>&mdash; both signals now sit on the same intermediate frequency and no later filter can tell them apart</span></p>
 <canvas id="cvIF" style="height: 230px;"></canvas>
 <ul class="legend-note">
-  <li>Both lines are drawn at the same frequency, the IF. They are nudged a few pixels apart only so you can see both; in reality they lie exactly on top of one another.</li>
-  <li>The number between them is the margin the receiver has left: how far below the wanted signal the image landed. Positive is good.</li>
-  <li>Nothing after the mixer can improve this number. Whatever margin the front-end filter bought, the rest of the radio inherits.</li>
+  <li>Both lines &mdash; same IF, nudged apart.</li>
+  <li>Bracket &mdash; margin below the wanted signal.</li>
+  <li>Later filters &mdash; cannot improve this margin.</li>
 </ul>
 
 <div class="cards">

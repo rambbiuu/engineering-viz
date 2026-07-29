@@ -140,7 +140,7 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
 <canvas id="cs" style="height: 255px;"></canvas>
 <ul class="legend-note">
   <li>The blue curve is the filter's gain |H(f)|. Outside the bracket it is exactly zero: nothing is transmitted there.</li>
-  <li>The green bracket is the occupied bandwidth, B = R<sub>s</sub>(1 + &beta;). The dashed lines at &plusmn;R<sub>s</sub>/2 mark the Nyquist minimum, the narrowest band that can carry R<sub>s</sub> symbols per second without ISI.</li>
+  <li>The green bracket is the occupied bandwidth once modulated onto a carrier, B = R<sub>s</sub>(1 + &beta;) (RF); at baseband it is half this. The dashed lines at &plusmn;R<sub>s</sub>/2 mark the Nyquist minimum, the narrowest band that can carry R<sub>s</sub> symbols per second without ISI.</li>
   <li>The gap between the dashed lines and the bracket is the excess bandwidth, and it is exactly the fraction &beta; of the minimum. That is the price of a usable eye.</li>
 </ul>
 
@@ -148,7 +148,7 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
   <div class="card">
     <div class="hd">Occupied bandwidth</div>
     <div class="big" id="cB">&mdash;</div>
-    <div class="ft">B = R<sub>s</sub>(1 + &beta;), in kilohertz</div>
+    <div class="ft">B = R<sub>s</sub>(1 + &beta;) at RF; baseband half this</div>
   </div>
   <div class="card">
     <div class="hd">Bit rate</div>
@@ -177,14 +177,19 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
   </div>
 </div>
 
-<p class="sec"><b>The arithmetic, with the numbers now on screen</b></p>
-<ol class="work" id="work"></ol>
+<details>
+  <summary>The arithmetic, with the numbers now on screen</summary>
+  <ol class="work" id="work"></ol>
+</details>
 
-<p class="sec"><b>An everyday version of the same idea</b></p>
-<p class="sub" style="margin-bottom: 0.5rem;">Think of a row of people passing buckets down a line, one bucket per second. If each person swings wildly, water from one bucket slops into the next and nobody can tell how full any single bucket was. Pulse shaping is agreeing on a swing that is guaranteed to be perfectly still at the exact moment the next bucket is read. The swing takes longer and needs more room &mdash; that extra room is the excess bandwidth &beta;.</p>
+<details>
+  <summary>An everyday version of the same idea</summary>
+  <p class="sub" style="margin: 0.5rem 0 0;">Think of a row of people passing buckets down a line, one bucket per second. If each person swings wildly, water from one bucket slops into the next and nobody can tell how full any single bucket was. Pulse shaping is agreeing on a swing that is guaranteed to be perfectly still at the exact moment the next bucket is read. The swing takes longer and needs more room &mdash; that extra room is the excess bandwidth &beta;.</p>
+</details>
 
-<p class="sec"><b>Glossary</b></p>
-<dl class="glossary">
+<details>
+  <summary>Glossary</summary>
+  <dl class="glossary">
   <dt>Symbol</dt><dd>One transmitted level, held for one symbol period T. A symbol carries log<sub>2</sub>M bits, so with four levels one symbol carries two bits.</dd>
   <dt>Baud (Bd)</dt><dd>Symbols per second. The symbol rate R<sub>s</sub> = 1/T. Two kilobaud means two thousand symbols every second, not two thousand bits.</dd>
   <dt>Unit interval (UI)</dt><dd>Another name for one symbol period T. The eye diagram is built by cutting the waveform into unit intervals and stacking them.</dd>
@@ -201,9 +206,15 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
   <dt>Signal-to-noise ratio (SNR)</dt><dd>Mean signal power divided by mean noise power, in decibels. Here the noise power is the power inside the occupied bandwidth B; an SNR quoted without its reference bandwidth means nothing.</dd>
   <dt>Spectral efficiency</dt><dd>Bits per second delivered for each hertz of bandwidth used, in bit/s/Hz. The single number a regulator and a system designer both care about.</dd>
   <dt>M-PAM</dt><dd>M-level pulse amplitude modulation: the symbol is one of M evenly spaced voltages. This page uses M = 2, 4 or 8.</dd>
-</dl>
+  </dl>
+</details>
 
-<p class="sub" style="margin-top: 2rem;">Three trades live in these sliders, and every digital radio makes all three. Roll-off &beta; buys timing tolerance with bandwidth: drop it to zero for the narrowest possible signal and the pulse tails decay only as 1/t, so a fraction of a symbol period of clock error closes the eye completely; raise it to one and the eye stays open across almost the whole interval, for double the spectrum. Levels M buy data rate with noise margin: going from two levels to eight triples the bit rate at the same bandwidth, but the gaps between levels shrink to a seventh, which costs about 13 dB of noise margin at the same average-power SNR. And splitting the shaping into a root raised cosine at each end costs nothing in bandwidth while gaining the matched-filter SNR advantage &mdash; press the second filter button to see that the transmitted waveform on its own genuinely is not ISI-free, and that only the cascade is. Real links go further than this page does: they add a channel that is not flat, a clock recovered from the data rather than given, and an equaliser to undo whatever the channel did. Next, see what these levels look like in two dimensions at once in the <a href="iq-constellation.html">IQ constellation explorer</a>.</p>
+<details>
+  <summary>Three trades live in these sliders</summary>
+  <p class="sub" style="margin: 0.5rem 0 0;">Every digital radio makes all three. Roll-off &beta; buys timing tolerance with bandwidth: drop it to zero for the narrowest possible signal and the pulse tails decay only as 1/t, so a fraction of a symbol period of clock error closes the eye completely; raise it to one and the eye stays open across almost the whole interval, for double the spectrum. Levels M buy data rate with noise margin: going from two levels to eight triples the bit rate at the same bandwidth, but the gaps between levels shrink to a seventh, which costs about 13 dB of noise margin at the same average-power SNR. And splitting the shaping into a root raised cosine at each end costs nothing in bandwidth while gaining the matched-filter SNR advantage &mdash; press the second filter button to see that the transmitted waveform on its own genuinely is not ISI-free, and that only the cascade is. Real links go further than this page does: they add a channel that is not flat, a clock recovered from the data rather than given, and an equaliser to undo whatever the channel did.</p>
+</details>
+
+<p class="sub" style="margin-top: 1rem;">Next: the <a href="iq-constellation.html">IQ constellation explorer</a>.</p>
 
 <script>
 (function () {
@@ -658,7 +669,7 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
     g.moveTo(X(fe), by - 5); g.lineTo(X(fe), by + 5);
     g.stroke();
     g.fillStyle = c3; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('occupied bandwidth B = Rs(1+β) = ' + (rk * (1 + S.b)).toFixed(2) + ' kHz', X(0), by - 7);
+    g.fillText('occupied bandwidth (RF) B = Rs(1+β) = ' + (rk * (1 + S.b)).toFixed(2) + ' kHz', X(0), by - 7);
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
     g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
@@ -719,7 +730,7 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
         + (bits > 1 ? 's' : '') + '</b>, so the bit rate is R<sub>b</sub> = ' + rk.toFixed(1) + ' × '
         + bits.toFixed(0) + ' = <b>' + (Rb / 1000).toFixed(2) + ' kbit/s</b>.',
       'The raised cosine occupies <b>B = R<sub>s</sub>(1 + β) = ' + rk.toFixed(1) + ' × (1 + '
-        + S.b.toFixed(2) + ') = ' + (B / 1000).toFixed(2) + ' kHz</b>. Without shaping the minimum would be R<sub>s</sub> = '
+        + S.b.toFixed(2) + ') = ' + (B / 1000).toFixed(2) + ' kHz</b> once modulated onto a carrier (RF); at baseband it is half this. The RF Nyquist minimum is R<sub>s</sub> = '
         + rk.toFixed(2) + ' kHz, so β = ' + S.b.toFixed(2) + ' is literally '
         + (S.b * 100).toFixed(0) + ' per cent extra.',
       'Spectral efficiency is <b>R<sub>b</sub>/B = ' + (Rb / 1000).toFixed(2) + ' / ' + (B / 1000).toFixed(2)

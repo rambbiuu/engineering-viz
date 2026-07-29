@@ -172,14 +172,14 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <ol class="work" id="work"></ol>
 </details>
 
-<p class="sub" style="margin-top: 1.5rem;">Move the guard-band slider and watch FDMA lose spectrum it never gets back; move the frame length down and watch TDMA lose time the same way. CDMA has neither loss and still finishes last on bit/s/Hz, because its overhead is the spreading itself &mdash; which is exactly what buys it a reuse factor of one. OFDMA is the only scheme whose per-user rate rises when other users go quiet.</p>
-
 <details>
   <summary>Where this model is simplified</summary>
+  <p>Raise the guard band and FDMA loses spectrum for good; shorten the frame and TDMA loses time the same way, while CDMA's only overhead is the spreading that buys its reuse factor of one.</p>
   <p>Six places. B<sub>total</sub> is treated as covering both link directions, so every channel count is halved to get calls; a real CDMA pole capacity is quoted per direction, which makes the call figure here conservative by about a factor of two. Rappaport's N = (B<sub>total</sub> &minus; 2B<sub>guard</sub>)/B<sub>c</sub> charges one guard band at each edge of the allocation, so the separation drawn between adjacent stripes is counted inside B<sub>c</sub>, not added to it. Symbol rate is taken as equal to bandwidth, the ideal Nyquist limit with no roll-off, so every rate here is an upper bound. OFDMA is given no extra edge guard beyond B<sub>guard</sub>, whereas real LTE keeps about 10 % of the band clear for the emission mask. Pilot overhead is fixed at 4 resource elements in 84, the single-antenna-port LTE figure. And these are all single-cell numbers: FDMA and TDMA must divide their spectral efficiency by the cluster size, typically 7, while CDMA reuses every cell &mdash; see <a href="cellular-reuse.html">cellular reuse</a> for what that costs.</p>
 </details>
 
-<p class="sec"><b>Glossary</b></p>
+<details>
+  <summary>Glossary</summary>
 <dl class="glossary">
   <dt>Multiple access</dt><dd>The rule that decides which user may use which part of the shared radio resource, and when.</dd>
   <dt>FDMA</dt><dd>Frequency-division multiple access. Each user gets one frequency channel and keeps it for the whole call.</dd>
@@ -206,6 +206,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <dt>Code rate R<sub>code</sub></dt><dd>The fraction of transmitted bits that are payload rather than error-correction parity.</dd>
   <dt>Spectral efficiency</dt><dd>Bits per second delivered per hertz of spectrum. The one number that compares the four schemes fairly.</dd>
 </dl>
+</details>
 
 <p class="sub" style="margin-top: 1.5rem;">Next: <a href="cellular-reuse.html">cellular reuse and interference</a> shows what happens when every cell wants the same spectrum.</p>
 
@@ -1065,7 +1066,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       rowsW = [
         'Carriers C = (B_total − 2B_guard)/B_c = <b>' + fmtInt(M.carriers) + '</b>, each ' + S.bch.toFixed(0) + ' kHz wide',
         'Channels = N×C = ' + S.users.toFixed(0) + '×' + fmtInt(M.carriers) + ' = <b>' + fmtInt(M.nTdma) + '</b>',
-        'η_frame = (T_f − N·T_g − T_ov)/T_f = (' + (S.tf * 1e3).toFixed(0) + ' − ' + (M.tGuard * 1e6).toFixed(0) + ' − ' + (M.tOver * 1e6).toFixed(0) + ') / ' + (S.tf * 1e3).toFixed(0) + ' µs = <b>' + (M.etaFrame * 100).toFixed(2) + ' %</b>',
+        'η_frame = (T_f − N·T_g − N·T_ov)/T_f = (' + (S.tf * 1e3).toFixed(0) + ' − ' + (M.tGuard * 1e6).toFixed(0) + ' − ' + (M.tOver * 1e6).toFixed(0) + ') / ' + (S.tf * 1e3).toFixed(0) + ' µs = <b>' + (M.etaFrame * 100).toFixed(2) + ' %</b>',
         'Carrier gross rate = B_c·log₂M·R_code = <b>' + fmtRate(M.rBurst) + '</b>',
         'R_user = gross × η_frame / N = <b>' + fmtRate(M.rSlot) + '</b>, so R_burst = N·R_user/η = <b>' + fmtRate(M.rBurst) + '</b>',
         'Payload share of the plane = η_frame × C·B_c/B_total = <b>' + (M.etaTdma * 100).toFixed(2) + ' %</b>'

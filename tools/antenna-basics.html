@@ -105,9 +105,9 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
 <p class="sec"><b>1 &middot; The hardware, drawn to human scale</b> <span>&mdash; the metal itself on a mast, with the beam it makes coming out of it</span></p>
 <canvas id="phys" style="height: 340px;"></canvas>
 <ul class="legend-note">
-  <li><span class="sw" style="background: var(--accent)"></span>the shaded shape is where the radiation goes, drawn on the same decibel scale as the polar plot in section 2 and laid over the hardware that makes it; it is a shape, not a distance in metres</li>
-  <li>the antenna, the mast and the person are all drawn to the same metre scale, so raising the frequency really does shrink the hardware</li>
-  <li>the dashed line is the mechanical boresight &mdash; the direction the structure is built to aim. Zero degrees is straight to the right, on this picture and both plots below</li>
+  <li><span class="sw" style="background: var(--accent)"></span>shaded shape &mdash; where radiation goes</li>
+  <li>everything drawn to the same metre scale</li>
+  <li>dashed line &mdash; mechanical boresight, 0&deg; right</li>
 </ul>
 
 <p class="sec"><b>2 &middot; The pattern as a polar cut</b> <span>&mdash; the same beam seen from the side; rings are decibels below the peak</span></p>
@@ -161,17 +161,19 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
 
 <div class="note" id="note">&mdash;</div>
 
-<p class="sec"><b>The arithmetic, with this state's numbers</b></p>
+<details><summary>The arithmetic, with this state's numbers</summary>
 <ol class="work" id="work"></ol>
+</details>
 
 <details>
   <summary>What the models assume, and how they compare with the rules of thumb engineers quote</summary>
   <p id="assume">&mdash;</p>
   <p id="thumb">&mdash;</p>
   <p>Directivity here is a genuine numerical integral of the plotted field pattern, <b>D = 2 / &int;<sub>0</sub><sup>&pi;</sup> |F(&theta;)|<sup>2</sup> sin&thinsp;&theta; d&theta;</b>, evaluated with Simpson's rule over 20&thinsp;000 intervals. Nothing on this page is read from a table of typical antenna gains.</p>
+  <p>Three trades live in the five buttons. First, concentration is the only way to get gain: a dipole spreads power over almost the whole sky and manages 2.15 dBi, while a 6&lambda; dish squeezes it into ten degrees and reaches 25 dBi, and the only thing that changed was the shape of the map. Second, aperture in wavelengths is what counts &mdash; hold the dish at 6&lambda; and slide the frequency from 0.3 to 30 GHz: the pattern never moves, only the hardware shrinks from three metres to three centimetres. Third, sidelobes are the price of a hard-edged aperture: a uniformly illuminated line or array always leaks at &minus;13.3 dB no matter how large it is, a round aperture improves that to &minus;17.6 dB for free, and buying anything better means tapering the illumination, which costs both gain and beamwidth.</p>
 </details>
 
-<p class="sec"><b>Words used here</b></p>
+<details><summary>Words used here</summary>
 <dl class="glossary">
   <dt>Wavelength &lambda;</dt><dd>The distance from one wave peak to the next, &lambda; = c/f. At 2.4 GHz it is 12.5 cm. Antenna behaviour depends on size measured in wavelengths, never on size in metres alone.</dd>
   <dt>Radiation pattern</dt><dd>How much power the antenna sends in each direction, drawn relative to its own strongest direction.</dd>
@@ -186,8 +188,9 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
   <dt>Effective aperture A<sub>e</sub></dt><dd>The area of the incoming wavefront the antenna effectively collects, A<sub>e</sub> = G&lambda;<sup>2</sup>/4&pi;. Even a wire has one.</dd>
   <dt>Array factor</dt><dd>The pattern a set of point sources makes purely by interference of their feeds. The real pattern is the array factor multiplied by the pattern of one element.</dd>
 </dl>
+</details>
 
-<p class="sub" style="margin-top: 2rem;">Three trades live in these five buttons. First, concentration is the only way to get gain: a dipole spreads power over almost the whole sky and manages 2.15 dBi, while a 6&lambda; dish squeezes it into ten degrees and reaches 25 dBi, and the only thing that changed was the shape of the map. Second, aperture in wavelengths is what counts &mdash; hold the dish at 6&lambda; and slide the frequency from 0.3 to 30 GHz: the pattern never moves, only the hardware shrinks from three metres to three centimetres. Third, sidelobes are the price of a hard-edged aperture: a uniformly illuminated line or array always leaks at &minus;13.3 dB no matter how large it is, a round aperture improves that to &minus;17.6 dB for free, and buying anything better means tapering the illumination, which costs both gain and beamwidth. The next tool, <a href="phased-array.html">phased array</a>, takes the array here and steers it by feeding the elements different phases.</p>
+<p class="sub" style="margin-top: 2rem;">Next: <a href="phased-array.html">phased array</a> &mdash; the same array, steered by phase.</p>
 
 <script>
 (function () {
@@ -835,15 +838,15 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
 
   const TOUR = [
     { t: 0, D: 6, f: 2.4, eta: 60, mech: 0,
-      txt: 'Step 1 — the half-wave dipole, the antenna every other one is measured against. Its pattern is the exact cos((π/2)cosθ)/sinθ, which integrates to 2.15 dBi and is 78.08° wide. Note the front-to-back card: a dipole has no front, so it reads 0 dB.' },
+      txt: 'Step 1 — the half-wave dipole: 2.15 dBi, 78.08° wide, no front.' },
     { t: 1, D: 6, f: 2.4, eta: 60, mech: 0,
-      txt: 'Step 2 — cut the wire in half and stand it on a ground plane. The field above is unchanged, but nothing goes below, so the same power fills half the space: directivity doubles, exactly +3.01 dB, and the elevation beamwidth halves to 39.04°.' },
+      txt: 'Step 2 — monopole on a ground plane: same field above, +3.01 dB.' },
     { t: 2, D: 6, f: 2.4, eta: 60, mech: 0,
-      txt: 'Step 3 — a six-wavelength uniform line source. Now there is a real beam, 8.47° wide, and sidelobes appear at −13.26 dB. That number is a property of uniform illumination, not of this particular antenna, and no amount of extra length improves it.' },
+      txt: 'Step 3 — a 6λ line source: 8.47° beam, sidelobes at −13.26 dB.' },
     { t: 3, D: 6, f: 2.4, eta: 60, mech: 0,
-      txt: 'Step 4 — the same six wavelengths built from twelve elements spaced λ/2. Almost the same beam and almost the same sidelobes, because it is sampling the same illumination, and its directivity comes out at very nearly the element count. Drag the aperture slider to 2λ and watch the first sidelobe rise to −11.3 dB at four elements.' },
+      txt: 'Step 4 — twelve elements at λ/2: nearly the same beam; directivity ≈ N.' },
     { t: 4, D: 6, f: 12, eta: 60, mech: 25,
-      txt: 'Step 5 — the same six wavelengths made round, and the frequency raised to 12 GHz so the dish is only 15 cm across. Roundness alone drops the first sidelobe to −17.57 dB and moves the first null out to 1.22λ/D. The boresight is tilted 25° up: the hardware, the beam and the dashed line all turn together.' }
+      txt: 'Step 5 — the same 6λ made round: first sidelobe drops to −17.57 dB.' }
   ];
   TOUR.forEach((st, i) => {
     $('s' + (i + 1)).addEventListener('click', () => {

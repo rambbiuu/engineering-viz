@@ -69,7 +69,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
 <p class="sub">A radio wave has several ways of reaching the far end, and wavelength decides which one wins. Sweep the frequency and watch the winner change &mdash; the same watts reach a submarine at 20 kHz and die in a car park at 60 GHz.</p>
 <p class="sub" style="margin-top: -1.4rem;">If decibels and link budgets are new, start with <a href="link-budget.html">link budget</a>. If clearance and Fresnel zones are the puzzle, see <a href="fresnel-clearance.html">Fresnel clearance</a>.</p>
 
-<p class="note" style="margin-bottom: 1.4rem;"><b>An everyday analogy.</b> Sound behaves the same way. A deep bass note travels round a corner and through a wall from a neighbour&rsquo;s party, while the singer&rsquo;s consonants do not: the long wave bends around obstacles and the short one is stopped by them. Radio is that effect stretched over eight decades of wavelength, from waves tens of kilometres long down to waves a millimetre long.</p>
+<p class="note" style="margin-bottom: 1.4rem;"><b>An everyday analogy.</b> Bass from a neighbour&rsquo;s party bends round the wall while the singer&rsquo;s consonants do not &mdash; long waves bend around obstacles, short waves are stopped by them.</p>
 
 <div class="grid2">
   <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0" max="1" step="0.000001" value="0.684640"><span class="v" id="fqv">&mdash;</span></div>
@@ -114,9 +114,9 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
 <p class="sec"><b>1 &middot; The band ladder, as physical scenes</b> <span>&mdash; where you are in the spectrum, and the picture that goes with it</span></p>
 <canvas id="c1" style="height: 500px;"></canvas>
 <ul class="legend-note">
-  <li>The strip along the top is the whole spectrum on a logarithmic scale, split into the eight named bands. The vertical line is the frequency you have selected, and the number beside it is the wavelength &lambda; = c/f.</li>
-  <li>The four pictures below are the four ways a wave gets from one place to another. The one drawn in full colour is the mechanism that belongs to your band; the others are dimmed.</li>
-  <li>Only the line-of-sight picture is drawn against a real distance axis in km. The other three are schematic, and say so, because a 4 500 km ionospheric hop and a 300 m millimetre-wave hop cannot share one scale.</li>
+  <li>top strip &mdash; the spectrum; line marks you</li>
+  <li>full-colour scene &mdash; your band&rsquo;s mechanism</li>
+  <li>km axis &mdash; line-of-sight scene only</li>
 </ul>
 
 <div class="cards">
@@ -137,52 +137,55 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
 </div>
 <canvas id="c2" style="height: 290px;"></canvas>
 <ul class="legend-note">
-  <li>The blue curve is the loss between two <b>isotropic</b> antennas (equal radiation in every direction). It rises 20 dB per decade of frequency, and every decibel of that rise comes from the receiving aperture A<sub>e</sub> = &lambda;<sup>2</sup>/4&pi; shrinking, not from anything absorbing the wave.</li>
-  <li>The green curve keeps the same 1 m dish at both ends. A fixed physical aperture has gain G = 4&pi;A<sub>e</sub>/&lambda;<sup>2</sup>, which grows as f<sup>2</sup> at each end, so the net loss now <b>falls</b> 20 dB per decade. Same physics, opposite slope. That is the whole answer to &ldquo;does high frequency travel worse?&rdquo;</li>
-  <li>The shaded band on the left is where your path is shorter than ten wavelengths. That is the near field, and the free-space formula does not apply there.</li>
+  <li>blue &mdash; isotropic ends, loss rises</li>
+  <li>green &mdash; fixed 1 m dishes, loss falls</li>
+  <li>shaded &mdash; near field, formula invalid</li>
 </ul>
 
 <p class="sec"><b>3 &middot; What the atmosphere charges, 1 to 300 GHz</b> <span>&mdash; oxygen and water vapour resonances, and rain, in dB per kilometre</span></p>
 <canvas id="c3" style="height: 330px;"></canvas>
 <ul class="legend-note">
-  <li>The dark red curve is gaseous absorption from dry air and water vapour at sea level. It is not a smooth rise: there are <b>walls</b> at 60 GHz (14.7 dB/km, a merged band of 37 oxygen lines) and 183 GHz (28.3 dB/km, a water line), and <b>windows</b> at 94 GHz (0.40) and 140 GHz (0.92) where the sky reopens.</li>
-  <li>The orange curve is rain, &gamma;<sub>R</sub> = kR<sup>&alpha;</sup>. Turn the rain rate up. Note that it <b>saturates</b> above about 100 GHz and even falls slightly &mdash; the drops are already large compared with the wavelength.</li>
-  <li>The dashed orange curve is the other polarisation. Vertical always beats horizontal in rain because falling drops are flattened, and the gap is widest between 10 and 35 GHz.</li>
+  <li>dark red &mdash; gases: walls and windows</li>
+  <li>orange &mdash; rain at your rate</li>
+  <li>dashed orange &mdash; the other polarisation</li>
 </ul>
 
 <p class="sec"><b>4 &middot; Two rays, one ground: the breakpoint</b> <span>&mdash; direct ray plus ground-reflected ray, and why path loss changes slope</span></p>
 <canvas id="c4" style="height: 320px;"></canvas>
 <ul class="legend-note">
-  <li>The blue curve is the exact two-ray result: the received field is 2|sin(2&pi;h<sub>1</sub>h<sub>2</sub>/&lambda;d)| times the free-space field, because the ground reflection arrives with a half-turn of phase built in.</li>
-  <li>Close in, the two rays alternately reinforce and cancel &mdash; that is the run of peaks and deep nulls. Past the <b>breakpoint</b> d<sub>b</sub> = 4h<sub>1</sub>h<sub>2</sub>/&lambda; the two rays are almost exactly out of phase and the received power collapses onto the d<sup>&minus;4</sup> line: doubling the distance now costs 12 dB, not 6.</li>
-  <li>Raise the Tx mast and watch the breakpoint move right. Height buys you the d<sup>&minus;2</sup> region, which is the real reason cell masts are tall.</li>
+  <li>blue &mdash; exact two-ray result</li>
+  <li>dashed yellow &mdash; free space, d<sup>&minus;2</sup></li>
+  <li>dashed green &mdash; plane earth, d<sup>&minus;4</sup></li>
 </ul>
 
 <p class="sec"><b>5 &middot; Beyond the horizon</b> <span>&mdash; diffraction over the earth&rsquo;s bulge, then scattering off turbulent air</span></p>
 <canvas id="c5" style="height: 330px;"></canvas>
 <ul class="legend-note">
-  <li>The blue dashed line is free-space loss, the loss you would have if the earth were not in the way. Everything above it is what the earth costs you.</li>
-  <li>The amber curve is spherical-earth diffraction, computed from ITU-R P.526-15 &sect;3.2. It leaves the free-space line smoothly while the path still has clearance, and then climbs steeply once the bulge blocks the ray. There is no cliff at the horizon: the transition is gradual, which is why coverage fades rather than stopping.</li>
-  <li>The pink curve is troposcatter (ITU-R P.617-5): a faint fraction of the energy scattered forward by turbulence 10 km up. It is enormously lossy but it climbs slowly, so past some distance it beats diffraction and becomes the only thing left. That crossing is marked.</li>
+  <li>dashed blue &mdash; free space plus gases</li>
+  <li>amber &mdash; spherical-earth diffraction (P.526)</li>
+  <li>light blue &mdash; troposcatter (P.617)</li>
 </ul>
 
 <p class="sec"><b>6 &middot; Sky wave and the noise you are shouting over</b> <span>&mdash; the ionosphere returns the signal only below the MUF, and HF is never quiet</span></p>
 <canvas id="c6" style="height: 280px;"></canvas>
 <ul class="legend-note">
-  <li>The purple curve is the maximum usable frequency for a single F2 hop: MUF = foF2 &times; sec&theta;<sub>i</sub>, where &theta;<sub>i</sub> is the angle at which the ray strikes the layer. Below the curve the ray comes back down; above it the ray goes through and is lost to space.</li>
-  <li>The grey curve is the same thing worked out on a <b>flat</b> earth. It over-predicts badly at long range &mdash; 5.10 against 3.28 for the obliquity factor at 3 000 km &mdash; which is why the spherical form is the one to use.</li>
+  <li>purple &mdash; MUF, spherical earth</li>
+  <li>dashed grey &mdash; flat earth, over-predicts</li>
 </ul>
 <canvas id="c7" style="height: 260px;"></canvas>
 <ul class="legend-note">
-  <li>Below about 30 MHz the noise arriving at the antenna from outside &mdash; lightning, machinery, the galaxy &mdash; is 30 to 60 dB above what the receiver itself makes. A better receiver buys you nothing there; a quieter site buys you 25 dB.</li>
-  <li>Above roughly 300 MHz the curves have fallen to nothing and the receiver&rsquo;s own noise figure takes over. That crossover is why microwave engineers talk about low-noise amplifiers and HF operators talk about location.</li>
+  <li>coloured curves &mdash; external noise per site</li>
+  <li>right of chart &mdash; receiver noise dominates</li>
 </ul>
 
-<p class="sec"><b>The arithmetic behind the cards, with your numbers in it</b></p>
-<ol class="work" id="work"></ol>
+<details style="margin-top: 1.9rem;">
+  <summary>The arithmetic behind the cards, with your numbers in it</summary>
+  <ol class="work" id="work"></ol>
+</details>
 
-<p class="sec"><b>Glossary</b></p>
-<dl class="glossary">
+<details>
+  <summary>Glossary</summary>
+  <dl class="glossary">
   <dt>Decibel (dB)</dt><dd>A ratio on a logarithmic scale: 10&times; more power is 10 dB, 100&times; is 20 dB. Losses add up in dB instead of multiplying.</dd>
   <dt>Isotropic antenna</dt><dd>An imaginary antenna that radiates equally in every direction. It is the reference every real antenna gain is quoted against, hence dBi.</dd>
   <dt>Effective aperture A<sub>e</sub></dt><dd>The area of the incoming wavefront an antenna actually collects, in m<sup>2</sup>. For an isotropic antenna it is &lambda;<sup>2</sup>/4&pi;, so it shrinks as the frequency rises.</dd>
@@ -196,10 +199,16 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
   <dt>MUF</dt><dd>Maximum usable frequency: the highest frequency the ionosphere returns for a given hop length. Higher than foF2 because a glancing ray is turned more easily than a vertical one.</dd>
   <dt>F<sub>a</sub></dt><dd>External noise figure: how many dB the noise arriving from outside the antenna sits above the thermal floor kT<sub>0</sub>b.</dd>
   <dt>Polarisation</dt><dd>The direction the electric field points. Rain drops are flattened as they fall, so they intercept a horizontal field more effectively than a vertical one.</dd>
-</dl>
+  </dl>
+</details>
 
-<p class="sub" style="margin-top: 2rem;">Three things in here are worth taking away. First, &ldquo;high frequencies do not travel as far&rdquo; is only true if you hold the antenna size fixed in wavelengths &mdash; switch section 2 to fixed dishes and the slope reverses, which is exactly why satellite links keep climbing in frequency. Second, the atmosphere is not a gentle taper but a landscape of walls and windows, so the choice between 60 and 94 GHz is a factor of thirty in dB per kilometre. Third, beyond the horizon nothing stops abruptly: diffraction hands over to troposcatter, and the handover point moves with frequency, antenna height and the weather&rsquo;s k factor.</p>
-<p class="sub">Where this is simplified, it says so on the panel. The four scenes in section 1 are schematic except for the line-of-sight one. The gaseous absorption curve is a logarithmic interpolation through anchor points computed from the full ITU-R P.676-13 line-by-line model at 1013.25 hPa, 15 &deg;C and 7.5 g/m<sup>3</sup>, not the line-by-line sum itself. Diffraction assumes a smooth earth with no terrain and average ground; troposcatter assumes smooth-earth horizon angles and the median 50 % of time. The ionosphere is one F2 layer at a 300 km virtual height. Surface-wave range has no closed-form model in ITU-R P.368, so this tool does not print one. Next, try <a href="fresnel-clearance.html">Fresnel clearance</a> to see what a single hill does to one of these paths.</p>
+<details>
+  <summary>Takeaways, and where this is simplified</summary>
+  <p class="sub" style="margin: 0 0 0.7rem;">Three things in here are worth taking away. First, &ldquo;high frequencies do not travel as far&rdquo; is only true if you hold the antenna size fixed in wavelengths &mdash; switch section 2 to fixed dishes and the slope reverses, which is exactly why satellite links keep climbing in frequency. Second, the atmosphere is not a gentle taper but a landscape of walls and windows, so the choice between 60 and 94 GHz is a factor of thirty in dB per kilometre. Third, beyond the horizon nothing stops abruptly: diffraction hands over to troposcatter, and the handover point moves with frequency, antenna height and the weather&rsquo;s k factor.</p>
+  <p class="sub" style="margin: 0;">Where this is simplified, it says so on the panel. The four scenes in section 1 are schematic except for the line-of-sight one. The gaseous absorption curve is a logarithmic interpolation through anchor points computed from the full ITU-R P.676-13 line-by-line model at 1013.25 hPa, 15 &deg;C and 7.5 g/m<sup>3</sup>, not the line-by-line sum itself. Diffraction assumes a smooth earth with no terrain and average ground; troposcatter assumes smooth-earth horizon angles and the median 50 % of time. The ionosphere is one F2 layer at a 300 km virtual height. Surface-wave range has no closed-form model in ITU-R P.368, so this tool does not print one.</p>
+</details>
+
+<p class="sub" style="margin-top: 1rem;">Next, try <a href="fresnel-clearance.html">Fresnel clearance</a> to see what a single hill does to one of these paths.</p>
 
 <script>
 (function () {
@@ -1080,10 +1089,12 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     $('kMufN').textContent = 'foF2 ' + S.foF2.toFixed(1) + ' MHz × secθ ' + secSph(S.d).toFixed(3)
       + ' for a ' + S.d.toFixed(1) + ' km hop; flat earth would say ' + secFlat(S.d).toFixed(3);
     const inFa = fM >= 0.3 && fM <= 250;
-    $('kFa').textContent = inFa ? famDb(S.env, fM).toFixed(1) + ' dB' : 'out of range';
+    $('kFa').textContent = inFa ? famDb(S.env, fM).toFixed(1) + ' dB'
+      : fM > 250 ? 'receiver-limited' : 'atmospherics';
     $('kFaN').textContent = inFa
       ? NOISE[S.env][2] + ': ' + NOISE[S.env][0].toFixed(1) + ' − ' + NOISE[S.env][1].toFixed(1) + ' log f(MHz), above kT₀b'
-      : 'P.372 Table 1 covers 0.3 to 250 MHz; you are at ' + fmtF(fHz());
+      : fM > 250 ? 'above 250 MHz your set’s own noise dominates'
+      : 'below 0.3 MHz P.372 gives charts only';
     const vd = verdict();
     $('kDom').textContent = vd.n;
     $('kDomN').textContent = vd.t;

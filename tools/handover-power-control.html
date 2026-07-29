@@ -72,10 +72,10 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Handover, hysteresis and power control</h1>
-<p class="sub">A call has to be passed from one base station to the next while the car keeps moving, and the only evidence the network has is a signal level that is jumping about by several decibels. Switch too eagerly and the call bounces back and forth between the two masts; switch too late and it is gone. This tool drives a mobile between two base stations and lets you set the rules that decide when the switch happens.</p>
+<p class="sub">The network must hand a moving call to the next base station using only a signal level that jumps by several decibels. This tool drives a mobile between two masts and lets you set the switching rules.</p>
 <p class="pre">If <abbr class="term" title="Decibels relative to one milliwatt. A power level: 0 dBm is 1 mW, −100 dBm is 0.1 picowatt.">dBm</abbr> and margins are new, start with <a href="link-budget.html">Link budget</a>. For where the fast wiggles come from, see <a href="multipath-fading.html">Multipath, delay spread and fading</a>.</p>
 
-<p class="note" style="margin-top:0"><b>Everyday version.</b> Walk between two radios playing the same station and at some point you turn one down and the other up. If you swap every time a passing lorry makes the second one briefly louder, you spend the whole walk swapping. If you refuse to swap until the first is inaudible, you miss part of the programme. The network faces exactly that choice, thousands of times a second, and the two knobs below are how it is settled.</p>
+<p class="note" style="margin-top:0"><b>Everyday version.</b> Walking between two radios playing the same station: swap on every passing lorry and you spend the walk swapping, refuse to swap and you miss the programme.</p>
 
 <div class="row" style="margin-top:1.1rem">
   <span class="lbl">Guided tour</span>
@@ -1017,19 +1017,19 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   var TOUR = [
     { v: { sv: 50, dl: 4, hy: 3, dw: 0.5, sg: 2, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 50, dp: 1 },
       sec: 1, pc: true, rate: 1500,
-      s: '<b>Step 1 &mdash; one clean handover.</b> Shadowing is only 2 dB, so both averaged curves are almost smooth. The blue level falls to P_HO shortly past the boundary, the orange one is already stronger, and the switch happens once. That is what a well tuned cell edge looks like.' },
+      s: '<b>Step 1 &mdash; one clean handover</b> just past the boundary: a well tuned cell edge.' },
     { v: { sv: 50, dl: 10, hy: 0, dw: 0, sg: 9, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 0, dp: 1 },
       sec: 1, pc: true, rate: 1500,
-      s: '<b>Step 2 &mdash; ping-pong.</b> Hysteresis is zero, the dwell timer is zero and the running average is switched off, so every shadow crossing counts as the neighbour being stronger. The call bounces between the masts, and the raw dips now breach P_min as well, so a few calls are lost outright. Turn the averaging window back up to 50 m and watch most of both disappear.' },
+      s: '<b>Step 2 &mdash; ping-pong.</b> No hysteresis, no averaging: the call bounces between the masts.' },
     { v: { sv: 50, dl: 15, hy: 2, dw: 0.5, sg: 7, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 50, dp: 1 },
       sec: 1, pc: true, rate: 1500,
-      s: '<b>Step 3 &mdash; margin too large.</b> With ' + DEL + ' at 15 dB the threshold sits 15 dB above the floor, so the trigger is armed over a long stretch of road and fires on every wobble. These are the frequent, unnecessary handovers the notes warn about: each one costs signalling and a gap in the speech, and none of them was needed.' },
+      s: '<b>Step 3 &mdash; margin too large.</b> The trigger arms early and fires on every wobble.' },
     { v: { sv: 100, dl: 0, hy: 10, dw: 1.5, sg: 9, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 50, dp: 0.8 },
       sec: 1, pc: true, rate: 1500,
-      s: '<b>Step 4 &mdash; dropped call.</b> ' + DEL + ' is zero, so the handover is not even considered until the link is already at P_min, and the hysteresis and dwell timer delay it further while the car covers 28 m a second. There is no time left to complete the switch, and the crosses on the second plot are lost calls.' },
+      s: '<b>Step 4 &mdash; dropped call.</b> The switch starts too late for a car at 28 m/s.' },
     { v: { sv: 60, dl: 5, hy: 4, dw: 0.5, sg: 6, pn: 3.5, sp: 1.5, pm: -95, st: 1, wn: 50, dp: 1 },
       sec: 3, pc: true, rate: 1500,
-      s: '<b>Step 5 &mdash; smaller cells, sectors and a closed loop.</b> The cells are half the size, so the base station needs 10 n log10 2 less power and the mobile needs less too; 120 degree sectors cut the first tier from six interferers to two, worth 4.77 dB of SIR; and the closed loop keeps the interference floor well under the thermal noise. Switch the loop to 2 Hz to watch it lose the race against the fading.' }
+      s: '<b>Step 5 &mdash; half-size cells, sectors, closed loop:</b> less power, less interference.' }
   ];
   function applyTour(k) {
     var st = TOUR[k], key;

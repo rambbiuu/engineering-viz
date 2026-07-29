@@ -67,7 +67,7 @@ canvas { width: 100%; display: block; }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>IQ constellation explorer</h1>
-<p class="sub">A receiver reduces every symbol it hears to one dot: how much of the carrier (I) and how much of the 90&deg;-shifted carrier (Q) it contains. Plot the dots and the modulation scheme appears as a pattern of clusters &mdash; the constellation. Clean channel: tight clusters. Real channel: noise blurs them, a phase error rotates them, a frequency error spins them.</p>
+<p class="sub">A receiver reduces every symbol to one dot: how much carrier (I) and how much 90&deg;-shifted carrier (Q) it contains. Noise blurs the clusters, a phase error rotates them, a frequency error spins them.</p>
 
 <div class="row">
   <span class="lbl">Scheme</span>
@@ -77,7 +77,7 @@ canvas { width: 100%; display: block; }
   <button id="b4">16QAM</button>
   <button id="pp" style="margin-left: auto;">Pause</button>
 </div>
-<div class="row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 24px; margin-bottom: 1.25rem;">
+<div class="row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 24px; margin-bottom: 1.25rem;">
   <div style="display: flex; align-items: center; gap: 10px;">
     <label class="lbl" for="snr">SNR</label>
     <input type="range" id="snr" min="5" max="30" step="1" value="18" style="flex: 1;">
@@ -248,7 +248,8 @@ canvas { width: 100%; display: block; }
   let spin = 0, last = null;
   function frame(ts) {
     if (last === null) last = ts;
-    if (S.playing) spin += (ts - last) / 1000 * 2 * Math.PI * S.fro;
+    var dt = Math.min(ts - last, 50);
+    if (S.playing) spin += dt / 1000 * 2 * Math.PI * S.fro;
     last = ts;
     draw(S.pho * Math.PI / 180 + spin);
     requestAnimationFrame(frame);

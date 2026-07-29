@@ -76,17 +76,25 @@ input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-
   margin-top: 1.25rem;
 }
 canvas { width: 100%; display: block; }
+.legend-note { font-size: 12px; color: var(--text-secondary); margin: 4px 0 0; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+details { margin-top: 1rem; font-size: 13px; color: var(--text-secondary); }
+summary { cursor: pointer; color: var(--text-primary); }
+summary:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.glossary dt { font-weight: 500; color: var(--text-primary); margin-top: 6px; }
+.glossary dd { margin: 0 0 4px; }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Modulation playground</h1>
-<p class="sub">A carrier wave carries no information until you change something about it. There are only three things you can change &mdash; height (amplitude), spacing (frequency), or timing (phase) &mdash; and every modulation scheme, analog or digital, is one of those three moves.</p>
+<p class="sub">A carrier wave carries no information until you change something about it. Height, spacing, or timing &mdash; every modulation scheme is one of those three moves.</p>
 
 <div class="row">
   <span class="lbl">Scheme</span>
   <button id="bam" class="on">AM</button>
   <button id="bfm">FM</button>
+  <button id="bpm">PM</button>
   <span style="color: var(--border-strong);">|</span>
   <button id="book">OOK</button>
   <button id="bfsk">FSK</button>
@@ -111,19 +119,60 @@ canvas { width: 100%; display: block; }
   </span>
   <span id="digWrap" style="display: none; align-items: center; gap: 10px;">
     <label class="lbl" for="bits">Bits to send</label>
-    <input type="text" id="bits" value="10110010" maxlength="24" style="width: 260px;">
+    <input type="text" id="bits" value="10110010" maxlength="24" placeholder="10110010" style="width: 260px;">
   </span>
 </div>
+<div class="row" id="tour" style="margin-bottom: 1.25rem;">
+  <span class="lbl">Tour</span>
+  <button>1</button>
+  <button>2</button>
+  <button>3</button>
+  <button>4</button>
+  <button>5</button>
+  <span id="tourTxt" class="lbl"></span>
+</div>
 
-<p class="sec"><b>1 &middot; The message</b> <span>&mdash; the information you want to send</span></p>
+<p class="sec"><b>1 &middot; The radio link</b> <span>&mdash; message in, radio wave out</span></p>
+<canvas id="anchor" style="height: 130px;"></canvas>
+<p class="legend-note"><span class="sw" style="background: #1D9E75;"></span>green &mdash; the message</p>
+<p class="legend-note"><span class="sw" style="background: #378ADD;"></span>blue &mdash; the radiated wave</p>
+
+<p class="sec"><b>2 &middot; The message</b> <span>&mdash; the information you want to send</span></p>
 <canvas id="msg" style="height: 130px;"></canvas>
+<p class="legend-note"><span class="sw" style="background: #1D9E75;"></span>green &mdash; the message</p>
 
-<p class="sec"><b>2 &middot; The modulated carrier</b> <span>&mdash; what actually leaves the antenna</span></p>
+<p class="sec"><b>3 &middot; The modulated carrier</b> <span>&mdash; what actually leaves the antenna</span></p>
 <canvas id="mod" style="height: 250px;"></canvas>
+<p class="legend-note"><span class="sw" style="background: #378ADD;"></span>blue &mdash; the transmitted wave</p>
+<p class="legend-note"><span class="sw" style="background: #1D9E75;"></span>green dashed &mdash; AM envelope</p>
+<p class="legend-note"><span class="sw" style="background: var(--text-warning);"></span>amber &mdash; phase flip marker</p>
 
-<div class="note" id="note">&mdash;</div>
+<details>
+  <summary>About this scheme</summary>
+  <div class="note" id="note">&mdash;</div>
+</details>
 
-<p class="sub" style="margin-top: 2rem;">The analog schemes (AM, FM) copy a smooth message onto the carrier; the digital ones (OOK, FSK, BPSK) snap between discrete states per bit. Notice the family resemblance: OOK is just extreme AM, FSK is FM with only two frequencies, and BPSK &mdash; flipping phase 180&deg; per bit &mdash; is the move your interferometer measures in reverse: it reads phase, BPSK writes it.</p>
+<details>
+  <summary>Worked example</summary>
+  <div class="note">FM at a 20 Hz carrier with 6 Hz deviation: the message swings the instantaneous frequency from 20 &minus; 6 = 14 Hz up to 20 + 6 = 26 Hz. QPSK sending 8 bits packs them into 8 &divide; 2 = 4 symbols, so it finishes in half the time BPSK needs.</div>
+</details>
+
+<details>
+  <summary>The family resemblance</summary>
+  <div class="note">The analog schemes (AM, FM) copy a smooth message onto the carrier; the digital ones (OOK, FSK, BPSK) snap between discrete states per bit. OOK is extreme AM, FSK is FM with only two frequencies, and BPSK &mdash; flipping phase 180&deg; per bit &mdash; is the move an interferometer measures in reverse: it reads phase, BPSK writes it.</div>
+</details>
+
+<details>
+  <summary>Glossary</summary>
+  <dl class="glossary">
+    <dt>Carrier</dt><dd>The high-frequency wave that transports the message.</dd>
+    <dt>Amplitude</dt><dd>The height of the wave.</dd>
+    <dt>Frequency</dt><dd>How many wave cycles fit in one second.</dd>
+    <dt>Phase</dt><dd>Where the wave is in its cycle at a given instant.</dd>
+    <dt>Envelope</dt><dd>The outline traced by the wave's peaks.</dd>
+    <dt>Keying</dt><dd>Digital modulation: snapping between discrete states, one per bit or symbol.</dd>
+  </dl>
+</details>
 
 <script>
 (function () {
@@ -138,6 +187,7 @@ canvas { width: 100%; display: block; }
   const NOTES = {
     am: 'AM — the message rides in the HEIGHT of the carrier. Trace the tops of the wave and you see the message again (the dashed envelope). Simple, but any noise that changes amplitude corrupts it directly.',
     fm: 'FM — the message rides in the SPACING. Where the message is high the wave squeezes together (higher frequency); where it is low the wave stretches out. Height stays constant, so amplitude noise barely matters.',
+    pm: 'PM squeezes the wave where the message changes fastest; FM where it is largest.',
     ook: 'OOK (on-off keying) — the simplest digital scheme: bit 1 = carrier on, bit 0 = silence. It is AM taken to the extreme. Morse code is OOK operated by hand.',
     fsk: 'FSK — each bit picks one of two frequencies: 1 = fast wiggle, 0 = slow wiggle. It is FM with only two message levels. Old modems literally whistled these two tones.',
     psk: 'BPSK — the height and spacing never change; each bit flip snaps the phase by 180° (amber marks). The wave suddenly inverts mid-flight. Invisible to the eye at a glance, trivial for a receiver comparing against a reference — the same phase comparison your interferometer performs.',
@@ -145,6 +195,7 @@ canvas { width: 100%; display: block; }
   };
 
   function msgVal(tt) {
+    if (S.mode === 'pm') return Math.cos(2 * Math.PI * S.fm * tt);
     if (!DIG(S.mode)) return Math.sin(2 * Math.PI * S.fm * tt);
     const n = S.bits.length;
     const i = Math.min(n - 1, Math.floor(tt * n));
@@ -157,6 +208,47 @@ canvas { width: 100%; display: block; }
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
     c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
     return [r.width, r.height];
+  }
+
+  function drawAnchor() {
+    const c = $('anchor'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border-strong');
+    g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    const yc = h * 0.48;
+
+    g.strokeStyle = '#1D9E75'; g.lineWidth = 1.5;
+    g.beginPath();
+    for (let x = 0; x <= w * 0.14; x++) {
+      const y = yc - Math.sin(x / (w * 0.14) * 4 * Math.PI) * h * 0.12;
+      if (x === 0) g.moveTo(w * 0.03 + x, y); else g.lineTo(w * 0.03 + x, y);
+    }
+    g.stroke();
+    g.fillStyle = sub;
+    g.fillText('message', w * 0.10, yc + h * 0.18);
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(w * 0.19, yc); g.lineTo(w * 0.25, yc); g.stroke();
+    g.beginPath(); g.moveTo(w * 0.25, yc); g.lineTo(w * 0.235, yc - 4); g.moveTo(w * 0.25, yc); g.lineTo(w * 0.235, yc + 4); g.stroke();
+
+    g.strokeRect(w * 0.27, yc - h * 0.16, w * 0.15, h * 0.32);
+    g.fillText('modulator', w * 0.345, yc - 7);
+
+    g.beginPath(); g.moveTo(w * 0.42, yc); g.lineTo(w * 0.49, yc); g.stroke();
+    g.beginPath(); g.moveTo(w * 0.49, yc); g.lineTo(w * 0.475, yc - 4); g.moveTo(w * 0.49, yc); g.lineTo(w * 0.475, yc + 4); g.stroke();
+
+    const mx = w * 0.53, top = h * 0.12;
+    g.beginPath(); g.moveTo(mx, yc + h * 0.28); g.lineTo(mx, top); g.stroke();
+    g.beginPath(); g.moveTo(mx - 10, top); g.lineTo(mx + 10, top); g.stroke();
+    g.fillText('antenna', mx, yc + h * 0.32);
+
+    g.strokeStyle = '#378ADD'; g.lineWidth = 1.2;
+    [16, 30, 44].forEach(rr => {
+      g.beginPath(); g.arc(mx + 10, top, rr, -Math.PI / 3, Math.PI / 3); g.stroke();
+    });
+    g.fillStyle = sub; g.textAlign = 'left';
+    g.fillText('modulated carrier', mx + 62, top - 6);
+    g.textAlign = 'center';
   }
 
   function drawMsg() {
@@ -236,6 +328,8 @@ canvas { width: 100%; display: block; }
       } else if (S.mode === 'fm') {
         phase += 2 * Math.PI * (S.fc + S.dev * m) * dt;
         y = Math.sin(phase);
+      } else if (S.mode === 'pm') {
+        y = Math.cos(2 * Math.PI * S.fc * tt + S.dev / 100 * 3 * m);
       } else if (S.mode === 'ook') {
         y = m * Math.sin(2 * Math.PI * S.fc * tt);
       } else if (S.mode === 'fsk') {
@@ -252,6 +346,17 @@ canvas { width: 100%; display: block; }
       if (x === l) g.moveTo(x, py); else g.lineTo(x, py);
     }
     g.stroke();
+
+    if (S.mode === 'fm' || S.mode === 'pm') {
+      const tf = (S.mode === 'fm' ? 0.25 : 0.75) / S.fm;
+      const xb = l + tf * W;
+      const tx = Math.min(Math.max(xb, l + 80), w - r - 80);
+      g.strokeStyle = sub; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(xb, t + 15); g.lineTo(xb, yc - ampl * 0.3); g.stroke();
+      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(S.mode === 'fm' ? 'fastest here — message peak' : 'fastest here — message steepest', tx, t);
+      g.textBaseline = 'alphabetic';
+    }
 
     if (S.mode === 'psk') {
       const n = S.bits.length;
@@ -297,22 +402,32 @@ canvas { width: 100%; display: block; }
     const dig = DIG(S.mode);
     $('anaWrap').style.display = dig ? 'none' : 'flex';
     $('digWrap').style.display = dig ? 'flex' : 'none';
-    const hasDev = S.mode === 'am' || S.mode === 'fm' || S.mode === 'fsk';
+    const hasDev = S.mode === 'am' || S.mode === 'fm' || S.mode === 'fsk' || S.mode === 'pm';
     $('devWrap').style.display = hasDev ? 'flex' : 'none';
     if (S.mode === 'am') {
       $('devLbl').textContent = 'Depth';
       $('dev').min = 0; $('dev').max = 100; $('dev').step = 5;
       if (+$('dev').value > 100) $('dev').value = 80;
-      S.dev = +$('dev').value;
-      $('devv').textContent = S.dev + ' %';
+    } else if (S.mode === 'pm') {
+      $('devLbl').textContent = 'Phase swing';
+      $('dev').min = 0; $('dev').max = 100; $('dev').step = 5;
+      if (+$('dev').value <= 10) $('dev').value = 50;
     } else if (hasDev) {
       $('devLbl').textContent = 'Deviation';
       $('dev').min = 1; $('dev').max = 10; $('dev').step = 1;
       if (+$('dev').value > 10) $('dev').value = 6;
+    }
+    if (hasDev) {
       S.dev = +$('dev').value;
-      $('devv').textContent = S.dev + ' Hz';
+      $('devv').textContent = devTxt();
     }
     $('note').textContent = NOTES[S.mode];
+  }
+
+  function devTxt() {
+    if (S.mode === 'am') return S.dev.toFixed(0) + ' %';
+    if (S.mode === 'pm') return (S.dev / 100 * 3).toFixed(2) + ' rad';
+    return S.dev.toFixed(0) + ' Hz';
   }
 
   function recalc() {
@@ -321,14 +436,16 @@ canvas { width: 100%; display: block; }
     S.fm = +$('fm').value;
     $('fmv').textContent = S.fm.toFixed(1) + ' Hz';
     S.dev = +$('dev').value;
-    $('devv').textContent = S.mode === 'am' ? S.dev + ' %' : S.dev + ' Hz';
-    const cleaned = $('bits').value.replace(/[^01]/g, '');
+    $('devv').textContent = devTxt();
+    const raw = $('bits').value;
+    const cleaned = raw.replace(/[^01]/g, '');
+    if (cleaned !== raw) $('bits').value = cleaned;
     S.bits = cleaned.length ? cleaned : '10110010';
   }
 
   function setMode(m, btn) {
     S.mode = m;
-    ['bam', 'bfm', 'book', 'bfsk', 'bpsk', 'bqpsk'].forEach(id => $(id).classList.remove('on'));
+    ['bam', 'bfm', 'bpm', 'book', 'bfsk', 'bpsk', 'bqpsk'].forEach(id => $(id).classList.remove('on'));
     $(btn).classList.add('on');
     syncControls();
     recalc();
@@ -336,15 +453,30 @@ canvas { width: 100%; display: block; }
 
   $('bam').addEventListener('click', () => setMode('am', 'bam'));
   $('bfm').addEventListener('click', () => setMode('fm', 'bfm'));
+  $('bpm').addEventListener('click', () => setMode('pm', 'bpm'));
   $('book').addEventListener('click', () => setMode('ook', 'book'));
   $('bfsk').addEventListener('click', () => setMode('fsk', 'bfsk'));
   $('bpsk').addEventListener('click', () => setMode('psk', 'bpsk'));
   $('bqpsk').addEventListener('click', () => setMode('qpsk', 'bqpsk'));
   ['fc', 'dev', 'fm', 'bits'].forEach(id => $(id).addEventListener('input', recalc));
 
+  const TOUR = [
+    ['am', 'bam', 100, 'Step 1 — AM: the wave’s height traces the message.'],
+    ['fm', 'bfm', 8, 'Step 2 — FM: peaks squeeze together where the message is high.'],
+    ['ook', 'book', null, 'Step 3 — OOK: bit 1 carrier on, bit 0 silence.'],
+    ['psk', 'bpsk', null, 'Step 4 — BPSK: every bit flip inverts the wave mid-flight.'],
+    ['qpsk', 'bqpsk', null, 'Step 5 — QPSK: four phases carry two bits per symbol.']
+  ];
+  document.querySelectorAll('#tour button').forEach((b, i) => b.addEventListener('click', () => {
+    const s = TOUR[i];
+    setMode(s[0], s[1]);
+    if (s[2] !== null) { $('dev').value = s[2]; recalc(); }
+    $('tourTxt').textContent = s[3];
+  }));
+
   syncControls();
   recalc();
-  function frame() { drawMsg(); drawMod(); requestAnimationFrame(frame); }
+  function frame() { drawAnchor(); drawMsg(); drawMod(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 })();
 </script>

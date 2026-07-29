@@ -116,10 +116,10 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Noise figure, cascades and receiver sensitivity</h1>
-<p class="sub">Every receiver adds noise of its own, and that self-made noise sets the weakest signal it can still hear. This tool builds a receive chain one block at a time &mdash; cable, amplifier, filter, mixer &mdash; and works out how much noise the whole chain adds, where that noise comes from, and what the resulting sensitivity is in dBm. The order of the blocks matters enormously, which is the single most useful thing to take away.</p>
+<p class="sub">Every receiver adds noise of its own, and that noise sets the weakest signal it can hear. Build the chain block by block &mdash; the order of the blocks matters enormously.</p>
 <p class="sub" style="margin-bottom: 1.4rem;">New to decibels and to dBm? Start with <a href="link-budget.html">the link budget tool</a>, which explains dBm and the noise floor from scratch.</p>
 
-<p class="note">A cascade of stages behaves like a chain of photocopies. Whatever specks the first copy adds are enlarged again by every machine after it, so a fleck on the first sheet ends up the size of a coin. Grit added by the last machine is copied no further and barely shows. Noise in a receiver works the same way: the first block's noise is amplified by everything downstream, so it dominates.</p>
+<p class="note">A cascade is a chain of photocopies: specks on the first copy are enlarged by every machine after it, grit on the last barely shows.</p>
 
 <div class="btnrow">
   <span class="lbl">Guided tour</span>
@@ -200,10 +200,12 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   <div class="card"><div class="hd">Spur-free dynamic range</div><div class="big" id="cD">&mdash;</div><div class="ft" id="cDf">&mdash;</div></div>
 </div>
 
-<p class="sec"><b>The arithmetic, on the chain as it stands</b></p>
+<details><summary>The arithmetic, on the chain as it stands</summary>
 <ol class="work" id="work"></ol>
+<p style="font-size:13px;color:var(--text-secondary);margin:10px 0 0;">Noise is set by the front of the chain, headroom by the back: every decibel of loss ahead of the first amplifier lands on the noise figure one for one, while the last, highest-level stage saturates first. Two simplifications: passive blocks sit at the 290 K reference temperature, and the intercept sum takes the worst case of in-phase distortion.</p>
+</details>
 
-<p class="sec"><b>Words used on this page</b></p>
+<details><summary>Words used on this page</summary>
 <dl class="glossary">
   <dt>dB (decibel)</dt><dd>A ratio written on a logarithmic scale: 10&nbsp;log<sub>10</sub> of a power ratio. +3 dB is roughly double the power, &minus;3 dB is roughly half, +10 dB is ten times.</dd>
   <dt>dBm</dt><dd>An absolute power, measured in dB relative to one milliwatt. 0 dBm is 1 mW; &minus;100 dBm is 0.1 picowatt, a normal size for a received radio signal.</dd>
@@ -222,8 +224,9 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   <dt>OIP3 and IIP3</dt><dd>Output and input third-order intercept points, in dBm. They measure how well a block copes with strong signals before it starts generating spurious tones. IIP3 = OIP3 &minus; gain.</dd>
   <dt>SFDR (spurious-free dynamic range)</dt><dd>The span in dB between the weakest signal a receiver can hear and the strongest one it can hear without its own intermodulation products rising above the noise floor.</dd>
 </dl>
+</details>
 
-<p class="sub" style="margin-top: 2rem;">Two opposite rules govern the same chain. Noise is dominated by the <b>front</b>: every decibel of loss ahead of the first amplifier adds a decibel to the system noise figure, one for one, which is why moving the feeder cable from in front of the amplifier to behind it can shift sensitivity by more than 10 dB in a single click, and why real base stations bolt the amplifier to the mast beside the antenna instead of at the bottom of the tower. Large-signal behaviour is dominated by the <b>back</b>: the cascade intercept adds reciprocals weighted by the gain that follows, so it is the last, highest-level stage that saturates first. Design the front for noise, the back for headroom, and accept that gain early helps one and hurts the other. Two simplifications are worth naming: passive blocks are assumed to sit at the 290 K reference temperature, and the intercept sum assumes the worst case where every stage's distortion adds in phase. Next, see what a strong nearby signal does to that same front end in <a href="superhet-image.html">the superheterodyne and image tool</a>.</p>
+<p class="sub" style="margin-top: 2rem;">Next: what a strong nearby signal does to this front end, in <a href="superhet-image.html">the superheterodyne and image tool</a>.</p>
 
 <script>
 (function () {

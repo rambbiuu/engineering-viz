@@ -75,10 +75,10 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Spreading, processing gain and the near-far problem</h1>
-<p class="sub">Code-division multiple access lets every handset talk on the whole band at the same time. Each one multiplies its slow data by a fast code, which buries the signal below the noise, and the base station digs it back out by multiplying with the same code again.</p>
+<p class="sub">Code-division multiple access lets every handset talk on the whole band at once. Each multiplies its data by a fast code, and the base station multiplies by the same code to dig the signal back out.</p>
 <p class="sub" style="margin-bottom: 1rem;">New to this? Start with <a href="link-budget.html">the link budget</a> for what a noise floor is, then <a href="cellular-reuse.html">cellular reuse</a> for the alternative that buys capacity with geometry instead.</p>
 
-<div class="note"><b>An everyday picture.</b> A room full of people, each pair speaking a different language. Every voice reaches every ear, so the room sounds like noise, yet you follow your own partner because you filter on the language rather than the volume. Now let one pair stand next to you and shout. Language no longer helps: they are simply too loud. That is the near-far problem, and power control is the rule that everyone speaks at the level the listener asks for.</div>
+<div class="note"><b>An everyday picture.</b> Everyone talks at once in different languages &mdash; you follow yours by language, not volume, until someone beside you shouts; that shout is the near-far problem.</div>
 
 <p class="sec"><b>Guided tour</b> <span>&mdash; each step moves the controls for you and says what changed</span></p>
 <div class="row">
@@ -116,6 +116,8 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 <details>
   <summary>Fixed assumptions behind the numbers</summary>
   <p style="color: var(--text-secondary); margin: 0.6rem 0 0;">Data rate is held at 9.6 kbit/s, the IS-95 vocoder rate, so the chip rate is the code length times 9.6 kbit/s and a 128-chip code lands on the real 1.2288 Mchip/s. The required energy-per-bit to noise-density ratio is 7 dB, voice activity is 0.4, other-cell interference is 0.6 of own-cell, and the path-loss exponent is 4. Power control moves the transmitter in 1 dB steps and the channel carries Rayleigh fading at a 50 Hz Doppler, which is roughly 60 km/h at 900 MHz.</p>
+  <p style="color: var(--text-secondary);">Three things live in these sliders. Spreading buys interference rejection at a fixed exchange rate: every doubling of the code length adds 3 dB to the processing gain and 3 dB to the ratio the correlator delivers, which is why a chip rate is quoted alongside a data rate in every code-division system. The whole band is reused in every cell, so capacity is set not by geometry but by how much interference the correlator can survive &mdash; push the user count past the number in the card and the link stops closing for everybody at once, which is what a soft capacity limit feels like. And processing gain is a ratio, not a level: drag the near-far imbalance up with power control off and watch the ratio after despreading fall exactly as fast as the ratio before it, because 24 dB of gain cannot rescue a signal 60 dB down.</p>
+  <p style="color: var(--text-secondary);">Where this model is simplified, and it is simplified in five places. Power control is the real closed loop &mdash; a one-bit up or down command, 1 dB per step, at the rate you select &mdash; run over three seconds against a Clarke sum-of-sinusoids Rayleigh channel with a 50 Hz Doppler, and the residual error you see is measured from that simulation rather than assumed. But the fading has one tap and no shadowing, the loop has no measurement error and no feedback delay, and a real loop has both, so the residual here is optimistic. Walsh rows are treated as perfectly chip-aligned, which is true on the downlink from one base station and false on the uplink drawn in section 1; that is why the interference from other users vanishes in Walsh mode and does not in PN mode. The interference each PN user contributes is measured from the actual cross-correlations of the generated m-sequence, averaged over 64 bits, so it lands within about a decibel of the textbook G<sub>p</sub> rather than exactly on it. The capacity card assumes perfect power control and equal rates for everyone. And the honest ceiling stated in every course note applies here too: closed-loop power control at 800 Hz for IS-95 or 1500 Hz for WCDMA tracks path loss and shadowing, but it cannot compensate for fast Rayleigh fading &mdash; set the imbalance to zero, switch the rate between 2 Hz, 800 Hz and 1500 Hz, and read the residual error printed on section 1. It never reaches zero.</p>
 </details>
 
 <p class="sec"><b>1 &middot; Two handsets, one base station</b> <span>&mdash; both transmit at once, on the same frequency</span></p>
@@ -161,19 +163,18 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <div class="card"><div class="hd">Power control range needed</div><div class="big" id="cPr">&mdash;</div><div class="ft" id="cPrn">&mdash;</div></div>
 </div>
 
-<p class="sec"><b>Worked example</b> <span>&mdash; the arithmetic for the settings on screen right now</span></p>
-<ol class="work" id="work"></ol>
+<details>
+  <summary>Worked example &mdash; the arithmetic for the settings on screen</summary>
+  <ol class="work" id="work"></ol>
+</details>
 
 <details>
   <summary>Code properties, checked against the sequences this page generated</summary>
   <ol class="work" id="codechk" style="margin-top: 0.6rem;"></ol>
 </details>
 
-<p class="sub" style="margin-top: 2rem;">Three things live in these sliders. Spreading buys interference rejection at a fixed exchange rate: every doubling of the code length adds 3 dB to the processing gain and 3 dB to the ratio the correlator delivers, which is why a chip rate is quoted alongside a data rate in every code-division system. The whole band is reused in every cell, so capacity is set not by geometry but by how much interference the correlator can survive &mdash; push the user count past the number in the card and the link stops closing for everybody at once, which is what a soft capacity limit feels like. And processing gain is a ratio, not a level: drag the near-far imbalance up with power control off and watch the ratio after despreading fall exactly as fast as the ratio before it, because 24 dB of gain cannot rescue a signal 60 dB down.</p>
-
-<p class="sub">Where this model is simplified, and it is simplified in five places. Power control is the real closed loop &mdash; a one-bit up or down command, 1 dB per step, at the rate you select &mdash; run over three seconds against a Clarke sum-of-sinusoids Rayleigh channel with a 50 Hz Doppler, and the residual error you see is measured from that simulation rather than assumed. But the fading has one tap and no shadowing, the loop has no measurement error and no feedback delay, and a real loop has both, so the residual here is optimistic. Walsh rows are treated as perfectly chip-aligned, which is true on the downlink from one base station and false on the uplink drawn in section 1; that is why the interference from other users vanishes in Walsh mode and does not in PN mode. The interference each PN user contributes is measured from the actual cross-correlations of the generated m-sequence, averaged over 64 bits, so it lands within about a decibel of the textbook G<sub>p</sub> rather than exactly on it. The capacity card assumes perfect power control and equal rates for everyone. And the honest ceiling stated in every course note applies here too: closed-loop power control at 800 Hz for IS-95 or 1500 Hz for WCDMA tracks path loss and shadowing, but it cannot compensate for fast Rayleigh fading &mdash; set the imbalance to zero, switch the rate between 2 Hz, 800 Hz and 1500 Hz, and read the residual error printed on section 1. It never reaches zero.</p>
-
-<p class="sec"><b>Glossary</b></p>
+<details>
+  <summary>Glossary</summary>
 <dl class="glossary">
   <dt>Chip</dt><dd>One symbol of the spreading code. Chips are much shorter than data bits: T<sub>c</sub> against T<sub>b</sub>.</dd>
   <dt>Spreading</dt><dd>Multiplying the data by the code, s(t) = d(t)c(t). It widens the bandwidth from the data rate to the chip rate without adding power.</dd>
@@ -191,6 +192,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <dt>Rayleigh fading</dt><dd>The rapid level swings caused by reflections adding and cancelling as the handset moves. Deep fades come and go in milliseconds.</dd>
   <dt>Decibel (dB)</dt><dd>A ratio on a logarithmic scale: 10&middot;log<sub>10</sub> of a power ratio. Ten decibels is ten times the power, 3 dB is roughly double.</dd>
 </dl>
+</details>
 
 <p class="sub" style="margin-top: 1.5rem;">Next: <a href="multipath-fading.html">multipath and fading</a> shows the fast Rayleigh channel this page's power-control loop is trying, and failing, to track.</p>
 
@@ -847,7 +849,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     $('cSo').style.color = soDb >= EBN0_REQ_DB ? 'var(--text-good)' : (soDb >= 0 ? 'var(--text-warning)' : 'var(--series-7)');
     $('cSon').textContent = S.code === 'walsh'
       ? 'Walsh rows are orthogonal, so only noise survives'
-      : 'gain of ' + (isFinite(M.suppDb) ? M.suppDb.toFixed(1) : M.GpDb.toFixed(1)) + ' dB, G_p = ' + M.GpDb.toFixed(1) + ' dB';
+      : 'gain of ' + (+soDb.toFixed(1) - +siDb.toFixed(1)).toFixed(1) + ' dB, G_p = ' + M.GpDb.toFixed(1) + ' dB';
 
     $('cCap').textContent = M.cap.toFixed(0);
     $('cCap').style.color = M.cap >= S.users ? 'var(--text-good)' : 'var(--series-7)';
@@ -968,17 +970,17 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 
   const TOUR = [
     { s: { users: 1, chipExp: 5, imb: 0, noiseDb: 0, code: 'pn', pcOn: true, pcRate: 800 },
-      m: 'Step 1 — one handset, 32 chips per bit. The spread spectrum in section 3 sits right on the noise floor, and the correlator still recovers the bit cleanly because the code lifts it 15 dB.' },
+      m: 'Step 1 — one handset, 32 chips: the code lifts the bit 15 dB.' },
     { s: { users: 4 },
-      m: 'Step 2 — three more handsets join, all on the same frequency at the same time. The chip-level ratio drops below zero: the wanted signal is now weaker than everything else in the band, yet the correlator output barely moves.' },
+      m: 'Step 2 — four handsets share the band; the correlator barely notices.' },
     { s: { imb: 40, pcOn: false },
-      m: 'Step 3 — power control off, and the nearest handset is 40 dB stronger because it is a tenth of the distance away. Processing gain is a ratio, not a rescue: the correlator is swamped and the bit decision becomes a coin toss.' },
+      m: 'Step 3 — power control off: the near handset, 40 dB stronger, swamps the correlator.' },
     { s: { pcOn: true, pcRate: 800 },
-      m: 'Step 4 — power control back on at 800 Hz, the IS-95 rate. Forty 1 dB commands take 50 ms, the bars level off, and the link closes again. This is why every code-division system runs a fast closed loop.' },
+      m: 'Step 4 — power control at 800 Hz levels the bars in 50 ms.' },
     { s: { pcRate: 2 },
-      m: 'Step 5 — the same loop slowed to the GSM rate of 2 Hz. Forty decibels now needs 20 seconds, so within the 3 second run the near user is still shouting. Even at zero imbalance the residual error printed on section 1 never reaches zero, because 1 dB steps cannot follow fast Rayleigh fading.' },
+      m: 'Step 5 — the loop at GSM’s 2 Hz needs 20 s; the near user still shouts.' },
     { s: { pcRate: 800, imb: 0, chipExp: 8, users: 12 },
-      m: 'Step 6 — 256 chips per bit and twelve users. The code is eight times longer, so the spectrum is eight times wider and 9 dB flatter, and the correlator now has 256 chips to average over. The extra 9 dB of processing gain is what pays for the extra users.' }
+      m: 'Step 6 — 256 chips: 9 dB more processing gain pays for twelve users.' }
   ];
   ['t1', 't2', 't3', 't4', 't5', 't6'].forEach(function (id, i) {
     $(id).addEventListener('click', function () {

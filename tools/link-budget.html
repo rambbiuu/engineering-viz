@@ -6,14 +6,54 @@
 <title>Link budget</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #ffffff;
+  --surface-1: #f4f6f8;
+  --surface-2: #ffffff;
+  --plot-bg: #ffffff;
+  --grid: #e4e8ec;
+  --grid-strong: #c8ced4;
+  --axis: #3c4650;
+  --text-primary: #1a1f26;
+  --text-secondary: #55606c;
+  --text-muted: #869099;
+  --series-1: #0072bd;
+  --series-2: #d95319;
+  --series-3: #edb120;
+  --series-4: #7e2f8e;
+  --series-5: #77ac30;
+  --series-6: #4dbeee;
+  --series-7: #a2142f;
+  --good: #77ac30;
+  --warn: #d95319;
+  --bad: #a2142f;
+  --border: #dfe4e9;
+  --border-strong: #b6bfc8;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --bg: #16191d;
+    --surface-1: #1e2328;
+    --surface-2: #232930;
+    --plot-bg: #1a1e23;
+    --grid: #2c333a;
+    --grid-strong: #444d56;
+    --axis: #9aa5b1;
+    --text-primary: #e9edf1;
+    --text-secondary: #b0bac4;
+    --text-muted: #7d8791;
+    --series-1: #4da6ff;
+    --series-2: #ff8c42;
+    --series-3: #ffd24d;
+    --series-4: #c77dda;
+    --series-5: #9fd356;
+    --series-6: #7fd4f5;
+    --series-7: #ff6b6b;
+    --good: #9fd356;
+    --warn: #ff8c42;
+    --bad: #ff6b6b;
+    --border: #2c333a;
+    --border-strong: #49525b;
   }
 }
 body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
@@ -26,7 +66,22 @@ a { color: inherit; }
 input, button { font: inherit; color: inherit; }
 button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
 button:hover { background: var(--surface-1); }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem;
+  font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; }
+.note b { color: var(--text-primary); font-weight: 500; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.85rem; margin: 1.1rem 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 0; list-style: none; }
+.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; }
+ol.work li { margin: 3px 0; font-variant-numeric: tabular-nums; }
+dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1.25rem; }
 .ctl { display: flex; align-items: center; gap: 10px; }
 .ctl label { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
@@ -49,7 +104,17 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Link budget</h1>
-<p class="sub">Every radio link is one running total in decibels: start at the transmitter, add every gain, subtract every loss, and see what is left at the receiver. Compare that against the noise the receiver makes on its own and you know whether the link works &mdash; and by how much margin it survives a bad day.</p>
+<p class="sub">Every radio link is one running total in decibels: add every gain, subtract every loss, and see what reaches the receiver. Compare that with the receiver's own noise to see whether the link closes.</p>
+
+<div class="row">
+  <span class="lbl">Guided tour</span>
+  <button id="tr0">1 &middot; a short hop</button>
+  <button id="tr1">2 &middot; go further</button>
+  <button id="tr2">3 &middot; add dishes</button>
+  <button id="tr3">4 &middot; raise the frequency</button>
+  <button id="trR">reset</button>
+</div>
+<p class="note" id="tourNote"><b>Start here.</b> Press the tour buttons in order; each one moves the sliders for you.</p>
 
 <div class="grid2">
   <div class="ctl"><label for="pt">Tx power</label><input type="range" id="pt" min="-10" max="50" step="1" value="20"><span class="v" id="ptv">20 dBm</span></div>
@@ -64,8 +129,14 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   <div class="ctl"><label for="cn">Required C/N</label><input type="range" id="cn" min="0" max="30" step="0.5" value="9"><span class="v" id="cnv">9 dB</span></div>
 </div>
 
-<p class="sec"><b>1 &middot; The running total</b> <span>&mdash; power level in dBm from the transmitter to the receiver input; the dashed line is the noise floor</span></p>
+<p class="sec"><b>1 &middot; The running total</b> <span>&mdash; running total in dBm; dashed line is the noise floor</span></p>
 <canvas id="wf" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background:var(--series-1)"></span>starting transmit power</li>
+  <li><span class="sw" style="background:var(--good)"></span>a gain step</li>
+  <li><span class="sw" style="background:var(--bad)"></span>a loss step</li>
+  <li><span class="sw" style="background:var(--warn)"></span>dashed &mdash; receiver noise floor</li>
+</ul>
 
 <div class="cards">
   <div class="card">
@@ -95,8 +166,32 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
 <p class="sec"><b>3 &middot; Received power vs distance</b> <span>&mdash; where this link runs out of margin</span></p>
 <canvas id="dc" style="height: 250px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background:var(--series-1)"></span>received power vs distance</li>
+  <li><span class="sw" style="background:var(--series-2)"></span>your current distance</li>
+  <li><span class="sw" style="background:var(--bad)"></span>shaded &mdash; link fails here</li>
+</ul>
 
-<p class="sub" style="margin-top: 2rem;">Three lessons live in these sliders. Doubling the distance costs 6 dB and doubling the frequency costs another 6 &mdash; both are the 20log terms, and neither can be argued with. Antenna gain is free power in both directions, which is why a dish at each end beats a bigger amplifier. And the noise floor, kTB + noise figure, sets the finish line: widen the receiver bandwidth and the floor rises 3 dB per doubling, so a link that fails on a wideband waveform may pass on a narrow one at the same power.</p>
+<details><summary>Worked example, with the current numbers substituted in</summary>
+<ol class="work" id="work"></ol>
+</details>
+<details><summary>What the sliders are teaching</summary>
+<p class="sub" style="margin:0.5rem 0 0">Three lessons live in these sliders. Doubling the distance costs 6 dB and doubling the frequency costs another 6 &mdash; both are the 20log terms, and neither can be argued with. Antenna gain is free power in both directions, which is why a dish at each end beats a bigger amplifier. And the noise floor, kTB + noise figure, sets the finish line: widen the receiver bandwidth and the floor rises 3 dB per doubling, so a link that fails on a wideband waveform may pass on a narrow one at the same power.</p>
+</details>
+<details><summary>Glossary</summary>
+<dl class="glossary">
+  <dt>dB</dt><dd>A ratio on a log scale; +3 dB doubles the power, +10 dB is ten times.</dd>
+  <dt>dBm</dt><dd>Power compared with 1 milliwatt, in dB. 0 dBm = 1 mW; 20 dBm = 100 mW.</dd>
+  <dt>dBi</dt><dd>Antenna gain compared with an isotropic antenna that radiates equally everywhere.</dd>
+  <dt>EIRP</dt><dd>Effective isotropic radiated power: transmit power minus feeder loss plus antenna gain.</dd>
+  <dt>Free-space loss</dt><dd>Spreading loss over distance with nothing in the way: 92.4 + 20log f<sub>GHz</sub> + 20log d<sub>km</sub> dB.</dd>
+  <dt>Feeder loss</dt><dd>Power lost in the cable between radio and antenna.</dd>
+  <dt>Noise figure</dt><dd>How much noise the receiver adds on top of the unavoidable thermal noise, in dB.</dd>
+  <dt>Noise floor</dt><dd>kTB plus the noise figure: &minus;174 dBm/Hz plus 10log of the bandwidth plus NF.</dd>
+  <dt>C/N</dt><dd>Carrier-to-noise ratio: received power minus the noise floor, in dB.</dd>
+  <dt>Fade margin</dt><dd>How far the achieved C/N sits above the required C/N; headroom for a bad day.</dd>
+</dl>
+</details>
 
 <script>
 (function () {
@@ -139,7 +234,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   function drawWF() {
     const c = $('wf'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const sub = cvv('--text-secondary'), bd = cvv('--grid');
     const st = stages(), nfl = noiseFloor();
     const lo = Math.min(nfl - 12, Math.min.apply(null, st.map(s => s.v)) - 8);
     const hi = Math.max.apply(null, st.map(s => s.v)) + 8;
@@ -147,6 +242,8 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     const Y = v => t + (hi - v) / (hi - lo) * (h - t - b);
     const bw = (w - l - r) / st.length;
 
+    g.fillStyle = cvv('--plot-bg');
+    g.fillRect(l, t, w - l - r, h - t - b);
     g.font = fnt(11); g.fillStyle = sub; g.strokeStyle = bd; g.lineWidth = 0.5;
     for (let k = 0; k <= 5; k++) {
       const v = lo + (hi - lo) * k / 5;
@@ -157,16 +254,20 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('dBm', 6, t);
 
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, t); g.lineTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
+
+    const c1 = cvv('--series-1'), cg = cvv('--good'), cl = cvv('--bad');
     st.forEach((s, i) => {
       const x = l + i * bw + bw * 0.16, bwid = bw * 0.68;
       const prev = i === 0 ? s.v : st[i - 1].v;
       const up = s.v >= prev;
       const y0 = Y(Math.max(prev, s.v)), y1 = Y(Math.min(prev, s.v));
       if (i === 0) {
-        g.fillStyle = '#378ADD';
+        g.fillStyle = c1;
         g.fillRect(x, Y(s.v), bwid, Y(lo) - Y(s.v));
       } else {
-        g.fillStyle = up ? '#1D9E75' : '#D85A30';
+        g.fillStyle = up ? cg : cl;
         g.globalAlpha = 0.85;
         g.fillRect(x, y0, bwid, Math.max(y1 - y0, 1.5));
         g.globalAlpha = 1;
@@ -177,16 +278,16 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       const words = s.n.split(' ');
       words.forEach((wd, k) => g.fillText(wd, x + bwid / 2, h - b + 6 + k * 12));
       if (i > 0) {
-        g.fillStyle = up ? '#1D9E75' : '#D85A30'; g.font = fnt(10);
+        g.fillStyle = up ? cg : cl; g.font = fnt(10);
         g.textBaseline = 'bottom';
         g.fillText((s.d >= 0 ? '+' : '') + s.d.toFixed(1), x + bwid / 2, Math.min(y0, y1) - 3);
       }
     });
 
-    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.strokeStyle = cvv('--warn'); g.lineWidth = 1.4; g.setLineDash([6, 4]);
     g.beginPath(); g.moveTo(l, Y(nfl)); g.lineTo(w - r, Y(nfl)); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = cvv('--text-warning'); g.font = fnt(11);
+    g.fillStyle = cvv('--warn'); g.font = fnt(11);
     g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillText('noise floor ' + nfl.toFixed(1) + ' dBm', l + 4, Y(nfl) - 3);
   }
@@ -194,7 +295,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   function drawDist() {
     const c = $('dc'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const sub = cvv('--text-secondary'), bd = cvv('--grid');
     const l = 52, r = 12, t = 14, b = 34;
     const dmin = 0.02, dmax = 100;
     const X = d => l + (L10(d) - L10(dmin)) / (L10(dmax) - L10(dmin)) * (w - l - r);
@@ -202,6 +303,8 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     const lo = thr - 45, hi = prx(dmin) + 5;
     const Y = v => t + (hi - v) / (hi - lo) * (h - t - b);
 
+    g.fillStyle = cvv('--plot-bg');
+    g.fillRect(l, t, w - l - r, h - t - b);
     g.font = fnt(11); g.fillStyle = sub;
     [0.1, 1, 10, 100].forEach(d => {
       g.strokeStyle = bd; g.lineWidth = 0.5;
@@ -216,16 +319,19 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       g.fillText(v.toFixed(0), l - 6, Y(v));
     }
 
-    g.fillStyle = cvv('--text-warning'); g.globalAlpha = 0.12;
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, t); g.lineTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
+
+    g.fillStyle = cvv('--bad'); g.globalAlpha = 0.12;
     g.fillRect(l, Y(thr), w - l - r, Math.max(0, Y(lo) - Y(thr)));
     g.globalAlpha = 1;
-    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.strokeStyle = cvv('--bad'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
     g.beginPath(); g.moveTo(l, Y(thr)); g.lineTo(w - r, Y(thr)); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = cvv('--text-warning'); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillStyle = cvv('--bad'); g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillText('link fails below here (' + thr.toFixed(0) + ' dBm)', l + 4, Y(thr) - 3);
 
-    g.strokeStyle = '#378ADD'; g.lineWidth = 2;
+    g.strokeStyle = cvv('--series-1'); g.lineWidth = 2;
     g.beginPath();
     for (let px = l; px <= w - r; px++) {
       const frac = (px - l) / (w - l - r);
@@ -235,7 +341,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     }
     g.stroke();
 
-    g.fillStyle = '#D4537E';
+    g.fillStyle = cvv('--series-2');
     g.beginPath(); g.arc(X(S.d), Y(prx(S.d)), 5, 0, 7); g.fill();
     g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('you are here', X(S.d), Y(prx(S.d)) - 9);
@@ -259,7 +365,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     $('cF').textContent = fsl(S.d).toFixed(1) + ' dB';
     $('cR').textContent = pr.toFixed(1) + ' dBm';
     $('cM').textContent = (fm >= 0 ? '+' : '') + fm.toFixed(1) + ' dB';
-    $('cM').style.color = fm >= 10 ? 'var(--text-good)' : (fm >= 0 ? 'var(--text-warning)' : 'var(--text-warning)');
+    $('cM').style.color = fm >= 10 ? 'var(--good)' : (fm >= 0 ? 'var(--warn)' : 'var(--bad)');
     $('cMn').textContent = fm < 0 ? 'link does not close — short by ' + (-fm).toFixed(1) + ' dB'
       : fm < 10 ? 'closes, but thin — most designs want 10–20 dB' : 'healthy margin for fading';
 
@@ -283,10 +389,39 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       const strong = ['EIRP', 'Received carrier C', 'Fade margin'].indexOf(r[0]) >= 0;
       return '<tr' + (strong ? ' style="font-weight:500"' : '') + '><td>' + r[0] + '</td><td>' + r[1] + '</td><td style="color:var(--text-muted);width:44px">' + r[2] + '</td></tr>';
     }).join('');
+
+    $('work').innerHTML = [
+      'EIRP = ' + S.pt.toFixed(1) + ' − ' + (S.lt / 2).toFixed(1) + ' + ' + S.gt.toFixed(1) + ' = ' + eirp.toFixed(1) + ' dBm',
+      'Free-space loss = 92.4 + 20·log ' + S.f.toFixed(1) + ' + 20·log ' + S.d.toFixed(2) + ' = ' + fsl(S.d).toFixed(1) + ' dB',
+      'Received C = ' + eirp.toFixed(1) + ' − ' + fsl(S.d).toFixed(1) + ' − ' + S.lm.toFixed(1) + ' + ' + S.gr.toFixed(1) + ' − ' + (S.lt / 2).toFixed(1) + ' = ' + pr.toFixed(1) + ' dBm',
+      'Noise floor = −174 + 10·log(' + (S.bw * 1e6).toFixed(0) + ' Hz) + ' + S.nf.toFixed(1) + ' = ' + nfl.toFixed(1) + ' dBm',
+      'C/N = ' + pr.toFixed(1) + ' − (' + nfl.toFixed(1) + ') = ' + cn.toFixed(1) + ' dB',
+      'Fade margin = ' + cn.toFixed(1) + ' − ' + S.cn.toFixed(1) + ' = ' + (fm >= 0 ? '+' : '') + fm.toFixed(1) + ' dB'
+    ].map(s => '<li>' + s + '</li>').join('');
   }
 
   ['pt', 'fq', 'gt', 'gr', 'lt', 'lm', 'ds', 'nf', 'bw', 'cn'].forEach(id =>
     $(id).addEventListener('input', () => { read(); updateUI(); }));
+
+  const DEF = { pt: 20, fq: 2.4, gt: 3, gr: 3, lt: 2, lm: 0, ds: 0.8, nf: 5, bw: 16, cn: 9 };
+  function setSliders(v) {
+    for (const k in v) $(k).value = v[k];
+    read(); updateUI();
+  }
+  const tours = [
+    { id: 'tr0', v: DEF, s: '<b>Step 1.</b> A street-length Wi-Fi hop; the total ends far above the noise floor.' },
+    { id: 'tr1', v: Object.assign({}, DEF, { ds: 25.6 }), s: '<b>Step 2.</b> Distance ×32: five doublings cost 30 dB and the link fails.' },
+    { id: 'tr2', v: Object.assign({}, DEF, { ds: 25.6, gt: 25, gr: 25 }), s: '<b>Step 3.</b> A dish at each end adds 44 dB — no extra transmit power.' },
+    { id: 'tr3', v: Object.assign({}, DEF, { ds: 25.6, gt: 25, gr: 25, fq: 24 }), s: '<b>Step 4.</b> Frequency ×10 costs 20 dB — higher bands need shorter hops.' }
+  ];
+  tours.forEach(tr => $(tr.id).addEventListener('click', () => {
+    setSliders(tr.v); $('tourNote').innerHTML = tr.s;
+  }));
+  $('trR').addEventListener('click', () => {
+    setSliders(DEF);
+    $('tourNote').innerHTML = '<b>Back to the default hop.</b> Now drag the sliders yourself.';
+  });
+
   read(); updateUI();
   function frame() { drawWF(); drawDist(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);

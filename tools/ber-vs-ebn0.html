@@ -111,10 +111,10 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Bit error rate against Eb/N0</h1>
-<p class="sub">A digital receiver guesses each bit from one noisy voltage, and the fraction it gets wrong is the bit error rate. This tool plots that error rate against the signal-to-noise measure every digital link is specified in, and lets you switch the channel from clean noise to fading.</p>
+<p class="sub">A receiver guesses each bit from one noisy voltage; the fraction it gets wrong is the bit error rate. Here it is plotted against E<sub>b</sub>/N<sub>0</sub>, in clean noise and in fading.</p>
 <p class="sub" style="margin-bottom: 1.4rem;">New to decibels, noise floors and Eb/N0? Start with <a href="link-budget.html">the link budget tool</a>.</p>
 
-<p class="note">Reading a bit is like hearing one spoken word across a noisy room. In still air you either hear it or you do not, and a little more volume fixes it. In a room where the noise level swings wildly, the average volume tells you almost nothing: the words lost are the ones that happened to land in a loud moment. Turning up the volume barely helps. Saying it twice, from two places, helps enormously. That is fading, and that is diversity.</p>
+<p class="note">Fading is a noisy room whose loudness swings: the words you lose land in the loud moments, and repeating from two places helps more than shouting.</p>
 
 <div class="btnrow">
   <span class="lbl">Guided tour</span>
@@ -183,6 +183,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 <details style="margin-top:1.5rem;">
   <summary>The arithmetic, on the settings as they stand</summary>
   <ol class="work" id="work"></ol>
+  <p style="font-size:13px;color:var(--text-secondary);margin:10px 0 0;">The shape of the curve matters more than its position. In additive noise the error rate falls off a cliff, so a link that is 2 dB short is nearly fixed by a slightly better amplifier. Under Rayleigh fading the same scheme gives a straight, shallow slope of one decade of error rate per decade of power, because the errors are dominated by the moments the signal happens to be deeply faded, and no amount of average power removes those moments. That is why chasing a fading link with transmit power is the wrong move &mdash; the required margin runs to tens of decibels &mdash; and why every mobile system instead buys independent copies of the signal. Watch the slope steepen from one to two to four as branches are added: four branches recover most of what fading took, at a fraction of the power a single branch would need. Three simplifications are worth naming. The fading is flat and slowly varying, and the branches are assumed perfectly independent and combined by maximal-ratio combining, which is the best case; the M-PSK and M-QAM curves use the standard nearest-neighbour approximation with Gray coding, which is accurate at the error rates that matter and slightly pessimistic at very low Eb/N0; and Eb/N0 here is the mean per branch, so L branches also collect L times the energy.</p>
 </details>
 
 <details>
@@ -207,7 +208,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   </dl>
 </details>
 
-<p class="sub" style="margin-top: 2rem;">The shape of the curve matters more than its position. In additive noise the error rate falls off a cliff, so a link that is 2 dB short is nearly fixed by a slightly better amplifier. Under Rayleigh fading the same scheme gives a straight, shallow slope of one decade of error rate per decade of power, because the errors are dominated by the moments the signal happens to be deeply faded, and no amount of average power removes those moments. That is why chasing a fading link with transmit power is the wrong move &mdash; the required margin runs to tens of decibels &mdash; and why every mobile system instead buys independent copies of the signal. Watch the slope steepen from one to two to four as branches are added: four branches recover most of what fading took, at a fraction of the power a single branch would need. Three simplifications are worth naming. The fading is flat and slowly varying, and the branches are assumed perfectly independent and combined by maximal-ratio combining, which is the best case; the M-PSK and M-QAM curves use the standard nearest-neighbour approximation with Gray coding, which is accurate at the error rates that matter and slightly pessimistic at very low Eb/N0; and Eb/N0 here is the mean per branch, so L branches also collect L times the energy. Next, see where fading comes from in <a href="multipath-fading.html">the multipath and fading tool</a>.</p>
+<p class="sub" style="margin-top: 2rem;">Next, see where fading comes from in <a href="multipath-fading.html">the multipath and fading tool</a>.</p>
 
 <script>
 (function () {

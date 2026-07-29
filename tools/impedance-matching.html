@@ -69,10 +69,10 @@ dl.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Impedance, VSWR and the Smith chart</h1>
-<p class="sub">A transmitter expects the cable and the antenna to swallow everything it sends. When the antenna does not look like the cable, part of the wave turns round and comes back, and the cable ends up carrying two waves at once. This tool lets you drag that mismatch around, read what it costs in decibels, and then fit small parts one at a time until the reflection is gone. The Smith chart is the map that makes each part a single, predictable move.</p>
+<p class="sub">When the antenna does not look like the cable, part of the wave turns round and comes back. Drag the mismatch on the Smith chart, read its cost in decibels, and tune it out part by part.</p>
 <p class="hint">New to decibels, dBm and the idea of a power budget? Start with <a href="link-budget.html">link budget</a> first. Nothing here needs any prior knowledge of the chart itself.</p>
 
-<div class="note"><b>An everyday picture.</b> The cable is a rope, and the antenna is whatever is holding the far end. Tie the rope to a wall and every pulse you send bounces straight back at you. Hand it to someone who moves with the rope and absorbs the motion, and nothing returns. The antenna's impedance decides which of those two the far end behaves like.</div>
+<div class="note"><b>An everyday picture.</b> The cable is a rope: tied to a wall, every pulse bounces straight back; held by someone who absorbs the motion, nothing returns.</div>
 
 <div class="grid2">
   <div class="ctl"><label for="rr">Antenna R</label><input type="range" id="rr" min="1" max="500" step="1" value="75"><span class="v" id="rrv">75 &#937;</span></div>
@@ -144,14 +144,16 @@ dl.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
   <li>A match that fights a large resistance ratio is a narrow spike; a gentle one is a broad dish. That is what the Q figure is measuring.</li>
 </ul>
 
-<p class="sec"><b>The arithmetic, with this antenna's numbers in it</b></p>
+<details>
+<summary>The arithmetic, with this antenna's numbers in it</summary>
 <ol class="work" id="work"></ol>
-
-<p class="sub" style="margin-top: 2rem;">Two numbers are worth keeping permanently calibrated. Return loss and mismatch loss are <b>not</b> the same figure and not each other's negative: return loss describes the wave coming back, mismatch loss describes the power that failed to go in. A VSWR of 2.0 is 9.54 dB of return loss, which sounds alarming, and only <b>0.51 dB</b> of mismatch loss, which is nothing &mdash; eleven per cent of the power turns round, yet the link gives up half a decibel. That is exactly why VSWR 2 is a routine, shippable antenna specification, and why a student who believes VSWR 2 costs 9.5 dB will over-design every match they ever build. The other lesson is in section 3: cable length moves the point around the chart without ever shrinking the VSWR circle, real parts shrink it, and the narrower the match the faster it falls off the band edge. Two simplifications are made here and should be named: the antenna is modelled as a fixed resistance in series with one reactive part, so that its reactance moves with frequency the way a real component would rather than staying frozen; and mismatch loss is the best case, because it ignores what the returned power does when it reaches the amplifier.</p>
+<p class="sub" style="margin-top: 1rem;">Two numbers are worth keeping permanently calibrated. Return loss and mismatch loss are <b>not</b> the same figure and not each other's negative: return loss describes the wave coming back, mismatch loss describes the power that failed to go in. A VSWR of 2.0 is 9.54 dB of return loss, which sounds alarming, and only <b>0.51 dB</b> of mismatch loss, which is nothing &mdash; eleven per cent of the power turns round, yet the link gives up half a decibel. That is exactly why VSWR 2 is a routine, shippable antenna specification, and why a student who believes VSWR 2 costs 9.5 dB will over-design every match they ever build. The other lesson is in section 3: cable length moves the point around the chart without ever shrinking the VSWR circle, real parts shrink it, and the narrower the match the faster it falls off the band edge. Two simplifications are made here and should be named: the antenna is modelled as a fixed resistance in series with one reactive part, so that its reactance moves with frequency the way a real component would rather than staying frozen; and mismatch loss is the best case, because it ignores what the returned power does when it reaches the amplifier.</p>
+</details>
 
 <p class="hint">Where next: <a href="antenna-basics.html">antenna basics</a> for what the antenna is doing with the power that does get in.</p>
 
-<p class="sec"><b>Glossary</b></p>
+<details>
+<summary>Glossary</summary>
 <dl class="glossary">
   <dt>Impedance Z, in ohms</dt><dd>How much voltage a component demands for a given current, written R + jX. R is the part that absorbs power; X is the part that only stores and returns it.</dd>
   <dt>Reactance X, in ohms</dt><dd>The storing part of impedance. Positive X behaves like an inductor, negative X like a capacitor.</dd>
@@ -167,6 +169,7 @@ dl.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
   <dt>L-network</dt><dd>The two-part matching network used here: one shunt part and one series part. Its Q, and therefore its bandwidth, is fixed by the resistance ratio it has to bridge.</dd>
   <dt>Q</dt><dd>How sharply tuned something is. For an L-network bridging R<sub>high</sub> to R<sub>low</sub>, Q = &#8730;(R<sub>high</sub>/R<sub>low</sub> &minus; 1), and the match holds over roughly f<sub>0</sub>/Q.</dd>
 </dl>
+</details>
 
 <script>
 (function () {
@@ -680,7 +683,7 @@ dl.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
   sm.addEventListener('pointercancel', function () { dragging = false; });
 
   const TOUR = [
-    { txt: 'Step 1 — the antenna on its own. A 75 + j60 ohm antenna on a 50 ohm system reflects about a fifth of the wave amplitude, which is roughly a fifth of the power turning round and coming back up the cable.',
+    { txt: 'Step 1 — the antenna on its own. A 75 + j60 ohm antenna on a 50 ohm system reflects nearly half the wave amplitude (|Γ| = 0.47), which is roughly a fifth of the power turning round and coming back up the cable.',
       st: { R: 75, X: 60, z0: 50, f: 2, lw: 0, comps: [] } },
     { txt: 'Step 2 — a quarter wavelength of cable added between the antenna and the transmitter. The point swings half way round the chart, but the dashed VSWR circle it rides on has not shrunk at all. Cable moves an impedance; it does not repair one.',
       st: { R: 75, X: 60, z0: 50, f: 2, lw: 0.25, comps: [] } },

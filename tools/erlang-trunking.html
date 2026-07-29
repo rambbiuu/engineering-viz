@@ -119,7 +119,7 @@ table.tbl th:first-child, table.tbl td:first-child { text-align: left; }
 <p class="sub">A cell has a fixed number of radio channels and no idea how many people will call at once. Erlang B turns that gamble into one number: the chance a caller finds every channel busy and gets nothing.</p>
 <p class="sub" style="margin-bottom: 1.4rem;">New to cells and channel groups? Start with <a href="cellular-reuse.html">frequency reuse</a>, which explains where a cell's channel count comes from.</p>
 
-<p class="note">A bank of channels behaves like supermarket checkouts. Ten separate one-queue tills each need slack for their own quiet moments, so most tills sit idle while one has a rush. Pool the ten into a single queue and the rushes cancel out, so the same staff serve far more shoppers. Radio channels do the same thing, and the effect is much stronger than most people expect.</p>
+<p class="note">Pooled supermarket checkouts serve far more shoppers than the same tills in separate queues, because the rushes cancel &mdash; radio channels do the same.</p>
 
 <div class="btnrow">
   <span class="lbl">Guided tour</span>
@@ -243,6 +243,7 @@ table.tbl th:first-child, table.tbl td:first-child { text-align: left; }
     <tr><td>50</td><td>37.9014</td><td>37.5224</td><td>75.0 %</td></tr>
   </table>
   <p class="sub" style="margin: 10px 0 0;">Ten separate five-channel pools carry 10 &times; 1.3472 = 13.47 Er. One fifty-channel pool carries 37.52 Er, at the same grade of service, from the same fifty channels.</p>
+  <p class="sub" style="margin: 10px 0 0;">Three things fall out of these sliders. Doubling the channels far more than doubles the traffic, because a bigger pool absorbs its own rushes: one channel holds 0.0101 Er at 1 % blocking, fifty hold 37.90 Er, which is 3750 times the traffic from fifty times the hardware. Loosening the target from 1 % to 5 % buys real capacity from the same radios, which is why a network designed for a quiet suburb can be re-graded rather than rebuilt. And sectorising a cell chops one trunk group into three or six, sliding utilisation back down the curve, so it only pays when the interference it removes lets you shrink the cluster size N and hand each cell more channels in the first place.</p>
 </details>
 
 <details>
@@ -261,7 +262,7 @@ table.tbl th:first-child, table.tbl td:first-child { text-align: left; }
   </dl>
 </details>
 
-<p class="sub" style="margin-top: 1.5rem;">Three things fall out of these sliders. Doubling the channels far more than doubles the traffic, because a bigger pool absorbs its own rushes: one channel holds 0.0101 Er at 1 % blocking, fifty hold 37.90 Er, which is 3750 times the traffic from fifty times the hardware. Loosening the target from 1 % to 5 % buys real capacity from the same radios, which is why a network designed for a quiet suburb can be re-graded rather than rebuilt. And sectorising a cell chops one trunk group into three or six, sliding utilisation back down the curve, so it only pays when the interference it removes lets you shrink the cluster size N and hand each cell more channels in the first place. Next, see where that channel count comes from in <a href="cellular-reuse.html">frequency reuse</a>.</p>
+<p class="sub" style="margin-top: 1.5rem;">Next, see where the channel count comes from in <a href="cellular-reuse.html">frequency reuse</a>.</p>
 
 <script>
 (function () {

@@ -90,6 +90,7 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   <span class="lbl" style="margin-left: 6px;">Brackets</span>
   <button id="bCar" class="on">Carson</button>
   <button id="bPct" class="on">1 % rule</button>
+  <button id="bAM" disabled>Compare with AM</button>
   <button id="anim" style="margin-left: 6px;">Animate &beta;</button>
   <button id="pre">FM broadcast preset</button>
 </div>
@@ -130,6 +131,7 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   <li>Blue stems have a positive Bessel coefficient, orange stems a negative one &mdash; a negative coefficient means that line is phase-inverted. Push &beta; past 2.405 and the centre stem turns orange: the carrier has passed through zero and come back inverted.</li>
   <li>The upper bracket is Carson's rule, the lower one the 1 % rule. Carson is the convenient formula; the 1 % rule counts the sidebands that actually matter. They do not agree, and Carson is the narrower of the two for every &beta; above about 0.6.</li>
   <li>Total power never moves. Dragging &beta; only shuffles height between stems, which is what the in-band power card is checking.</li>
+  <li>Faint green stems &mdash; equivalent AM ghost.</li>
 </ul>
 
 <div class="cards">
@@ -139,6 +141,8 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   <div class="card"><div class="hd">1 % rule bandwidth</div><div class="big" id="kP">&mdash;</div><div class="ft" id="kPf">&mdash;</div></div>
   <div class="card"><div class="hd">Power inside Carson</div><div class="big" id="kW">&mdash;</div><div class="ft" id="kWf">&mdash;</div></div>
   <div class="card"><div class="hd">Carrier line A<sub>c</sub>|J<sub>0</sub>|</div><div class="big" id="kJ">&mdash;</div><div class="ft" id="kJf">&mdash;</div></div>
+  <div class="card"><div class="hd">Regime</div><div class="big" id="kR">&mdash;</div><div class="ft">NBFM when &beta; &le; 0.2</div></div>
+  <div class="card"><div class="hd">Noise advantage</div><div class="big" id="kN">&mdash;</div><div class="ft" id="kNf">&mdash;</div></div>
 </div>
 
 <p class="sec"><b>3 &middot; The Bessel functions themselves</b> <span>&mdash; every stem height in section 2 is one vertical slice through this picture</span></p>
@@ -149,6 +153,25 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   <li>Every curve starts at zero except J<sub>0</sub>, which starts at 1. That is an unmodulated carrier: one line, no sidebands.</li>
 </ul>
 
+<p class="sec"><b>4 &middot; From narrowband to broadcast &mdash; the Armstrong chain</b> <span>&mdash; multipliers scale &beta;, mixers only move f<sub>c</sub></span></p>
+<canvas id="ca" style="height: 240px;"></canvas>
+<ul class="legend-note">
+  <li>Blue &mdash; carrier f<sub>c</sub>.</li>
+  <li>Orange &mdash; deviation &Delta;f.</li>
+  <li>Green &mdash; index &beta;.</li>
+</ul>
+<details open>
+  <summary>Chain settings</summary>
+  <div class="grid2" style="margin-top: 0.6rem;">
+    <div class="ctl"><label for="aDf">NBFM deviation &Delta;f&#8321;</label><input type="range" id="aDf" min="5" max="50" step="1" value="25"><span class="v" id="aDfv">25 Hz</span></div>
+    <div class="ctl"><label for="aFm">Tone f<sub>m</sub></label><input type="range" id="aFm" min="50" max="500" step="10" value="200"><span class="v" id="aFmv">200 Hz</span></div>
+    <div class="ctl"><label for="aN1">First multiplier n&#8321;</label><input type="range" id="aN1" min="2" max="100" step="1" value="64"><span class="v" id="aN1v">&times;64</span></div>
+    <div class="ctl"><label for="aMx">Mixer shift (subtract)</label><input type="range" id="aMx" min="0" max="20" step="0.1" value="10.9"><span class="v" id="aMxv">10.9 MHz</span></div>
+    <div class="ctl"><label for="aN2">Second multiplier n&#8322;</label><input type="range" id="aN2" min="2" max="100" step="1" value="48"><span class="v" id="aN2v">&times;48</span></div>
+    <div class="ctl"><label for="aFc">NBFM carrier f<sub>c1</sub></label><input type="range" id="aFc" min="100" max="500" step="10" value="200"><span class="v" id="aFcv">200 kHz</span></div>
+  </div>
+</details>
+
 <details class="wordy"><summary>Worked example &mdash; mono FM broadcast</summary>
 <ol class="worked">
   <li>A station is allowed a peak deviation of <b>&Delta;f = 75 kHz</b> and its audio runs up to <b>f<sub>m</sub> = 15 kHz</b>.</li>
@@ -156,6 +179,9 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   <li>Carson's rule: <b>BW = 2(&Delta;f + f<sub>m</sub>) = 2(75 + 15) = 180 kHz</b>.</li>
   <li>The 1 % rule: the last Bessel coefficient at or above 0.01 is J<sub>8</sub>(5) = 0.0184, so n&prime; = 8 and <b>BW = 2 &times; 8 &times; 15 = 240 kHz</b>.</li>
   <li>The two disagree by 60 kHz, and the regulator sides with neither: broadcast channels are spaced <b>200 kHz</b> apart, which gives Carson's estimate some room without paying for the full 1 % width.</li>
+  <li id="wkNB">&mdash;</li>
+  <li>Single-tone FM output SNR: <b>S<sub>0</sub>/N<sub>0</sub> = 3A<sub>c</sub>&sup2;&beta;&sup2; / (4&eta;f<sub>m</sub>)</b> &mdash; A<sub>c</sub> [V], &eta; one-sided noise PSD [W/Hz], f<sub>m</sub> [Hz], &beta; dimensionless.</li>
+  <li>The &beta;&sup2; advantage collapses below &asymp;10 dB input SNR &mdash; the capture threshold.</li>
 </ol>
 
 </details>
@@ -223,6 +249,17 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     return { J: J, N: N, tot: tot, np: np, nCar: nCar, inb: inb / Math.max(tot, 1e-12) };
   }
 
+  // ---- Armstrong indirect chain (.research/signals.md 1.17-1.18) ----------
+  // multiplier xn scales f_c AND df (so beta); mixer shifts f_c only.
+  function armstrongCalc(df1, fm, n1, shiftHz, n2, fc1Hz) {
+    var f = Math.max(fm, 1e-9);
+    var s1 = { fc: fc1Hz, df: df1 };
+    var s2 = { fc: s1.fc * n1, df: s1.df * n1 };
+    var s3 = { fc: Math.abs(s2.fc - shiftHz), df: s2.df };
+    var s4 = { fc: s3.fc * n2, df: s3.df * n2 };
+    return [s1, s2, s3, s4].map(function (s) { s.beta = s.df / f; return s; });
+  }
+
   // ---- self-test against the reference table (.research/signals.md 2.1) ---
   var TABLE = [
     [0.2, [0.990025, 0.099501, 0.004983, 0.000166, 0.000004, 0.000000, 0.000000, 0.000000, 0.000000]],
@@ -264,6 +301,14 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
       if (!(Math.abs(besselJ(0, z)) <= 1e-8)) fails.push('J0(' + z + ') = ' + besselJ(0, z).toExponential(3));
     });
     if (!(Math.abs(besselJ(0, 0) - 1) <= 1e-15) || besselJ(3, 0) !== 0) fails.push('beta = 0 edge case');
+    // Armstrong chain against .research/signals.md section 6
+    var AST = armstrongCalc(25, 200, 64, 10.9e6, 48, 200e3);
+    var AEXP = [[200e3, 25, 0.125], [12.8e6, 1600, 8], [1.9e6, 1600, 8], [91.2e6, 76800, 384]];
+    for (i = 0; i < 4; i++) {
+      if (Math.abs(AST[i].fc - AEXP[i][0]) > 0.5 || Math.abs(AST[i].df - AEXP[i][1]) > 1e-6 || Math.abs(AST[i].beta - AEXP[i][2]) > 1e-9) {
+        fails.push('Armstrong stage ' + (i + 1));
+      }
+    }
     return fails;
   }
 
@@ -286,7 +331,8 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   })();
 
   // ---- state --------------------------------------------------------------
-  var S = { beta: 5, fm: 15, ac: 1, mode: 'fm', carson: true, pct: true, anim: false, capped: false };
+  var S = { beta: 5, fm: 15, ac: 1, mode: 'fm', carson: true, pct: true, am: false, anim: false, capped: false };
+  var A = { df1: 25, fm: 200, n1: 64, mix: 10.9, n2: 48, fc1: 200 };
   var P = coeffs(S.beta);
   var MQ = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -488,6 +534,31 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText(clab, cx, cy);
 
+    // regime label, top right
+    var nb = S.beta <= 0.2;
+    g.fillStyle = nb ? cvv('--text-good') : sub;
+    g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText(nb ? 'NBFM' : 'WBFM', l + W, 6);
+
+    // equivalent AM ghost (only offered for beta <= 0.5)
+    if (S.am) {
+      var c3 = cvv('--s3');
+      g.globalAlpha = 0.3; g.strokeStyle = c3; g.fillStyle = c3;
+      [[0, S.ac], [1, S.beta * S.ac / 2], [-1, S.beta * S.ac / 2]].forEach(function (st) {
+        var gx = X(st[0]) + 5;
+        g.lineWidth = st[0] === 0 ? 3.4 : 2.2;
+        g.beginPath(); g.moveTo(gx, by); g.lineTo(gx, Y(st[1])); g.stroke();
+        g.beginPath(); g.arc(gx, Y(st[1]), 2.6, 0, TAU); g.fill();
+      });
+      g.globalAlpha = 1;
+      var lsb = 'minus sign — this is not AM';
+      var lx1 = X(-1), lya = Y(S.ac * Math.abs(P.J[1]));
+      g.strokeStyle = c2; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(lx1 - 4, lya - 4); g.lineTo(lx1 - 24, lya - 22); g.stroke();
+      g.fillStyle = c2; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.fillText(lsb, Math.max(lx1 - 26, g.measureText(lsb).width + 4), lya - 24);
+    }
+
     // brackets
     function bracket(y, nHalf, col, label) {
       var x0 = X(-nHalf), x1 = X(nHalf);
@@ -600,6 +671,57 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     g.fillText(' β = ' + F(S.beta, 3) + ' ', X(S.beta), t + 2);
   }
 
+  function drawChain() {
+    var c = $('ca'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    if (w < 40 || h < 40) return;
+    var mut = cvv('--text-muted'), bs = cvv('--border-strong');
+    var c1 = cvv('--s1'), c2 = cvv('--s2'), c3 = cvv('--s3');
+    var st = armstrongCalc(A.df1, A.fm, A.n1, A.mix * 1e6, A.n2, A.fc1 * 1e3);
+    var names = ['NBFM modulator', '×' + F(A.n1, 0) + ' multiplier', 'mixer −' + F(A.mix, 1) + ' MHz', '×' + F(A.n2, 0) + ' multiplier'];
+    var inA = 30, outA = 46, gap = 24, l = 6;
+    var W = Math.max(w - 12, 40);
+    var bw = Math.max((W - inA - outA - 3 * gap) / 4, 30), bh = 46, bt = 50, my = bt + bh / 2;
+    var fb = function (b) { return b < 1 ? F(b, 3) : (b < 100 ? F(b, 1) : F(b, 0)); };
+    var fC = function (hz) { return hz >= 1e6 ? F(hz / 1e6, 1) + ' MHz' : F(hz / 1e3, 0) + ' kHz'; };
+    var fD = function (hz) { return hz >= 1000 ? F(hz / 1e3, 1) + ' kHz' : F(hz, 0) + ' Hz'; };
+
+    function arrow(x0, x1, y) {
+      g.strokeStyle = bs; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
+      g.fillStyle = bs;
+      g.beginPath(); g.moveTo(x1, y); g.lineTo(x1 - 6, y - 3.5); g.lineTo(x1 - 6, y + 3.5); g.closePath(); g.fill();
+    }
+
+    arrow(l, l + inA, my);
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('m(t), fₘ = ' + F(A.fm, 0) + ' Hz', l, bt - 8);
+    g.textAlign = 'right';
+    g.fillText('total multiplication ×' + F(A.n1 * A.n2, 0), l + W, bt - 8);
+
+    for (var k = 0; k < 4; k++) {
+      var bx = l + inA + k * (bw + gap);
+      g.strokeStyle = bs; g.lineWidth = 1.2;
+      g.strokeRect(bx, bt, bw, bh);
+      g.fillStyle = cvv('--text-primary'); g.font = fnt(bw < 110 ? 10 : 11);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(names[k], bx + bw / 2, bt + bh / 2, bw - 6);
+      if (k < 3) arrow(bx + bw, bx + bw + gap, my);
+      var cx = bx + bw / 2, ty = bt + bh + 20;
+      g.font = fnt(11); g.textBaseline = 'alphabetic';
+      g.fillStyle = c1; g.fillText('fᴄ ' + fC(st[k].fc), cx, ty, bw + gap - 8);
+      g.fillStyle = c2; g.fillText('Δf ' + fD(st[k].df), cx, ty + 16, bw + gap - 8);
+      g.fillStyle = c3; g.fillText('β ' + fb(st[k].beta), cx, ty + 32, bw + gap - 8);
+      if (k === 0 && st[0].beta > 0.2) {
+        g.fillStyle = cvv('--text-warning'); g.font = fnt(10);
+        g.fillText('not narrowband — distortion', cx, ty + 50, bw + gap + 20);
+      }
+    }
+    arrow(l + inA + 4 * bw + 3 * gap, l + W - 2, my);
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('WBFM out', l + W, my + 6);
+  }
+
   // ---- readouts -----------------------------------------------------------
   function updateUI() {
     var df = dev();
@@ -633,9 +755,28 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     $('kJ').textContent = F(S.ac * Math.abs(P.J[0]), 4) + ' V';
     $('kJf').textContent = 'J₀(β) = ' + F(P.J[0], 4) + (P.J[0] < 0 ? ' — phase inverted' : '');
     $('kJ').style.color = Math.abs(P.J[0]) < 0.01 ? 'var(--text-warning)' : '';
+
+    var nb = S.beta <= 0.2;
+    $('kR').textContent = nb ? 'NBFM' : 'WBFM';
+    $('kR').style.color = nb ? 'var(--text-good)' : '';
+    var adv = 20 * Math.log10(Math.max(S.beta, 1e-12));
+    $('kN').textContent = S.beta < 0.05 ? '—' : (adv >= 0 ? '+' : '−') + F(Math.abs(adv), 1) + ' dB';
+    $('kN').style.color = nb ? 'var(--text-muted)' : '';
+    $('kNf').textContent = nb ? 'NBFM — no advantage over AM' : 'output SNR ∝ β², above threshold';
+
+    var amOK = S.beta <= 0.5;
+    if (!amOK && S.am) S.am = false;
+    $('bAM').disabled = !amOK;
+    $('bAM').classList.toggle('on', S.am);
+
+    var J1 = besselJ(1, S.beta), exv = S.ac * J1, apv = S.beta * S.ac / 2;
+    var nbErr = Math.abs(exv) > 1e-12 ? Math.abs((apv - exv) / exv) * 100 : NaN;
+    $('wkNB').innerHTML = 'Small-angle check at β = ' + F(S.beta, 3) + ': exact A<sub>c</sub>J₁(β) = '
+      + F(exv, 6) + ' V, approximation βA<sub>c</sub>/2 = ' + F(apv, 6) + ' V — error '
+      + (Number.isFinite(nbErr) ? F(nbErr, 2) + ' %' : '—') + '.';
   }
 
-  function draw() { drawWave(); drawSpec(); drawBessel(); }
+  function draw() { drawWave(); drawSpec(); drawBessel(); drawChain(); }
   function refresh() { P = coeffs(S.beta); updateUI(); draw(); }
 
   // ---- controls -----------------------------------------------------------
@@ -690,6 +831,24 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   $('bPct').addEventListener('click', function () {
     S.pct = !S.pct; $('bPct').classList.toggle('on', S.pct); draw();
   });
+  $('bAM').addEventListener('click', function () {
+    if ($('bAM').disabled) return;
+    S.am = !S.am; $('bAM').classList.toggle('on', S.am); draw();
+  });
+
+  function chainUI() {
+    $('aDfv').textContent = F(A.df1, 0) + ' Hz';
+    $('aFmv').textContent = F(A.fm, 0) + ' Hz';
+    $('aN1v').textContent = '×' + F(A.n1, 0);
+    $('aMxv').textContent = F(A.mix, 1) + ' MHz';
+    $('aN2v').textContent = '×' + F(A.n2, 0);
+    $('aFcv').textContent = F(A.fc1, 0) + ' kHz';
+    drawChain();
+  }
+  [['aDf', 'df1', 5, 50], ['aFm', 'fm', 50, 500], ['aN1', 'n1', 2, 100],
+   ['aMx', 'mix', 0, 20], ['aN2', 'n2', 2, 100], ['aFc', 'fc1', 100, 500]].forEach(function (d) {
+    $(d[0]).addEventListener('input', function () { A[d[1]] = clamp(+$(d[0]).value, d[2], d[3]); chainUI(); });
+  });
   $('pre').addEventListener('click', function () {
     setFm(15); setBeta(5); setMode('fm');
     $('tour').innerHTML = '<b>Mono FM broadcast.</b> Δf = 75 kHz, fₘ = 15 kHz, so β = 5. Carson asks for 180 kHz, the 1 % rule for 240 kHz, and the regulator allocates 200 kHz channels.';
@@ -697,7 +856,7 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
 
   // ---- guided tour --------------------------------------------------------
   var TOUR = [
-    [0.2, 15, '<b>Step 1 — narrowband FM.</b> β = 0.2. Only one sideband pair is above 1 % of the carrier, so the spectrum looks exactly like AM and occupies 2fₘ = 30 kHz. Carson says 36 kHz. At this setting FM buys you nothing over AM.'],
+    [0.2, 15, '<b>Step 1 — narrowband FM.</b> β = 0.2: the AM ghost matches everything except the minus sign.'],
     [2.405, 15, '<b>Step 2 — the first carrier null.</b> β = 2.405 is the first zero of J₀, so the centre stem has vanished: every watt is now in the sidebands. Bench engineers use exactly this to calibrate a deviation meter — turn the modulation up until the carrier disappears and Δf must be 2.405 × fₘ.'],
     [5, 15, '<b>Step 3 — broadcast FM.</b> β = 5, Δf = 75 kHz, fₘ = 15 kHz. The carrier is back but inverted and small. Carson gives 180 kHz, the 1 % rule 240 kHz — the two rules now disagree by a third, which is why the label on the bracket matters.'],
     [10, 15, '<b>Step 4 — wideband.</b> β = 10 spreads the power over 29 significant lines and asks for 420 kHz by the 1 % rule. Output signal-to-noise improves as β², so this is the trade in its clearest form: four times the spectrum for a much quieter receiver.']
@@ -706,6 +865,7 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     $(id).addEventListener('click', function () {
       if (S.anim) toggleAnim();
       setFm(TOUR[k][1]); setBeta(TOUR[k][0]);
+      S.am = k === 0;
       $('tour').innerHTML = TOUR[k][2];
       refresh();
     });
@@ -738,14 +898,18 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
 
   setMode('fm');
+  chainUI();
   refresh();
   window.__fmFrame = frame;
   window.__fmState = function () {
     return {
-      beta: S.beta, fm: S.fm, ac: S.ac, mode: S.mode,
+      beta: S.beta, fm: S.fm, ac: S.ac, mode: S.mode, am: S.am,
       dev: dev(), carson: carsonBW(), pct: pctBW(),
       np: P.np, tot: P.tot, inb: P.inb, J0: P.J[0], N: P.N
     };
+  };
+  window.__fmArmstrong = function () {
+    return armstrongCalc(A.df1, A.fm, A.n1, A.mix * 1e6, A.n2, A.fc1 * 1e3);
   };
 })();
 </script>

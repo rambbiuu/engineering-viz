@@ -6,63 +6,62 @@
 <title>Spinning circles draw your wave</title>
 <style>
 :root {
-  --bg: #fbfaf7;
-  --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
-  --text-warning: #854F0B;
-  --border: #e2e0d8;
-  --border-strong: #b9b7ae;
-  --surface-1: #f1efe8;
-  --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --series-1: #378ADD; --series-2: #D85A30;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19;
-    --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
-    --text-warning: #FAC775;
-    --border: #34342f;
-    --border-strong: #56554e;
-    --surface-1: #262624;
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --series-1: #5AA6E8; --series-2: #EE7B52;
   }
 }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  line-height: 1.5;
-}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+h2 { font-size: 15px; font-weight: 500; margin: 2rem 0 0.35rem; }
 .sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
+.hint { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
 input, button { font: inherit; color: inherit; }
-button {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 6px 14px;
-  cursor: pointer;
-}
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; font-size: 13px; }
 button:hover { background: var(--surface-1); }
-button.on { border-color: #378ADD; color: #378ADD; }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+button.on { border-color: var(--series-1); color: var(--series-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .lbl { font-size: 14px; color: var(--text-secondary); }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.85rem; margin: 1.25rem 0 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.7rem; }
+.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 canvas { width: 100%; display: block; }
+ul.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 7px 0 0; padding: 0.6rem 0.9rem 0.65rem 1.9rem; background: var(--surface-1); border-radius: var(--radius); }
+ul.legend-note li { margin: 3px 0; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.4rem 0 0; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0.6rem 0 0; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; font-variant-numeric: tabular-nums; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.4rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 9px; }
+dl.glossary dd { margin: 0; color: var(--text-secondary); }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Spinning circles draw your wave</h1>
-<p class="sub">One point riding a spinning circle traces a perfect sine in time. Stack more circles &mdash; each smaller and spinning faster, tip to tip &mdash; and the last tip traces squares, triangles, sawtooths. Every repeating shape is just circles riding circles: the same fact as the Fourier series, seen with your own eyes.</p>
+<p class="sub">One point riding a spinning circle traces a sine wave in time. Stack smaller, faster circles tip to tip and the last tip draws squares, triangles, sawtooths &mdash; the Fourier series, live.</p>
+<p class="hint">New here? Build the same idea with bars first, in the <a href="fourier-series.html">Fourier series builder</a>.</p>
 
 <div class="row">
   <span class="lbl">Shape to draw</span>
@@ -78,9 +77,53 @@ canvas { width: 100%; display: block; }
   <span id="hnv" style="font-size: 14px; font-weight: 500; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums;">4</span>
 </div>
 
-<canvas id="cv" style="height: 380px;"></canvas>
+<h2>A guided tour</h2>
+<div class="steps">
+  <button class="tourbtn" id="t0">1 &middot; One circle</button>
+  <button class="tourbtn" id="t1">2 &middot; A harder target</button>
+  <button class="tourbtn" id="t2">3 &middot; Corners appear</button>
+  <button class="tourbtn" id="t3">4 &middot; Almost square</button>
+  <button class="tourbtn" id="t4">5 &middot; Every speed</button>
+</div>
+<p class="tour-note" id="tourNote">Press step 1 &mdash; the steps drive the controls for you.</p>
 
-<p class="sub" style="margin-top: 2rem;">Watch how the stack behaves: for the sine one circle is already perfect. The square needs many circles &mdash; and they only come in odd speeds (1&times;, 3&times;, 5&times;&hellip;), each smaller by that factor. The sawtooth uses every speed. Slide the circle count up and the trace sharpens; this is literally the Fourier series builder from the other tool, with the recipe bars replaced by spinning radii.</p>
+<p class="sec"><b>1 &middot; The circle stack and its trace</b> <span>&mdash; each tip carries the next circle</span></p>
+<canvas id="cv" style="height: 380px;"></canvas>
+<ul class="legend-note">
+  <li><b style="font-weight:500;color:var(--series-1)">blue arms</b> &mdash; the spinning radii</li>
+  <li><b style="font-weight:500">faint rings</b> &mdash; each circle's path</li>
+  <li><b style="font-weight:500;color:var(--series-2)">orange dot</b> &mdash; the pen tip</li>
+  <li><b style="font-weight:500;color:var(--series-2)">orange curve</b> &mdash; its height over time</li>
+</ul>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Circles in the stack</div>
+    <div class="big" id="cN">&mdash;</div>
+    <div class="ft" id="cNn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Smallest circle</div>
+    <div class="big" id="cS">&mdash;</div>
+    <div class="ft" id="cSn">&mdash;</div>
+  </div>
+</div>
+
+<details><summary>The recipe, with the current numbers</summary>
+<ol class="work" id="work"></ol>
+</details>
+<details><summary>Glossary</summary>
+<dl class="glossary">
+  <dt>Epicycle</dt><dd>A circle whose centre rides on the rim of another circle. Ancient astronomers used stacks of them to trace planet paths; here the stack traces a wave.</dd>
+  <dt>Fundamental</dt><dd>The biggest, slowest circle &mdash; one turn per repeat of the shape. Every other circle spins at a whole-number multiple of its speed.</dd>
+  <dt>Harmonic</dt><dd>A circle spinning at n times the fundamental's speed. The trace it adds is a sine wave at n times the base frequency.</dd>
+  <dt>Amplitude</dt><dd>A circle's radius. It says how much of that harmonic the target shape needs.</dd>
+  <dt>Phase</dt><dd>Where on its circle an arm starts. A negative recipe entry starts the arm half a turn round.</dd>
+  <dt>Fourier series</dt><dd>The recipe itself: the list of speeds and radii that rebuilds any repeating shape from plain sine waves. The bar chart in the builder tool and this circle stack are the same list drawn two ways.</dd>
+</dl>
+<p class="sub" style="margin-top: 1.5rem; margin-bottom: 0;">A sharp edge needs many fast circles &mdash; the square's come only in odd speeds (1&times;, 3&times;, 5&times;&hellip;), the sawtooth uses every speed, and a sharp edge in time always means a long tail in frequency.</p>
+<p class="hint" style="margin-top: 1rem; margin-bottom: 0;">Next: see what a receiver does with a wave it can only measure as numbers, in <a href="sampling-aliasing.html">Sampling and aliasing</a>.</p>
+</details>
 
 <script>
 (function () {
@@ -119,17 +162,21 @@ canvas { width: 100%; display: block; }
   function draw(theta) {
     const c = $('cv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const c1 = cvv('--series-1'), c2 = cvv('--series-2');
     const yc = h / 2;
     const cx = Math.min(160, w * 0.22);
-    const scale = Math.min(cx - 24, h / 2 - 24) / 1.35;
+    const T = terms();
+    let maxR = 0;
+    T.forEach(tm => { maxR += Math.abs(tm.a); });
+    const scale = Math.min(cx - 14, w * 0.2, h / 2 - 28) / Math.max(maxR, 1e-9);
     const waveL = cx * 2 + 20, waveR = w - 10;
+    window.__epiProbe = { w: w, h: h, cx: cx, reach: maxR * scale, terms: T.length };
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
     g.beginPath(); g.moveTo(waveL, yc); g.lineTo(waveR, yc); g.stroke();
 
     let px = cx, py = yc;
-    const T = terms();
     T.forEach(tm => {
       const r = Math.abs(tm.a) * scale;
       const ang = tm.n * theta + (tm.a < 0 ? Math.PI : 0);
@@ -137,12 +184,12 @@ canvas { width: 100%; display: block; }
       g.beginPath(); g.arc(px, py, r, 0, 7); g.stroke();
       g.globalAlpha = 1;
       const nx = px + r * Math.cos(ang), ny = py - r * Math.sin(ang);
-      g.strokeStyle = '#378ADD'; g.lineWidth = 1.4;
+      g.strokeStyle = c1; g.lineWidth = 1.4;
       g.beginPath(); g.moveTo(px, py); g.lineTo(nx, ny); g.stroke();
       px = nx; py = ny;
     });
 
-    g.fillStyle = '#D85A30';
+    g.fillStyle = c2;
     g.beginPath(); g.arc(px, py, 4.5, 0, 7); g.fill();
 
     if (S.playing || hist.length === 0) hist.unshift(py);
@@ -153,7 +200,7 @@ canvas { width: 100%; display: block; }
     g.beginPath(); g.moveTo(px, py); g.lineTo(waveL, hist[0]); g.stroke();
     g.setLineDash([]); g.globalAlpha = 1;
 
-    g.strokeStyle = '#D85A30'; g.lineWidth = 2;
+    g.strokeStyle = c2; g.lineWidth = 2;
     g.beginPath();
     for (let i = 0; i < hist.length; i++) {
       const x = waveL + i;
@@ -168,24 +215,68 @@ canvas { width: 100%; display: block; }
     g.fillText('time →  (what a scope would show)', waveR, h - 20);
   }
 
-  function setType(ty, btn) {
-    S.type = ty;
-    ['bsi', 'bsq', 'btr', 'bsw'].forEach(id => $(id).classList.remove('on'));
-    $(btn).classList.add('on');
-    hist.length = 0;
+  function updateUI() {
+    const T = terms();
+    $('cN').textContent = T.length.toFixed(0);
+    const sp = T.map(tm => tm.n.toFixed(0) + '×');
+    $('cNn').textContent = 'speeds ' + (sp.length <= 6 ? sp.join(', ') : sp.slice(0, 4).join(', ') + ', … ' + sp[sp.length - 1]);
+    const first = T[0], last = T[T.length - 1];
+    const pct = Math.abs(last.a / first.a) * 100;
+    $('cS').textContent = pct.toFixed(1) + ' %';
+    $('cSn').textContent = 'of the largest; spins ' + last.n.toFixed(0) + '× the base';
+
+    const head = {
+      si: 'A sine needs exactly one circle: speed 1×, radius 1.000.',
+      sq: 'Square recipe: radius of the n× circle = 4 ÷ (π·n), odd n only.',
+      tr: 'Triangle recipe: radius = 8 ÷ (π²·n²), odd n only, every other one flipped.',
+      sw: 'Sawtooth recipe: radius = 2 ÷ (π·n), every n, every other one flipped.'
+    };
+    const lines = [head[S.type]];
+    const show = T.length <= 4 ? T : T.slice(0, 3).concat([T[T.length - 1]]);
+    show.forEach((tm, i) => {
+      if (T.length > 4 && i === 3) lines.push('…');
+      lines.push('Circle at ' + tm.n.toFixed(0) + '× speed: radius ' + Math.abs(tm.a).toFixed(3)
+        + (tm.a < 0 ? ', started half a turn round.' : '.'));
+    });
+    $('work').innerHTML = lines.map(s => '<li>' + s + '</li>').join('');
   }
 
-  $('bsi').addEventListener('click', () => setType('si', 'bsi'));
-  $('bsq').addEventListener('click', () => setType('sq', 'bsq'));
-  $('btr').addEventListener('click', () => setType('tr', 'btr'));
-  $('bsw').addEventListener('click', () => setType('sw', 'bsw'));
-  $('hn').addEventListener('input', () => { S.N = +$('hn').value; $('hnv').textContent = S.N; hist.length = 0; });
+  function setType(ty) {
+    S.type = ty;
+    const map = { si: 'bsi', sq: 'bsq', tr: 'btr', sw: 'bsw' };
+    Object.keys(map).forEach(k => $(map[k]).classList.toggle('on', k === ty));
+    hist.length = 0;
+    updateUI();
+  }
+
+  $('bsi').addEventListener('click', () => setType('si'));
+  $('bsq').addEventListener('click', () => setType('sq'));
+  $('btr').addEventListener('click', () => setType('tr'));
+  $('bsw').addEventListener('click', () => setType('sw'));
+  $('hn').addEventListener('input', () => { S.N = +$('hn').value; $('hnv').textContent = S.N.toFixed(0); hist.length = 0; updateUI(); });
   $('pp').addEventListener('click', () => {
     S.playing = !S.playing;
     $('pp').textContent = S.playing ? 'Pause' : 'Continue';
   });
   $('pp').textContent = S.playing ? 'Pause' : 'Continue';
 
+  const TOUR = [
+    { ty: 'si', N: 1, msg: 'Step 1 — one circle: its tip traces a perfect sine.' },
+    { ty: 'sq', N: 1, msg: 'Step 2 — square target, one circle: still only a sine.' },
+    { ty: 'sq', N: 4, msg: 'Step 3 — four circles, odd speeds only: corners appearing.' },
+    { ty: 'sq', N: 12, msg: 'Step 4 — twelve circles: nearly square, corners still ring.' },
+    { ty: 'sw', N: 12, msg: 'Step 5 — the sawtooth uses every speed, even and odd.' }
+  ];
+  TOUR.forEach((st, i) => {
+    $('t' + i).addEventListener('click', () => {
+      $('hn').value = st.N; S.N = st.N; $('hnv').textContent = st.N.toFixed(0);
+      setType(st.ty);
+      $('tourNote').textContent = st.msg;
+      for (let j = 0; j < TOUR.length; j++) $('t' + j).classList.toggle('on', j === i);
+    });
+  });
+
+  updateUI();
   let theta = 0, last = null;
   function frame(ts) {
     if (last === null) last = ts;

@@ -164,6 +164,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   <summary>Worked example &mdash; N = 7, n = 4, omnidirectional</summary>
   <table id="wex"></table>
   <p>The three rows differ because they place the six interferers differently: all at D, at the true distances from a mobile on the cell edge, or all at the closest distance D&nbsp;&minus;&nbsp;R. Quote which one you used, always.</p>
+  <p>Small N gives every cell a fat slice of the spectrum, but the co-channel cells crowd in and SIR collapses. The escape is sectoring: three directional antennas per site cut the first-tier interferers from six to two, worth about 4.8 dB, which usually buys a step down in N. That gain is not free &mdash; each sector trunks its channels separately, so the traffic a cell carries drops unless N drops too, and every handover count rises. The model here is deterministic path loss with one exponent, ideal sector wedges and first-tier interference only; real planning adds shadowing, terrain and antenna front-to-back ratio on top.</p>
 </details>
 
 <details>
@@ -179,8 +180,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   </dl>
 </details>
 
-<p class="sub" style="margin-top: 1.5rem;">Small N gives every cell a fat slice of the spectrum, but the co-channel cells crowd in and SIR collapses. The escape is sectoring: three directional antennas per site cut the first-tier interferers from six to two, worth about 4.8 dB, which usually buys a step down in N. That gain is not free &mdash; each sector trunks its channels separately, so the traffic a cell carries drops unless N drops too, and every handover count rises. The model here is deterministic path loss with one exponent, ideal sector wedges and first-tier interference only; real planning adds shadowing, terrain and antenna front-to-back ratio on top.</p>
-<p class="hint" style="margin-top: 1rem;">Next: <a href="link-budget.html">link budget</a> &mdash; the same decibels, against noise instead of interference.</p>
+<p class="hint" style="margin-top: 1.5rem;">Next: <a href="link-budget.html">link budget</a> &mdash; the same decibels, against noise instead of interference.</p>
 
 <script>
 (function () {

@@ -66,9 +66,9 @@ dl.glossary { font-size: 13px; margin: 0.7rem 0 0; }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Fresnel zones, earth bulge and path clearance</h1>
-<p class="sub">A radio beam is not a pencil line. The energy that reaches the far antenna travels through a fat cigar-shaped region wrapped around the straight path &mdash; the first Fresnel zone &mdash; and anything poking into that region steals signal even when you can still see the far antenna clearly. On top of that the earth itself bulges up in the middle of a long hop, by an amount that changes with the weather. This tool draws the hop to scale, computes how much of the zone is blocked, and turns that into decibels.</p>
+<p class="sub">A radio beam travels in a cigar-shaped region &mdash; the first Fresnel zone &mdash; and anything poking into it steals signal, even with the far antenna in plain sight. This tool draws the hop to scale and prices the blockage in decibels.</p>
 <p class="tip">New to decibels and received power? Start with <a href="link-budget.html">link budget</a>, then come back. Everything here is a correction that gets subtracted inside that budget.</p>
-<p class="sub"><b style="font-weight:500">An everyday analogy.</b> Shine a torch at a wall and slide a book up from below. The shadow does not appear the instant the book crosses the straight line from bulb to wall &mdash; the light dims gradually before that, and the edge of the shadow is soft, with faint bright and dark bands beside it. Radio does the same thing, on a scale of metres to hundreds of metres, and those bands are what this page is about.</p>
+<p class="sub"><b style="font-weight:500">An everyday analogy.</b> Slide a book up towards a torch beam: the light dims before the book reaches the straight line, and the shadow's soft edge shows faint bright and dark bands &mdash; radio does the same.</p>
 
 <div class="grid2">
   <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0.05" max="40" step="0.05" value="2"><span class="v" id="fqv">2.00 GHz</span></div>
@@ -103,11 +103,11 @@ dl.glossary { font-size: 13px; margin: 0.7rem 0 0; }
 <p class="sec"><b>1 &middot; The path, drawn to scale</b> <span>&mdash; two masts, the bulging earth between them, and the Fresnel zone wrapped around the sight line</span></p>
 <canvas id="pf" style="height: 370px;"></canvas>
 <ul class="legend-note">
-  <li>The <b style="font-weight:500;color:var(--accent)">blue cigar</b> is the first Fresnel zone. Its half-width at any point is F&#8321;, and it pinches to nothing at each mast. Keep it clear and the link behaves as if nothing were there.</li>
-  <li>The <b style="font-weight:500;color:var(--text-muted)">grey curve</b> is the earth. Height is measured from the straight chord joining the two mast bases, so the ends sit at zero and the middle rises by the bulge.</li>
-  <li>The <b style="font-weight:500">solid dark line</b> is the line of sight from one mast top to the other. The <b style="font-weight:500;color:var(--text-warning)">dashed line</b> below it is the 0.6 F&#8321; working limit &mdash; the obstacle must stay below that, not merely below the sight line.</li>
-  <li>The vertical arrow at the obstacle is the clearance: how far the sight line passes above the top of the obstacle, in metres and in units of F&#8321;.</li>
-  <li>The horizontal scale is kilometres and the vertical scale is metres, so the picture is stretched vertically. That is how every real path profile is drawn.</li>
+  <li><b style="font-weight:500;color:var(--accent)">blue cigar</b> &mdash; first Fresnel zone</li>
+  <li><b style="font-weight:500;color:var(--text-muted)">grey curve</b> &mdash; the bulging earth</li>
+  <li>solid line &mdash; sight line; dashed &mdash; 0.6 F&#8321; limit</li>
+  <li>arrow &mdash; clearance above the obstacle</li>
+  <li>vertical scale stretched, as real profiles are</li>
 </ul>
 
 <div class="cards">
@@ -141,20 +141,19 @@ dl.glossary { font-size: 13px; margin: 0.7rem 0 0; }
 <p class="sec"><b>2 &middot; What the blockage costs</b> <span>&mdash; knife-edge diffraction loss J(&nu;) from the exact Fresnel integrals</span></p>
 <canvas id="jc" style="height: 300px;"></canvas>
 <ul class="legend-note">
-  <li>The <b style="font-weight:500;color:var(--accent)">blue curve</b> is the loss caused by a single sharp-topped obstacle, computed from the Fresnel cosine and sine integrals. Loss increases downwards, so lower means worse.</li>
-  <li>Left of zero the obstacle is above the sight line. Right of zero it is below, and the tool still charges you loss until the clearance reaches about 0.55 F&#8321;.</li>
-  <li>Beyond that the curve <b style="font-weight:500">rises above the free-space line and rings</b>: the diffracted field alternately adds to and subtracts from the direct field, up to about 1.4 dB either way. That ripple is real, not noise in the plot.</li>
-  <li>The <b style="font-weight:500;color:var(--accent-2)">dashed orange curve</b> is the closed-form approximation printed in ITU-R P.526. It tracks the exact answer beautifully to the right of its stated validity limit &nu; = &minus;0.78, and diverges without warning past it. That is why the limit is stated.</li>
-  <li>The <b style="font-weight:500;color:var(--accent-4)">pink dot</b> is your current path.</li>
+  <li><b style="font-weight:500;color:var(--accent)">blue curve</b> &mdash; exact knife-edge loss</li>
+  <li><b style="font-weight:500;color:var(--accent-2)">dashed orange</b> &mdash; P.526 approximation</li>
+  <li><b style="font-weight:500;color:var(--accent-4)">pink dot</b> &mdash; your current path</li>
+  <li>loss increases downwards</li>
 </ul>
 
 <p class="sec"><b>3 &middot; Why more clearance is not always better</b> <span>&mdash; the ground-reflected ray, and the comb of nulls it makes over water</span></p>
 <canvas id="rc" style="height: 300px;"></canvas>
 <ul class="legend-note">
-  <li>This panel assumes the direct path is open and asks a different question: a second ray bounces off the surface and arrives late. Its extra path length, measured in half-wavelengths, is exactly the Fresnel zone number n = (clearance / F&#8321;)&sup2; at the bounce point.</li>
-  <li>Odd n means the two rays arrive in phase and the signal is up to 6 dB <b style="font-weight:500">stronger</b> than free space. Even n means they arrive out of phase and cancel.</li>
-  <li>Over <b style="font-weight:500;color:var(--accent)">smooth sea</b> almost all the energy comes back, so the nulls are deep &mdash; tens of decibels. Over <b style="font-weight:500;color:var(--accent-2)">rough land</b> most of it scatters away and the ripple is a couple of decibels.</li>
-  <li>Raising a mast slides you along this axis. On a sea path that can walk you straight into a null, which is why over-water hops are designed to sit on a peak, not merely high.</li>
+  <li><b style="font-weight:500;color:var(--accent)">blue</b> &mdash; smooth sea, deep nulls</li>
+  <li><b style="font-weight:500;color:var(--accent-2)">orange</b> &mdash; rough land, shallow ripple</li>
+  <li>odd n &mdash; peak; even n &mdash; null</li>
+  <li><b style="font-weight:500;color:var(--accent-4)">pink dot</b> &mdash; your current path</li>
 </ul>
 
 <details>
@@ -169,11 +168,11 @@ dl.glossary { font-size: 13px; margin: 0.7rem 0 0; }
     <li>Exact Fresnel-integral loss J(&minus;0.379) = <b style="font-weight:500">2.80 dB</b>. The P.526 closed form gives 2.88 dB. The course notes read 2.7 dB off a printed graph. All three agree to about a tenth of a decibel, and the spread between them is the whole argument for computing rather than eyeballing.</li>
     <li>The criterion check: 0.27 F&#8321; is well under 0.6 F&#8321;, so this path fails the normal microwave clearance rule even though you can see straight over the ridge.</li>
   </ol>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0.9rem 0 0;">The earth itself bulges up in the middle of a long hop, by an amount that changes with the weather. Three habits come out of these three panels. First, clearance is counted in Fresnel radii, never in metres: the same ridge that is harmless on a short 6 GHz hop is fatal on a long 150 MHz one, because F&#8321; grows with path length and shrinks with frequency. Second, the atmosphere is part of the geometry &mdash; the k factor stretches or flattens the effective earth, and a path that clears comfortably on a median day at k = 4/3 can be blocked by its own planet on a sub-refractive night at k = 1/2, which is why a clearance figure is meaningless unless a worst-case k is quoted beside it. Third, clearance has to be constrained from both sides over a reflecting surface, because the reflected ray does not care that you have plenty of room. A planner picks mast heights that satisfy 0.6 F&#8321; at k = 2/3 and, on a sea or lake path, land on an odd Fresnel zone at the bounce point rather than an even one.</p>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0.7rem 0 0;">Where this model is simplified: the obstacle is treated as a single ideal knife edge, so a broad rounded hill or two ridges in a row will lose more than the figure shown; ITU-R P.526 gives rounded-obstacle and multiple-edge corrections for those. The reflection panel assumes one specular bounce off a plane surface, with the reflection magnitude fixed at 0.95 for sea and 0.30 for land rather than computed from grazing angle, polarisation and sea state. Atmospheric absorption, rain and antenna patterns are not included here at all.</p>
 </details>
 
-<p class="sub" style="margin-top: 1.75rem;">Three habits come out of these three panels. First, clearance is counted in Fresnel radii, never in metres: the same ridge that is harmless on a short 6 GHz hop is fatal on a long 150 MHz one, because F&#8321; grows with path length and shrinks with frequency. Second, the atmosphere is part of the geometry &mdash; the k factor stretches or flattens the effective earth, and a path that clears comfortably on a median day at k = 4/3 can be blocked by its own planet on a sub-refractive night at k = 1/2, which is why a clearance figure is meaningless unless a worst-case k is quoted beside it. Third, clearance has to be constrained from both sides over a reflecting surface, because the reflected ray does not care that you have plenty of room. A planner picks mast heights that satisfy 0.6 F&#8321; at k = 2/3 and, on a sea or lake path, land on an odd Fresnel zone at the bounce point rather than an even one.</p>
-<p class="sub">Where this model is simplified: the obstacle is treated as a single ideal knife edge, so a broad rounded hill or two ridges in a row will lose more than the figure shown; ITU-R P.526 gives rounded-obstacle and multiple-edge corrections for those. The reflection panel assumes one specular bounce off a plane surface, with the reflection magnitude fixed at 0.95 for sea and 0.30 for land rather than computed from grazing angle, polarisation and sea state. Atmospheric absorption, rain and antenna patterns are not included here at all.</p>
-<p class="tip">Next: put the diffraction loss you found here into <a href="link-budget.html">link budget</a> as a miscellaneous loss and see whether the hop still closes.</p>
+<p class="tip" style="margin-top: 1.5rem;">Next: put the diffraction loss you found here into <a href="link-budget.html">link budget</a> as a miscellaneous loss and see whether the hop still closes.</p>
 
 <details>
   <summary>Glossary</summary>
@@ -733,17 +732,17 @@ dl.glossary { font-size: 13px; margin: 0.7rem 0 0; }
   /* ---------------------------------- tour ---------------------------------- */
   var TOUR = [
     { s: { f: 2, d: 30, h1: 40, h2: 25, ox: 50, oh: 60, k: 4 / 3, kl: '4/3', sea: false },
-      n: 'Step 1 of 6. A 30 km hop at 2 GHz with a 60 m hill at mid-path. The first Fresnel zone is 33.5 m wide there and the hill pushes well through it, so the sight line is blocked and the diffraction card reads about 17.9 dB. That loss comes straight off the link budget.' },
+      n: 'Step 1 — a 60 m hill pushes through the zone: 17.9 dB lost.' },
     { s: { f: 2, d: 30, h1: 120, h2: 120, ox: 50, oh: 60, k: 4 / 3, kl: '4/3', sea: false },
-      n: 'Step 2. Both masts raised to 120 m. The clearance is now 1.40 F₁ and the 17.9 dB has gone. Under a decibel is left, and that is the Fresnel ripple rather than blockage: at 1.40 F₁ the diffracted field happens to be subtracting slightly. The criterion card has flipped to pass.' },
+      n: 'Step 2 — masts at 120 m: clearance 1.40 F₁, the loss is gone.' },
     { s: { f: 0.1, d: 30, h1: 120, h2: 120, ox: 50, oh: 60, k: 4 / 3, kl: '4/3', sea: false },
-      n: 'Step 3. Nothing moved except the frequency, down to 100 MHz. F₁ has grown from 33.5 m to about 150 m, so the same 47 m of clearance is now only 0.31 F₁ and the loss is back. Clearance is a ratio, never a number of metres.' },
+      n: 'Step 3 — same masts at 100 MHz: F₁ grew, the loss is back.' },
     { s: { f: 0.15, d: 1, h1: 27, h2: 27, ox: 50, oh: 21, k: 4 / 3, kl: '4/3', sea: false },
-      n: 'Step 4. The textbook example: 1 km at 150 MHz, 27 m masts, a 21 m ridge at mid-path. F₁ = 22.33 m, clearance 5.99 m, 0.27 F₁. The exact answer is 2.80 dB where the course notes read 2.7 dB off a printed graph. Open the worked example below for the full arithmetic.' },
+      n: 'Step 4 — the textbook case: 0.27 F₁, 2.80 dB; worked example below.' },
     { s: { f: 6, d: 80, h1: 120, h2: 120, ox: 50, oh: 0, k: 4 / 3, kl: '4/3', sea: true },
-      n: 'Step 5. An 80 km sea crossing at 6 GHz with no obstacle at all, only the earth. At the median k = 4/3 the bulge is 94 m, the masts clear it by 0.82 F₁, and the loss card even reads slightly better than free space. But the criterion card, which always tests k = 2/3, already says fail. Press step 6 and change nothing but the weather.' },
+      n: 'Step 5 — 80 km of sea: clears at k = 4/3, fails at k = 2/3.' },
     { s: { f: 6, d: 80, h1: 120, h2: 120, ox: 50, oh: 0, k: 0.5, kl: '1/2', sea: true },
-      n: 'Step 6. Same masts, same sea, sub-refractive air: k has fallen to 1/2 and the bulge has grown from 94 m to 251 m. The planet itself is now the obstacle and the link is 28 dB down. This is why a clearance figure means nothing unless a worst-case k is quoted beside it.' }
+      n: 'Step 6 — k = 1/2: the bulge grows to 251 m, costing 28 dB.' }
   ];
   var anim = null;
   function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = null; } }

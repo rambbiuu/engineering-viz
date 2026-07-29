@@ -90,6 +90,71 @@ overall document skeleton. Do not invent a new palette.
 9. A closing `<p class="sub">` — 3–5 sentences of the engineering lesson: what to try, what
    trade-off it demonstrates, what a practitioner does about it.
 
+## INSTRUMENT LOOK — the owner's aesthetic ruling (2026-07-29)
+
+The owner's words: the diagrams "look like cartoon — I want it professional, bigger, more
+customisable. The whole point is to let a new engineer play with it; keep explanations
+short; ADHD people must understand at one look."
+
+**Professional means measurement instrument, not illustration.** The reference aesthetic
+is a MATLAB figure, an oscilloscope graticule, a spectrum-analyser screen, a datasheet
+plot. Concretely:
+
+- Every plot gets a real graticule: fine gridlines (0.5px, `--grid`), labelled tick marks
+  with units on BOTH axes, an axis line (`--axis`). Never a floating curve on blank space.
+- Line discipline: data series 1.5–2px crisp; grids 0.5px; annotations 1px. No thick
+  rounded doodle strokes, no blob shapes, no hand-drawn wobble, no decorative curves.
+- Physical scenes (masts, antennas, receivers) are drawn as **dimensioned technical line
+  drawings** — thin strokes, dimension arrows with values ("30 m"), like a datasheet
+  mechanical figure. Never cute: no stick figures, no rounded cars, no smiley scale props.
+- Typography on canvas: 10–12px, tabular numerals, sentence case, sparing. Key value
+  annotated at the exact feature it describes with a thin leader line.
+- Colour: data uses the series palette; structure stays neutral. No pastel fills except
+  faint (≤0.12 alpha) region shading that encodes meaning (a band, a zone, an uncertainty).
+
+**Bigger.** Page `max-width: 980px`. Primary canvas of each tool at least 420px tall;
+secondary canvases at least 300px. The plot is the page's hero, not a thumbnail between
+paragraphs.
+
+**More customisable, still glanceable.** Every primary physical quantity is adjustable:
+pair each important slider with a number input for exact entry; add preset buttons for
+recognisable real cases (e.g. "FM broadcast", "GSM", "Wi-Fi"). Extra parameters live in
+the collapsed advanced `<details>` — the first screen keeps at most 3–4 controls.
+
+**One-look comprehension (ADHD rule).** Each tool has ONE hero readout: the current key
+number, large (28px+), with a coloured state badge when a threshold matters ("Aliased",
+"Below sensitivity", "Link OK"). A newcomer must get the story from: title → hero number →
+annotated plot, without reading a paragraph.
+
+**Fill the screen — every aspect ratio (owner, 2026-07-29).** The owner: "on my laptop
+there's a lot of empty space; on a phone it's different — make it work on all aspect
+ratios." A fixed narrow centred column is a defect. Rules:
+
+- Page container: `width: min(1500px, 94vw)` — wide screens get a wide page.
+- Canvas sizing: never a fixed pixel height. Use CSS `aspect-ratio` with clamps, e.g.
+  `aspect-ratio: 21/9; min-height: 320px; max-height: 62vh;` for hero canvases. The JS
+  `fit()` helper already follows CSS size — keep drawing everything relative to the
+  measured width/height so the drawing scales, and re-derive label positions from w/h,
+  never from hardcoded pixel offsets that only work at one size.
+- On wide viewports (≥1100px) reclaim the empty sides: controls + hero readout + cards in
+  a left rail beside the canvases (CSS grid, `grid-template-columns: minmax(280px, 340px)
+  1fr`), or side-by-side canvas pairs where two views are meant to be compared. On narrow
+  viewports everything stacks in one column. Use grid + media queries, no JS layout.
+- Test mentally at 375, 768, 1366 and 1920 wide: no horizontal scroll ever, no canvas
+  that shrinks its text into illegibility, no dead margins wider than the content.
+
+**Typography hygiene (owner, 2026-07-29).** The basics must be ironed flat:
+
+- Sentence case everywhere: headings, buttons, card labels, canvas labels, badges. No
+  Title Case, no ALL-CAPS words (acronyms like FM, SNR, QPSK keep their natural caps).
+- Formulas must look typeset, not typed: real `<sub>`/`<sup>` (f<sub>s</sub>,
+  E<sub>b</sub>/N<sub>0</sub>, 10<sup>−3</sup>), italic single-letter variables, true
+  minus U+2212 (−) never a hyphen, multiplication as · or ×, proper Greek glyphs (λ, β,
+  θ, σ), and units upright with a space (3.6 dB, 15 kHz). On canvas, follow the same
+  conventions with unicode sub/superscripts where needed.
+- Numbers: tabular numerals, thousands separated with a thin space (1 500 km), one
+  consistent decimal precision per quantity.
+
 ## Theme and palette — MANDATORY, replaces any earlier palette
 
 The suite follows the operating system setting automatically through

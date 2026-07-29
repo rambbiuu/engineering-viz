@@ -176,7 +176,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
 <div class="cards" id="pairCards"></div>
 
 <p class="sec"><b>3 &middot; Timing error becomes position error</b> <span>&mdash; the exchange rate, and what geometry does to it</span></p>
-<canvas id="cv3" style="height: 300px;" role="img" aria-label="Position error in metres against clock error in nanoseconds, with the speed-of-light reference slope"></canvas>
+<canvas id="cv3" style="height: 300px;" role="img" aria-label="Position error in metres and kilometres against clock error from zero to three microseconds, with the speed-of-light reference slope"></canvas>
 <ul class="legend-note">
   <li><span class="sw" style="background: var(--text-muted);"></span>reference slope &mdash; 0.2998 m per ns</li>
   <li><span class="sw" style="background: var(--series-2);"></span>that slope times <abbr title="Position dilution of precision: how much the site geometry multiplies a timing error on its way to becoming a position error. One is ideal.">PDOP</abbr></li>
@@ -267,7 +267,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
 
   const C = 0.299792458;          /* km per microsecond, and metres per nanosecond */
   const KMX = 10, KMY = 6;
-  const SWEEP_MAX = 500, SWEEP_N = 26, TRIALS = 24;
+  const SWEEP_MAX = 3000, SWEEP_N = 26, TRIALS = 24;
   const RING_KM = 13, RING_MS = 2600;
   const PAIRCOL = ['--series-1', '--series-2', '--series-3', '--series-4'];
 
@@ -683,8 +683,8 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
     g.beginPath(); g.moveTo(l, y0); g.lineTo(w - r, y0); g.stroke();
 
-    /* moving cursor tied to the expanding wavefront */
-    const rel = ringKm / C - t0 + firstTTrue();
+    /* moving cursor tied to the expanding wavefront: elapsed time since the first arrival */
+    const rel = ringKm / C - firstTTrue();
     if (ringKm > 0 && rel >= -span * 0.05 && rel <= span * 1.05) {
       g.strokeStyle = acc; g.lineWidth = 1.2; g.globalAlpha = 0.7;
       g.beginPath(); g.moveTo(X(rel), y0 - 22); g.lineTo(X(rel), y0 + 6); g.stroke();
@@ -697,25 +697,42 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     }
     ticks.sort((a, b) => a.tm - b.tm);
     g.font = fnt(10.5);
+    /* layout pass: labels sit centred normally, beside the tick when ticks crowd,
+       and stagger over two rows when a row is full */
     const edge = [-1e9, -1e9];
+    ticks.forEach((tk, q) => {
+      tk.px = X(tk.tm); tk.pt = X(tk.tt);
+      tk.lab = 's' + (tk.i + 1) + '  +' + tk.tm.toFixed(2);
+      tk.lw = g.measureText(tk.lab).width;
+      const prev = q > 0 ? ticks[q - 1].px : -1e9;
+      const next = q < ticks.length - 1 ? X(ticks[q + 1].tm) : 1e9;
+      const crowded = tk.px - prev < tk.lw + 8 || next - tk.px < tk.lw + 8;
+      let x0;
+      if (!crowded) x0 = tk.px - tk.lw / 2;
+      else if (next - tk.px >= tk.px - prev) x0 = tk.px + 5;
+      else x0 = tk.px - tk.lw - 5;
+      tk.x0 = clamp(x0, 2, w - tk.lw - 2);
+      tk.row = 0;
+      if (tk.x0 < edge[0] + 5) tk.row = tk.x0 < edge[1] + 5 ? 0 : 1;
+      edge[tk.row] = Math.max(edge[tk.row], tk.x0 + tk.lw);
+      tk.top = y0 - 13 - tk.row * 13;
+    });
     ticks.forEach(tk => {
-      const px = X(tk.tm), pt = X(tk.tt);
-      const lab = 's' + (tk.i + 1) + '  +' + tk.tm.toFixed(2);
-      const half = g.measureText(lab).width / 2;
-      let row = 0;
-      if (px - half < edge[0] + 5) row = px - half < edge[1] + 5 ? 0 : 1;
-      edge[row] = Math.max(edge[row], px + half);
-      const top = y0 - 13 - row * 13;
-      if (Math.abs(pt - px) > 2) {
+      if (Math.abs(tk.pt - tk.px) > 2) {
         g.strokeStyle = mut; g.lineWidth = 1;
-        g.beginPath(); g.moveTo(pt, y0 - 6); g.lineTo(pt, y0 + 4); g.stroke();
+        g.beginPath(); g.moveTo(tk.pt, y0 - 6); g.lineTo(tk.pt, y0 + 4); g.stroke();
       }
       g.strokeStyle = tk.reached ? cvv('--text-primary') : mut;
       g.lineWidth = tk.reached ? 2 : 1;
-      g.beginPath(); g.moveTo(px, top); g.lineTo(px, y0 + 4); g.stroke();
+      g.beginPath(); g.moveTo(tk.px, tk.top); g.lineTo(tk.px, y0 + 4); g.stroke();
+    });
+    /* labels last, on a background knockout, so no tick line strikes the text */
+    ticks.forEach(tk => {
+      g.fillStyle = cvv('--bg');
+      g.fillRect(tk.x0 - 2, tk.top - 14, tk.lw + 4, 12);
       g.fillStyle = tk.reached ? cvv('--text-primary') : mut;
-      g.textAlign = 'center'; g.textBaseline = 'bottom';
-      ctext(g, lab, px, top - 3, 0, w);
+      g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText(tk.lab, tk.x0, tk.top - 3);
     });
 
     g.fillStyle = sub; g.font = fnt(11);
@@ -902,7 +919,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     const c = $('cv3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
     const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    const l = 58, r = 116, t = 16, b = 44;
+    const l = 58, r = 54, t = 16, b = 44;
     const X = s => l + (s / SWEEP_MAX) * (w - l - r);
     const pd = V.pdop;
 
@@ -920,15 +937,17 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
       g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
       g.fillText(v.toFixed(0), l - 6, Y(v));
+      g.textAlign = 'left';
+      g.fillText((v / 1000).toFixed(1) + ' km', w - r + 6, Y(v));
     }
-    for (let s = 0; s <= SWEEP_MAX; s += 100) {
+    for (let s = 0; s <= SWEEP_MAX; s += 500) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(X(s), t); g.lineTo(X(s), h - b); g.stroke();
       g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(s.toFixed(0), X(s), h - b + 6);
+      g.fillText((s / 1000).toFixed(1), X(s), h - b + 6);
     }
     g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('clock error per site, ns rms  (500 ns = 0.5 µs)', (l + w - r) / 2, h - b + 22);
+    g.fillText('clock error per site, µs rms', (l + w - r) / 2, h - b + 22);
     g.save();
     g.translate(13, (t + h - b) / 2); g.rotate(-Math.PI / 2);
     g.textAlign = 'center'; g.textBaseline = 'top';
@@ -936,14 +955,18 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     g.restore();
 
     /* reference slope: c times sigma, the raw exchange rate */
-    const yRef = clamp(Y(C * SWEEP_MAX), t + 20, h - b - 20);
     g.strokeStyle = mut; g.lineWidth = 1.4; g.setLineDash([6, 4]);
     g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(SWEEP_MAX), Y(C * SWEEP_MAX)); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = mut; g.font = fnt(10.5);
-    g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.fillText('c × σ = 0.2998 m/ns', w - r + 6, yRef);
-    g.fillText('1 µs would be 300 m', w - r + 6, yRef + 14);
+
+    /* 1 µs → 300 m, marked on the line itself with a leader */
+    const pxu = X(1000), pyu = Y(C * 1000);
+    g.fillStyle = mut;
+    g.beginPath(); g.arc(pxu, pyu, 3.2, 0, TAU); g.fill();
+    g.strokeStyle = mut; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(pxu + 2, pyu - 3); g.lineTo(pxu + 16, pyu - 20); g.stroke();
+    g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('1 µs → 300 m on c × σ', pxu + 12, pyu - 22);
 
     /* GPS-class sync marker; the note sits top-left, where a rising curve never reaches */
     g.fillStyle = mut;
@@ -951,15 +974,16 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('grey dot: 10 ns → 3.0 m, GPS-class sync', l + 8, t + 3);
 
-    /* PDOP-scaled prediction */
-    if (pd !== null && isFinite(pd)) {
+    /* PDOP-scaled prediction, drawn to where it leaves the plot */
+    if (pd !== null && isFinite(pd) && pd > 0) {
+      const endV = pd * C * SWEEP_MAX;
+      const exS = endV > top ? top / (pd * C) : SWEEP_MAX;
       g.strokeStyle = cvv('--series-2'); g.lineWidth = 1.6;
-      g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(SWEEP_MAX), Y(pd * C * SWEEP_MAX)); g.stroke();
+      g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(exS), Y(pd * C * exS)); g.stroke();
+      const ms = exS * 0.55;
       g.fillStyle = cvv('--series-2'); g.font = fnt(10.5);
-      g.textAlign = 'left'; g.textBaseline = 'middle';
-      let yPd = clamp(Y(pd * C * SWEEP_MAX), t + 8, h - b - 8);
-      if (Math.abs(yPd - yRef) < 26) yPd = clamp(yRef - 18, t + 8, h - b - 8);
-      g.fillText('PDOP ' + pd.toFixed(2) + ' × cσ', w - r + 6, yPd);
+      g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText('PDOP ' + pd.toFixed(2) + ' × cσ', X(ms) + 6, Y(pd * C * ms) - 5);
     }
 
     /* measured rms miss */

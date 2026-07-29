@@ -11,6 +11,7 @@
   --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --accent: #378ADD;
   --s1: #378ADD; --s2: #D85A30; --s3: #1D9E75; --s4: #7F77DD; --s5: #D4537E;
+  --bad: #B4342A; --good: #3B6D11;
   --on-fill: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
@@ -19,6 +20,7 @@
     --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
     --accent: #6FB4EE;
     --s1: #6FB4EE; --s2: #F0855A; --s3: #45BE93; --s4: #A29BEC; --s5: #E7799F;
+    --bad: #E06C63; --good: #C0DD97;
     --on-fill: #1b1b19;
   }
 }
@@ -38,6 +40,7 @@ button { background: transparent; border: 1px solid var(--border-strong); border
   padding: 5px 11px; cursor: pointer; font-size: 13px; }
 button:hover { background: var(--surface-1); }
 button.on { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: default; }
 input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 input[type=range]:disabled { opacity: 0.4; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
@@ -82,8 +85,14 @@ details[open] summary { margin-bottom: 0.7rem; }
   <button id="bam" class="on">Full AM</button>
   <button id="bdsb">DSBSC</button>
   <button id="bssb">SSB</button>
+  <button id="bvsb">VSB</button>
   <button id="bqam">QAM</button>
   <button id="bfdm">FDM</button>
+</div>
+<div class="row">
+  <span class="lbl">FDM uses</span>
+  <button id="fdb" class="on">DSBSC channels</button>
+  <button id="fsb">SSB channels</button>
 </div>
 <div class="row">
   <span class="lbl">Message</span>
@@ -98,12 +107,14 @@ details[open] summary { margin-bottom: 0.7rem; }
   <div class="ctl"><label for="ph">Detector phase error</label><input type="range" id="ph" min="0" max="90" step="1" value="0"><span class="v" id="phv">0&deg;</span></div>
   <div class="ctl"><label for="df">Detector freq error</label><input type="range" id="df" min="0" max="200" step="5" value="0"><span class="v" id="dfv">0 Hz</span></div>
   <div class="ctl"><label for="nc">FDM channels</label><input type="range" id="nc" min="2" max="8" step="1" value="4"><span class="v" id="ncv">4</span></div>
+  <div class="ctl"><label for="fv">Vestige width f<sub>v</sub></label><input type="range" id="fv" min="0.05" max="1" step="0.05" value="0.3"><span class="v" id="fvv">&mdash;</span></div>
+  <div class="ctl"><label for="sp">Carrier spacing</label><input type="range" id="sp" min="1" max="3" step="0.05" value="2.1"><span class="v" id="spv">&mdash;</span></div>
 </div>
 <p id="ctlnote" style="font-size:12.5px;color:var(--text-muted);margin:-0.5rem 0 1.4rem;">&mdash;</p>
 
 <div class="tour">
   <span class="lbl" style="font-size:13px;color:var(--text-secondary)">Guided tour</span>
-  <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button><button id="t4">4</button><button id="t5">5</button>
+  <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button><button id="t4">4</button><button id="t5">5</button><button id="t6">6</button>
   <button id="t0">reset</button>
 </div>
 <p class="tourtxt" id="tourtxt">Press 1 to start. Each step moves the controls for you and says what changed.</p>
@@ -130,22 +141,25 @@ details[open] summary { margin-bottom: 0.7rem; }
   <div class="card"><div class="hd">Carrier power share</div><div class="big" id="cC">&mdash;</div><div class="ft" id="cCn">&mdash;</div></div>
   <div class="card"><div class="hd">Sideband power share</div><div class="big" id="cS">&mdash;</div><div class="ft" id="cSn">&mdash;</div></div>
   <div class="card"><div class="hd">Occupied bandwidth</div><div class="big" id="cB">&mdash;</div><div class="ft" id="cBn">&mdash;</div></div>
+  <div class="card"><div class="hd">Spacing rule</div><div class="big" id="cR">&mdash;</div><div class="ft" id="cRn">&mdash;</div></div>
   <div class="card"><div class="hd">Detection loss</div><div class="big" id="cD">&mdash;</div><div class="ft" id="cDn">&mdash;</div></div>
 </div>
 
-<p class="sec"><b>The arithmetic, with the current numbers substituted in</b></p>
-<ol class="worked" id="wk"></ol>
+<details>
+  <summary>The arithmetic, with the current numbers substituted in</summary>
+  <ol class="worked" id="wk"></ol>
+</details>
 
 <details>
   <summary>An everyday analogy, and the envelope detector's time constant</summary>
   <p style="font-size:13px;color:var(--text-secondary);margin:0 0 0.8rem;">Think of shouting a message across a valley. The carrier is the raw loudness of your voice; the message is the way you shape it. Full AM keeps shouting at full volume even during the silences, because the receiver on the far side finds the message by tracking how loud you are, and it needs a steady reference to compare against. Suppressed-carrier schemes stop shouting during the silences, which saves a great deal of breath, but then the far side has to guess the reference for itself &mdash; and if it guesses the timing wrong, the message comes back wrong.</p>
-  <p style="font-size:13px;color:var(--text-secondary);margin:0;" id="rcnote">&mdash;</p>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0 0 0.8rem;" id="rcnote">&mdash;</p>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0;">Three trades live in these controls. Full AM buys a receiver that is a diode, a capacitor and a resistor, and pays for it with the carrier: at the legal limit of m = 1 only 33.3 per cent of the transmitter is doing work, and at the more typical m = 0.6 it is 15.3 per cent. Suppressing the carrier recovers all of that, but the receiver now needs a local oscillator locked to the transmitter, and the phase-error slider shows the penalty &mdash; output falls as cos&nbsp;&phi; and vanishes completely at 90 degrees, which is why practical receivers carry a Costas loop or a pilot tone. Single sideband then halves the bandwidth as well, and is remarkably tolerant of phase error because the error only rotates the recovered tone rather than shrinking it; what single sideband cannot tolerate is a frequency error, which shifts every component of the message by the same number of hertz and makes speech sound wrong even when nothing is lost. What is simplified here: the filters are ideal, there is no noise, the message is one or two pure tones so its Hilbert transform is exact, and the VSB filter is an idealised linear ramp &mdash; the course names VSB only in the AM taxonomy (analogue TV); the detailed filter shape lives in the textbooks (Haykin).</p>
 </details>
 
-<p class="sub" style="margin-top: 2rem;">Three trades live in these controls. Full AM buys a receiver that is a diode, a capacitor and a resistor, and pays for it with the carrier: at the legal limit of m = 1 only 33.3 per cent of the transmitter is doing work, and at the more typical m = 0.6 it is 15.3 per cent. Suppressing the carrier recovers all of that, but the receiver now needs a local oscillator locked to the transmitter, and the phase-error slider shows the penalty &mdash; output falls as cos&nbsp;&phi; and vanishes completely at 90 degrees, which is why practical receivers carry a Costas loop or a pilot tone. Single sideband then halves the bandwidth as well, and is remarkably tolerant of phase error because the error only rotates the recovered tone rather than shrinking it; what single sideband cannot tolerate is a frequency error, which shifts every component of the message by the same number of hertz and makes speech sound wrong even when nothing is lost. What is simplified here: the filters are ideal, there is no noise, the message is one or two pure tones so its Hilbert transform is exact, and the FDM guard band is fixed at a quarter of the message bandwidth.</p>
 <p class="sub">Where to go next: <a href="iq-constellation.html">the I/Q constellation</a> takes the quadrature idea into digital modulation, and <a href="superhet-image.html">the superheterodyne receiver</a> shows what the mixer in these detectors does to unwanted frequencies.</p>
 
-<p class="sec"><b>Glossary</b></p>
+<details><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Carrier</dt><dd>The steady high-frequency sinusoid at f<sub>c</sub> that the message is loaded onto. On its own it carries no information.</dd>
   <dt>Sideband</dt><dd>The band of frequencies either side of the carrier that appears when the message is applied. This is where the information actually lives.</dd>
@@ -159,6 +173,7 @@ details[open] summary { margin-bottom: 0.7rem; }
   <dt>Phase error &phi;</dt><dd>The angle by which the local oscillator leads or lags the true carrier.</dd>
   <dt>Hilbert transform</dt><dd>An operation that shifts every frequency component of a signal by minus 90 degrees without changing its amplitude. It turns each cosine into a sine, and is how one sideband is cancelled.</dd>
   <dt>SSB</dt><dd>Single sideband. One of the two sidebands is removed, halving the bandwidth and the power.</dd>
+  <dt>VSB</dt><dd>Vestigial sideband. One full sideband plus a small remnant of the other, so a realisable filter can do the job; analogue TV used it.</dd>
   <dt>Quadrature</dt><dd>Two carriers at the same frequency but 90 degrees apart. They do not interfere, so two messages can share one band.</dd>
   <dt>QAM</dt><dd>Quadrature amplitude modulation. Two DSBSC signals on quadrature carriers.</dd>
   <dt>Crosstalk</dt><dd>Signal from one channel leaking into another. In QAM a phase error in the local oscillator produces crosstalk proportional to sin&nbsp;&phi;.</dd>
@@ -166,6 +181,7 @@ details[open] summary { margin-bottom: 0.7rem; }
   <dt>Guard band</dt><dd>Empty spectrum left between adjacent FDM channels so that a real, non-ideal filter can separate them.</dd>
   <dt>Bandwidth</dt><dd>The range of positive frequency a signal occupies, in hertz.</dd>
 </dl>
+</details>
 
 <script>
 (function () {
@@ -177,10 +193,9 @@ details[open] summary { margin-bottom: 0.7rem; }
 
   var FM = 1000;
   var AC = 1;
-  var GUARD = 0.25;
   var TWIN = 2 / FM;
 
-  var S = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4 };
+  var S = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4, fv: 0.3, spm: 2.1, fdmMode: 'dsb' };
 
   function comps() {
     return S.msg === 'tone' ? [{ a: 1, f: FM }] : [{ a: 0.5, f: FM }, { a: 0.5, f: 2.5 * FM }];
@@ -208,22 +223,39 @@ details[open] summary { margin-bottom: 0.7rem; }
     for (var i = 0; i < c.length; i++) if (c[i].f > s) s = c[i].f;
     return s;
   }
-  function spacing() { return bwOf(comps()) * (1 + GUARD); }
+  function spacing() { return bwOf(comps()) * S.spm; }
+  function fdmBound() { var W = bwOf(comps()); return S.fdmMode === 'dsb' ? 2 * W : W; }
+  function fdmPass() { return spacing() > fdmBound() + 1e-9; }
+  function vsbFv() { return Math.max(S.fv * bwOf(comps()), 1e-9); }
+  function vsbWts(fm) {
+    var fv = vsbFv();
+    if (fm > fv) return { u: 1, l: 0 };
+    return { u: (fm + fv) / (2 * fv), l: (fv - fm) / (2 * fv) };
+  }
 
   function cbb(t) {
     var c = comps(), m = S.m, i, re, im;
     if (S.sch === 'am') return [AC * (1 + m * ev(c, t)), 0];
     if (S.sch === 'dsb') return [AC * m * ev(c, t), 0];
     if (S.sch === 'ssb') return [AC * m / 2 * ev(c, t), AC * m / 2 * evh(c, t)];
+    if (S.sch === 'vsb') {
+      var vim = 0;
+      for (i = 0; i < c.length; i++) {
+        var wt = vsbWts(c[i].f);
+        vim += c[i].a * (wt.u - wt.l) * Math.sin(TAU * c[i].f * t);
+      }
+      return [AC * m / 2 * ev(c, t), AC * m / 2 * vim];
+    }
     if (S.sch === 'qam') {
       var q = scaled(c, 0.6);
       return [AC * m * ev(c, t), -AC * m * ev(q, t)];
     }
     re = 0; im = 0;
-    var sp = spacing();
+    var sp = spacing(), dsbm = S.fdmMode === 'dsb';
     for (i = 0; i < S.nch; i++) {
-      var ph = i * TAU / S.nch;
-      var ar = AC * m / 2 * ev(c, t, ph), ai = AC * m / 2 * evh(c, t, ph);
+      var ph = i * TAU / S.nch, ar, ai;
+      if (dsbm) { ar = AC * m * ev(c, t, ph); ai = 0; }
+      else { ar = AC * m / 2 * ev(c, t, ph); ai = AC * m / 2 * evh(c, t, ph); }
       var d = TAU * (i * sp) * t, cd = Math.cos(d), sd = Math.sin(d);
       re += ar * cd - ai * sd;
       im += ar * sd + ai * cd;
@@ -252,8 +284,27 @@ details[open] summary { margin-bottom: 0.7rem; }
     var c = comps(), m = S.m;
     var psi = TAU * S.df * t + S.phi * Math.PI / 180;
     if (S.sch === 'am') return AC * (Math.abs(1 + m * ev(c, t)) - envMean);
-    if (S.sch === 'dsb') return m * ev(c, t) * Math.cos(psi);
-    if (S.sch === 'ssb' || S.sch === 'fdm') return m * (ev(c, t) * Math.cos(psi) + evh(c, t) * Math.sin(psi));
+    if (S.sch === 'dsb' || S.sch === 'vsb') return m * ev(c, t) * Math.cos(psi);
+    if (S.sch === 'ssb') return m * (ev(c, t) * Math.cos(psi) + evh(c, t) * Math.sin(psi));
+    if (S.sch === 'fdm') {
+      var sp = spacing(), W = bwOf(c), dsbm = S.fdmMode === 'dsb';
+      var out = dsbm ? m * ev(c, t) * Math.cos(psi)
+                     : m * (ev(c, t) * Math.cos(psi) + evh(c, t) * Math.sin(psi));
+      var k2, j;
+      for (k2 = 1; k2 < S.nch; k2++) {
+        var p2 = k2 * TAU / S.nch;
+        for (j = 0; j < c.length; j++) {
+          var dU = k2 * sp + c[j].f;
+          var spa = m * c[j].a * (dsbm ? 0.5 : 1);
+          if (dU <= W) out += spa * Math.cos(TAU * dU * t + p2 - psi);
+          if (dsbm) {
+            var dL = k2 * sp - c[j].f;
+            if (Math.abs(dL) <= W) out += spa * Math.cos(TAU * dL * t - p2 - psi);
+          }
+        }
+      }
+      return out;
+    }
     var q = scaled(c, 0.6);
     if (arm) return m * (ev(q, t) * Math.cos(psi) + ev(c, t) * Math.sin(psi));
     return m * (ev(c, t) * Math.cos(psi) - ev(q, t) * Math.sin(psi));
@@ -269,8 +320,15 @@ details[open] summary { margin-bottom: 0.7rem; }
     if (S.sch === 'am') { car = pc; sb = pc * m * m * mu; }
     else if (S.sch === 'dsb') { sb = pc * m * m * mu; }
     else if (S.sch === 'ssb') { sb = pc * m * m * mu / 2; }
+    else if (S.sch === 'vsb') {
+      var c2 = comps(), i2;
+      for (i2 = 0; i2 < c2.length; i2++) {
+        var wt = vsbWts(c2[i2].f);
+        sb += pc * m * m * c2[i2].a * c2[i2].a / 4 * (wt.u * wt.u + wt.l * wt.l);
+      }
+    }
     else if (S.sch === 'qam') { sb = pc * m * m * mu * 2; }
-    else { sb = S.nch * pc * m * m * mu / 2; }
+    else { sb = S.nch * pc * m * m * mu * (S.fdmMode === 'dsb' ? 1 : 0.5); }
     return { car: car, sb: sb, tot: car + sb };
   }
 
@@ -289,6 +347,12 @@ details[open] summary { margin-bottom: 0.7rem; }
       }
     } else if (S.sch === 'ssb') {
       for (i = 0; i < c.length; i++) out.push({ f: S.fc + c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+    } else if (S.sch === 'vsb') {
+      for (i = 0; i < c.length; i++) {
+        var wt = vsbWts(c[i].f);
+        out.push({ f: S.fc + c[i].f, a: AC * m * c[i].a / 2 * wt.u, kind: 'sb' });
+        if (wt.l > 1e-6) out.push({ f: S.fc - c[i].f, a: AC * m * c[i].a / 2 * wt.l, kind: 'sb' });
+      }
     } else if (S.sch === 'qam') {
       var q = scaled(c, 0.6);
       for (i = 0; i < c.length; i++) {
@@ -300,10 +364,11 @@ details[open] summary { margin-bottom: 0.7rem; }
         out.push({ f: S.fc - q[i].f, a: AC * m * q[i].a / 2, kind: 'q' });
       }
     } else {
-      var sp = spacing();
+      var sp = spacing(), dsbm = S.fdmMode === 'dsb';
       for (k = 0; k < S.nch; k++) {
         for (i = 0; i < c.length; i++) {
           out.push({ f: S.fc + k * sp + c[i].f, a: AC * m * c[i].a / 2, kind: 'ch', ch: k });
+          if (dsbm) out.push({ f: S.fc + k * sp - c[i].f, a: AC * m * c[i].a / 2, kind: 'ch', ch: k });
         }
       }
     }
@@ -313,7 +378,12 @@ details[open] summary { margin-bottom: 0.7rem; }
   function band() {
     var W = bwOf(comps());
     if (S.sch === 'ssb') return { lo: S.fc, hi: S.fc + W, bw: W };
-    if (S.sch === 'fdm') { var b = S.nch * (W + GUARD * W); return { lo: S.fc, hi: S.fc + b, bw: b }; }
+    if (S.sch === 'vsb') { var fv = vsbFv(); return { lo: S.fc - fv, hi: S.fc + W, bw: W + fv }; }
+    if (S.sch === 'fdm') {
+      var sp = spacing(), dsbm = S.fdmMode === 'dsb';
+      var lo = dsbm ? S.fc - W : S.fc, hi = S.fc + (S.nch - 1) * sp + W;
+      return { lo: lo, hi: hi, bw: hi - lo };
+    }
     return { lo: S.fc - W, hi: S.fc + W, bw: 2 * W };
   }
 
@@ -334,7 +404,7 @@ details[open] summary { margin-bottom: 0.7rem; }
   }
   function detLoss() {
     if (S.sch === 'am') return amLoss();
-    if (S.sch === 'ssb' || S.sch === 'fdm') return 0;
+    if (S.sch === 'ssb' || (S.sch === 'fdm' && S.fdmMode === 'ssb')) return 0;
     return -20 * L10(Math.max(Math.abs(Math.cos(S.phi * Math.PI / 180)), 1e-3));
   }
 
@@ -572,14 +642,56 @@ details[open] summary { margin-bottom: 0.7rem; }
     g.fillText('amplitude (V)', 2, top - 12 > 0 ? top - 12 : 2);
 
     if (S.sch === 'fdm') {
-      var sp = spacing(), W = bwOf(comps());
+      var sp = spacing(), W = bwOf(comps()), dsbm = S.fdmMode === 'dsb';
+      var chLo = function (kk) { return S.fc + kk * sp - (dsbm ? W : 0); };
+      var chHi = function (kk) { return S.fc + kk * sp + W; };
       for (k = 0; k < S.nch; k++) {
-        var x0 = X(S.fc + k * sp), x1 = X(S.fc + k * sp + W);
+        var x0 = X(chLo(k)), x1 = X(chHi(k));
         g.fillStyle = k % 2 === 0 ? s1 : s3;
         g.globalAlpha = 0.10;
         g.fillRect(x0, top, Math.max(x1 - x0, 1), bot - top);
         g.globalAlpha = 1;
       }
+      if (!fdmPass()) {
+        var ovx0 = null, ovx1 = null;
+        for (k = 0; k + 1 < S.nch; k++) {
+          var oLo = chLo(k + 1), oHi = chHi(k);
+          if (oHi > oLo) {
+            var xa = X(oLo), xb = X(oHi);
+            g.fillStyle = cvv('--bad');
+            g.globalAlpha = 0.35;
+            g.fillRect(xa, top, Math.max(xb - xa, 1), bot - top);
+            g.globalAlpha = 1;
+            if (ovx0 === null) { ovx0 = xa; ovx1 = xb; }
+          }
+        }
+        if (ovx0 !== null) {
+          g.fillStyle = cvv('--bad'); g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
+          g.fillText('overlap — demultiplexing fails', Math.min((ovx0 + ovx1) / 2 + 6, rr - 170), (top + bot) / 2);
+        }
+      }
+    }
+    if (S.sch === 'vsb') {
+      var Wv = bwOf(comps()), fvv2 = vsbFv();
+      var Hf = function (f) {
+        var d = f - S.fc;
+        if (d < -fvv2 || d > Wv) return 0;
+        if (d <= fvv2) return (d + fvv2) / (2 * fvv2);
+        return 1;
+      };
+      g.strokeStyle = s4; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.beginPath();
+      g.moveTo(X(S.fc - fvv2), Y(0));
+      g.lineTo(X(S.fc + fvv2), Y(amax));
+      g.lineTo(X(S.fc + Wv), Y(amax));
+      g.lineTo(X(S.fc + Wv), Y(0));
+      g.stroke();
+      g.setLineDash([]);
+      var lx = X(S.fc), ly = Y(Hf(S.fc) * amax);
+      g.strokeStyle = s4; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(lx, ly); g.lineTo(lx - 26, ly - 20); g.stroke();
+      g.fillStyle = s4; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.fillText('vestige', lx - 28, ly - 20);
     }
 
     for (i = 0; i < ln.length; i++) {
@@ -617,7 +729,7 @@ details[open] summary { margin-bottom: 0.7rem; }
     if (S.sch === 'fdm') {
       g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
       for (k = 0; k < S.nch; k++) {
-        var xc = X(S.fc + k * spacing() + bwOf(comps()) / 2);
+        var xc = X(S.fc + k * spacing() + (S.fdmMode === 'dsb' ? 0 : bwOf(comps()) / 2));
         if (xc > l && xc < rr) g.fillText('ch ' + (k + 1), xc, bot - 4);
       }
     }
@@ -669,7 +781,7 @@ details[open] summary { margin-bottom: 0.7rem; }
   }
 
   function schemeName() {
-    return { am: 'full AM', dsb: 'DSBSC', ssb: 'SSB (upper sideband)', qam: 'QAM', fdm: 'FDM' }[S.sch];
+    return { am: 'full AM', dsb: 'DSBSC', ssb: 'SSB (upper sideband)', vsb: 'VSB (vestigial sideband)', qam: 'QAM', fdm: 'FDM' }[S.sch];
   }
 
   function notes() {
@@ -699,6 +811,8 @@ details[open] summary { margin-bottom: 0.7rem; }
     } else if (S.sch === 'ssb') {
       nB.push('For a single tone the envelope is flat, because one sideband on its own is just a single sinusoid at '
         + ((S.fc + W) / 1000).toFixed(2) + ' kHz. A two-tone message brings the envelope back to life.');
+    } else if (S.sch === 'vsb') {
+      nB.push('With a small vestige this looks like SSB; grow f_v towards W and it heads back towards DSBSC.');
     } else if (S.sch === 'qam') {
       nB.push('Two independent messages ride on carriers 90 degrees apart, so the envelope is the length of the vector they form.');
     } else {
@@ -714,11 +828,17 @@ details[open] summary { margin-bottom: 0.7rem; }
       nC.push('The centre line is gone. The two sidebands are mirror images, so half of what is sent is redundant.');
     } else if (S.sch === 'ssb') {
       nC.push('Only the upper sideband survives. The bandwidth is W = ' + (W / 1000).toFixed(2) + ' kHz instead of 2W = ' + (2 * W / 1000).toFixed(2) + ' kHz, and the transmitted power is halved as well.');
+    } else if (S.sch === 'vsb') {
+      nC.push('<span style="display:inline-block;width:10px;height:10px;background:var(--s4);border-radius:2px;vertical-align:-1px;"></span> dashed — the vestigial filter');
+      nC.push('The lower-sideband remnant shrinks as its twin above the carrier grows, so their sum never changes.');
     } else if (S.sch === 'qam') {
       nC.push('Blue lines are the in-phase channel, violet lines the quadrature channel. Both fit inside the same 2W = ' + (2 * W / 1000).toFixed(2) + ' kHz.');
     } else {
-      nC.push('Each shaded block is one channel of width W = ' + (W / 1000).toFixed(2) + ' kHz, with a guard band of ' + (GUARD * W / 1000).toFixed(2) + ' kHz above it.');
-      nC.push('Total bandwidth is N(W + B_guard) = ' + S.nch + ' × ' + ((W + GUARD * W) / 1000).toFixed(2) + ' = ' + (band().bw / 1000).toFixed(2) + ' kHz.');
+      var bnd = fdmBound();
+      nC.push('Each shaded block is one ' + (S.fdmMode === 'dsb' ? 'DSBSC channel of width 2W = ' + (2 * W / 1000).toFixed(2) : 'SSB channel of width W = ' + (W / 1000).toFixed(2)) + ' kHz.');
+      nC.push(fdmPass()
+        ? 'Spacing ' + (spacing() / 1000).toFixed(2) + ' kHz clears the limit of ' + (bnd / 1000).toFixed(2) + ' kHz, so the channels stay apart.'
+        : 'Spacing ' + (spacing() / 1000).toFixed(2) + ' kHz is at or below the limit of ' + (bnd / 1000).toFixed(2) + ' kHz — the red region is shared by two channels.');
     }
 
     nD.push('The dashed grey curve is the message that was sent. The green curve is what came out of the detector.');
@@ -726,10 +846,15 @@ details[open] summary { margin-bottom: 0.7rem; }
       nD.push('An envelope detector is non-coherent: it has no local oscillator, so the phase and frequency error sliders do nothing here.');
       nD.push(S.m <= 1 ? 'The two curves lie on top of each other, which is the whole appeal of full AM.'
                        : 'The two curves have parted company. This is what overmodulation sounds like.');
-    } else if (S.sch === 'dsb') {
+    } else if (S.sch === 'dsb' || S.sch === 'vsb') {
       nD.push('The output amplitude scales as cos φ. At φ = ' + phi.toFixed(0) + '° that factor is ' + Math.cos(phi * Math.PI / 180).toFixed(3) + ', and at 90° the output disappears completely.');
       if (S.df > 0) nD.push('The frequency error adds a beat at cos(2π · ' + S.df.toFixed(0) + ' t), so the recovered message swells and fades ' + S.df.toFixed(0) + ' times a second.');
-    } else if (S.sch === 'ssb' || S.sch === 'fdm') {
+      if (S.sch === 'vsb') nD.push('The recovered amplitude does not depend on f_v: the two vestige lines always sum to the full sideband.');
+    } else if (S.sch === 'fdm') {
+      nD.push(fdmPass()
+        ? 'Spacing obeys f₂ − f₁ > ' + (S.fdmMode === 'dsb' ? 'W₁ + W₂' : 'W') + ', so channel 1 comes back clean.'
+        : 'The neighbour channel has spilled into channel 1\'s filter — the extra ripple on the green curve is its sideband.');
+    } else if (S.sch === 'ssb') {
       nD.push('A phase error rotates the recovered tone rather than shrinking it, so the amplitude survives. Compare this with DSBSC at the same phase error.');
       nD.push(S.df > 0
         ? 'A frequency error is the real problem: every component of the message has moved down by ' + S.df.toFixed(0) + ' Hz, so a 1.00 kHz tone comes back at ' + ((FM - S.df) / 1000).toFixed(3) + ' kHz.'
@@ -754,14 +879,22 @@ details[open] summary { margin-bottom: 0.7rem; }
     $('phv').textContent = S.phi.toFixed(0) + '°';
     $('dfv').textContent = S.df.toFixed(0) + ' Hz';
     $('ncv').textContent = S.nch.toFixed(0);
+    $('fvv').textContent = (S.fv * W / 1000).toFixed(2) + ' kHz';
+    $('spv').textContent = (spacing() / 1000).toFixed(2) + ' kHz';
 
     var coh = S.sch !== 'am';
     $('ph').disabled = !coh;
     $('df').disabled = !coh;
     $('nc').disabled = S.sch !== 'fdm';
+    $('sp').disabled = S.sch !== 'fdm';
+    $('fdb').disabled = S.sch !== 'fdm';
+    $('fsb').disabled = S.sch !== 'fdm';
+    $('fv').disabled = S.sch !== 'vsb';
     $('ctlnote').textContent = coh
       ? (S.sch === 'fdm'
-        ? 'The phase and frequency errors apply to the detector for channel 1. The FDM channel count sets how many messages are stacked.'
+        ? 'The phase and frequency errors apply to the detector for channel 1. The channel count and carrier spacing set how the messages are stacked.'
+        : S.sch === 'vsb'
+        ? 'The vestige width f_v sets how much of the lower sideband survives the filter.'
         : 'The phase and frequency errors describe how far the receiver local oscillator has drifted from the true carrier.')
       : 'Full AM uses an envelope detector, which has no local oscillator, so the phase and frequency error sliders are switched off here.';
 
@@ -788,9 +921,21 @@ details[open] summary { margin-bottom: 0.7rem; }
 
     $('cB').textContent = (B.bw / 1000).toFixed(2) + ' kHz';
     $('cBn').textContent = S.sch === 'ssb' ? 'W, one sideband only'
-      : S.sch === 'fdm' ? 'N(W + B_guard), guard = ' + (GUARD * 100).toFixed(0) + '% of W'
+      : S.sch === 'vsb' ? 'between SSB W and DSB 2W'
+      : S.sch === 'fdm' ? '(N − 1)·spacing + ' + (S.fdmMode === 'dsb' ? '2W' : 'W')
       : S.sch === 'qam' ? '2W, but carrying two messages'
       : '2W, both sidebands';
+
+    if (S.sch === 'fdm') {
+      var ok = fdmPass();
+      $('cR').textContent = ok ? 'pass' : 'fail';
+      $('cR').style.color = ok ? 'var(--good)' : 'var(--bad)';
+      $('cRn').textContent = S.fdmMode === 'dsb' ? 'needs f₂ − f₁ > W₁ + W₂' : 'needs f₂ − f₁ > W';
+    } else {
+      $('cR').textContent = '—';
+      $('cR').style.color = '';
+      $('cRn').textContent = 'FDM only';
+    }
 
     var dl = detLoss();
     if (!isFinite(dl)) dl = 60;
@@ -798,7 +943,7 @@ details[open] summary { margin-bottom: 0.7rem; }
     var xt = 20 * L10(Math.max(Math.abs(Math.sin(S.phi * Math.PI / 180)), 1e-3));
     $('cDn').textContent = S.sch === 'am'
       ? (m > 1 ? 'envelope shape error from overmodulation' : 'envelope detector, non-coherent — no loss')
-      : S.sch === 'dsb' ? '−20 log₁₀|cos φ| at φ = ' + S.phi.toFixed(0) + '°'
+      : (S.sch === 'dsb' || S.sch === 'vsb' || (S.sch === 'fdm' && S.fdmMode === 'dsb')) ? '−20 log₁₀|cos φ| at φ = ' + S.phi.toFixed(0) + '°'
       : S.sch === 'qam' ? 'wanted × cos φ; crosstalk ' + (xt <= -59.99 ? '≤ −60' : '−' + Math.abs(xt).toFixed(1)) + ' dB'
       : 'phase error rotates, it does not attenuate';
     $('cD').style.color = dl >= 3 ? 'var(--text-warning)' : '';
@@ -819,10 +964,22 @@ details[open] summary { margin-bottom: 0.7rem; }
     } else {
       wk.push('No carrier line, so P_t is sidebands only: ' + P.tot.toFixed(4) + ' W, and the sideband fraction is ' + fsb.toFixed(1) + ' per cent.');
       if (S.sch === 'ssb') wk.push('Removing one sideband halves the DSBSC power: ' + (2 * P.tot).toFixed(4) + ' W becomes ' + P.tot.toFixed(4) + ' W.');
+      if (S.sch === 'vsb') {
+        var fvh = vsbFv();
+        wk.push('Vestige width f_v = ' + (S.fv).toFixed(2) + '·W = ' + (fvh / 1000).toFixed(2) + ' kHz.');
+        c.forEach(function (cc) {
+          var wt = vsbWts(cc.f), half = m * cc.a / 2;
+          wk.push('Tone at ' + (cc.f / 1000).toFixed(2) + ' kHz: USB ' + (half * wt.u).toFixed(3) + ' V, LSB ' + (half * wt.l).toFixed(3)
+            + ' V; the coherent detector sums the pair to ' + (half * (wt.u + wt.l)).toFixed(3) + ' V = m·A_c·a/2 — flat for any f_v.');
+        });
+      }
       if (S.sch === 'qam') wk.push('Two channels, each the size of one DSBSC signal, so the power is doubled while the bandwidth is not.');
-      if (S.sch === 'fdm') wk.push(S.nch + ' single-sideband channels, each ' + (P.tot / Math.max(S.nch, 1)).toFixed(4) + ' W.');
+      if (S.sch === 'fdm') {
+        wk.push(S.nch + ' ' + (S.fdmMode === 'dsb' ? 'DSBSC' : 'single-sideband') + ' channels, each ' + (P.tot / Math.max(S.nch, 1)).toFixed(4) + ' W.');
+        wk.push('Spacing = ' + (spacing() / 1000).toFixed(2) + ' kHz vs ' + (S.fdmMode === 'dsb' ? 'W₁ + W₂' : 'W') + ' = ' + (fdmBound() / 1000).toFixed(2) + ' kHz — ' + (fdmPass() ? 'pass.' : 'fail: the channels overlap and demultiplexing fails.'));
+      }
     }
-    wk.push('Occupied bandwidth = ' + (S.sch === 'ssb' ? 'W' : S.sch === 'fdm' ? 'N(W + B_guard)' : '2W') + ' = ' + (B.bw / 1000).toFixed(2) + ' kHz, with message bandwidth W = ' + (W / 1000).toFixed(2) + ' kHz.');
+    wk.push('Occupied bandwidth = ' + (S.sch === 'ssb' ? 'W' : S.sch === 'vsb' ? 'W + f_v' : S.sch === 'fdm' ? '(N − 1)·spacing + ' + (S.fdmMode === 'dsb' ? '2W' : 'W') : '2W') + ' = ' + (B.bw / 1000).toFixed(2) + ' kHz, with message bandwidth W = ' + (W / 1000).toFixed(2) + ' kHz.');
     $('wk').innerHTML = wk.map(function (x) { return '<li>' + x + '</li>'; }).join('');
 
     var rcLo = 1 / S.fc, rcHi = 1 / W;
@@ -832,10 +989,12 @@ details[open] summary { margin-bottom: 0.7rem; }
       + ' µs, so a value near the geometric mean, about ' + (Math.sqrt(rcLo * rcHi) * 1e6).toFixed(1)
       + ' µs, is a sensible starting point. Too fast and the ripple at f_c comes through; too slow and the capacitor cannot follow the message down and the output clips.';
 
-    ['bam', 'bdsb', 'bssb', 'bqam', 'bfdm'].forEach(function (id, i) {
-      var k = ['am', 'dsb', 'ssb', 'qam', 'fdm'][i];
+    ['bam', 'bdsb', 'bssb', 'bvsb', 'bqam', 'bfdm'].forEach(function (id, i) {
+      var k = ['am', 'dsb', 'ssb', 'vsb', 'qam', 'fdm'][i];
       $(id).className = S.sch === k ? 'on' : '';
     });
+    $('fdb').className = S.fdmMode === 'dsb' ? 'on' : '';
+    $('fsb').className = S.fdmMode === 'ssb' ? 'on' : '';
     $('mt1').className = S.msg === 'tone' ? 'on' : '';
     $('mt2').className = S.msg === 'two' ? 'on' : '';
 
@@ -851,28 +1010,48 @@ details[open] summary { margin-bottom: 0.7rem; }
     S.phi = +$('ph').value;
     S.df = +$('df').value;
     S.nch = +$('nc').value;
+    S.fv = +$('fv').value;
+    S.spm = +$('sp').value;
   }
-  ['mi', 'fc', 'ph', 'df', 'nc'].forEach(function (id) {
+  function spRange() {
+    var el = $('sp');
+    if (S.fdmMode === 'dsb') { el.min = 1; el.max = 3; } else { el.min = 0.5; el.max = 2; }
+  }
+  ['mi', 'fc', 'ph', 'df', 'nc', 'fv', 'sp'].forEach(function (id) {
     $(id).addEventListener('input', function () { readInputs(); refresh(); });
   });
   var setScheme = function (k) { return function () { S.sch = k; refresh(); }; };
   $('bam').addEventListener('click', setScheme('am'));
   $('bdsb').addEventListener('click', setScheme('dsb'));
   $('bssb').addEventListener('click', setScheme('ssb'));
+  $('bvsb').addEventListener('click', setScheme('vsb'));
   $('bqam').addEventListener('click', setScheme('qam'));
   $('bfdm').addEventListener('click', setScheme('fdm'));
+  var setFdmMode = function (mode) {
+    return function () {
+      S.fdmMode = mode;
+      spRange();
+      $('sp').value = mode === 'dsb' ? 2.1 : 1.1;
+      readInputs();
+      refresh();
+    };
+  };
+  $('fdb').addEventListener('click', setFdmMode('dsb'));
+  $('fsb').addEventListener('click', setFdmMode('ssb'));
   $('mt1').addEventListener('click', function () { S.msg = 'tone'; refresh(); });
   $('mt2').addEventListener('click', function () { S.msg = 'two'; refresh(); });
 
   function apply(st, txt) {
-    S.sch = st.sch; S.msg = st.msg;
+    S.sch = st.sch; S.msg = st.msg; S.fdmMode = st.fdmMode;
+    spRange();
     $('mi').value = st.m; $('fc').value = st.fc / 1000;
     $('ph').value = st.phi; $('df').value = st.df; $('nc').value = st.nch;
+    $('fv').value = st.fv; $('sp').value = st.spm;
     readInputs();
     refresh();
     $('tourtxt').textContent = txt;
   }
-  var base = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4 };
+  var base = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4, fv: 0.3, spm: 2.1, fdmMode: 'dsb' };
   function withState(o) {
     var r = {}, k;
     for (k in base) if (Object.prototype.hasOwnProperty.call(base, k)) r[k] = base[k];
@@ -880,22 +1059,25 @@ details[open] summary { margin-bottom: 0.7rem; }
     return r;
   }
   $('t1').addEventListener('click', function () {
-    apply(withState({}), 'Step 1 — full AM at m = 0.60. Look at the power bar: 84.7 per cent of the transmitter is coral, a bare tone that carries nothing. Only 15.3 per cent is message.');
+    apply(withState({}), 'Step 1 — full AM at m = 0.60: only 15.3 per cent is message.');
   });
   $('t2').addEventListener('click', function () {
-    apply(withState({ m: 1 }), 'Step 2 — m pushed to 1.00, the deepest full AM is allowed. The sidebands have grown to 33.3 per cent, and that is the best conventional AM can ever do.');
+    apply(withState({ m: 1 }), 'Step 2 — m = 1.00: sidebands reach 33.3 per cent, AM\'s best.');
   });
   $('t3').addEventListener('click', function () {
-    apply(withState({ m: 1.3 }), 'Step 3 — m = 1.30 is overmodulation. The envelope in section 2 now folds through zero, and in section 4 the recovered curve has left the dashed original behind.');
+    apply(withState({ m: 1.3 }), 'Step 3 — m = 1.30: overmodulated; the envelope folds and the detector fails.');
   });
   $('t4').addEventListener('click', function () {
-    apply(withState({ sch: 'dsb', m: 1, phi: 60 }), 'Step 4 — DSBSC with a 60 degree phase error. The carrier line has vanished from the spectrum and the power bar is entirely blue, but the recovered message has shrunk by cos 60° = 0.500, a 6.02 dB loss.');
+    apply(withState({ sch: 'dsb', m: 1, phi: 60 }), 'Step 4 — DSBSC, 60° phase error: no carrier, but output falls by cos 60°.');
   });
   $('t5').addEventListener('click', function () {
-    apply(withState({ sch: 'ssb', m: 1, phi: 60, df: 100 }), 'Step 5 — single sideband at the same 60 degree phase error. The amplitude is untouched, because for SSB a phase error rotates rather than attenuates. The 100 Hz frequency error is the defect that does hurt: every tone has moved down by 100 Hz.');
+    apply(withState({ sch: 'ssb', m: 1, phi: 60, df: 100 }), 'Step 5 — SSB shrugs off phase error; the 100 Hz frequency error hurts instead.');
+  });
+  $('t6').addEventListener('click', function () {
+    apply(withState({ sch: 'vsb', msg: 'two', m: 1, fv: 0.6 }), 'Step 6 — VSB keeps a vestige; drag f_v — the recovery stays flat.');
   });
   $('t0').addEventListener('click', function () {
-    apply(withState({}), 'Back to the starting state: full AM, m = 0.60, single tone at 1.00 kHz, carrier at 20.0 kHz.');
+    apply(withState({}), 'Back to full AM: m = 0.60, tone 1.00 kHz, carrier 20.0 kHz.');
   });
 
   window.addEventListener('resize', drawAll);

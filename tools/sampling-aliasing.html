@@ -67,7 +67,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Sampling and aliasing</h1>
-<p class="sub">A digital receiver never sees a wave. It sees a list of numbers &mdash; the height of the wave, measured f<sub>s</sub> times every second, and nothing in between. If the measurements come fast enough, that list pins down the original wave exactly. If they come too slowly, a completely different, slower wave fits the same list of numbers just as well, and no amount of processing afterwards can tell the two apart. That impostor is called an <b style="font-weight:500">alias</b>, and this page is about when it appears.</p>
+<p class="sub">A digital receiver sees only a list of numbers: the wave's height, measured f<sub>s</sub> times a second. Sample too slowly and a different, slower wave fits the same numbers exactly &mdash; the alias.</p>
 <p class="hint">New to reading a frequency axis? Start with the <a href="fourier-series.html">Fourier series builder</a> first.</p>
 
 <div class="grid2">
@@ -103,27 +103,27 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
   <button class="tourbtn" id="t3">4 &middot; The wheel stops</button>
   <button class="tourbtn" id="t4">5 &middot; It runs backwards</button>
 </div>
-<p class="tour-note" id="tourNote">Press step 1 to start. Each step drives the two sliders for you and says what changed.</p>
+<p class="tour-note" id="tourNote">Press step 1 &mdash; the steps drive the sliders for you.</p>
 
-<p class="sec"><b>1 &middot; The physical picture &mdash; a wheel under a strobe light</b> <span>&mdash; a spinning wheel lit only by brief flashes, which is sampling made visible</span></p>
-<div class="btnrow" style="margin-bottom:4px"><button id="play" class="on">Pause</button><span style="font-size:12px;color:var(--text-muted)">the wheel is shown six times slower than real time, so both spins are slowed equally and the effect is unchanged</span></div>
+<p class="sec"><b>1 &middot; The physical picture &mdash; a wheel under a strobe light</b> <span>&mdash; sampling made visible</span></p>
+<div class="btnrow" style="margin-bottom:4px"><button id="play" class="on">Pause</button><span style="font-size:12px;color:var(--text-muted)">shown at 1/6 real speed</span></div>
 <canvas id="cWheel" style="height: 300px;"></canvas>
 <ul class="legend-note">
-  <li>The <b style="font-weight:500;color:var(--series-1)">blue spoke</b> is where the marked spoke really is. The wheel turns at the signal frequency, f turns every second.</li>
-  <li>The <b style="font-weight:500;color:var(--series-2)">orange spoke</b> is the only thing you ever see, because the room is dark except for a strobe light that flashes f<sub>s</sub> times a second. It jumps to a new place at each flash and holds still in between. The faded orange marks are the previous three flashes, so you can read which way it is stepping.</li>
-  <li>Your eye joins those jumps into a smooth motion, and that invented motion is the alias. It can run forwards, run backwards, or stop dead, none of which the wheel is doing.</li>
-  <li>This is why wagon wheels roll backwards in old films: the camera is a strobe taking 24 pictures a second, and the wheel turns faster than that.</li>
+  <li><b style="font-weight:500;color:var(--series-1)">blue spoke</b> &mdash; the real position</li>
+  <li><b style="font-weight:500;color:var(--series-2)">orange spoke</b> &mdash; what the strobe shows</li>
+  <li><b style="font-weight:500;color:var(--series-2)">faded orange</b> &mdash; the last three flashes</li>
+  <li>the apparent motion is the alias</li>
 </ul>
 
-<p class="sec"><b>2 &middot; The wave and the dots it leaves behind</b> <span>&mdash; the real wave, the samples the converter keeps, and the wave that gets rebuilt from them</span></p>
+<p class="sec"><b>2 &middot; The wave and the dots it leaves behind</b> <span>&mdash; real wave, kept samples, rebuilt wave</span></p>
 <canvas id="cTime" style="height: 310px;"></canvas>
 <ul class="legend-note" id="timeNote"></ul>
 
-<p class="sec"><b>3 &middot; The frequency picture &mdash; why the impostor exists</b> <span>&mdash; sampling copies the whole spectrum to every multiple of the sample rate; when the copies touch, the signal is corrupted</span></p>
+<p class="sec"><b>3 &middot; The frequency picture &mdash; why the impostor exists</b> <span>&mdash; sampling copies the spectrum; overlapping copies alias</span></p>
 <canvas id="cSpec" style="height: 265px;"></canvas>
 <ul class="legend-note" id="specNote"></ul>
 
-<p class="sec"><b>4 &middot; The folding diagram</b> <span>&mdash; put any frequency in at the bottom, read off the frequency the samples will show</span></p>
+<p class="sec"><b>4 &middot; The folding diagram</b> <span>&mdash; frequency in below, apparent frequency out left</span></p>
 <canvas id="cFold" style="height: 265px;"></canvas>
 <ul class="legend-note" id="foldNote"></ul>
 
@@ -169,6 +169,8 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
   <dt>Sinc interpolation</dt><dd>The ideal way to join the dots. Each sample is replaced by the curve sinc(u) = sin(&pi;u) &divide; (&pi;u), and the curves are added up. It is the exact mathematical equivalent of an ideal low-pass filter at the Nyquist limit.</dd>
   <dt>Image, or replica</dt><dd>A copy of the signal's spectrum that sampling creates at every whole multiple of f<sub>s</sub>. The copies are real: they come out of the converter unless a reconstruction filter removes them.</dd>
   <dt>Folding</dt><dd>The way input frequency maps to apparent frequency: the frequency axis is creased at every multiple of half the sample rate and folded back like an accordion.</dd>
+  <dt>Wagon-wheel effect</dt><dd>Wheels rolling backwards in old films. The camera is a strobe taking 24 pictures a second, and the wheel turns faster than that, so the invented in-between motion runs the wrong way.</dd>
+  <dt>Hold droop</dt><dd>The amplitude loss a zero-order hold causes, a factor sinc(f<sub>a</sub>/f<sub>s</sub>), plus half a sample period of delay. The reconstruction filter smooths the staircase but does not undo the droop.</dd>
   <dt>Oversampling ratio</dt><dd>f<sub>s</sub> divided by the Nyquist rate 2f. A dimensionless number, written with a &times;. Anything above 1 works; 1 exactly does not.</dd>
 </dl>
 
@@ -664,43 +666,29 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
   }
 
   function notes() {
-    var v = verdict(), fa = fAlias(), r = rSigned();
-    var recTxt;
-    if (S.interp === 'sinc') {
-      recTxt = 'The dashed orange curve is ideal sinc interpolation: every sample is replaced by the curve sin(&pi;u)/(&pi;u) and the results are added. That is exactly what a perfect low-pass filter at ' + (S.fs / 2).toFixed(2) + ' Hz would produce, so the reconstruction filter switch changes nothing here.';
-    } else if (S.filt) {
-      recTxt = 'The yellow staircase is the raw output of an ordinary converter, which holds each sample until the next arrives. The dashed orange curve is that staircase after the low-pass filter. The hold is not free: it costs a factor sinc(f<sub>a</sub>/f<sub>s</sub>) = ' + holdDroop().toFixed(3) + ' in amplitude (' + num(20 * Math.log10(Math.max(holdDroop(), 1e-9)), 2) + ' dB) and half a sample period of delay.';
-    } else {
-      recTxt = 'The yellow staircase is the raw converter output with no filter after it. Those hard steps carry copies of the signal at every multiple of ' + S.fs.toFixed(1) + ' Hz, which is what the reconstruction filter is there to remove. Switch it on to see the smooth result.';
-    }
-    var stateTxt = v === 'clear'
-      ? 'The dots pin down one wave and one wave only, so the rebuilt curve sits on top of the original.'
-      : (v === 'boundary'
-        ? 'The sample rate is exactly twice the signal frequency. With this clock offset every sample lands on a zero crossing, so the dots are all at zero and the rebuilt curve is flat. Drag the sampling clock offset in the extra controls and watch an amplitude appear from nowhere — whatever survives depends on luck, not design.'
-        : (atEdge()
-          ? 'The alias lands exactly on half the sample rate, ' + fa.toFixed(2) + ' Hz, which is the same degenerate case as f<sub>s</sub> = 2f: the samples carry no reliable amplitude, and with this clock offset they may be all zero. Move either slider slightly and the ghost reappears.'
-          : 'The dots fit a slower wave, ' + fa.toFixed(2) + ' Hz, just as well as they fit the real one'
-            + (r < 0 ? ', and turned upside down, because the offset from the nearest multiple of the sample rate is negative.' : '.')));
+    var v = verdict(), fa = fAlias();
+    var recLab = v === 'clear'
+      ? 'the rebuilt wave'
+      : (fa < 1e-6 ? 'rebuilt flat &mdash; the wave vanished' : 'the ghost, ' + fa.toFixed(2) + ' Hz');
+    var drawRec = !(S.interp === 'hold' && !S.filt);
     $('timeNote').innerHTML =
-      '<li>The <b style="font-weight:500;color:var(--series-1)">blue curve</b> is the real, continuous wave. The <b style="font-weight:500">black dots</b> are the only thing the converter keeps; the thin stems mark the instants it looked.</li>'
-      + '<li>' + stateTxt + '</li>'
-      + '<li>' + recTxt + '</li>'
-      + '<li>The time window is chosen to keep both the wave and the dots legible, so it changes as you move the sliders. Read the numbers off the axis rather than counting pixels.</li>';
+      '<li><b style="font-weight:500;color:var(--series-1)">blue</b> &mdash; the real wave</li>'
+      + '<li><b style="font-weight:500">black dots</b> &mdash; the samples kept</li>'
+      + (S.interp === 'hold' ? '<li><b style="font-weight:500;color:var(--series-3)">yellow steps</b> &mdash; raw converter output</li>' : '')
+      + (drawRec ? '<li><b style="font-weight:500;color:var(--series-2)">dashed orange</b> &mdash; ' + recLab + '</li>' : '');
 
     var overlap = S.f > S.fs / 2 + EPS;
     $('specNote').innerHTML =
-      '<li>The <b style="font-weight:500;color:var(--series-1)">solid blue triangle</b> at the centre is the signal itself: a cartoon of a baseband spectrum whose highest frequency is f = ' + S.f.toFixed(2) + ' Hz, drawn on both sides of zero as the mathematics requires. The tall blue stems mark the tone at &plusmn;' + S.f.toFixed(2) + ' Hz.</li>'
-      + '<li>The <b style="font-weight:500;color:var(--series-2)">dashed orange triangles</b> are the images. Sampling does not just measure the signal; it copies the whole spectrum to every whole multiple of the sample rate, ' + S.fs.toFixed(1) + ' Hz. They are as real as the original.</li>'
-      + '<li>' + (overlap
-        ? '<b style="font-weight:500;color:var(--text-bad)">The shaded band is where copies overlap.</b> Inside it two different frequencies contribute to the same place on the axis, and nothing downstream can separate them again. That overlap is aliasing, seen in the frequency domain.'
-        : 'No shading: the copies clear each other, because f is below half the sample rate. The gap between the triangle edge at ' + S.f.toFixed(2) + ' Hz and the copy edge at ' + (S.fs - S.f).toFixed(2) + ' Hz is the room an anti-alias filter needs to do its work.') + '</li>'
-      + '<li>Widening the signal or lowering the sample rate closes that gap. Those are the only two things a designer can change.</li>';
+      '<li><b style="font-weight:500;color:var(--series-1)">blue</b> &mdash; the signal and its tone</li>'
+      + '<li><b style="font-weight:500;color:var(--series-2)">dashed orange</b> &mdash; copies made by sampling</li>'
+      + (overlap
+        ? '<li><b style="font-weight:500;color:var(--text-bad)">red shading</b> &mdash; copies overlap: aliasing</li>'
+        : '<li>no shading &mdash; copies stay clear</li>');
 
     $('foldNote').innerHTML =
-      '<li>Read it as a lookup table. Find the frequency that is really present along the bottom axis, go up to the zigzag, and read across to the left for the frequency the samples will report.</li>'
-      + '<li>Inside the <b style="font-weight:500;color:var(--series-4)">shaded strip</b>, below half the sample rate, the line is a plain 45-degree diagonal: what goes in comes out. That strip is the only honest part of the axis.</li>'
-      + '<li>Past it the line creases and comes back down. The frequency axis is folded like an accordion at every multiple of ' + (S.fs / 2).toFixed(2) + ' Hz, which is where the name comes from.</li>'
-      + '<li>The <b style="font-weight:500;color:var(--series-1)">blue marker</b> is the current setting: ' + S.f.toFixed(2) + ' Hz in, ' + fAlias().toFixed(2) + ' Hz out. Every peak of the zigzag is a frequency that reports as ' + (S.fs / 2).toFixed(2) + ' Hz, and every valley is one that reports as 0 Hz and disappears.</li>';
+      '<li><b style="font-weight:500;color:var(--series-2)">orange zigzag</b> &mdash; input below, output left</li>'
+      + '<li><b style="font-weight:500;color:var(--series-4)">shaded strip</b> &mdash; no folding here</li>'
+      + '<li><b style="font-weight:500;color:var(--series-1)">blue dot</b> &mdash; ' + S.f.toFixed(2) + ' Hz in, ' + fa.toFixed(2) + ' Hz out</li>';
   }
 
   function cards() {
@@ -739,6 +727,9 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       'Apparent frequency: |' + num(rSigned(), 2) + '| = ' + fAlias().toFixed(2) + ' Hz.',
       'Oversampling ratio: ' + S.fs.toFixed(1) + ' ÷ (2 × ' + S.f.toFixed(2) + ') = ' + (fsSafe() / (2 * fSafe())).toFixed(2) + '×, so the verdict is ' + vt[v2].toLowerCase() + '.'
     ];
+    if (S.interp === 'hold') {
+      lines.push('Hold droop: sinc(' + fa.toFixed(2) + ' ÷ ' + S.fs.toFixed(1) + ') = ' + holdDroop().toFixed(3) + ' (' + num(20 * Math.log10(Math.max(holdDroop(), 1e-9)), 2) + ' dB), plus half a sample period of delay.');
+    }
     $('work').innerHTML = lines.map(function (s) { return '<li>' + s + '</li>'; }).join('');
   }
 
@@ -777,11 +768,11 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
   $('bFiltOff').addEventListener('click', function () { S.filt = false; redraw(); });
 
   var TOUR = [
-    { f: 3, fs: 20, msg: 'Step 1 — f = 3 Hz sampled at 20 Sa/s, about 3.3 times faster than the Nyquist rate. The dots pin the wave down, the rebuilt curve sits on the real one, and in the spectrum the copies stand well clear of each other.' },
-    { f: 7, fs: 14, msg: 'Step 2 — f raised to 7 Hz and the rate dropped to 14 Sa/s, which is exactly twice f. This is the equality case, and it fails: every sample lands on a zero crossing, the rebuilt wave is a flat line, and the triangles in the spectrum touch edge to edge. Nyquist requires the rate to be strictly greater than 2f.' },
-    { f: 7, fs: 10, msg: 'Step 3 — same 7 Hz signal, rate cut to 10 Sa/s. Now the samples fit a 3 Hz wave, turned upside down, just as well as the 7 Hz one. The spectrum shows the copies overlapping, and the fold diagram maps 7 Hz onto 3 Hz.' },
-    { f: 10, fs: 10, msg: 'Step 4 — signal and sample rate now equal, 10 Hz against 10 Sa/s. Every sample catches the wave at the same point in its cycle, so the apparent frequency is 0 Hz: the wheel looks frozen and the wave reads as a constant. It has not stopped; you have stopped seeing it.' },
-    { f: 9, fs: 10, msg: 'Step 5 — f nudged down to 9 Hz at 10 Sa/s. The distance to the nearest multiple of the rate is now −1 Hz, so the apparent motion reverses: the wheel runs backwards at 1 turn a second. This is the wagon-wheel effect, and it is the same arithmetic as every other step.' }
+    { f: 3, fs: 20, msg: 'Step 1 — 3 Hz at 20 Sa/s: the dots pin the wave down.' },
+    { f: 7, fs: 14, msg: 'Step 2 — exactly twice f: every sample lands on a zero crossing.' },
+    { f: 7, fs: 10, msg: 'Step 3 — 7 Hz at 10 Sa/s: a 3 Hz impostor fits the same dots.' },
+    { f: 10, fs: 10, msg: 'Step 4 — f equals fs: the wheel looks frozen at 0 Hz.' },
+    { f: 9, fs: 10, msg: 'Step 5 — 9 Hz at 10 Sa/s: the wheel runs backwards, one turn a second.' }
   ];
   TOUR.forEach(function (st, i) {
     $('t' + i).addEventListener('click', function () {

@@ -90,9 +90,9 @@ ol.work li { margin: 3px 0; }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Polarisation, tilt and axial ratio</h1>
-<p class="sub">A radio wave has a direction it wiggles in, and so does the antenna trying to catch it. Polarisation is that direction. If the two disagree the link still works, but part of the power is thrown away before any of the other engineering starts &mdash; and if they disagree by a right angle, in theory none of it arrives at all. This tool draws the wiggle, lets you tilt the receiving antenna against it, and prints the loss.</p>
+<p class="sub">Polarisation is the direction a wave wiggles in, and the antenna has one too. Tilt the two apart and power is thrown away before any other engineering starts.</p>
 <p class="note">New to antennas? Start with <a href="antenna-basics.html">antenna basics</a> for what a dipole is and what a beam looks like. Everything here happens in the plane across the beam, not along it.</p>
-<p class="sub">An everyday version: a letterbox slot only takes a letter held the right way round. The letter is the wave, the slot is the antenna. A circular wave is a letter that spins as it flies &mdash; it always half-fits, whatever angle the slot is at.</p>
+<p class="note">An everyday analogy: a letterbox slot only takes a letter held the right way round &mdash; a circular wave spins as it flies, so it always half-fits.</p>
 
 <div class="grid2">
   <div class="ctl"><label for="ab">Amplitude ratio A/B</label><input type="range" id="ab" min="0" max="1" step="0.01" value="0.6"><span class="v" id="abv">0.60</span></div>
@@ -199,14 +199,15 @@ ol.work li { margin: 3px 0; }
   </div>
 </div>
 
-<p class="sec"><b>4 &middot; The arithmetic, on the numbers now on screen</b></p>
+<details><summary>The arithmetic, on the numbers now on screen</summary>
 <ol class="work" id="work"></ol>
 
-<p class="sub" style="margin-top: 2rem;">Three results are worth carrying away. A 45&deg; mismatch between two linear antennas costs exactly 3.01 dB, and the cost then runs away fast: 6.02 dB at 60&deg; and 21.19 dB at 85&deg;, so the last few degrees of alignment are worth more than all the earlier ones. A linear antenna against a perfectly circular wave loses 3.01 dB at every rotation angle, which is the trade circular polarisation offers &mdash; a fixed 3 dB in exchange for never caring about orientation again, which is why satellite and GPS links use it. And a real circular antenna is specified by its axial ratio, because the peak-to-peak swing of that 3 dB figure, as the far end rotates, is equal to the axial ratio in dB: 3 dB of axial ratio swings the loss from 1.76 to 4.76 dB, so half the axial ratio is the number to budget for. The one place this tool flatters reality is the null: the formula gives infinite rejection at a right angle, while a real antenna manages 25 to 35 dB of cross-polar discrimination, limited by its own imperfection and by rain depolarising the wave on the way. Plan a frequency-reuse scheme on 30 dB, never on infinity.</p>
+<p class="sub" style="margin-top: 1rem;">Three results are worth carrying away. A 45&deg; mismatch between two linear antennas costs exactly 3.01 dB, and the cost then runs away fast: 6.02 dB at 60&deg; and 21.19 dB at 85&deg;, so the last few degrees of alignment are worth more than all the earlier ones. A linear antenna against a perfectly circular wave loses 3.01 dB at every rotation angle, which is the trade circular polarisation offers &mdash; a fixed 3 dB in exchange for never caring about orientation again, which is why satellite and GPS links use it. And a real circular antenna is specified by its axial ratio, because the peak-to-peak swing of that 3 dB figure, as the far end rotates, is equal to the axial ratio in dB: 3 dB of axial ratio swings the loss from 1.76 to 4.76 dB, so half the axial ratio is the number to budget for. The one place this tool flatters reality is the null: the formula gives infinite rejection at a right angle, while a real antenna manages 25 to 35 dB of cross-polar discrimination, limited by its own imperfection and by rain depolarising the wave on the way. Plan a frequency-reuse scheme on 30 dB, never on infinity.</p>
+</details>
 
 <p class="note">Next: <a href="link-budget.html">link budget</a>, where a polarisation loss like this is one more line in the running total, alongside free-space loss and feeder loss.</p>
 
-<p class="sec"><b>Glossary</b></p>
+<details><summary>Glossary</summary>
 <dl class="glossary">
   <dt>Polarisation</dt>
   <dd>The direction the electric field of a wave points, seen in the plane across the beam. It is set by the antenna that launched the wave.</dd>
@@ -233,6 +234,7 @@ ol.work li { margin: 3px 0; }
   <dt>Dipole</dt>
   <dd>The simplest antenna: a straight rod. It is linearly polarised along its own length, which is why tilting it matters.</dd>
 </dl>
+</details>
 
 <script>
 (function () {
@@ -680,7 +682,7 @@ ol.work li { margin: 3px 0; }
     $('cARf').textContent = arDb > CAP_DB
       ? 'a straight line: the short axis is zero, so the ratio runs away'
       : 'long ÷ short = ' + e.ar.toFixed(3) + ', as 20 log10; 0 dB is a circle';
-    $('cTau').textContent = (e.tau * R2D).toFixed(1) + '°';
+    $('cTau').textContent = (e.tau * R2D).toFixed(1).replace('-', '−') + '°';
     $('cPLF').textContent = p.toFixed(4);
     $('cLoss').textContent = ls >= CAP_DB ? '> ' + CAP_DB.toFixed(1) + ' dB' : ls.toFixed(2) + ' dB';
     $('cLoss').style.color = ls < 0.5 ? 'var(--text-good)' : (ls < 4 ? 'var(--text-primary)' : 'var(--text-warning)');

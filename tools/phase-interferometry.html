@@ -45,12 +45,18 @@ input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 canvas { width: 100%; display: block; }
+.legend-note { font-size: 12px; color: var(--text-muted); margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 3px 16px; }
+.sw { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+details { margin: 1.25rem 0; font-size: 14px; color: var(--text-secondary); }
+summary { cursor: pointer; color: var(--text-primary); }
+.glossary dt { font-weight: 500; color: var(--text-primary); margin-top: 8px; }
+.glossary dd { margin: 0 0 0 0; }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Phase interferometry</h1>
-<p class="sub">One equation runs everything here: &Delta;&phi; = 360&deg; &middot; d &middot; sin&theta; / &lambda;, wrapped to &plusmn;180&deg;. Antennas on one line, spaced unequally, turn that into an angle of arrival. Short spacings are honest but coarse; long ones are precise but hide whole cycles, and the short ones are what tell you how many are hidden.</p>
+<p class="sub">One equation runs everything: &Delta;&phi; = 360&deg; &middot; d &middot; sin&thinsp;&theta; / &lambda;, wrapped to &plusmn;180&deg;. Short baselines are coarse but honest; long ones are precise but hide whole cycles.</p>
 
 <div class="row">
   <span class="lbl">Antennas</span>
@@ -58,7 +64,7 @@ canvas { width: 100%; display: block; }
   <button id="c5">5</button><button id="c6">6</button>
   <button id="pp" style="margin-left: auto;">Pause</button>
 </div>
-<div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 26px;">
+<div class="row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px 26px;">
   <div style="display: flex; align-items: center; gap: 12px;">
     <label class="lbl" for="th" style="min-width: 92px;">Emitter angle</label>
     <input type="range" id="th" min="-90" max="90" step="1" value="30" style="flex: 1;">
@@ -72,27 +78,65 @@ canvas { width: 100%; display: block; }
   </div>
 </div>
 <div class="row" id="posRow"><span class="lbl">Positions (cm)</span></div>
+<div class="row">
+  <span class="lbl">Tour</span>
+  <button class="tb" data-s="0">1</button><button class="tb" data-s="1">2</button>
+  <button class="tb" data-s="2">3</button><button class="tb" data-s="3">4</button>
+  <span id="tmsg" class="sm"></span>
+</div>
 
-<p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; looking down at the antenna table; the angle sits between the vertical 0&deg; line and the emitter line</span></p>
+<p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; looking down at the antenna table</span></p>
 <canvas id="geo" style="height: 290px;"></canvas>
+<p class="legend-note">
+  <span><span class="sw" style="background:#378ADD"></span>wave peaks, one &lambda; apart</span>
+  <span><span class="sw" style="background:#D4537E"></span>emitter</span>
+  <span><span class="sw" style="background:var(--text-primary)"></span>A1, the reference antenna</span>
+  <span><span class="sw" style="background:#7F77DD"></span>the other antennas</span>
+</p>
 
-<p class="sec"><b>2 &middot; Measured phase differences</b> <span>&mdash; the numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
+<p class="sec"><b>2 &middot; Measured phase differences</b> <span>&mdash; what the receiver reads, wrapped to &plusmn;180&deg;</span></p>
 <div class="cards" id="cards"></div>
 
-<p class="sec"><b>3 &middot; Scope view</b> <span>&mdash; faint vertical lines are one cycle apart; small dots = every wave peak; amber ring = the peak that actually matches A1's reference</span></p>
+<p class="sec"><b>3 &middot; Scope view</b> <span>&mdash; one trace per antenna, one cycle per division</span></p>
 <canvas id="scope" style="height: 330px;"></canvas>
+<p class="legend-note">
+  <span><span class="sw" style="background:#7F77DD"></span>each antenna's received wave</span>
+  <span><span class="sw" style="background:#7F77DD; border-radius:50%"></span>small dots — every peak</span>
+  <span><span class="sw" style="background:transparent; border:1.5px solid var(--text-warning); border-radius:50%"></span>amber ring — true matching peak</span>
+</p>
 
-<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>&mdash; sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
+<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>&mdash; sawtooth jumps are wrapping</span></p>
 <canvas id="ch" style="height: 230px;"></canvas>
+<p class="legend-note">
+  <span><span class="sw" style="background:#1D9E75"></span>one curve per baseline</span>
+  <span><span class="sw" style="background:#1D9E75; border-radius:50%"></span>dots — the cards right now</span>
+</p>
 
 <h2>5 &middot; Geolocation mode &mdash; phases in, angle out</h2>
-<p class="sub" style="margin-bottom: 1rem;">The inverse direction, the one a real receiver runs: from the wrapped phases above plus the measured frequency, recover the angle by adding the hidden cycles back one baseline at a time.</p>
+<p class="sub" style="margin-bottom: 1rem;">The inverse a real receiver runs: add the hidden cycles back, one baseline at a time.</p>
 <div class="cards" id="solve"></div>
 <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 1.25rem; flex-wrap: wrap;">
   <span class="lbl">Recovered angle of arrival</span>
   <span id="res" style="font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums;">&mdash;</span>
   <span id="resn" style="font-size: 13px; color: var(--text-muted);">&mdash;</span>
 </div>
+
+<details>
+  <summary>Worked example — 2 GHz, 30&deg;, d = 2.4 cm</summary>
+  <p>&lambda; = 29.98 / 2 = 14.99 cm. &Delta;&phi; = 360&deg; &middot; 2.4 &middot; sin&thinsp;30&deg; / 14.99 = 28.8&deg;. Inverting: sin&thinsp;&theta; = 28.8 &middot; 14.99 / (360 &middot; 2.4) = 0.500, so &theta; = 30.0&deg;. Because 2.4 cm &le; &lambda;/2 = 7.5 cm, no whole cycle can hide, and the wrapped reading is the whole story. Above 6.25 GHz that stops being true even for 2.4 cm.</p>
+</details>
+<details>
+  <summary>Glossary</summary>
+  <dl class="glossary">
+    <dt>Angle of arrival (&theta;)</dt><dd>The direction the signal comes from, measured from straight ahead.</dd>
+    <dt>Baseline (d)</dt><dd>The distance from the reference antenna A1 to another antenna.</dd>
+    <dt>Wavelength (&lambda;)</dt><dd>The distance between two wave peaks; &lambda; = c / f.</dd>
+    <dt>Phase difference (&Delta;&phi;)</dt><dd>How much later the wave arrives at one antenna than at A1, in degrees.</dd>
+    <dt>Wrapping</dt><dd>A receiver reads phase only modulo 360&deg;; whole cycles vanish from the reading.</dd>
+    <dt>Ambiguity</dt><dd>When d &gt; &lambda;/2, several different angles produce the same wrapped phase.</dd>
+    <dt>Geolocation</dt><dd>Working backwards from the measured phases to the emitter's direction.</dd>
+  </dl>
+</details>
 
 <script>
 (function () {
@@ -104,7 +148,7 @@ canvas { width: 100%; display: block; }
   const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const lam = () => 30 / S.f;
+  const lam = () => 29.9792458 / S.f;
   const truePhases = () => S.pos.slice(1).map(p => 360 * p * Math.sin(S.th * Math.PI / 180) / lam());
 
   function buildPos() {
@@ -128,18 +172,19 @@ canvas { width: 100%; display: block; }
   }
 
   function solve() {
-    const L = lam(), d = S.pos.slice(1), q = truePhases().map(wrap);
-    if (!d.length) return null;
+    const L = lam(), tp = truePhases();
+    const bl = S.pos.slice(1).map((p, i) => ({ d: p, q: wrap(tp[i]), c: i })).filter(b => b.d > 0);
+    if (!bl.length) return null;
     const asinD = s => Math.asin(Math.max(-1, Math.min(1, s))) * 180 / Math.PI;
-    let sinEst = Math.max(-1, Math.min(1, q[0] * L / (360 * d[0])));
-    const steps = [{ th: asinD(sinEst), k: 0, d: d[0] }];
-    for (let i = 1; i < d.length; i++) {
-      const predicted = 360 * d[i] * sinEst / L;
-      const k = Math.round((predicted - q[i]) / 360);
-      sinEst = Math.max(-1, Math.min(1, (q[i] + 360 * k) * L / (360 * d[i])));
-      steps.push({ th: asinD(sinEst), k: k, d: d[i] });
+    let sinEst = Math.max(-1, Math.min(1, bl[0].q * L / (360 * bl[0].d)));
+    const steps = [{ th: asinD(sinEst), k: 0, d: bl[0].d, c: bl[0].c }];
+    for (let i = 1; i < bl.length; i++) {
+      const predicted = 360 * bl[i].d * sinEst / L;
+      const k = Math.round((predicted - bl[i].q) / 360);
+      sinEst = Math.max(-1, Math.min(1, (bl[i].q + 360 * k) * L / (360 * bl[i].d)));
+      steps.push({ th: asinD(sinEst), k: k, d: bl[i].d, c: bl[i].c });
     }
-    return { steps: steps, th: steps[steps.length - 1].th };
+    return { steps: steps, th: steps[steps.length - 1].th, d0: bl[0].d };
   }
 
   function updateUI() {
@@ -165,16 +210,26 @@ canvas { width: 100%; display: block; }
       sv.steps.forEach((st, i) => {
         const el = document.createElement('div');
         el.className = 'card';
-        el.innerHTML = '<div class="hd"><span class="dot" style="background:' + PC[i] + '"></span>Step ' + (i + 1) + ' · ' + st.d.toFixed(1) + ' cm</div>'
+        const ft = i === 0
+          ? (st.d <= L / 2 ? 'coarse, no cycles can hide here'
+            : 'coarse — but ' + st.d.toFixed(1) + ' cm > λ/2, even this baseline hides cycles')
+          : 'added back k = ' + (st.k > 0 ? '+' : '') + st.k + ' cycle' + (Math.abs(st.k) === 1 ? '' : 's');
+        el.innerHTML = '<div class="hd"><span class="dot" style="background:' + PC[st.c] + '"></span>Step ' + (i + 1) + ' · ' + st.d.toFixed(1) + ' cm</div>'
           + '<div class="big" style="font-size:18px">' + st.th.toFixed(1) + '°</div>'
-          + '<div class="ft">' + (i === 0 ? 'coarse, no cycles can hide here' : 'added back k = ' + (st.k > 0 ? '+' : '') + st.k + ' cycle' + (Math.abs(st.k) === 1 ? '' : 's')) + '</div>';
+          + '<div class="ft">' + ft + '</div>';
         sbox.appendChild(el);
       });
       $('res').textContent = sv.th.toFixed(1) + '°';
       const err = Math.abs(sv.th - S.th);
       $('resn').textContent = err < 0.5 ? 'matches the true angle — every cycle count was right'
-        : 'true angle is ' + S.th + '° — a cycle count was picked wrong, the spacing jump is too big';
+        : 'true angle is ' + S.th + '° — ' + (sv.d0 > L / 2
+          ? 'the ' + sv.d0.toFixed(1) + ' cm starting baseline is itself ambiguous (d > λ/2), so step 1 starts wrong'
+          : 'a cycle count was picked wrong, the spacing jump is too big');
       $('resn').style.color = err < 0.5 ? 'var(--text-muted)' : 'var(--text-warning)';
+    } else {
+      $('res').textContent = '—';
+      $('resn').textContent = 'no usable baseline — set a spacing above 0 cm';
+      $('resn').style.color = 'var(--text-muted)';
     }
   }
 
@@ -394,6 +449,22 @@ canvas { width: 100%; display: block; }
     $('pp').textContent = S.playing ? 'Pause' : 'Continue';
   });
   $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+
+  const TOUR = [
+    { th: 0, f: 2, m: 'Broadside — every antenna hears the same phase; all cards read 0°.' },
+    { th: 30, f: 2, m: 'Tilt to 30° — each baseline now reads a different phase difference.' },
+    { th: 30, f: 8, m: 'Higher frequency — long baselines wrap; amber rings mark hidden cycles.' },
+    { th: 30, f: 18, m: 'At 18 GHz even the shortest baseline is ambiguous — recovery starts wrong.' }
+  ];
+  const tbs = document.querySelectorAll('.tb');
+  tbs.forEach(b => b.addEventListener('click', () => {
+    const st = TOUR[+b.dataset.s];
+    tbs.forEach(o => o.classList.remove('on'));
+    b.classList.add('on');
+    S.th = st.th; $('th').value = st.th;
+    setF(st.f);
+    $('tmsg').textContent = st.m;
+  }));
 
   buildPos(); updateUI();
   let animT = 0, last = null;
