@@ -1544,7 +1544,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   }
   function play(on) {
     S.playing = on;
-    $('bRun').textContent = on ? 'Pause' : 'Run';
+    $('bRun').textContent = on ? 'pause' : 'run';
     if (on && raf === null) { last = performance.now(); raf = requestAnimationFrame(frame); }
   }
   $('bRun').addEventListener('click', function () { play(!S.playing); });
@@ -1560,23 +1560,25 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
   const TOUR = [
     { s: { users: 1, chipExp: 5, imb: 0, noiseDb: 0, code: 'pn', pcOn: true, pcRate: 800 },
-      m: 'Step 1 — one handset, 32 chips: the code lifts the bit 15 dB.' },
+      m: 'One handset, 32 chips: the code lifts the bit 15 dB.' },
     { s: { users: 4 },
-      m: 'Step 2 — four handsets share the band; the correlator barely notices.' },
+      m: 'Four handsets share the band; the correlator barely notices.' },
     { s: { imb: 40, pcOn: false },
-      m: 'Step 3 — power control off: the near handset, 40 dB stronger, swamps the correlator.' },
+      m: 'Loop off: the near handset, 40 dB stronger, swamps the correlator.' },
     { s: { pcOn: true, pcRate: 800 },
-      m: 'Step 4 — power control at 800 Hz levels the bars in 50 ms.' },
+      m: 'The loop at 800 Hz levels the bars in 50 ms.' },
     { s: { pcRate: 2 },
-      m: 'Step 5 — the loop at GSM’s 2 Hz needs 20 s; the near user still shouts.' },
+      m: 'At GSM’s 2 Hz the loop needs 20 s; the near user still shouts.' },
     { s: { pcRate: 800, imb: 0, chipExp: 8, users: 12 },
-      m: 'Step 6 — 256 chips: 9 dB more processing gain pays for twelve users.' }
+      m: '256 chips: 9 dB more processing gain pays for twelve users.' }
   ];
-  ['t1', 't2', 't3', 't4', 't5', 't6'].forEach(function (id, i) {
+  const TOURIDS = ['t1', 't2', 't3', 't4', 't5', 't6'];
+  TOURIDS.forEach(function (id, i) {
     $(id).addEventListener('click', function () {
       const step = TOUR[i];
       Object.keys(step.s).forEach(function (k) { S[k] = step.s[k]; });
       S.chip = 0; S.bit = 0; ST = null;
+      TOURIDS.forEach(function (o) { $(o).classList.toggle('on', o === id); });
       writeInputs();
       updateUI();
       $('tourTxt').textContent = step.m;
@@ -1590,8 +1592,10 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     if (rt) clearTimeout(rt);
     rt = setTimeout(drawAll, 120);
   });
+  const mqd = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (mqd && mqd.addEventListener) mqd.addEventListener('change', function () { theme.clear(); drawAll(); });
 
-  readInputs();
+  writeInputs();
   updateUI();
   if (!reduce) play(true);
 })();

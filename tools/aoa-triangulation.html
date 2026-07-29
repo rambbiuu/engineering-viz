@@ -923,377 +923,319 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   }
 
   function drawMap(F, why) {
-    var c = $('cvMap'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var G = mapGeom(w, h);
-    mapG = G;
-    if (!G) return;
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
-    var l = G.X(0), t = G.Y(KMY), pw = KMX * G.sc, ph = KMY * G.sc;
-    plotBase(g, l, t, pw, ph);
+    var c = $('cvMap'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme();
+    var fs = fsFor(w, h);
+    var A = eqAxes(w, h, fs, S.kmx, S.kmy);
+    var xs = { min: (S.kmx - A.vx) / 2, max: (S.kmx + A.vx) / 2, label: 'east', unit: 'km' };
+    var ys = { min: (S.kmy - A.vy) / 2, max: (S.kmy + A.vy) / 2, label: 'north', unit: 'km' };
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h }, xs, ys,
+      { padL: A.padL, padR: A.padR, padT: A.padT, padB: A.padB, fontSize: fs });
+    mapP = { P: P, xa: xs.min, xb: xs.max, ya: ys.min, yb: ys.max };
 
-    var i, k;
-    g.strokeStyle = grd; g.lineWidth = 0.5;
-    for (k = 1; k < KMX; k++) { g.beginPath(); g.moveTo(G.X(k), t); g.lineTo(G.X(k), t + ph); g.stroke(); }
-    for (k = 1; k < KMY; k++) { g.beginPath(); g.moveTo(l, G.Y(k)); g.lineTo(l + pw, G.Y(k)); g.stroke(); }
-    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-    for (k = 0; k <= KMX; k += 5) g.fillText(k.toFixed(0), G.X(k), t + ph + 4);
-    g.textAlign = 'right'; g.textBaseline = 'middle';
-    for (k = 0; k <= KMY; k += 4) g.fillText(k.toFixed(0), l - 4, G.Y(k));
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('km east', l + pw / 2, t + ph + 17);
-    g.save(); g.translate(Math.max(l - 22, 8), t + ph / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText('km north', 0, 0); g.restore();
+    var mark = Math.max(4.5, Math.min(10, P.h * 0.028));
+    var L = (S.kmx + S.kmy) * 4;
+    var i, j;
 
-    g.save();
-    g.beginPath(); g.rect(l + 1, t + 1, pw - 2, ph - 2); g.clip();
+    P.clip(g);
 
-    var L = 60;
+    g.strokeStyle = t.muted; g.lineWidth = 0.8; g.setLineDash([4, 3]);
+    g.strokeRect(P.X(0), P.Y(S.kmy), P.X(S.kmx) - P.X(0), P.Y(0) - P.Y(S.kmy));
+    g.setLineDash([]);
+
     for (i = 0; i < S.n; i++) {
-      var th = measBrg(i), sg = sigRad(), col = cvv(SCOL[i]);
+      var th = measBrg(i), sg = sigRad(), cc = col(i);
       var px = S.sx[i], py = S.sy[i];
-      var p1x = px + Math.sin(th - sg) * L, p1y = py + Math.cos(th - sg) * L;
-      var p2x = px + Math.sin(th + sg) * L, p2y = py + Math.cos(th + sg) * L;
-      g.fillStyle = col; g.globalAlpha = 0.14;
+      g.fillStyle = cc; g.globalAlpha = 0.12;
       g.beginPath();
-      g.moveTo(G.X(px), G.Y(py)); g.lineTo(G.X(p1x), G.Y(p1y)); g.lineTo(G.X(p2x), G.Y(p2y));
+      g.moveTo(P.X(px), P.Y(py));
+      g.lineTo(P.X(px + Math.sin(th - sg) * L), P.Y(py + Math.cos(th - sg) * L));
+      g.lineTo(P.X(px + Math.sin(th + sg) * L), P.Y(py + Math.cos(th + sg) * L));
       g.closePath(); g.fill();
       g.globalAlpha = 1;
-      g.strokeStyle = col; g.lineWidth = 1.3;
+      g.strokeStyle = cc; g.lineWidth = 1.5;
       g.beginPath();
-      g.moveTo(G.X(px), G.Y(py));
-      g.lineTo(G.X(px + Math.sin(th) * L), G.Y(py + Math.cos(th) * L));
+      g.moveTo(P.X(px), P.Y(py));
+      g.lineTo(P.X(px + Math.sin(th) * L), P.Y(py + Math.cos(th) * L));
       g.stroke();
     }
 
     if (F) {
       var sp = zoomSpan(F) / 2;
-      g.strokeStyle = cvv('--series-4'); g.lineWidth = 1; g.setLineDash([4, 3]);
-      var bx = G.X(F.x - sp), by = G.Y(F.y + sp), bw = 2 * sp * G.sc;
-      g.strokeRect(bx, by, bw, bw);
+      g.strokeStyle = t.s4; g.lineWidth = 1; g.setLineDash([4, 3]);
+      g.strokeRect(P.X(F.x - sp), P.Y(F.y + sp),
+        Math.max(P.X(F.x + sp) - P.X(F.x - sp), 1), Math.max(P.Y(F.y - sp) - P.Y(F.y + sp), 1));
       g.setLineDash([]);
-      if (bw > 26) {
-        g.fillStyle = cvv('--series-4'); g.font = fnt(9.5);
-        g.textAlign = 'left'; g.textBaseline = 'top';
-        g.fillText('section 2 zoom', bx, by + bw + 2);
-      }
     }
-    g.restore();
 
     for (i = NMAX - 1; i >= 0; i--) {
-      var active = i < S.n;
-      drawMast(g, G.X(S.sx[i]), G.Y(S.sy[i]), active ? cvv(SCOL[i]) : cvv('--text-muted'), !active);
+      var act = i < S.n;
+      var mx = P.X(S.sx[i]), my = P.Y(S.sy[i]);
       g.save();
-      g.globalAlpha = active ? 1 : 0.5;
-      g.fillStyle = active ? cvv(SCOL[i]) : cvv('--text-muted');
-      g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('site ' + (i + 1), G.X(S.sx[i]), G.Y(S.sy[i]) + 5);
-      if (active) {
-        g.font = fnt(9.5);
-        g.fillText(fBrg(measBrg(i)), G.X(S.sx[i]), G.Y(S.sy[i]) + 17);
+      g.globalAlpha = act ? 1 : 0.45;
+      siteMark(g, mx, my, mark, act ? t.text : t.muted);
+      g.fillStyle = act ? col(i) : t.muted;
+      g.font = t.font(fs); g.textAlign = 'center';
+      var second = act ? (P.h > 190 ? fBrg(measBrg(i)) : '') : 'not used';
+      if (my < P.y0 + P.h * 0.76) {
+        g.textBaseline = 'top';
+        g.fillText('site ' + (i + 1), mx, my + mark + 3);
+        if (second) g.fillText(second, mx, my + mark + 5 + fs);
       } else {
-        g.font = fnt(9.5); g.fillText('not used', G.X(S.sx[i]), G.Y(S.sy[i]) + 17);
+        g.textBaseline = 'bottom';
+        var yy = my - mark - 3;
+        if (second) { g.fillText(second, mx, yy); yy -= fs + 2; }
+        g.fillText('site ' + (i + 1), mx, yy);
       }
       g.restore();
     }
 
-    g.save();
-    g.beginPath(); g.rect(l + 1, t + 1, pw - 2, ph - 2); g.clip();
+    if (S.n >= 2) {
+      var ia = 0, ib = 1, bd = -1;
+      for (i = 0; i < S.n; i++) {
+        for (j = i + 1; j < S.n; j++) {
+          var dd = Math.hypot(S.sx[i] - S.sx[j], S.sy[i] - S.sy[j]);
+          if (dd > bd) { bd = dd; ia = i; ib = j; }
+        }
+      }
+      if (bd > 0.15) {
+        dimension(g, P.X(S.sx[ia]), P.Y(S.sy[ia]), P.X(S.sx[ib]), P.Y(S.sy[ib]),
+          'baseline ' + fmtNum(bd, 2) + NB + 'km', { size: fs - 0.5 });
+      }
+    }
+
     if (S.truth) {
-      var ex = G.X(S.ex), ey = G.Y(S.ey);
-      g.fillStyle = cvv('--series-7');
-      g.beginPath(); g.arc(ex, ey, 5.5, 0, 7); g.fill();
-      g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'bottom';
-      g.fillText('true emitter', ex, ey - 8);
+      g.fillStyle = t.s7;
+      g.beginPath(); g.arc(P.X(S.ex), P.Y(S.ey), Math.max(3, mark * 0.5), 0, Math.PI * 2); g.fill();
+    }
+    if (F) crosshair(g, P.X(F.x), P.Y(F.y), mark, t.text);
+    P.unclip(g);
+
+    if (S.truth) {
+      leader(g, P.X(S.ex), P.Y(S.ey), 'emitter',
+        { box: P, colour: t.s7, size: fs, dx: 28, dy: -24, dot: false });
     }
     if (F) {
-      var fx = G.X(F.x), fy = G.Y(F.y);
-      g.strokeStyle = cvv('--text-primary'); g.lineWidth = 1.8;
-      g.beginPath();
-      g.moveTo(fx - 7, fy); g.lineTo(fx + 7, fy);
-      g.moveTo(fx, fy - 7); g.lineTo(fx, fy + 7);
-      g.stroke();
-      g.fillStyle = cvv('--text-primary'); g.font = fnt(10.5);
+      leader(g, P.X(F.x), P.Y(F.y), 'fix, CEP ' + fLen(F.cep),
+        { box: P, colour: t.text, size: fs, dx: -30, dy: 28, dot: false });
+    } else {
+      g.save();
+      g.fillStyle = t.bad; g.font = t.font(fs + 1, '500');
       g.textAlign = 'left'; g.textBaseline = 'top';
-      g.fillText(' fix', fx + 6, fy + 4);
-    }
-    g.restore();
-
-    var nx = l + pw - 18, ny = t + 20;
-    g.strokeStyle = sub; g.lineWidth = 1.3;
-    g.beginPath(); g.moveTo(nx, ny + 12); g.lineTo(nx, ny - 10); g.stroke();
-    g.beginPath(); g.moveTo(nx, ny - 14); g.lineTo(nx - 4, ny - 5); g.lineTo(nx + 4, ny - 5);
-    g.closePath(); g.fillStyle = sub; g.fill();
-    g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('N', nx, ny + 13);
-
-    var sbx = l + 10, sby = t + 24, sbl = G.sc * 2;
-    g.strokeStyle = sub; g.lineWidth = 1.4;
-    g.beginPath();
-    g.moveTo(sbx, sby); g.lineTo(sbx + sbl, sby);
-    g.moveTo(sbx, sby - 4); g.lineTo(sbx, sby + 4);
-    g.moveTo(sbx + sbl, sby - 4); g.lineTo(sbx + sbl, sby + 4);
-    g.stroke();
-    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('2 km', sbx + sbl / 2, sby - 5);
-
-    if (!F) {
-      g.fillStyle = cvv('--bad'); g.font = fnt(11);
-      g.textAlign = 'left'; g.textBaseline = 'top';
-      g.fillText('No fix. ' + (WHY[why] || WHY.cross)[0], l + 8, t + 8);
+      g.fillText('No fix. ' + (WHY[why] || WHY.cross)[0], P.x0 + 7, P.y0 + 6);
+      g.restore();
     }
   }
 
   function drawInset(F, why) {
-    var c = $('cvIn'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
-    var l = 58, r = 16, t = 14, b = 40, pw = w - l - r, ph = h - t - b;
-    if (pw < 80 || ph < 60) return;
-    plotBase(g, l, t, pw, ph);
+    var c = $('cvIn'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme();
+    var fs = fsFor(w, h), i, P;
+
     if (!F) {
+      var A0 = eqAxes(w, h, fs, S.kmx, S.kmy);
+      P = graticule(g, { x: 0, y: 0, w: w, h: h },
+        { min: (S.kmx - A0.vx) / 2, max: (S.kmx + A0.vx) / 2, label: 'east', unit: 'km' },
+        { min: (S.kmy - A0.vy) / 2, max: (S.kmy + A0.vy) / 2, label: 'north', unit: 'km' },
+        { padL: A0.padL, padR: A0.padR, padT: A0.padT, padB: A0.padB, fontSize: fs });
       var msg = WHY[why] || WHY.cross;
-      g.fillStyle = cvv('--bad'); g.font = fnt(12);
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText('No usable fix. ' + msg[0], l + pw / 2, t + ph / 2 - 8);
-      g.fillStyle = mut; g.font = fnt(11);
-      g.fillText(msg[1], l + pw / 2, t + ph / 2 + 12);
+      g.save();
+      g.textAlign = 'center';
+      g.fillStyle = t.bad; g.font = t.font(fs + 1, '500'); g.textBaseline = 'bottom';
+      g.fillText('No usable fix. ' + msg[0], P.x0 + P.w / 2, P.y0 + P.h / 2 - 3);
+      g.fillStyle = t.text2; g.font = t.font(fs); g.textBaseline = 'top';
+      g.fillText(msg[1], P.x0 + P.w / 2, P.y0 + P.h / 2 + 5);
+      g.restore();
       return;
     }
-    var span = zoomSpan(F);
-    var sc = Math.min(pw, ph) / span;
-    var cx = l + pw / 2, cy = t + ph / 2;
-    var X = function (kx) { return cx + (kx - F.x) * sc; };
-    var Y = function (ky) { return cy - (ky - F.y) * sc; };
 
-    var step = niceStep(span * 0.9);
-    var nTick = Math.ceil(span / 2 / step) + 1, i, k;
-    g.strokeStyle = grd; g.lineWidth = 0.5; g.font = fnt(10); g.fillStyle = mut;
-    for (k = -nTick; k <= nTick; k++) {
-      var vx = X(F.x + k * step), vy = Y(F.y + k * step);
-      if (vx > l && vx < l + pw) {
-        g.beginPath(); g.moveTo(vx, t); g.lineTo(vx, t + ph); g.stroke();
-        g.textAlign = 'center'; g.textBaseline = 'top';
-        g.fillText(fLenShort(k * step), vx, t + ph + 5);
-      }
-      if (vy > t && vy < t + ph) {
-        g.beginPath(); g.moveTo(l, vy); g.lineTo(l + pw, vy); g.stroke();
-        g.textAlign = 'right'; g.textBaseline = 'middle';
-        g.fillText(fLenShort(k * step), l - 5, vy);
-      }
-    }
-    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('east of the fix', l + pw / 2, h - 14);
-    g.save(); g.translate(12, t + ph / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('north of the fix', 0, 0); g.restore();
+    var kmSpan = zoomSpan(F);
+    var useKm = kmSpan >= 4;
+    var U = useKm ? 1 : 1000, un = useKm ? 'km' : 'm';
+    var A = eqAxes(w, h, fs, kmSpan * U, kmSpan * U);
+    var xs = { min: -A.vx / 2, max: A.vx / 2, label: 'east of fix', unit: un };
+    var ys = { min: -A.vy / 2, max: A.vy / 2, label: 'north of fix', unit: un };
+    P = graticule(g, { x: 0, y: 0, w: w, h: h }, xs, ys,
+      { padL: A.padL, padR: A.padR, padT: A.padT, padB: A.padB, fontSize: fs });
+    var pxPer = P.w / Math.max(xs.max - xs.min, 1e-9);
+    var X = function (kx) { return P.X((kx - F.x) * U); };
+    var Y = function (ky) { return P.Y((ky - F.y) * U); };
 
-    g.save();
-    g.beginPath(); g.rect(l + 1, t + 1, pw - 2, ph - 2); g.clip();
-
+    P.clip(g);
     for (i = 0; i < F.N; i++) {
       var th = F.m[i], ux = Math.sin(th), uy = Math.cos(th);
       var t0 = (F.x - S.sx[i]) * ux + (F.y - S.sy[i]) * uy;
-      var ta = t0 - span, tb = t0 + span;
-      g.strokeStyle = cvv(SCOL[i]); g.lineWidth = 1.6;
+      g.strokeStyle = col(i); g.lineWidth = 1.6;
       g.beginPath();
-      g.moveTo(X(S.sx[i] + ux * ta), Y(S.sy[i] + uy * ta));
-      g.lineTo(X(S.sx[i] + ux * tb), Y(S.sy[i] + uy * tb));
+      g.moveTo(X(S.sx[i] + ux * (t0 - kmSpan)), Y(S.sy[i] + uy * (t0 - kmSpan)));
+      g.lineTo(X(S.sx[i] + ux * (t0 + kmSpan)), Y(S.sy[i] + uy * (t0 + kmSpan)));
       g.stroke();
     }
 
     var pts = ellipsePts(F.x, F.y, F.smaj, F.smin, F.phi, 1, 96);
-    g.fillStyle = cvv('--series-4'); g.globalAlpha = 0.16;
     g.beginPath();
     for (i = 0; i < pts.length; i++) {
       if (i === 0) g.moveTo(X(pts[i][0]), Y(pts[i][1])); else g.lineTo(X(pts[i][0]), Y(pts[i][1]));
     }
-    g.closePath(); g.fill(); g.globalAlpha = 1;
-    g.strokeStyle = cvv('--series-4'); g.lineWidth = 1.8;
-    g.beginPath();
-    for (i = 0; i < pts.length; i++) {
-      if (i === 0) g.moveTo(X(pts[i][0]), Y(pts[i][1])); else g.lineTo(X(pts[i][0]), Y(pts[i][1]));
-    }
-    g.closePath(); g.stroke();
+    g.closePath();
+    g.fillStyle = t.s4; g.globalAlpha = 0.12; g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = t.s4; g.lineWidth = 1.8; g.stroke();
 
-    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.4; g.setLineDash([5, 4]);
-    g.beginPath(); g.arc(X(F.x), Y(F.y), Math.max(F.cep * sc, 1), 0, 7); g.stroke();
+    var rcep = Math.max(F.cep * U * pxPer, 1);
+    g.strokeStyle = t.warn; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+    g.beginPath(); g.arc(X(F.x), Y(F.y), rcep, 0, Math.PI * 2); g.stroke();
     g.setLineDash([]);
 
     if (S.truth) {
-      g.strokeStyle = cvv('--series-7'); g.lineWidth = 1.2; g.setLineDash([3, 3]);
-      g.beginPath(); g.moveTo(X(F.x), Y(F.y)); g.lineTo(X(S.ex), Y(S.ey)); g.stroke();
-      g.setLineDash([]);
-      g.fillStyle = cvv('--series-7');
-      g.beginPath(); g.arc(X(S.ex), Y(S.ey), 5, 0, 7); g.fill();
-      g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'bottom';
-      g.fillText('true emitter', X(S.ex), Y(S.ey) - 7);
-      var mx = (X(F.x) + X(S.ex)) / 2, my = (Y(F.y) + Y(S.ey)) / 2;
-      g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'middle';
-      g.fillText(' ' + fLen(F.err), mx, my);
+      g.fillStyle = t.s7;
+      g.beginPath(); g.arc(X(S.ex), Y(S.ey), Math.max(3, P.h * 0.013), 0, Math.PI * 2); g.fill();
+      dimension(g, X(F.x), Y(F.y), X(S.ex), Y(S.ey), fLen(F.err), { colour: t.s7, size: fs - 0.5 });
     }
+    crosshair(g, X(F.x), Y(F.y), Math.max(6, P.h * 0.03), t.text);
+    P.unclip(g);
 
-    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 2;
-    g.beginPath();
-    g.moveTo(X(F.x) - 8, Y(F.y)); g.lineTo(X(F.x) + 8, Y(F.y));
-    g.moveTo(X(F.x), Y(F.y) - 8); g.lineTo(X(F.x), Y(F.y) + 8);
-    g.stroke();
-    g.restore();
-
-    g.fillStyle = cvv('--series-4'); g.font = fnt(10.5);
-    g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('1' + SG + ' ellipse ' + fLen(F.smaj) + ' by ' + fLen(F.smin), l + 6, t + 5);
-    g.fillStyle = cvv('--text-warning');
-    g.fillText('CEP ' + fLen(F.cep), l + 6, t + 19);
-    g.fillStyle = sub;
-    g.textAlign = 'right';
-    g.fillText('view ' + fLenShort(span) + ' across', l + pw - 6, t + 5);
+    var ea = F.x + F.smaj * Math.cos(F.phi), eb = F.y + F.smaj * Math.sin(F.phi);
+    leader(g, X(ea), Y(eb), '1' + SG + ' ' + fLen(F.smaj) + ' × ' + fLen(F.smin),
+      { box: P, colour: t.s4, size: fs, dx: 26, dy: -22, dot: false });
+    leader(g, X(F.x), Y(F.y) - rcep, 'CEP ' + fLen(F.cep),
+      { box: P, colour: t.warn, size: fs, dx: -26, dy: -20, dot: false });
   }
 
   function drawBars(F) {
-    var c = $('cvBar'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
-    var l = 62, r = 16, t = 16, b = 44, pw = w - l - r, ph = h - t - b;
-    if (pw < 80 || ph < 60) return;
-    plotBase(g, l, t, pw, ph);
-
-    var vals = [], k, best = 0, any = false;
+    var c = $('cvBar'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme();
+    var fs = fsFor(w, h);
+    var vals = [], k, best = 0, low = Infinity, lowK = -1, any = false;
     for (k = 2; k <= NMAX; k++) {
       var Fk = fixFor(k);
       var v = Fk ? Fk.cep * 1000 : null;
-      if (v !== null && isFinite(v)) { any = true; if (v > best) best = v; }
+      if (v !== null && isFinite(v)) {
+        any = true;
+        if (v > best) best = v;
+        if (v < low) { low = v; lowK = k; }
+      }
       vals.push(v);
     }
-    if (!any || best <= 0) {
-      g.fillStyle = cvv('--bad'); g.font = fnt(12);
+    var hi = (any && best > 0) ? best * 1.22 : 1000;
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 1.5, max: NMAX + 0.5, label: 'sites used', dec: 0 },
+      { min: 0, max: hi, label: 'CEP', unit: 'm' }, { fontSize: fs });
+
+    if (!any) {
+      g.save();
+      g.fillStyle = t.bad; g.font = t.font(fs + 1, '500');
       g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText('No usable fix for any site count with this geometry.', l + pw / 2, t + ph / 2);
+      g.fillText('No usable fix at any site count.', P.x0 + P.w / 2, P.y0 + P.h / 2);
+      g.restore();
       return;
     }
-    var hi = best * 1.22;
-    var Y = function (v) { return t + ph - Math.max(Math.min(v, hi), 0) / hi * ph; };
 
-    var st = niceStep(hi);
-    g.font = fnt(10.5);
-    for (var v0 = 0; v0 <= hi + 1e-9; v0 += st) {
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(v0)); g.lineTo(l + pw, Y(v0)); g.stroke();
-      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v0 >= 1000 ? (v0 / 1000).toFixed(1) + ' km' : v0.toFixed(0), l - 5, Y(v0));
-    }
-    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('number of sites used', l + pw / 2, h - 14);
-    g.save(); g.translate(12, t + ph / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('CEP, metres', 0, 0); g.restore();
-
-    var nb = vals.length, bw = pw / nb;
-    for (k = 0; k < nb; k++) {
-      var cx = l + bw * (k + 0.5), bwid = Math.min(bw * 0.5, 62);
-      var cur = (k + 2) === S.n;
-      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText((k + 2).toFixed(0), cx, t + ph + 5);
+    var slot = P.w / (NMAX - 1), bwid = Math.min(slot * 0.5, 64);
+    var curX = null, curY = null, lowX = null, lowY = null;
+    P.clip(g);
+    for (k = 0; k < vals.length; k++) {
+      var n = k + 2, cx = P.X(n), cur = n === S.n;
       if (vals[k] === null) {
-        g.fillStyle = cvv('--bad'); g.font = fnt(10); g.textBaseline = 'bottom';
-        g.fillText('no fix', cx, t + ph - 6);
+        g.save();
+        g.fillStyle = t.bad; g.font = t.font(fs);
+        g.textAlign = 'center'; g.textBaseline = 'bottom';
+        g.fillText('no fix', cx, P.y1 - 5);
+        g.restore();
         continue;
       }
-      var y = Y(vals[k]);
-      g.fillStyle = cvv(cur ? '--accent' : '--series-4');
-      g.globalAlpha = cur ? 0.85 : 0.45;
-      g.fillRect(cx - bwid / 2, y, bwid, t + ph - y);
+      var y = P.Y(Math.min(vals[k], hi));
+      g.fillStyle = cur ? t.s1 : t.s4;
+      g.globalAlpha = cur ? 0.3 : 0.16;
+      g.fillRect(cx - bwid / 2, y, bwid, P.y1 - y);
       g.globalAlpha = 1;
-      g.strokeStyle = cvv(cur ? '--accent' : '--series-4'); g.lineWidth = 1.4;
-      g.strokeRect(cx - bwid / 2 + 0.5, y + 0.5, bwid - 1, Math.max(t + ph - y - 1, 1));
-      g.fillStyle = cvv(cur ? '--accent' : '--text-secondary');
-      g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-      g.fillText(vals[k] >= 10000 ? (vals[k] / 1000).toFixed(1) + ' km' : vals[k].toFixed(0) + ' m',
-        cx, Math.max(y - 4, t + 11));
+      g.strokeStyle = cur ? t.s1 : t.s4; g.lineWidth = cur ? 1.8 : 1.2;
+      g.strokeRect(cx - bwid / 2 + 0.5, y + 0.5, bwid - 1, Math.max(P.y1 - y - 1, 1));
+      if (cur) { curX = cx; curY = y; }
+      if (n === lowK) { lowX = cx; lowY = y; }
     }
-    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('bearing accuracy ' + S.sig.toFixed(1) + DEG + ' rms, sites added in map order', l + 6, t + 5);
+    P.unclip(g);
+
+    if (curX !== null) {
+      leader(g, curX, curY, 'now, ' + fLen(vals[S.n - 2] / 1000),
+        { box: P, colour: t.s1, size: fs, dx: 26, dy: -24, dot: false });
+    }
+    if (lowX !== null && lowK !== S.n) {
+      leader(g, lowX, lowY, 'best here, ' + fLen(low / 1000),
+        { box: P, colour: t.s4, size: fs, dx: -26, dy: -24, dot: false });
+    }
   }
 
   function drawRange(F) {
-    var c = $('cvRng'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
-    var l = 62, r = 16, t = 16, b = 44, pw = w - l - r, ph = h - t - b;
-    if (pw < 80 || ph < 60) return;
-    plotBase(g, l, t, pw, ph);
-
-    var Rnow0 = (F && isFinite(F.Reff)) ? F.Reff : 0;
-    var Rmax = Math.max(12, Math.ceil(Rnow0 * 1.15 / 2) * 2), tn = Math.tan(sigRad());
+    var c = $('cvRng'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme();
+    var fs = fsFor(w, h);
+    var Rnow = (F && isFinite(F.Reff)) ? F.Reff : 0;
+    var Rmax = Math.max(12, Math.ceil(Rnow * 1.15 / 2) * 2);
+    var tn = Math.tan(sigRad());
     var top = Math.max(2 * Rmax * tn * 1000 * 1.15, 1);
-    var X = function (R) { return l + Math.max(Math.min(R, Rmax), 0) / Rmax * pw; };
-    var Y = function (m) { return t + ph - Math.max(Math.min(m, top), 0) / top * ph; };
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: Rmax, label: 'range from the site', unit: 'km' },
+      { min: 0, max: top, label: 'cross-range error', unit: 'm' }, { fontSize: fs });
 
-    var st = niceStep(top), k;
-    g.font = fnt(10.5);
-    for (var v0 = 0; v0 <= top + 1e-9; v0 += st) {
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(v0)); g.lineTo(l + pw, Y(v0)); g.stroke();
-      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v0 >= 1000 ? (v0 / 1000).toFixed(1) + ' km' : v0.toFixed(0), l - 5, Y(v0));
-    }
-    for (k = 0; k <= Rmax; k += 2) {
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(k), t); g.lineTo(X(k), t + ph); g.stroke();
-      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(k.toFixed(0), X(k), t + ph + 5);
-    }
-    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('range from the site, km', l + pw / 2, h - 14);
-    g.save(); g.translate(12, t + ph / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('cross-range error, metres', 0, 0); g.restore();
-
-    g.strokeStyle = cvv('--series-2'); g.lineWidth = 2;
-    g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(Rmax), Y(2 * Rmax * tn * 1000)); g.stroke();
-    g.strokeStyle = cvv('--series-1'); g.lineWidth = 1.8; g.setLineDash([6, 4]);
-    g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(Rmax), Y(Rmax * tn * 1000)); g.stroke();
+    P.clip(g);
+    g.strokeStyle = t.s2; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(P.X(0), P.Y(0)); g.lineTo(P.X(Rmax), P.Y(2 * Rmax * tn * 1000)); g.stroke();
+    g.strokeStyle = t.s1; g.lineWidth = 1.8; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P.X(0), P.Y(0)); g.lineTo(P.X(Rmax), P.Y(Rmax * tn * 1000)); g.stroke();
     g.setLineDash([]);
-
-    g.font = fnt(10.5); g.textAlign = 'right'; g.textBaseline = 'bottom';
-    g.fillStyle = cvv('--series-2');
-    g.fillText('2R tan' + SG + ' = ' + (2 * Rmax * tn * 1000).toFixed(0) + ' m ',
-      l + pw - 4, Math.max(Y(2 * Rmax * tn * 1000) - 3, t + 12));
-    g.fillStyle = cvv('--series-1');
-    g.fillText('R tan' + SG + ' = ' + (Rmax * tn * 1000).toFixed(0) + ' m ',
-      l + pw - 4, Math.max(Y(Rmax * tn * 1000) - 3, t + 26));
-
-    var Rnow = Rnow0;
     if (Rnow > 0 && Rnow <= Rmax) {
-      var yv = 2 * Rnow * tn * 1000;
-      g.strokeStyle = cvv('--series-7'); g.lineWidth = 1; g.setLineDash([3, 3]);
-      g.beginPath(); g.moveTo(X(Rnow), t + ph); g.lineTo(X(Rnow), Y(yv)); g.stroke();
+      g.strokeStyle = t.s7; g.lineWidth = 1; g.setLineDash([3, 3]);
+      g.beginPath(); g.moveTo(P.X(Rnow), P.y1); g.lineTo(P.X(Rnow), P.Y(2 * Rnow * tn * 1000)); g.stroke();
       g.setLineDash([]);
-      g.fillStyle = cvv('--series-7');
-      g.beginPath(); g.arc(X(Rnow), Y(yv), 4.5, 0, 7); g.fill();
-      g.font = fnt(10.5);
-      g.textAlign = X(Rnow) > l + pw * 0.6 ? 'right' : 'left';
-      g.textBaseline = 'bottom';
-      g.fillText(' R = ' + Rnow.toFixed(2) + ' km, wedge ' + yv.toFixed(0) + ' m ',
-        X(Rnow), Math.max(Y(yv) - 6, t + 40));
+      g.fillStyle = t.s7;
+      g.beginPath(); g.arc(P.X(Rnow), P.Y(2 * Rnow * tn * 1000), Math.max(3, P.h * 0.014), 0, Math.PI * 2); g.fill();
     }
-    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('at ' + S.sig.toFixed(1) + DEG + ' rms; both lines pass through the origin', l + 6, t + 5);
+    P.unclip(g);
+
+    var rl = Rmax * 0.66;
+    leader(g, P.X(rl), P.Y(2 * rl * tn * 1000), '2R·tan ' + SG + 'θ',
+      { box: P, colour: t.s2, size: fs, dx: -28, dy: -22, dot: false });
+    leader(g, P.X(rl), P.Y(rl * tn * 1000), 'R·tan ' + SG + 'θ',
+      { box: P, colour: t.s1, size: fs, dx: -28, dy: 24, dot: false });
+    if (Rnow > 0 && Rnow <= Rmax) {
+      leader(g, P.X(Rnow), P.Y(2 * Rnow * tn * 1000),
+        'R = ' + fmtNum(Rnow, 2) + NB + 'km, wedge ' + fmtNum(2 * Rnow * tn * 1000, 0) + NB + 'm',
+        { box: P, colour: t.s7, size: fs, dx: 26, dy: -26, dot: false });
+    }
+  }
+
+  function heroUpdate(F, why) {
+    var val = $('heroVal'), bg = $('heroBadge'), ft = $('heroFt');
+    if (!F) {
+      val.innerHTML = MD;
+      bg.className = 'badge bad';
+      bg.textContent = 'no fix';
+      ft.textContent = (WHY[why] || WHY.cross)[0];
+      return;
+    }
+    var m = F.cep * 1000;
+    val.innerHTML = (m < 10000 ? fmtNum(m, 0) + '<span class="u">m</span>'
+                               : fmtNum(F.cep, 2) + '<span class="u">km</span>');
+    var cls = m <= 250 ? 'good' : m <= 1000 ? 'warn' : 'bad';
+    bg.className = 'badge ' + cls;
+    bg.textContent = cls === 'good' ? 'tight fix' : cls === 'warn' ? 'coarse fix' : 'weak geometry';
+    ft.textContent = 'GDOP ' + F.gdop.toFixed(2) + ' · ' + F.N.toFixed(0)
+      + ' sites · R ' + F.Reff.toFixed(1) + ' km';
   }
 
   function updateUI(F, why) {
-    $('sgv').textContent = S.sig.toFixed(1) + DEG + ' rms';
     $('cN').textContent = S.n.toFixed(0);
-    $('cNF').textContent = 'of ' + NMAX.toFixed(0) + ' masts on the map';
+    $('cNF').textContent = 'of ' + NMAX.toFixed(0) + ' sites on the map';
+    heroUpdate(F, why);
 
     if (!F) {
       var msg = WHY[why] || WHY.cross;
       $('cFix').textContent = MD;
       $('cErr').textContent = MD;
-      $('cErrF').textContent = 'no usable fix in this geometry';
-      $('cCep').textContent = MD;
+      $('cErrF').textContent = 'no usable fix here';
+      $('cEll').textContent = MD;
       $('cGdop').textContent = MD;
-      $('cGdopF').textContent = why === 'onsite' ? 'the fix sits on a receiving site' : 'the crossing angle is too shallow';
+      $('cGdopF').textContent = why === 'onsite' ? 'the fix sits on a site' : 'the crossing angle is too shallow';
       $('cRes').textContent = MD;
       $('cResF').textContent = 'nothing to fit against';
       $('tbl').innerHTML = '';
@@ -1302,65 +1244,88 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       return;
     }
 
-    $('cFix').textContent = F.x.toFixed(3) + ', ' + F.y.toFixed(3);
+    $('cFix').textContent = fmtNum(F.x, 3) + ', ' + fmtNum(F.y, 3);
     if (S.truth) {
-      $('cErr').textContent = F.err.toFixed(3) + ' km';
-      $('cErrF').textContent = 'that is ' + (F.err * 1000).toFixed(0) + ' m from the emitter';
+      $('cErr').textContent = fLen(F.err);
+      $('cErrF').textContent = fmtNum(F.err / Math.max(F.cep, 1e-9), 2) + ' × CEP';
     } else {
       $('cErr').textContent = MD;
-      $('cErrF').textContent = 'true position hidden, as in real life';
+      $('cErrF').textContent = 'true position hidden';
     }
-    $('cCep').textContent = fLen(F.cep);
+    $('cEll').textContent = fLen(F.smaj) + ' × ' + fLen(F.smin);
     $('cGdop').textContent = F.gdop.toFixed(2);
-    $('cGdopF').textContent = 'position ' + SG + ' = GDOP × R × ' + SG + 'θ';
+    $('cGdopF').innerHTML = 'position &sigma; = GDOP × R × &sigma;<sub>&theta;</sub>';
     $('cRes').textContent = F.rms.toFixed(3) + DEG;
-    $('cResF').textContent = F.N <= 2 ? 'two sites always fit exactly, so zero'
+    $('cResF').textContent = F.N <= 2 ? 'two sites fit exactly, so zero'
       : 'rms bearing miss, ' + (F.N - 2).toFixed(0) + (F.N === 3 ? ' degree' : ' degrees') + ' of freedom';
 
     var rows = '<tr><th>Site</th><th>Range km</th><th>True</th><th>Measured</th><th>Offset</th><th>Residual</th></tr>';
     for (var i = 0; i < F.N; i++) {
-      var off = S.z[i] * S.sig;
-      rows += '<tr><td><span class="sw" style="background: var(' + SCOL[i] + ')"></span>site ' + (i + 1) + '</td>'
-        + '<td>' + F.rng[i].toFixed(2) + '</td>'
+      var off = S.z[i] * S.sig + S.bias;
+      rows += '<tr><td><span class="sw" style="background: ' + col(i) + '"></span>site ' + (i + 1) + '</td>'
+        + '<td>' + fmtNum(F.rng[i], 2) + '</td>'
         + '<td>' + (S.truth ? fBrg(trueBrg(i)) : MD) + '</td>'
         + '<td>' + fBrg(F.m[i]) + '</td>'
-        + '<td>' + (off >= 0 ? '+' : '−') + Math.abs(off).toFixed(2) + DEG + '</td>'
-        + '<td>' + (F.res[i] >= 0 ? '+' : '−') + Math.abs(F.res[i]).toFixed(3) + DEG + '</td></tr>';
+        + '<td>' + (off >= 0 ? '+' : MINUS) + Math.abs(off).toFixed(2) + DEG + '</td>'
+        + '<td>' + (F.res[i] >= 0 ? '+' : MINUS) + Math.abs(F.res[i]).toFixed(3) + DEG + '</td></tr>';
     }
     $('tbl').innerHTML = rows;
 
     var M = F.M, sr = sigRad();
     var steps = [];
-    steps.push('Each site turns its measured bearing θ into a line through its own position pᵢ. The unit normal to that line is '
-      + 'n = (cos θ, −sin θ), so the perpendicular miss of a point x from site i’s line is nᵢ·x − nᵢ·pᵢ.');
-    steps.push('A bearing error of ' + S.sig.toFixed(1) + DEG + ' = ' + sr.toFixed(5) + ' rad becomes a perpendicular error of R·' + SG
-      + 'θ metres at range R, so line i is weighted by 1/(Rᵢ' + SG + 'θ)² — which makes the fit minimise the squared angle errors.');
-    steps.push('Normal matrix M = Σ wᵢ nᵢnᵢᵀ = [[' + M.a.toFixed(2) + ', ' + M.b.toFixed(2)
-      + '], [' + M.b.toFixed(2) + ', ' + M.c.toFixed(2) + ']] km⁻², det M = ' + M.det.toPrecision(4) + ' km⁻⁴.');
-    steps.push('Fix = M⁻¹b = (' + F.x.toFixed(4) + ', ' + F.y.toFixed(4) + ') km east and north.');
-    steps.push('Covariance C = M⁻¹ = [[' + F.Cxx.toPrecision(4) + ', ' + F.Cxy.toPrecision(4)
-      + '], [' + F.Cxy.toPrecision(4) + ', ' + F.Cyy.toPrecision(4) + ']] km².');
-    steps.push('Eigenvalues of C give ' + SG + '_maj = ' + fLen(F.smaj) + ' and ' + SG + '_min = ' + fLen(F.smin)
+    steps.push('Each site turns its measured bearing &theta; into a line through its own position p<sub>i</sub>. '
+      + 'The unit normal to that line is n = (cos&nbsp;&theta;, &minus;sin&nbsp;&theta;), so the perpendicular miss of a point x '
+      + 'from site i&rsquo;s line is n<sub>i</sub>·x &minus; n<sub>i</sub>·p<sub>i</sub>.');
+    steps.push('A bearing error of ' + S.sig.toFixed(1) + DEG + ' = ' + sr.toFixed(5) + ' rad becomes a perpendicular error of '
+      + 'R·&sigma;<sub>&theta;</sub> metres at range R, so line i is weighted by 1/(R<sub>i</sub>&sigma;<sub>&theta;</sub>)&sup2; '
+      + '&mdash; which makes the fit minimise the squared angle errors.');
+    steps.push('Normal matrix M = &Sigma; w<sub>i</sub> n<sub>i</sub>n<sub>i</sub><sup>T</sup> = [[' + M.a.toFixed(2) + ', ' + M.b.toFixed(2)
+      + '], [' + M.b.toFixed(2) + ', ' + M.c.toFixed(2) + ']] km<sup>&minus;2</sup>, det M = ' + M.det.toPrecision(4) + ' km<sup>&minus;4</sup>.');
+    steps.push('Fix = M<sup>&minus;1</sup>b = (' + F.x.toFixed(4) + ', ' + F.y.toFixed(4) + ') km east and north.');
+    steps.push('Covariance C = M<sup>&minus;1</sup> = [[' + F.Cxx.toPrecision(4) + ', ' + F.Cxy.toPrecision(4)
+      + '], [' + F.Cxy.toPrecision(4) + ', ' + F.Cyy.toPrecision(4) + ']] km&sup2;.');
+    steps.push('Eigenvalues of C give &sigma;<sub>maj</sub> = ' + fLen(F.smaj) + ' and &sigma;<sub>min</sub> = ' + fLen(F.smin)
       + ', with the major axis ' + (F.phi / D2R).toFixed(1) + DEG + ' from east.');
-    steps.push('CEP = 0.59(' + SG + '_maj + ' + SG + '_min) = 0.59 × ('
+    steps.push('CEP = 0.59(&sigma;<sub>maj</sub> + &sigma;<sub>min</sub>) = 0.59 × ('
       + (F.smaj * 1000).toFixed(0) + ' + ' + (F.smin * 1000).toFixed(0) + ') = ' + fLen(F.cep) + '.');
-    steps.push('Effective range R_eff = √(N / Σ 1/Rᵢ²) = ' + F.Reff.toFixed(3)
-      + ' km, so GDOP = √(trace C) / (' + SG + 'θ · R_eff) = ' + F.gdop.toFixed(3) + '.');
+    steps.push('Effective range R<sub>eff</sub> = &radic;(N / &Sigma; 1/R<sub>i</sub>&sup2;) = ' + F.Reff.toFixed(3)
+      + ' km, so GDOP = &radic;(trace C) / (&sigma;<sub>&theta;</sub> · R<sub>eff</sub>) = ' + F.gdop.toFixed(3) + '.');
     steps.push('Residuals at the fix: ' + F.res.map(function (e) {
-      return (e < 0 ? '−' : '+') + Math.abs(e).toFixed(3) + DEG;
+      return (e < 0 ? MINUS : '+') + Math.abs(e).toFixed(3) + DEG;
     }).join(', ')
-      + ' → rms ' + F.rms.toFixed(3) + DEG + (F.N <= 2 ? ' (two lines always meet, so this is zero by construction).' : '.'));
+      + ' &rarr; rms ' + F.rms.toFixed(3) + DEG + (F.N <= 2 ? ' (two lines always meet, so this is zero by construction).' : '.'));
     if (S.truth) {
       steps.push('The truth is at (' + S.ex.toFixed(3) + ', ' + S.ey.toFixed(3) + ') km, so this realisation missed by '
-        + fLen(F.err) + ' — about ' + (F.cep > 1e-9 ? (F.err / F.cep).toFixed(2) : MD) + ' CEP.');
+        + fLen(F.err) + ' &mdash; about ' + (F.cep > 1e-9 ? (F.err / F.cep).toFixed(2) : MD) + ' CEP.');
     }
     $('work').innerHTML = steps.map(function (s) { return '<li>' + s + '</li>'; }).join('');
   }
 
+  function pv(id, v) {
+    var r = $(id), n = $(id + 'N');
+    if (!r || !n) return;
+    r.value = v;
+    n.value = r.value;
+  }
+  function syncInputs() {
+    pv('sg', S.sig); pv('ex', S.ex); pv('ey', S.ey);
+    pv('bi', S.bias); pv('mw', S.kmx); pv('mh', S.kmy); pv('sd', S.seed);
+  }
+  function clampAll() {
+    for (var i = 0; i < NMAX; i++) {
+      S.sx[i] = Math.max(0.2, Math.min(S.kmx - 0.2, S.sx[i]));
+      S.sy[i] = Math.max(0.2, Math.min(S.kmy - 0.2, S.sy[i]));
+    }
+    S.ex = Math.max(0.2, Math.min(S.kmx - 0.2, S.ex));
+    S.ey = Math.max(0.2, Math.min(S.kmy - 0.2, S.ey));
+  }
+
   function drawAll() {
+    clampAll();
     var F = fixFor(S.n), why = whyNoFix;
     drawMap(F, why); drawInset(F, why); drawBars(F); drawRange(F);
     updateUI(F, why);
+    syncInputs();
   }
 
   var nb = ['n2', 'n3', 'n4', 'n5'];
@@ -1371,9 +1336,20 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   nb.forEach(function (id, k) {
     $(id).addEventListener('click', function () { setN(k + 2); drawAll(); });
   });
-  $('sg').addEventListener('input', function () { S.sig = +$('sg').value; drawAll(); });
+
+  bindPair($('sg'), $('sgN'), function (v) { S.sig = v; drawAll(); });
+  bindPair($('ex'), $('exN'), function (v) { S.ex = v; drawAll(); });
+  bindPair($('ey'), $('eyN'), function (v) { S.ey = v; drawAll(); });
+  bindPair($('bi'), $('biN'), function (v) { S.bias = v; drawAll(); });
+  bindPair($('mw'), $('mwN'), function (v) { S.kmx = v; drawAll(); });
+  bindPair($('mh'), $('mhN'), function (v) { S.kmy = v; drawAll(); });
+  bindPair($('sd'), $('sdN'), function (v) {
+    S.seed = Math.max(1, Math.round(v)); S.z = makeZ(S.seed); drawAll();
+  });
+
   $('roll').addEventListener('click', function () {
-    S.z = makeZ(Math.floor(Math.random() * 2147483647) + 1);
+    S.seed = Math.floor(Math.random() * 999) + 1;
+    S.z = makeZ(S.seed);
     drawAll();
   });
   $('tru').addEventListener('click', function () {
@@ -1385,35 +1361,67 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   function resetLayout() {
     S.sx = DEF.sx.slice(); S.sy = DEF.sy.slice();
     S.ex = DEF.ex; S.ey = DEF.ey;
+    S.kmx = 15; S.kmy = 8;
   }
-  $('rst').addEventListener('click', function () { resetLayout(); drawAll(); });
+  $('rst').addEventListener('click', function () { resetLayout(); markPreset(null); drawAll(); });
+
+  var PRE = {
+    pA: { n: 3, sig: 2, bias: 0, kmx: 15, kmy: 8, ex: 7.5, ey: 5.8,
+          sx: [1.6, 7.0, 13.2, 3.4, 12.4], sy: [1.0, 0.8, 1.2, 4.6, 5.0] },
+    pB: { n: 5, sig: 2, bias: 0, kmx: 15, kmy: 8, ex: 7.5, ey: 4.0,
+          sx: [2.0, 13.0, 7.5, 2.5, 12.5], sy: [1.2, 1.2, 7.2, 6.6, 6.6] },
+    pC: { n: 2, sig: 2, bias: 0, kmx: 15, kmy: 8, ex: 7.5, ey: 6.5,
+          sx: [6.2, 7.4, 13.2, 3.4, 12.4], sy: [1.0, 1.0, 1.2, 4.6, 5.0] },
+    pD: { n: 5, sig: 8, bias: 0, kmx: 24, kmy: 12, ex: 18.0, ey: 10.5,
+          sx: [1.6, 7.0, 13.2, 3.4, 12.4], sy: [1.0, 0.8, 1.2, 4.6, 5.0] }
+  };
+  var PIDS = ['pA', 'pB', 'pC', 'pD'];
+  function markPreset(id) {
+    for (var i = 0; i < PIDS.length; i++) $(PIDS[i]).classList.toggle('on', PIDS[i] === id);
+  }
+  PIDS.forEach(function (id) {
+    $(id).addEventListener('click', function () {
+      var p = PRE[id];
+      S.kmx = p.kmx; S.kmy = p.kmy;
+      S.sx = p.sx.slice(); S.sy = p.sy.slice();
+      S.ex = p.ex; S.ey = p.ey; S.sig = p.sig; S.bias = p.bias;
+      setN(p.n);
+      markPreset(id);
+      $('tourNote').textContent = 'Preset loaded. Drag any site, or drag the emitter.';
+      drawAll();
+    });
+  });
 
   var cel = $('cvMap'), drag = null;
   function relPx(ev) {
     var r = cel.getBoundingClientRect();
     return [ev.clientX - r.left, ev.clientY - r.top];
   }
+  function invX(px) { return mapP.xa + (px - mapP.P.x0) / mapP.P.w * (mapP.xb - mapP.xa); }
+  function invY(py) { return mapP.ya + (mapP.P.y1 - py) / mapP.P.h * (mapP.yb - mapP.ya); }
   cel.addEventListener('pointerdown', function (ev) {
-    if (!mapG) return;
+    if (!mapP) return;
     var p = relPx(ev), best = null, bd = 22 * 22, i;
     for (i = 0; i < NMAX; i++) {
-      var dx = mapG.X(S.sx[i]) - p[0], dy = mapG.Y(S.sy[i]) - p[1];
+      var dx = mapP.P.X(S.sx[i]) - p[0], dy = mapP.P.Y(S.sy[i]) - p[1];
       var d2 = dx * dx + dy * dy;
       if (d2 < bd) { bd = d2; best = { kind: 'site', i: i }; }
     }
-    var edx = mapG.X(S.ex) - p[0], edy = mapG.Y(S.ey) - p[1];
+    var edx = mapP.P.X(S.ex) - p[0], edy = mapP.P.Y(S.ey) - p[1];
     if (edx * edx + edy * edy < bd) best = { kind: 'emitter' };
     drag = best || { kind: 'emitter' };
     cel.setPointerCapture(ev.pointerId);
+    markPreset(null);
     moveTo(p);
     ev.preventDefault();
   });
   function moveTo(p) {
-    if (!drag || !mapG) return;
-    var kx = Math.max(0.2, Math.min(KMX - 0.2, mapG.invX(p[0])));
-    var ky = Math.max(0.2, Math.min(KMY - 0.2, mapG.invY(p[1])));
+    if (!drag || !mapP) return;
+    var kx = Math.max(0.2, Math.min(S.kmx - 0.2, invX(p[0])));
+    var ky = Math.max(0.2, Math.min(S.kmy - 0.2, invY(p[1])));
+    if (!isFinite(kx) || !isFinite(ky)) return;
     if (drag.kind === 'site') { S.sx[drag.i] = kx; S.sy[drag.i] = ky; }
-    else { S.ex = kx; S.ey = ky; }
+    else { S.ex = Math.round(kx * 10) / 10; S.ey = Math.round(ky * 10) / 10; }
     drawAll();
   }
   cel.addEventListener('pointermove', function (ev) { if (drag) { moveTo(relPx(ev)); ev.preventDefault(); } });
@@ -1422,33 +1430,35 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
   var TOUR = [
     { n: 2, sig: 2, layout: true,
-      s: '<b>Step 1 &mdash; two sites.</b> Two lines always cross exactly, so the residual is zero and the fix still misses.' },
+      s: 'Two lines always cross, so the residual is zero and the fix still misses.' },
     { n: 3, sig: 2, layout: true,
-      s: '<b>Step 2 &mdash; add a third.</b> The third line misses the crossing, so the residual is finally a real number.' },
+      s: 'The third bearing can disagree, so the residual is finally a real number.' },
     { n: 5, sig: 2, layout: true,
-      s: '<b>Step 3 &mdash; all five.</b> More bearings, smaller ellipse; watch the bars in section 3 fall.' },
+      s: 'More bearings, smaller ellipse; watch the bars in section 3 fall.' },
     { n: 5, sig: 10, layout: true,
-      s: '<b>Step 4 &mdash; coarse bearings.</b> Five times the angle error inflates the ellipse by the same factor.' },
+      s: 'Five times the angle error inflates the ellipse by the same factor.' },
     { n: 3, sig: 2, layout: true, ex: 7.5, ey: 7.5,
-      s: '<b>Step 5 &mdash; push it further out.</b> Same angles, longer range, so the miss grows in proportion.' }
+      s: 'Same angles, longer range, so the miss grows in proportion.' }
   ];
   function applyTour(k) {
     var st = TOUR[k];
     if (st.layout) resetLayout();
     if (typeof st.ex === 'number') { S.ex = st.ex; S.ey = st.ey; }
     setN(st.n);
-    S.sig = st.sig; $('sg').value = st.sig;
-    $('tourNote').innerHTML = st.s;
+    S.sig = st.sig;
+    S.bias = 0;
+    markPreset(null);
+    $('tourNote').textContent = st.s;
     drawAll();
   }
   for (var z = 0; z < TOUR.length; z++) {
     (function (k) { $('tr' + k).addEventListener('click', function () { applyTour(k); }); })(z);
   }
   $('trR').addEventListener('click', function () {
-    resetLayout(); setN(3); S.sig = 2; $('sg').value = 2;
-    S.z = makeZ(20260729);
-    $('tourNote').innerHTML = '<b>Back to the default layout.</b> Three masts along the bottom of a 15 by 8 km map, 2.0' + DEG
-      + ' rms bearing accuracy, and the emitter up-field. Drag any mast, or drag the emitter.';
+    resetLayout(); setN(3); S.sig = 2; S.bias = 0;
+    S.seed = 729; S.z = makeZ(S.seed);
+    markPreset('pA');
+    $('tourNote').textContent = 'Back to the default layout. Drag any site, or drag the emitter.';
     drawAll();
   });
 

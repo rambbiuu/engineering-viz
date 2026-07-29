@@ -1184,7 +1184,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     if (M.q.nulls.length) {
       const a = (M.q.nulls[0] + S.mech) * RAD;
       leader(g, cx + Math.cos(a) * (R + 8), cy - Math.sin(a) * (R + 8), 'null ' + fx(wrap(M.q.nulls[0] + S.mech), 1) + '°',
-        { box: box, colour: t.text2, size: fs, dx: Math.cos(a) < 0 ? -24 : 24, dy: -18 });
+        { box: box, colour: t.text2, size: fs, dx: Math.cos(a) < 0 ? -26 : 26, dy: -Math.sin(a) * 26 });
     }
   }
 
@@ -1250,7 +1250,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     }
     if (lx >= P.x0 && lx <= P.x1) {
       leader(g, lx, P.Y(clamp(dbAt(S.look), FLOOR, 0)), 'look ' + fx(dbAt(S.look), 1) + NB + 'dB',
-        { box: P, colour: t.s3, size: fs, dx: -30, dy: 26 });
+        { box: P, colour: t.s3, size: fs, dx: -30, dy: Math.max(30, P.h * 0.18) });
     }
   }
 

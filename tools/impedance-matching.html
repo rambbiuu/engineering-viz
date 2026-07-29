@@ -1021,7 +1021,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     if (gin > 0.09) {
       g.font = t.font(fs); g.fillStyle = t.text2;
       g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('perfect match', cx, cy + dotR + 2);
+      g.fillText('perfect match', cx, cy + fs * 1.9);
     }
 
     const pl = PX(tr.gL);
@@ -1088,8 +1088,8 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       leader(g, (P.X(sw.lo / 1e9) + P.X(sw.hi / 1e9)) / 2, P.Y(1) - 1,
         'band ' + fmtEng(sw.hi - sw.lo, 'Hz', 0), { box: P, colour: t.s5, size: fs, dy: -26, dot: false });
     } else {
-      leader(g, P.X(S.f), P.Y(Math.min(v0, VT)), 'never meets the specification',
-        { box: P, colour: t.bad, size: fs, dx: -30, dy: 30, dot: false });
+      leader(g, P.X(S.f), P.Y(Math.min(v0, VT)), 'above specification at f' + sub('0'),
+        { box: P, colour: t.bad, size: fs, dx: -30, dy: 34, dot: false });
     }
   }
 

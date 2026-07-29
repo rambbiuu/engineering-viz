@@ -884,10 +884,13 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     // real dimensions: cell radius, and the reuse distance to the nearest co-channel site
     const cell = sixCells(N)[0];
     const tx = P.X(Rk * SQ3 * (cell[0] + cell[1] / 2)), ty = P.Y(Rk * 1.5 * cell[1]);
-    // R runs to the 150° vertex; D always leaves in the 0–60° quadrant, so they never collide
-    if (Rpx > 16) {
+    // R runs to the 150° vertex, away from D (which always leaves in the 0–60° quadrant),
+    // and only when the label fits along it — otherwise it would land on top of D
+    const rtxt = 'R = ' + fmtEng(Rk, 'km', 1);
+    g.font = t.font(ann - 1);
+    if (Rpx > g.measureText(rtxt).width + 16) {
       dimension(g, cx, cy, P.X(Rk * Math.cos(D2R * 150)), P.Y(Rk * Math.sin(D2R * 150)),
-        'R = ' + fmtEng(Rk, 'km', 1), { size: ann - 1 });
+        rtxt, { size: ann - 1 });
     }
     dimension(g, cx, cy, tx, ty, 'D = ' + fmtEng(q * Rk, 'km', 1),
       { colour: t.s2, size: ann - 1 });
