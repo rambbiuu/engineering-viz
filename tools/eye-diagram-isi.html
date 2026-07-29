@@ -68,7 +68,7 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Pulse shaping, ISI and the eye diagram</h1>
-<p class="sub">A digital transmitter cannot send square pulses. Square edges need infinite bandwidth, and any real channel chops that bandwidth off, which smears each pulse into its neighbours &mdash; intersymbol interference, or ISI. The fix is to choose the pulse shape deliberately, so that each pulse is exactly zero at every other symbol's sampling instant. This page builds that shaped signal, folds hundreds of symbol periods on top of one another into an eye diagram, and shows what it costs in occupied bandwidth.</p>
+<p class="sub">A real channel smears every pulse into its neighbours &mdash; intersymbol interference. Shape the pulse so it is zero at every other sampling instant, and the eye diagram shows the margin that remains.</p>
 <p class="sub" style="margin-bottom: 1.5rem;">New to sampling and bandwidth? Start with <a href="sampling-aliasing.html">sampling and aliasing</a> first.</p>
 
 <div class="tour">

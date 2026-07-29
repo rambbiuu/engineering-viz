@@ -66,7 +66,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Radio propagation across the whole spectrum</h1>
-<p class="sub">A radio wave leaving an antenna has several different ways of reaching the far end, and which one wins is decided almost entirely by the wavelength. The same transmitter power reaches a submarine on the other side of the planet at 20 kHz and struggles across a car park at 60 GHz. This tool computes each mechanism from its published formula &mdash; free-space spreading, ground reflection, diffraction over the earth&rsquo;s bulge, scattering off turbulent air, absorption by oxygen and water, and refraction from the ionosphere &mdash; so you can watch the winner change as you sweep the frequency.</p>
+<p class="sub">A radio wave has several ways of reaching the far end, and wavelength decides which one wins. Sweep the frequency and watch the winner change &mdash; the same watts reach a submarine at 20 kHz and die in a car park at 60 GHz.</p>
 <p class="sub" style="margin-top: -1.4rem;">If decibels and link budgets are new, start with <a href="link-budget.html">link budget</a>. If clearance and Fresnel zones are the puzzle, see <a href="fresnel-clearance.html">Fresnel clearance</a>.</p>
 
 <p class="note" style="margin-bottom: 1.4rem;"><b>An everyday analogy.</b> Sound behaves the same way. A deep bass note travels round a corner and through a wall from a neighbour&rsquo;s party, while the singer&rsquo;s consonants do not: the long wave bends around obstacles and the short one is stopped by them. Radio is that effect stretched over eight decades of wavelength, from waves tens of kilometres long down to waves a millimetre long.</p>
@@ -488,8 +488,8 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     }
     g.stroke();
     tag(g, x + 10, gnd(10 / w) - mh - 4, 'transmitter', mut, 'left', 'bottom');
-    tag(g, x + w / 2, gy + 16, 'the wave follows the curve and fades with distance', mut, 'center', 'top');
-    tag(g, x + w / 2, y + h - 1, 'schematic · LF ground wave stable to about 1 500 km', sub, 'center', 'bottom');
+    tag(g, x + w / 2, gy + 16, 'hugs the curve, fades slowly', mut, 'center', 'top');
+    tag(g, x + w / 2, y + h - 1, 'schematic · good to ~1 500 km', sub, 'center', 'bottom');
   }
   function scene1(g, x, y, w, h, sub, mut) {
     const gy = y + h * 0.82, sag = Math.min(12, h * 0.09);
@@ -508,7 +508,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     }
     g.stroke();
     tag(g, x + w / 2, y + h - 1,
-      'schematic · a 2 000 km hop needs ' + (S.foF2 * secSph(2000)).toFixed(1) + ' MHz or less', sub, 'center', 'bottom');
+      'schematic · 2 000 km: ≤ ' + (S.foF2 * secSph(2000)).toFixed(1) + ' MHz', sub, 'center', 'bottom');
   }
   function scene2(g, x, y, w, h, sub, mut) {
     const span = Math.max(dLos() * 1.3, 1), axisH = 32;
@@ -541,7 +541,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       g.textAlign = i === 0 ? 'left' : i === 4 ? 'right' : 'center';
       g.fillText(d.toFixed(d < 10 ? 1 : 0), px(d), gy + 8);
     }
-    tag(g, x + w / 2, y + h - 1, 'to scale in km · vertical scale exaggerated', sub, 'center', 'bottom');
+    tag(g, x + w / 2, y + h - 1, 'km scale · heights exaggerated', sub, 'center', 'bottom');
   }
   function scene3(g, x, y, w, h, sub, mut) {
     const gy = y + h * 0.80, ph = h * 0.36;

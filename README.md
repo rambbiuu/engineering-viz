@@ -1,23 +1,27 @@
 # Engineering visualisation tools
 
-Small, self-contained interactive simulators for building engineering intuition. Each tool is a single HTML file with no dependencies — open it in any browser, or visit the hosted version via GitHub Pages.
+Interactive simulators for RF and wireless communications. Every tool is a single
+self-contained HTML file — no installs, no build, works offline. Start at
+[index.html](index.html) or the hosted site.
 
-## Tools
+## Categories
 
-| Tool | What it teaches |
+| Category | Tools |
 |---|---|
-| [4-antenna phase interferometry](tools/phase-interferometry.html) | Direction finding with an unequally spaced array: phase differences, wrapping, ambiguity resolution, and a working phases-to-angle solver |
-| [Phased-array beam pattern](tools/phased-array.html) | The reverse direction: phase-steering a beam, beamwidth vs aperture, sidelobes and grating lobes |
-| [Fourier series builder](tools/fourier-series.html) | Stack sine harmonics into square, triangle, and sawtooth waves; amplitude spectrum, convergence, and the Gibbs effect |
-| [Spinning circles draw your wave](tools/epicycles.html) | The Fourier series as rotating circles (epicycles) tracing time-domain shapes |
-| [Sampling and aliasing](tools/sampling-aliasing.html) | The Nyquist rule: undersample a sine and a low-frequency ghost fits the same samples |
-| [Modulation playground](tools/modulation.html) | AM, FM, OOK, FSK, BPSK, QPSK side by side — amplitude, frequency, and phase as information carriers |
-| [IQ constellation explorer](tools/iq-constellation.html) | BPSK to 16QAM constellations under noise, phase offset, and frequency offset |
-| [AoA triangulation](tools/aoa-triangulation.html) | Two to five bearing lines cross-fixing an emitter, with bearing-error wedges |
-| [TDoA geolocation](tools/tdoa.html) | Three to five time-synced sites, hyperbolic position curves crossing at the emitter |
-| [Antenna basics](tools/antenna-basics.html) | Dipole, monopole, patch, Yagi, horn, dish and array: physical form, radiation, beam pattern, gain, HPBW, front-to-back, and mechanical vs electrical boresight |
-| [HF, VHF and how radio waves travel](tools/radio-propagation.html) | Ground wave, sky wave, and line of sight against a live day/night ionosphere with skip zones and the MUF |
+| [Signals](signals.html) | Fourier series, epicycles, sampling and aliasing |
+| [Modulation](modulation.html) | Modulation playground, AM/DSBSC/SSB, FM Bessel spectrum, IQ constellations, eye diagram, BER vs Eb/N0, OFDM |
+| [Antennas and arrays](antennas.html) | Antenna basics, phased arrays, polarisation, impedance and VSWR |
+| [Propagation](propagation.html) | The whole spectrum end to end, Fresnel zones and clearance, multipath fading |
+| [Receivers and links](receivers.html) | Link budget, noise figure and sensitivity, superheterodyne image |
+| [Geolocation](geolocation.html) | Phase interferometry, AoA triangulation, TDoA |
+| [Cellular networks](cellular.html) | Frequency reuse and SIR, multiple access, CDMA spreading, Erlang trunking, handover and power control |
 
 ## Run locally
 
-Open `index.html` (or any file in `tools/`) in a browser. That's it.
+Open `index.html` in a browser. That's it.
+
+## Notes
+
+Formulas follow the referenced course material and public ITU-R recommendations; where a
+model is simplified for clarity, the page says so. Research notes and style rules live in
+`.research/`.
