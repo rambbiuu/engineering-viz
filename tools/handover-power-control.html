@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handover, hysteresis and power control</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD; --bad: #B23B1E; --plot-bg: #ffffff; --grid: #e6e3da;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #b3860f; --series-4: #7e2f8e;
+  --series-5: #55801f; --series-6: #2f93b8; --series-7: #a2142f; --series-8: #6b6a63;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e;
+    --surface-1: #262624; --accent: #6FB3F2; --bad: #EE8A6E; --plot-bg: #201f1d; --grid: #34342f;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b; --series-8: #b4b2a9;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 800px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+h2 { font-size: 16px; font-weight: 500; margin: 2.25rem 0 6px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+.pre { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+abbr.term { text-decoration: none; border-bottom: 1px dotted var(--border-strong); cursor: help; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; font-size: 13px; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1.1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 146px; }
+.ctl input[type=range] { flex: 1; min-width: 90px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.85rem; margin-bottom: 1.1rem; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details .grid2 { margin: 0.8rem 0 0.2rem; }
+.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin: 2px 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem;
+  font-size: 13px; color: var(--text-secondary); margin-top: 1rem; }
+.note b { color: var(--text-primary); font-weight: 500; }
+canvas { width: 100%; display: block; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; }
+ol.work li { margin: 3px 0; font-variant-numeric: tabular-nums; }
+dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Handover, hysteresis and power control</h1>
+<p class="sub">A call has to be passed from one base station to the next while the car keeps moving, and the only evidence the network has is a signal level that is jumping about by several decibels. Switch too eagerly and the call bounces back and forth between the two masts; switch too late and it is gone. This tool drives a mobile between two base stations and lets you set the rules that decide when the switch happens.</p>
+<p class="pre">If <abbr class="term" title="Decibels relative to one milliwatt. A power level: 0 dBm is 1 mW, −100 dBm is 0.1 picowatt.">dBm</abbr> and margins are new, start with <a href="link-budget.html">Link budget</a>. For where the fast wiggles come from, see <a href="multipath-fading.html">Multipath, delay spread and fading</a>.</p>
+
+<p class="note" style="margin-top:0"><b>Everyday version.</b> Walk between two radios playing the same station and at some point you turn one down and the other up. If you swap every time a passing lorry makes the second one briefly louder, you spend the whole walk swapping. If you refuse to swap until the first is inaudible, you miss part of the programme. The network faces exactly that choice, thousands of times a second, and the two knobs below are how it is settled.</p>
+
+<div class="row" style="margin-top:1.1rem">
+  <span class="lbl">Guided tour</span>
+  <button id="tr0">1 &middot; one clean handover</button>
+  <button id="tr1">2 &middot; ping-pong</button>
+  <button id="tr2">3 &middot; margin too large</button>
+  <button id="tr3">4 &middot; dropped call</button>
+  <button id="tr4">5 &middot; close the loop</button>
+  <button id="trR">reset</button>
+</div>
+<p class="note" id="tourNote"><b>Start here.</b> Press the tour buttons in order. Each one moves the controls for you and says in one line what changed. Changing anything restarts the run, so the counters below always describe the settings you can see.</p>
+
+<div class="grid2" style="margin-top:1.25rem">
+  <div class="ctl"><label for="sv">Mobile speed</label><input type="range" id="sv" min="5" max="120" step="1" value="50"><span class="v" id="svv">50 km/h</span></div>
+  <div class="ctl"><label for="dl">Handover margin &Delta;</label><input type="range" id="dl" min="0" max="15" step="0.5" value="4"><span class="v" id="dlv">4.0 dB</span></div>
+  <div class="ctl"><label for="hy">Hysteresis H</label><input type="range" id="hy" min="0" max="12" step="0.5" value="3"><span class="v" id="hyv">3.0 dB</span></div>
+  <div class="ctl"><label for="dw">Dwell timer</label><input type="range" id="dw" min="0" max="2" step="0.05" value="0.5"><span class="v" id="dwv">0.50 s</span></div>
+  <div class="ctl"><label for="sg">Shadowing &sigma;</label><input type="range" id="sg" min="0" max="10" step="0.5" value="6"><span class="v" id="sgv">6.0 dB</span></div>
+  <div class="ctl"><label for="pn">Path-loss exponent n</label><input type="range" id="pn" min="2" max="5" step="0.1" value="3.5"><span class="v" id="pnv">3.50</span></div>
+  <div class="ctl"><label for="sp">Cell separation</label><input type="range" id="sp" min="0.5" max="10" step="0.1" value="3"><span class="v" id="spv">3.00 km</span></div>
+</div>
+
+<div class="row">
+  <span class="lbl">Sectors per cell</span>
+  <button id="sc1" class="on">1 &mdash; omni</button>
+  <button id="sc3">3 &mdash; 120&deg;</button>
+  <button id="sc6">6 &mdash; 60&deg;</button>
+</div>
+
+<div class="row">
+  <span class="lbl">Uplink power control</span>
+  <button id="pcOff">open loop</button>
+  <button id="pcOn" class="on">closed loop</button>
+  <span class="lbl" style="margin-left:10px">command rate</span>
+  <button id="ra2">2 Hz &mdash; GSM</button>
+  <button id="ra800">800 Hz &mdash; IS-95</button>
+  <button id="ra1500" class="on">1500 Hz &mdash; WCDMA</button>
+</div>
+
+<div class="row">
+  <button id="play">Pause the drive</button>
+  <button id="shuf">New shadowing</button>
+</div>
+
+<details id="exp">
+  <summary>Expert settings &mdash; link floor, loop step, averaging window and drop timer</summary>
+  <div class="grid2">
+    <div class="ctl"><label for="pm">Minimum level P<sub>min</sub></label><input type="range" id="pm" min="-100" max="-90" step="0.5" value="-95"><span class="v" id="pmv">-95.0 dBm</span></div>
+    <div class="ctl"><label for="st">Power control step</label><input type="range" id="st" min="0.25" max="2" step="0.25" value="1"><span class="v" id="stv">1.00 dB</span></div>
+    <div class="ctl"><label for="wn">Running average window</label><input type="range" id="wn" min="0" max="200" step="5" value="50"><span class="v" id="wnv">50 m</span></div>
+    <div class="ctl"><label for="dp">Drop timer</label><input type="range" id="dp" min="0.2" max="3" step="0.1" value="1"><span class="v" id="dpv">1.00 s</span></div>
+  </div>
+  <p class="legend-note" style="padding-left:0">P<sub>min</sub> is the weakest level the link survives on; the course quotes &minus;100 to &minus;90 dBm. The running average is applied to both traces before any comparison, so a momentary fade cannot trigger a handover on its own. The drop timer is how long the level may sit below P<sub>min</sub> before the call is lost.</p>
+</details>
+
+<p class="sec"><b>1 &middot; The road between two base stations</b> <span>&mdash; the car is coloured by the cell serving it right now</span></p>
+<canvas id="cv1" style="height: 252px;"></canvas>
+<ul class="legend-note">
+  <li>Blue is cell A, orange is cell B. The car takes the colour of the cell it is talking to.</li>
+  <li>The solid line runs to the serving mast, the dashed line to the neighbour.</li>
+  <li>The strip under the road shows which cell is stronger there &mdash; not always the one in use.</li>
+  <li>R is the cell radius, centre to hexagon vertex, so two masts sit &radic;3 R apart.</li>
+</ul>
+
+<p class="sec"><b>2 &middot; Both received levels along the road</b> <span>&mdash; raw and averaged, with the thresholds and every handover marked</span></p>
+<canvas id="cv2" style="height: 320px;"></canvas>
+<ul class="legend-note">
+  <li>The pale bands are the raw levels, path loss plus <abbr class="term" title="Slow variation of the received level caused by buildings and terrain blocking the path. Log-normal, so it is a Gaussian number of decibels.">shadowing</abbr>. The solid lines are the running averages the network actually compares.</li>
+  <li>The amber dashed line is the handover threshold P<sub>HO</sub> = P<sub>min</sub> + &Delta;. The red dashed line is P<sub>min</sub> itself.</li>
+  <li>A filled dot is a completed handover, in the colour of the cell taken over. A ringed dot is a ping-pong, a cross is a dropped call.</li>
+  <li>Handovers cluster where the averaged serving level crosses P<sub>HO</sub>, not where the two curves cross.</li>
+</ul>
+
+<p class="sec"><b>3 &middot; Uplink transmit power and the interference floor</b> <span>&mdash; against time, with the loop open or closed</span></p>
+<canvas id="cv3" style="height: 316px;"></canvas>
+<ul class="legend-note">
+  <li>Green is the power needed to hit the target exactly, purple is the power actually commanded. The line is the power average, the band is the spread within it.</li>
+  <li>The wide green band is <abbr class="term" title="Rapid fading caused by many scattered copies of the signal adding and cancelling as the receiver moves. Deep fades occur every half wavelength.">Rayleigh fading</abbr>. How much of it the purple band copies is how much of it the loop can follow: drop the rate to 2 Hz and it stops trying.</li>
+  <li>The lower panel is what this mobile adds to the interference at a co-channel base station one reuse distance away.</li>
+  <li>The shaded gap up to the dashed line is interference the network never has to suffer, because the loop is on.</li>
+</ul>
+
+<div class="cards">
+  <div class="card"><div class="hd">Handovers this run</div><div class="big" id="cHo">&mdash;</div><div class="ft" id="cHof">&mdash;</div></div>
+  <div class="card"><div class="hd">Ping-pong events</div><div class="big" id="cPp">&mdash;</div><div class="ft">handed straight back within 5 s</div></div>
+  <div class="card"><div class="hd">Dropped calls</div><div class="big" id="cDr">&mdash;</div><div class="ft" id="cDrf">&mdash;</div></div>
+  <div class="card"><div class="hd">Mean transmit power</div><div class="big" id="cPt">&mdash;</div><div class="ft">mobile uplink, power-averaged, dBm</div></div>
+  <div class="card"><div class="hd">SIR, first tier</div><div class="big" id="cSir">&mdash;</div><div class="ft" id="cSirf">&mdash;</div></div>
+  <div class="card"><div class="hd">Interference cut</div><div class="big" id="cRed">&mdash;</div><div class="ft">dB less than transmitting flat out</div></div>
+  <div class="card"><div class="hd">Base station power</div><div class="big" id="cBs">&mdash;</div><div class="ft" id="cBsf">&mdash;</div></div>
+</div>
+
+<details style="margin-top:1.5rem">
+  <summary>The arithmetic, with the current numbers substituted in</summary>
+  <ol class="work" id="work"></ol>
+</details>
+
+<h2>What the controls are teaching</h2>
+<p class="sub">The handover margin &Delta; and the hysteresis H fail in opposite directions, and a real network is tuned between them. Push &Delta; up and the threshold P<sub>min</sub> + &Delta; sits high above the floor, so the trigger arms far from the boundary and fires again every time shadowing moves the two levels past one another: frequent, unnecessary handovers, each one a signalling transaction and a brief gap in the speech. Pull &Delta; down to zero and the trigger only arms when the link is already at the point of failure, leaving no time to complete the switch, which is the course's second failure mode and the one that shows up as dropped calls. H is the separate question of how much better the neighbour has to be before the switch is worth making: at zero it lets every shadow crossing start a handover, and the ping-pong counter climbs; too large and the mobile is dragged deep into the next cell on a dying link. The running average is what makes any of it workable, because it turns a trace that crosses the threshold dozens of times into one that crosses it once.</p>
+<p class="sub">Three system-level results sit behind the same picture. Cell splitting is visible on the base station power card: the transmitter is sized so the received level at the cell vertex hits P<sub>min</sub> plus a 6 dB margin, so halving R cuts the required power by 10 n log<sub>10</sub>2, which is 12.0 dB at n = 4 &mdash; and buys four times the capacity per unit area, paid for with twice as many handovers along any route and twice as many base stations along it. Sectorisation cuts the first-tier interferers from six to two at 120 degrees, worth 10 log<sub>10</sub>3 = 4.77 dB of SIR, and to one at 60 degrees; on its own it also fragments the channel pool and hurts trunking efficiency, so it pays only when it is combined with a smaller cluster. Closed-loop power control changes nothing about the geometry but takes several decibels off what every mobile radiates, which is why a CDMA system, where every user shares the band, cannot work without it.</p>
+<p class="sub">Honest limits of this model. Propagation is one log-distance slope, P<sub>r</sub> = P<sub>t</sub> + G<sub>t</sub> + G<sub>r</sub> &minus; [PL(d<sub>0</sub>) + 10 n log<sub>10</sub>(d/d<sub>0</sub>)] + X<sub>&sigma;</sub>, with a free-space reference at d<sub>0</sub> = 1 m and 900 MHz; the shadowing of the two cells is generated independently, where real terrain correlates them; the sector antennas are the course's ideal wedges seeing exactly 6, 2 or 1 first-tier interferer; the SIR card is the simplified variant with all interferers placed at the reuse distance for N = 7, so it reads several decibels above the practical and conservative variants; the fast fading pattern used in panel 3 repeats every 682 m; and the clock runs eight times faster than real time so that a drive across a cell takes seconds rather than minutes.</p>
+<p class="pre" style="margin-top:1.5rem">Next: <a href="cellular-reuse.html">Cellular frequency reuse</a> for where N = 7 and the reuse distance come from, and <a href="link-budget.html">Link budget</a> for what sets P<sub>min</sub> in the first place.</p>
+
+<h2>Glossary</h2>
+<dl class="glossary">
+  <dt>Handover</dt><dd>Moving a call in progress from one base station to another without dropping it. Called handoff in North American texts.</dd>
+  <dt>P<sub>min</sub></dt><dd>The weakest received level at which the link still works. The course quotes &minus;100 to &minus;90 dBm.</dd>
+  <dt>P<sub>HO</sub></dt><dd>The handover threshold, set above P<sub>min</sub> by the margin &Delta;. The trigger arms when the serving level falls to it.</dd>
+  <dt>Handover margin &Delta;</dt><dd>P<sub>HO</sub> &minus; P<sub>min</sub>. Too large gives frequent unnecessary handovers; too small leaves insufficient time to complete one.</dd>
+  <dt>Hysteresis H</dt><dd>How many decibels stronger the neighbour must be before the switch is made. Its job is to stop ping-pong.</dd>
+  <dt>Dwell timer</dt><dd>How long the trigger condition must hold continuously before the handover is started.</dd>
+  <dt>Ping-pong</dt><dd>Handing back to the cell just left, within a few seconds. Pure overhead: signalling load and speech gaps for no coverage gain.</dd>
+  <dt>Shadowing, X<sub>&sigma;</sub></dt><dd>Slow level variation from obstruction, log-normal with standard deviation &sigma; in dB, correlated along a route over roughly 20 m.</dd>
+  <dt>Path-loss exponent n</dt><dd>How fast power falls with distance: 2 in free space, about 4 with a ground reflection, more when the path is obstructed.</dd>
+  <dt>Running average</dt><dd>Smoothing the level over a window of road before comparing it with a threshold, so momentary fades do not trigger a handover.</dd>
+  <dt>Cell radius R</dt><dd>Centre to vertex of the hexagon. Adjacent cell centres are &radic;3 R apart, not 2R.</dd>
+  <dt>Cell splitting</dt><dd>Replacing a cell with smaller ones. Transmit power scales as R<sup>n</sup>, capacity per unit area as 1/R&sup2;, and the cluster size N does not change.</dd>
+  <dt>Sectorisation</dt><dd>Replacing the omni antenna with directional ones. At 120 degrees each sector sees 2 first-tier interferers instead of 6.</dd>
+  <dt>SIR</dt><dd>Signal to interference ratio. Here the simplified first-tier form, (&radic;(3N))<sup>n</sup> divided by the number of interferers.</dd>
+  <dt>Reuse distance D</dt><dd>Centre-to-centre spacing of the nearest cells using the same channels, R&radic;(3N). For N = 7 that is 4.583 R.</dd>
+  <dt>Closed-loop power control</dt><dd>The base station tells the mobile to raise or lower its power one step at a time, so the level arriving at the base station stays on target.</dd>
+  <dt>Near-far problem</dt><dd>A close mobile drowning a distant one. Severe in CDMA, where everyone shares the band, which is why its power control runs at 800 or 1500 Hz.</dd>
+</dl>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  var MD = '—', MINUS = '−', SIG = 'σ', DEL = 'Δ', LAM = 'λ';
+
+  var CLIGHT = 2.99792458e8;
+  var F_MHZ = 900;
+  var LAMBDA = CLIGHT / (F_MHZ * 1e6);
+  var D0 = 1;
+  var PL0 = 32.4478 + 20 * L10(F_MHZ) + 20 * L10(0.001);
+  var G_BS = 12, G_MS = 0;
+  var OFF = 30;
+  var EDGE_MARGIN = 6;
+  var N_REUSE = 7, Q_REUSE = Math.sqrt(3 * N_REUSE);
+  var BW_HZ = 200e3, NF_DB = 5;
+  var NOISE = -174 + 10 * L10(BW_HZ) + NF_DB;
+  var CN_REQ = 9;
+  var P_TARGET = NOISE + CN_REQ;
+  var MS_MAX = 33, MS_MIN = -20;
+  var DCORR = 20, DX = 2, NS = 5001;
+  var T_EXEC = 0.3, PP_WIN = 5, RECON = 2;
+  var TIME_X = 8, SUB = 0.02, WARM = 90, TWIN = 40, SAMP = 0.05, XSTART = 0.3;
+
+  var S = { v: 50, del: 4, hys: 3, dwellT: 0.5, sig: 6, n: 3.5, sep: 3,
+            sectors: 1, pc: true, rate: 1500, step: 1,
+            pmin: -95, win: 50, dropT: 1, playing: true, Pt: 0, R: 0 };
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function gauss(rnd) {
+    var u = 1 - rnd(), v = rnd();
+    return Math.sqrt(-2 * Math.log(u <= 0 ? 1e-12 : u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  var zA = new Float64Array(NS), zB = new Float64Array(NS);
+  function genShadow(seed) {
+    var rnd = mulberry32(seed);
+    var a = Math.exp(-DX / DCORR), s = Math.sqrt(Math.max(1 - a * a, 0));
+    zA[0] = gauss(rnd); zB[0] = gauss(rnd);
+    for (var i = 1; i < NS; i++) {
+      zA[i] = a * zA[i - 1] + s * gauss(rnd);
+      zB[i] = a * zB[i - 1] + s * gauss(rnd);
+    }
+  }
+
+  // Fast fading is a function of position, not time. The table below holds one
+  // realisation sampled every lambda/8; the scatterer directions are snapped to
+  // integer harmonics of the table length so it wraps without a seam.
+  // ponytail: one 682 m pattern repeated along the route; a longer table is the
+  // upgrade if the repetition ever becomes visible.
+  var NFT = 16384, FDX = LAMBDA / 8, NSC = 10;
+  var fadeTab = new Float64Array(NFT);
+  function genFade(seed) {
+    var rnd = mulberry32(seed), m = [], ph = [], k, cyc = NFT / 8;
+    for (k = 0; k < NSC; k++) {
+      m.push(Math.round(cyc * Math.cos(rnd() * 2 * Math.PI)));
+      ph.push(rnd() * 2 * Math.PI);
+    }
+    var amp = 1 / Math.sqrt(NSC);
+    for (var i = 0; i < NFT; i++) {
+      var re = 0, im = 0, f = i / NFT;
+      for (k = 0; k < NSC; k++) {
+        var ang = ph[k] + 2 * Math.PI * m[k] * f;
+        re += amp * Math.cos(ang); im += amp * Math.sin(ang);
+      }
+      fadeTab[i] = 20 * L10(Math.max(Math.sqrt(re * re + im * im), 1e-3));
+    }
+  }
+  function fadeAt(x) {
+    var i = Math.floor(x / FDX) % NFT;
+    if (i < 0) i += NFT;
+    return fadeTab[i];
+  }
+
+  var levA = new Float64Array(NS), levB = new Float64Array(NS);
+  var avgA = new Float64Array(NS), avgB = new Float64Array(NS);
+  var pre = new Float64Array(NS + 1);
+  var iMax = 2, loY = -120, hiY = -40;
+
+  function plAt(d) { return PL0 + 10 * S.n * L10(Math.max(d, 0.5) / D0); }
+
+  function boxcar(src, dst, n, half) {
+    var i;
+    pre[0] = 0;
+    for (i = 0; i <= n; i++) pre[i + 1] = pre[i] + src[i];
+    for (i = 0; i <= n; i++) {
+      var a = i - half; if (a < 0) a = 0;
+      var b = i + half; if (b > n) b = n;
+      dst[i] = (pre[b + 1] - pre[a]) / (b - a + 1);
+    }
+  }
+
+  function build() {
+    var sepM = S.sep * 1000;
+    iMax = Math.round(sepM / DX);
+    if (iMax > NS - 1) iMax = NS - 1;
+    if (iMax < 2) iMax = 2;
+    S.R = sepM / Math.sqrt(3);
+    S.Pt = (S.pmin + EDGE_MARGIN) + plAt(S.R) - G_BS - G_MS;
+    var lo = Infinity, hi = -Infinity, i;
+    for (i = 0; i <= iMax; i++) {
+      var x = i * DX;
+      var xb = sepM - x;
+      var dA = Math.sqrt(x * x + OFF * OFF);
+      var dB = Math.sqrt(xb * xb + OFF * OFF);
+      levA[i] = S.Pt + G_BS + G_MS - plAt(dA) + S.sig * zA[i];
+      levB[i] = S.Pt + G_BS + G_MS - plAt(dB) + S.sig * zB[i];
+      if (levA[i] < lo) lo = levA[i];
+      if (levB[i] < lo) lo = levB[i];
+      if (levA[i] > hi) hi = levA[i];
+      if (levB[i] > hi) hi = levB[i];
+    }
+    var half = Math.round(S.win / DX / 2);
+    if (half < 0) half = 0;
+    boxcar(levA, avgA, iMax, half);
+    boxcar(levB, avgB, iMax, half);
+    loY = Math.min(lo, S.pmin - 5) - 4;
+    hiY = Math.max(hi, S.pmin + S.del + 5) + 4;
+    if (!(hiY > loY + 5) || !isFinite(loY) || !isFinite(hiY)) { loY = S.pmin - 30; hiY = S.pmin + 30; }
+  }
+
+  function at(arr, x) {
+    var t = x / DX;
+    if (!(t > 0)) return arr[0];
+    if (t >= iMax) return arr[iMax];
+    var i = Math.floor(t), f = t - i;
+    return arr[i] * (1 - f) + arr[i + 1] * f;
+  }
+
+  var R = { t: 0, x: 0, dir: 1, serving: 0, mode: 'ok', dwell: 0, low: 0, exec: 0,
+            target: 0, recon: 0, ho: 0, pp: 0, drop: 0, lastHO: -99,
+            ptx: 20, pmeas: P_TARGET, prx: P_TARGET, pideal: 20,
+            psum: 0, pn: 0, ev: [], hist: [], acc: 0, cmdAcc: 0, tsamp: 0, bin: null };
+
+  // One drawn pixel spans many sub-steps, so each plotted point carries the
+  // minimum, maximum and mean over its interval. Plotting single samples would
+  // alias the Rayleigh fading, which runs at tens of hertz.
+  function newBin() {
+    return { pLo: Infinity, pHi: -Infinity, pS: 0,
+             gLo: Infinity, gHi: -Infinity, gS: 0,
+             iLo: Infinity, iHi: -Infinity, iS: 0, k: 0 };
+  }
+  function addBin(b, p, gi, ii) {
+    if (p < b.pLo) b.pLo = p; if (p > b.pHi) b.pHi = p; b.pS += Math.pow(10, p / 10);
+    if (gi < b.gLo) b.gLo = gi; if (gi > b.gHi) b.gHi = gi; b.gS += Math.pow(10, gi / 10);
+    if (ii < b.iLo) b.iLo = ii; if (ii > b.iHi) b.iHi = ii; b.iS += Math.pow(10, ii / 10);
+    b.k++;
+  }
+  // Interference adds in power, so every mean here is a linear power average
+  // converted back to dB — the same convention as the mean transmit power card.
+  function binMean(sum, k, lo) {
+    var v = 10 * L10(Math.max(sum / Math.max(k, 1), 1e-30));
+    return isFinite(v) ? v : lo;
+  }
+
+  function interferers() { return S.sectors === 1 ? 6 : (S.sectors === 3 ? 2 : 1); }
+  function sirDb() { return 10 * L10(Math.pow(Q_REUSE, S.n) / interferers()); }
+  function distTo(cell) {
+    var sepM = S.sep * 1000;
+    var dx = cell === 0 ? R.x : (sepM - R.x);
+    return Math.sqrt(dx * dx + OFF * OFF);
+  }
+  function shadowServ() { return S.sig * at(R.serving === 0 ? zA : zB, R.x); }
+  function ifloor(ptx) {
+    return ptx + G_MS + G_BS + 10 * L10(interferers()) - plAt(Q_REUSE * S.R);
+  }
+
+  function pushEv(kind, cell) {
+    R.ev.push({ x: R.x, kind: kind, c: cell });
+    if (R.ev.length > 90) R.ev.shift();
+  }
+
+  function completeHO() {
+    R.serving = R.target;
+    R.mode = 'ok'; R.exec = 0; R.low = 0; R.dwell = 0;
+    R.ho++;
+    var pp = (R.t - R.lastHO) < PP_WIN;
+    if (pp) R.pp++;
+    R.lastHO = R.t;
+    pushEv(pp ? 'pp' : 'ho', R.serving);
+  }
+
+  function powerControl(dt) {
+    var base = G_MS + G_BS - plAt(distTo(R.serving)) + shadowServ();
+    var vms = S.v / 3.6;
+    if (!S.pc) {
+      R.ptx = MS_MAX;
+      R.pmeas = R.ptx + base + fadeAt(R.x);
+    } else {
+      R.cmdAcc += S.rate * dt;
+      var nc = Math.floor(R.cmdAcc);
+      R.cmdAcc -= nc;
+      if (nc > 64) nc = 64;
+      for (var k = 0; k < nc; k++) {
+        R.ptx += (R.pmeas < P_TARGET) ? S.step : -S.step;
+        if (R.ptx > MS_MAX) R.ptx = MS_MAX;
+        if (R.ptx < MS_MIN) R.ptx = MS_MIN;
+        var xk = R.x + R.dir * vms * dt * (k + 1) / nc;
+        R.pmeas = R.ptx + base + fadeAt(xk);
+      }
+      if (nc === 0) R.pmeas = R.ptx + base + fadeAt(R.x);
+    }
+    R.prx = R.ptx + base + fadeAt(R.x);
+    R.pideal = P_TARGET - base - fadeAt(R.x);
+    R.psum += Math.pow(10, R.ptx / 10) * dt;
+    R.pn += dt;
+  }
+
+  function step(dt) {
+    var sepM = S.sep * 1000;
+    R.t += dt;
+    R.x += R.dir * (S.v / 3.6) * dt;
+    if (R.x >= sepM) { R.x = sepM; R.dir = -1; }
+    if (R.x <= 0) { R.x = 0; R.dir = 1; }
+
+    var av = [at(avgA, R.x), at(avgB, R.x)];
+
+    if (R.mode === 'drop') {
+      R.recon -= dt;
+      if (R.recon <= 0) {
+        R.mode = 'ok';
+        R.serving = av[0] >= av[1] ? 0 : 1;
+        R.dwell = 0; R.low = 0; R.lastHO = -99;
+      }
+    } else {
+      var serv = av[R.serving], neigh = av[1 - R.serving];
+      var pho = S.pmin + S.del;
+      var failed = false;
+      if (serv < S.pmin) { R.low += dt; if (R.low > S.dropT) failed = true; } else { R.low = 0; }
+      if (R.mode === 'exec') {
+        if (serv < S.pmin) failed = true;
+        else {
+          R.exec -= dt;
+          if (R.exec <= 0) completeHO();
+        }
+      } else {
+        if (serv <= pho && neigh >= serv + S.hys) {
+          R.dwell += dt;
+          if (R.dwell >= S.dwellT) { R.mode = 'exec'; R.exec = T_EXEC; R.target = 1 - R.serving; R.dwell = 0; }
+        } else { R.dwell = 0; }
+      }
+      if (failed) {
+        R.drop++; R.mode = 'drop'; R.recon = RECON;
+        R.low = 0; R.dwell = 0; R.exec = 0;
+        pushEv('dr', R.serving);
+      }
+    }
+
+    powerControl(dt);
+
+    if (R.bin === null) R.bin = newBin();
+    addBin(R.bin, R.ptx, R.pideal, ifloor(R.ptx));
+    R.tsamp += dt;
+    if (R.tsamp >= SAMP) {
+      R.tsamp = 0;
+      var b = R.bin, k = Math.max(b.k, 1);
+      R.hist.push({ t: R.t, pLo: b.pLo, pHi: b.pHi, p: binMean(b.pS, k, b.pLo),
+                    gLo: b.gLo, gHi: b.gHi, g: binMean(b.gS, k, b.gLo),
+                    iLo: b.iLo, iHi: b.iHi, i: binMean(b.iS, k, b.iLo) });
+      R.bin = newBin();
+      if (R.hist.length > 1400) R.hist = R.hist.slice(-1000);
+    }
+  }
+
+  function resetRun() {
+    R.t = 0; R.x = XSTART * S.sep * 1000; R.dir = 1; R.mode = 'ok';
+    R.serving = at(avgA, R.x) >= at(avgB, R.x) ? 0 : 1;
+    R.dwell = 0; R.low = 0; R.exec = 0; R.target = 0; R.recon = 0;
+    R.ho = 0; R.pp = 0; R.drop = 0; R.lastHO = -99;
+    R.ptx = S.pc ? 20 : MS_MAX; R.pmeas = P_TARGET; R.prx = P_TARGET; R.pideal = 20;
+    R.psum = 0; R.pn = 0; R.ev = []; R.hist = []; R.acc = 0; R.cmdAcc = 0; R.tsamp = 0;
+    R.bin = null;
+    var steps = Math.round(WARM / SUB);
+    for (var i = 0; i < steps; i++) step(SUB);
+  }
+
+  function fit(c) {
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+  function plotBase(g, l, t, w2, h2) {
+    g.fillStyle = cvv('--plot-bg'); g.fillRect(l, t, w2, h2);
+    g.strokeStyle = cvv('--border'); g.lineWidth = 1; g.strokeRect(l + 0.5, t + 0.5, w2 - 1, h2 - 1);
+  }
+  function tickStep(sep) {
+    if (sep <= 1) return 0.2;
+    if (sep <= 3) return 0.5;
+    if (sep <= 6) return 1;
+    return 2;
+  }
+  function fmtW(dbm) {
+    if (!isFinite(dbm)) return MD;
+    var w = Math.pow(10, (dbm - 30) / 10);
+    if (!isFinite(w)) return MD;
+    if (w >= 1e6) return (w / 1e6).toFixed(1) + ' MW';
+    if (w >= 1e3) return (w / 1e3).toFixed(1) + ' kW';
+    if (w >= 1) return w.toFixed(1) + ' W';
+    if (w >= 1e-3) return (w * 1e3).toFixed(1) + ' mW';
+    return (w * 1e6).toFixed(1) + ' µW';
+  }
+
+  function drawScene() {
+    var c = $('cv1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), txt = cvv('--text-primary');
+    var cA = cvv('--series-1'), cB = cvv('--series-2');
+    var l = 58, r = 58, roadY = h * 0.70, pw = w - l - r;
+    var sepM = S.sep * 1000;
+    var X = function (xm) { return l + (xm / sepM) * pw; };
+
+    g.fillStyle = cvv('--plot-bg'); g.fillRect(0, 0, w, h);
+
+    g.fillStyle = cvv('--surface-1');
+    g.fillRect(l - 24, roadY - 11, pw + 48, 22);
+    g.strokeStyle = cvv('--border'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l - 24, roadY - 11.5); g.lineTo(l + pw + 24, roadY - 11.5);
+    g.moveTo(l - 24, roadY + 11.5); g.lineTo(l + pw + 24, roadY + 11.5); g.stroke();
+    g.strokeStyle = mut; g.setLineDash([9, 9]); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l - 24, roadY); g.lineTo(l + pw + 24, roadY); g.stroke();
+    g.setLineDash([]);
+
+    var px;
+    for (px = 0; px < pw; px++) {
+      var xm = (px / pw) * sepM;
+      g.fillStyle = at(avgA, xm) >= at(avgB, xm) ? cA : cB;
+      g.globalAlpha = 0.45;
+      g.fillRect(l + px, roadY + 14, 1.2, 6);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('strongest cell along the road', l, roadY + 23);
+
+    var xc = X(sepM / 2);
+    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(xc, 64); g.lineTo(xc, roadY + 12); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('cell boundary', xc, 49);
+
+    function mast(xm, col, name, sect) {
+      var mx = X(xm), baseY = roadY - 52, topY = 62;
+      g.strokeStyle = col; g.lineWidth = 1.4;
+      g.beginPath();
+      g.moveTo(mx - 10, baseY); g.lineTo(mx - 2.5, topY);
+      g.moveTo(mx + 10, baseY); g.lineTo(mx + 2.5, topY);
+      g.stroke();
+      g.lineWidth = 0.9;
+      var k;
+      for (k = 1; k <= 3; k++) {
+        var f = k / 4, y = baseY + (topY - baseY) * f;
+        var hw = 10 + (2.5 - 10) * f;
+        g.beginPath(); g.moveTo(mx - hw, y); g.lineTo(mx + hw, y); g.stroke();
+      }
+      var hy = topY - 12, rr = 10;
+      if (sect === 1) {
+        g.fillStyle = col; g.globalAlpha = 0.28;
+        g.beginPath(); g.arc(mx, hy, rr, 0, 6.2832); g.fill();
+        g.globalAlpha = 1;
+        g.strokeStyle = col; g.lineWidth = 1.2;
+        g.beginPath(); g.arc(mx, hy, rr, 0, 6.2832); g.stroke();
+      } else {
+        for (k = 0; k < sect; k++) {
+          var a0 = -Math.PI / 2 + k * 2 * Math.PI / sect + 0.09;
+          var a1 = -Math.PI / 2 + (k + 1) * 2 * Math.PI / sect - 0.09;
+          g.fillStyle = col; g.globalAlpha = 0.30;
+          g.beginPath(); g.moveTo(mx, hy); g.arc(mx, hy, rr, a0, a1); g.closePath(); g.fill();
+          g.globalAlpha = 1;
+          g.strokeStyle = col; g.lineWidth = 1;
+          g.beginPath(); g.moveTo(mx, hy); g.arc(mx, hy, rr, a0, a1); g.closePath(); g.stroke();
+        }
+      }
+      g.fillStyle = col; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(name, mx, baseY + 4);
+      g.fillStyle = mut; g.font = fnt(10);
+      g.fillText(sect === 1 ? 'omni' : sect + ' sectors', mx, baseY + 18);
+      return [mx, hy];
+    }
+    var pA = mast(0, cA, 'base station A', S.sectors);
+    var pB = mast(sepM, cB, 'base station B', S.sectors);
+
+    var carX = X(R.x), carY = roadY - 4;
+    var servPt = R.serving === 0 ? pA : pB;
+    var othPt = R.serving === 0 ? pB : pA;
+    var servCol = R.serving === 0 ? cA : cB;
+    var dropped = R.mode === 'drop';
+
+    g.strokeStyle = dropped ? cvv('--bad') : servCol; g.lineWidth = 1.6;
+    if (dropped) g.setLineDash([3, 4]);
+    g.beginPath(); g.moveTo(carX, carY - 8); g.lineTo(servPt[0], servPt[1] + 10); g.stroke();
+    g.setLineDash([]);
+    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([3, 5]);
+    g.beginPath(); g.moveTo(carX, carY - 8); g.lineTo(othPt[0], othPt[1] + 10); g.stroke();
+    g.setLineDash([]);
+
+    var bodyCol = dropped ? cvv('--bad') : servCol;
+    g.fillStyle = bodyCol;
+    g.fillRect(carX - 12, carY - 7, 24, 9);
+    g.fillRect(carX - 7, carY - 12, 13, 6);
+    g.fillStyle = cvv('--plot-bg');
+    g.beginPath(); g.arc(carX - 6, carY + 3, 2.6, 0, 6.2832); g.fill();
+    g.beginPath(); g.arc(carX + 6, carY + 3, 2.6, 0, 6.2832); g.fill();
+    g.strokeStyle = bodyCol; g.lineWidth = 1.2;
+    g.beginPath(); g.arc(carX - 6, carY + 3, 2.6, 0, 6.2832); g.stroke();
+    g.beginPath(); g.arc(carX + 6, carY + 3, 2.6, 0, 6.2832); g.stroke();
+
+    var lvl = at(avgA, R.x), lvlB = at(avgB, R.x);
+    var servLvl = R.serving === 0 ? lvl : lvlB;
+    var lab = dropped ? 'call dropped' : 'serving cell ' + (R.serving === 0 ? 'A' : 'B') +
+      '  ' + servLvl.toFixed(1) + ' dBm';
+    g.fillStyle = dropped ? cvv('--bad') : txt; g.font = fnt(11);
+    g.textAlign = carX > l + pw * 0.6 ? 'right' : 'left';
+    g.textBaseline = 'bottom';
+    g.fillText(lab, carX + (carX > l + pw * 0.6 ? -16 : 16), carY - 14);
+
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, h - 26); g.lineTo(l + pw, h - 26); g.stroke();
+    var ts = tickStep(S.sep);
+    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+    for (var km = 0; km <= S.sep + 1e-9; km += ts) {
+      var tx = X(km * 1000);
+      g.strokeStyle = cvv('--border-strong');
+      g.beginPath(); g.moveTo(tx, h - 26); g.lineTo(tx, h - 22); g.stroke();
+      g.fillText(km.toFixed(ts < 1 ? 1 : 0), tx, h - 20);
+    }
+    g.textAlign = 'right';
+    g.fillText('km along the road', l + pw, h - 8);
+
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('separation ' + S.sep.toFixed(2) + ' km   R = ' + (S.R / 1000).toFixed(2) + ' km   ' +
+      'base station ' + S.Pt.toFixed(1) + ' dBm', l, 8);
+    g.fillText('mobile at ' + (R.x / 1000).toFixed(2) + ' km   ' +
+      'd to A ' + (distTo(0) / 1000).toFixed(2) + ' km   d to B ' + (distTo(1) / 1000).toFixed(2) + ' km',
+      l, 24);
+  }
+
+  function drawTrace() {
+    var c = $('cv2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    var cA = cvv('--series-1'), cB = cvv('--series-2');
+    var l = 56, r = 14, t = 14, b = 40, pw = w - l - r, ph = h - t - b;
+    if (pw < 40 || ph < 40) return;
+    plotBase(g, l, t, pw, ph);
+    var sepM = S.sep * 1000;
+    var X = function (xm) { return l + (xm / sepM) * pw; };
+    var Y = function (v) {
+      var y = t + (hiY - v) / (hiY - loY) * ph;
+      if (y < t - 400) y = t - 400;
+      if (y > t + ph + 400) y = t + ph + 400;
+      return y;
+    };
+
+    g.strokeStyle = cvv('--grid'); g.lineWidth = 0.5;
+    g.fillStyle = sub; g.font = fnt(10);
+    var span = hiY - loY;
+    var gs = span > 120 ? 20 : span > 60 ? 10 : 5;
+    var v0 = Math.ceil(loY / gs) * gs;
+    for (var v = v0; v <= hiY; v += gs) {
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(l + pw, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    var ts = tickStep(S.sep);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (var km = 0; km <= S.sep + 1e-9; km += ts) {
+      g.strokeStyle = cvv('--grid');
+      g.beginPath(); g.moveTo(X(km * 1000), t); g.lineTo(X(km * 1000), t + ph); g.stroke();
+      g.fillStyle = sub;
+      g.fillText(km.toFixed(ts < 1 ? 1 : 0), X(km * 1000), t + ph + 6);
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('dBm', 6, t);
+    g.textAlign = 'right';
+    g.fillText('km along the road', l + pw, t + ph + 22);
+
+    g.save();
+    g.beginPath(); g.rect(l, t, pw, ph); g.clip();
+
+    g.fillStyle = cvv('--bad'); g.globalAlpha = 0.09;
+    g.fillRect(l, Y(S.pmin), pw, Math.max(0, Y(loY) - Y(S.pmin)));
+    g.globalAlpha = 1;
+
+    function rawBand(arr, col) {
+      g.fillStyle = col; g.globalAlpha = 0.26;
+      for (var px = 0; px < pw; px++) {
+        var ia = Math.round((px / pw) * sepM / DX);
+        var ib = Math.round(((px + 1) / pw) * sepM / DX);
+        if (ia < 0) ia = 0; if (ib > iMax) ib = iMax; if (ib < ia) ib = ia;
+        var mn = Infinity, mx = -Infinity;
+        for (var i = ia; i <= ib; i++) {
+          if (arr[i] < mn) mn = arr[i];
+          if (arr[i] > mx) mx = arr[i];
+        }
+        if (!isFinite(mn)) continue;
+        var y0 = Y(mx), y1 = Y(mn);
+        g.fillRect(l + px, y0, 1.1, Math.max(y1 - y0, 1.2));
+      }
+      g.globalAlpha = 1;
+    }
+    rawBand(levA, cA);
+    rawBand(levB, cB);
+
+    function avgLine(arr, col) {
+      g.strokeStyle = col; g.lineWidth = 2; g.beginPath();
+      for (var px = 0; px <= pw; px++) {
+        var xm = (px / pw) * sepM, y = Y(at(arr, xm));
+        if (px === 0) g.moveTo(l + px, y); else g.lineTo(l + px, y);
+      }
+      g.stroke();
+    }
+    avgLine(avgA, cA);
+    avgLine(avgB, cB);
+
+    var pho = S.pmin + S.del;
+    g.setLineDash([6, 4]); g.lineWidth = 1.3;
+    g.strokeStyle = cvv('--text-warning');
+    g.beginPath(); g.moveTo(l, Y(pho)); g.lineTo(l + pw, Y(pho)); g.stroke();
+    g.strokeStyle = cvv('--bad');
+    g.beginPath(); g.moveTo(l, Y(S.pmin)); g.lineTo(l + pw, Y(S.pmin)); g.stroke();
+    g.setLineDash([]);
+
+    var i2;
+    for (i2 = 0; i2 < R.ev.length; i2++) {
+      var e = R.ev[i2], ex = X(e.x), ey = t + ph - 14;
+      g.strokeStyle = cvv('--border-strong'); g.lineWidth = 0.8;
+      g.beginPath(); g.moveTo(ex, t + ph); g.lineTo(ex, ey + 5); g.stroke();
+      if (e.kind === 'dr') {
+        g.strokeStyle = cvv('--bad'); g.lineWidth = 1.8;
+        g.beginPath();
+        g.moveTo(ex - 4, ey - 4); g.lineTo(ex + 4, ey + 4);
+        g.moveTo(ex + 4, ey - 4); g.lineTo(ex - 4, ey + 4);
+        g.stroke();
+      } else {
+        g.fillStyle = e.c === 0 ? cA : cB;
+        g.beginPath(); g.arc(ex, ey, 3.4, 0, 6.2832); g.fill();
+        if (e.kind === 'pp') {
+          g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.6;
+          g.beginPath(); g.arc(ex, ey, 6.2, 0, 6.2832); g.stroke();
+        }
+      }
+    }
+
+    var mx2 = X(R.x);
+    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 1; g.globalAlpha = 0.5;
+    g.beginPath(); g.moveTo(mx2, t); g.lineTo(mx2, t + ph); g.stroke();
+    g.globalAlpha = 1;
+    var sv = R.serving === 0 ? at(avgA, R.x) : at(avgB, R.x);
+    g.fillStyle = R.mode === 'drop' ? cvv('--bad') : (R.serving === 0 ? cA : cB);
+    g.beginPath(); g.arc(mx2, Y(sv), 4.6, 0, 6.2832); g.fill();
+    g.restore();
+
+    g.font = fnt(11);
+    g.fillStyle = cvv('--text-warning');
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('P_HO = ' + pho.toFixed(1).replace('-', MINUS) + ' dBm', l + 6, Y(pho) - 3);
+    g.fillStyle = cvv('--bad'); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('P_min = ' + S.pmin.toFixed(1).replace('-', MINUS) + ' dBm', l + pw - 6, Y(S.pmin) + 3);
+  }
+
+  function drawPC() {
+    var c = $('cv3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    var l = 62, r = 14, t0 = 20, bb = 30, gap = 30;
+    var pw = w - l - r;
+    var ph = (h - t0 - bb - gap) / 2;
+    if (pw < 40 || ph < 30) return;
+    var t1 = t0, t2 = t0 + ph + gap;
+    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('mobile transmit power, dBm', l, t1 - 5);
+    g.fillText('interference at a co-channel base station, dBm', l, t2 - 5);
+    plotBase(g, l, t1, pw, ph);
+    plotBase(g, l, t2, pw, ph);
+
+    var tHi = Math.max(R.t, TWIN), tLo = tHi - TWIN;
+    var X = function (tt) { return l + (tt - tLo) / TWIN * pw; };
+
+    var aLo = MS_MIN - 6, aHi = MS_MAX + 5;
+    var Y1 = function (v) {
+      var y = t1 + (aHi - v) / (aHi - aLo) * ph;
+      if (y < t1 - 300) y = t1 - 300;
+      if (y > t1 + ph + 300) y = t1 + ph + 300;
+      return y;
+    };
+    var M = interferers();
+    var iHi = MS_MAX + G_MS + G_BS + 10 * L10(M) - plAt(Q_REUSE * S.R);
+    var iLo = MS_MIN + G_MS + G_BS + 10 * L10(M) - plAt(Q_REUSE * S.R);
+    var bHi = Math.max(iHi, NOISE + 6) + 4;
+    var bLo = Math.min(iLo, NOISE - 6) - 4;
+    if (!(bHi > bLo + 5) || !isFinite(bHi) || !isFinite(bLo)) { bLo = NOISE - 30; bHi = NOISE + 30; }
+    var Y2 = function (v) {
+      var y = t2 + (bHi - v) / (bHi - bLo) * ph;
+      if (y < t2 - 300) y = t2 - 300;
+      if (y > t2 + ph + 300) y = t2 + ph + 300;
+      return y;
+    };
+
+    g.font = fnt(10); g.fillStyle = sub; g.strokeStyle = cvv('--grid'); g.lineWidth = 0.5;
+    var v;
+    for (v = -20; v <= 30; v += 10) {
+      g.beginPath(); g.moveTo(l, Y1(v)); g.lineTo(l + pw, Y1(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y1(v));
+    }
+    var bs = (bHi - bLo) > 90 ? 20 : 10;
+    var bv0 = Math.ceil(bLo / bs) * bs;
+    for (v = bv0; v <= bHi; v += bs) {
+      g.beginPath(); g.moveTo(l, Y2(v)); g.lineTo(l + pw, Y2(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y2(v));
+    }
+    var tstep = 10;
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (var tv = Math.ceil(tLo / tstep) * tstep; tv <= tHi; tv += tstep) {
+      g.strokeStyle = cvv('--grid');
+      g.beginPath(); g.moveTo(X(tv), t1); g.lineTo(X(tv), t1 + ph); g.stroke();
+      g.beginPath(); g.moveTo(X(tv), t2); g.lineTo(X(tv), t2 + ph); g.stroke();
+      g.fillStyle = sub;
+      g.fillText(tv.toFixed(0), X(tv), t2 + ph + 6);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('simulated time (s)', l + pw, t2 + ph + 20);
+
+    function band(Yf, lo, hi, mid, col, al, lw) {
+      var k, p, first;
+      g.fillStyle = col; g.globalAlpha = al;
+      for (k = 0; k < R.hist.length; k++) {
+        p = R.hist[k]; if (p.t < tLo) continue;
+        var y0 = Yf(p[hi]), y1 = Yf(p[lo]);
+        g.fillRect(X(p.t) - 1, y0, 2.2, Math.max(y1 - y0, 1.2));
+      }
+      g.globalAlpha = 1;
+      g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); first = true;
+      for (k = 0; k < R.hist.length; k++) {
+        p = R.hist[k]; if (p.t < tLo) continue;
+        if (first) { g.moveTo(X(p.t), Yf(p[mid])); first = false; } else g.lineTo(X(p.t), Yf(p[mid]));
+      }
+      g.stroke();
+    }
+
+    g.save();
+    g.beginPath(); g.rect(l, t1, pw, ph); g.clip();
+    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(l, Y1(MS_MAX)); g.lineTo(l + pw, Y1(MS_MAX)); g.stroke();
+    g.setLineDash([]);
+    band(Y1, 'gLo', 'gHi', 'g', cvv('--series-5'), 0.22, 1.1);
+    band(Y1, 'pLo', 'pHi', 'p', cvv('--series-4'), 0.34, 1.8);
+    g.restore();
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('full power ' + MS_MAX.toFixed(0) + ' dBm', l + pw - 6, Y1(MS_MAX) + 3);
+
+    g.save();
+    g.beginPath(); g.rect(l, t2, pw, ph); g.clip();
+    g.fillStyle = cvv('--series-6'); g.globalAlpha = 0.12;
+    for (var k2 = 0; k2 < R.hist.length; k2++) {
+      var pp2 = R.hist[k2]; if (pp2.t < tLo) continue;
+      g.fillRect(X(pp2.t) - 1, Y2(iHi), 2.2, Math.max(Y2(pp2.iHi) - Y2(iHi), 0));
+    }
+    g.globalAlpha = 1;
+    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(l, Y2(iHi)); g.lineTo(l + pw, Y2(iHi)); g.stroke();
+    g.strokeStyle = cvv('--text-warning');
+    g.beginPath(); g.moveTo(l, Y2(NOISE)); g.lineTo(l + pw, Y2(NOISE)); g.stroke();
+    g.setLineDash([]);
+    band(Y2, 'iLo', 'iHi', 'i', cvv('--series-6'), 0.34, 1.8);
+    g.restore();
+    g.font = fnt(10);
+    g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('no power control ' + iHi.toFixed(0).replace('-', MINUS) + ' dBm', l + pw - 6, Y2(iHi) - 2);
+    g.fillStyle = cvv('--text-warning'); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('thermal noise ' + NOISE.toFixed(0).replace('-', MINUS) + ' dBm', l + 6, Y2(NOISE) + 3);
+  }
+
+  function updateUI() {
+    $('svv').textContent = S.v.toFixed(0) + ' km/h';
+    $('dlv').textContent = S.del.toFixed(1) + ' dB';
+    $('hyv').textContent = S.hys.toFixed(1) + ' dB';
+    $('dwv').textContent = S.dwellT.toFixed(2) + ' s';
+    $('sgv').textContent = S.sig.toFixed(1) + ' dB';
+    $('pnv').textContent = S.n.toFixed(2);
+    $('spv').textContent = S.sep.toFixed(2) + ' km';
+    $('pmv').textContent = S.pmin.toFixed(1) + ' dBm';
+    $('stv').textContent = S.step.toFixed(2) + ' dB';
+    $('wnv').textContent = S.win.toFixed(0) + ' m';
+    $('dpv').textContent = S.dropT.toFixed(2) + ' s';
+
+    var meanP = R.pn > 1e-9 ? 10 * L10(Math.max(R.psum / R.pn, 1e-12)) : MS_MAX;
+    if (!isFinite(meanP)) meanP = MS_MAX;
+    var red = MS_MAX - meanP;
+    if (!isFinite(red) || red < 0) red = 0;
+    var M = interferers();
+
+    $('cHo').textContent = R.ho.toFixed(0);
+    $('cHof').textContent = 'in ' + R.t.toFixed(0) + ' s of driving, ' +
+      (R.t > 1 ? (R.ho / R.t * 60).toFixed(1) : '0.0') + ' per minute';
+    $('cPp').textContent = R.pp.toFixed(0);
+    $('cDr').textContent = R.drop.toFixed(0);
+    $('cDrf').textContent = 'below ' + S.pmin.toFixed(0) + ' dBm for over ' + S.dropT.toFixed(1) + ' s';
+    $('cPt').textContent = meanP.toFixed(1) + ' dBm';
+    $('cSir').textContent = sirDb().toFixed(2) + ' dB';
+    $('cSirf').textContent = 'simplified first tier, N = 7, M = ' + M.toFixed(0) + ' interferer' + (M === 1 ? '' : 's');
+    $('cRed').textContent = red.toFixed(1) + ' dB';
+    $('cBs').textContent = S.Pt.toFixed(1) + ' dBm';
+    $('cBsf').textContent = fmtW(S.Pt) + (S.Pt > 75 ? ' — no real transmitter does this' :
+      ', sized for R = ' + (S.R / 1000).toFixed(2) + ' km');
+    $('cBs').style.color = S.Pt > 75 ? 'var(--bad)' : '';
+    $('cDr').style.color = R.drop > 0 ? 'var(--bad)' : '';
+    $('cPp').style.color = R.pp > 0 ? 'var(--text-warning)' : '';
+
+    var fm = (S.v / 3.6) / LAMBDA;
+    var slew = S.rate * S.step;
+    var halved = 10 * S.n * L10(2);
+    var fx = function (val, dp) { return val.toFixed(dp).replace('-', MINUS); };
+    var lines = [];
+    lines.push('Free-space reference at d₀ = 1 m and ' + F_MHZ.toFixed(0) + ' MHz: PL(d₀) = 32.45 + 20 log₁₀(900) + 20 log₁₀(0.001) = ' + PL0.toFixed(2) + ' dB.');
+    lines.push('Cell radius R = separation / √3 = ' + S.sep.toFixed(2) + ' km / 1.732 = ' + (S.R / 1000).toFixed(3) + ' km, centre to vertex; the boundary on the road is at ' + (S.sep / 2).toFixed(2) + ' km.');
+    lines.push('Path loss at the vertex: ' + PL0.toFixed(2) + ' + 10 × ' + S.n.toFixed(2) + ' × log₁₀(' + S.R.toFixed(0) + ') = ' + plAt(S.R).toFixed(2) + ' dB.');
+    lines.push('Base station sized for P_min + 6 dB there: Pₜ = ' + fx(S.pmin + EDGE_MARGIN, 1) + ' + ' + plAt(S.R).toFixed(2) + ' ' + MINUS + ' ' + G_BS.toFixed(0) + ' ' + MINUS + ' ' + G_MS.toFixed(0) + ' = ' + fx(S.Pt, 2) + ' dBm (' + fmtW(S.Pt) + ').');
+    lines.push('Halving R would cut that by 10 n log₁₀ 2 = ' + halved.toFixed(2) + ' dB and give 4 times the capacity per unit area, at the cost of twice as many handovers along any given route.');
+    lines.push('Handover threshold P_HO = P_min + ' + DEL + ' = ' + fx(S.pmin, 1) + ' + ' + S.del.toFixed(1) + ' = ' + fx(S.pmin + S.del, 1) + ' dBm; the neighbour must also lead by H = ' + S.hys.toFixed(1) + ' dB for ' + S.dwellT.toFixed(2) + ' s.');
+    lines.push('Simplified first-tier SIR = (√(3×7))ⁿ / M = ' + Q_REUSE.toFixed(4) + '^' + S.n.toFixed(2) + ' / ' + M + ' = ' + (Math.pow(Q_REUSE, S.n) / M).toFixed(2) + ' = ' + sirDb().toFixed(2) + ' dB. Going omni to 120° sectors cuts M from 6 to 2, worth 10 log₁₀ 3 = 4.77 dB.');
+    lines.push('Reuse distance D = R√(3N) = ' + (S.R / 1000).toFixed(3) + ' × ' + Q_REUSE.toFixed(4) + ' = ' + (Q_REUSE * S.R / 1000).toFixed(3) + ' km, and the loss out to it is ' + plAt(Q_REUSE * S.R).toFixed(1) + ' dB.');
+    lines.push('Uplink noise floor = ' + MINUS + '174 + 10 log₁₀(200 000) + 5 = ' + fx(NOISE, 2) + ' dBm, so the loop aims at ' + fx(NOISE, 2) + ' + ' + CN_REQ.toFixed(0) + ' = ' + fx(P_TARGET, 2) + ' dBm.');
+    lines.push('At the mobile’s current distance of ' + (distTo(R.serving) / 1000).toFixed(2) + ' km the loss is ' + plAt(distTo(R.serving)).toFixed(1) + ' dB, so it needs about ' + fx(P_TARGET + plAt(distTo(R.serving)) - G_BS - G_MS, 1) + ' dBm before shadowing and fading.');
+    var fadeMs = 1000 / Math.max(4 * fm, 0.01);
+    var fadeSlew = 30000 / Math.max(fadeMs, 1e-6);
+    lines.push('The loop can slew ' + S.rate.toFixed(0) + ' Hz × ' + S.step.toFixed(2) + ' dB = ' + slew.toFixed(0) + ' dB/s. At ' + S.v.toFixed(0) + ' km/h the Rayleigh pattern goes past at fₘ = v/' + LAM + ' = ' + fm.toFixed(1) + ' Hz, so a 30 dB fade is entered in roughly a quarter period, ' + fadeMs.toFixed(1) + ' ms, which asks for ' + fadeSlew.toFixed(0) + ' dB/s. That is the fading power control cannot follow.');
+    $('work').innerHTML = lines.map(function (s) { return '<li>' + s + '</li>'; }).join('');
+  }
+
+  function drawAll() { drawScene(); drawTrace(); drawPC(); updateUI(); }
+
+  function read() {
+    S.v = +$('sv').value; S.del = +$('dl').value; S.hys = +$('hy').value;
+    S.dwellT = +$('dw').value; S.sig = +$('sg').value; S.n = +$('pn').value;
+    S.sep = +$('sp').value; S.pmin = +$('pm').value; S.step = +$('st').value;
+    S.win = +$('wn').value; S.dropT = +$('dp').value;
+  }
+  function refresh() { read(); build(); resetRun(); drawAll(); }
+
+  var raf = null, last = 0;
+  function tick(ts) {
+    if (!last) last = ts;
+    var dtw = Math.min(ts - last, 50) / 1000;
+    last = ts;
+    R.acc += dtw * TIME_X;
+    var guard = 0;
+    while (R.acc >= SUB && guard < 48) { step(SUB); R.acc -= SUB; guard++; }
+    if (guard >= 48) R.acc = 0;
+    drawAll();
+    raf = requestAnimationFrame(tick);
+  }
+  function setPlay(on) {
+    S.playing = on;
+    $('play').textContent = on ? 'Pause the drive' : 'Play the drive';
+    if (on && raf === null) { last = 0; raf = requestAnimationFrame(tick); }
+    if (!on && raf !== null) { cancelAnimationFrame(raf); raf = null; drawAll(); }
+  }
+
+  ['sv', 'dl', 'hy', 'dw', 'sg', 'pn', 'sp', 'pm', 'st', 'wn', 'dp'].forEach(function (id) {
+    $(id).addEventListener('input', refresh);
+  });
+
+  function setSect(k) {
+    S.sectors = k;
+    $('sc1').classList.toggle('on', k === 1);
+    $('sc3').classList.toggle('on', k === 3);
+    $('sc6').classList.toggle('on', k === 6);
+    refresh();
+  }
+  $('sc1').addEventListener('click', function () { setSect(1); });
+  $('sc3').addEventListener('click', function () { setSect(3); });
+  $('sc6').addEventListener('click', function () { setSect(6); });
+
+  function setPC(on) {
+    S.pc = on;
+    $('pcOn').classList.toggle('on', on);
+    $('pcOff').classList.toggle('on', !on);
+    refresh();
+  }
+  $('pcOn').addEventListener('click', function () { setPC(true); });
+  $('pcOff').addEventListener('click', function () { setPC(false); });
+
+  function setRate(hz) {
+    S.rate = hz;
+    $('ra2').classList.toggle('on', hz === 2);
+    $('ra800').classList.toggle('on', hz === 800);
+    $('ra1500').classList.toggle('on', hz === 1500);
+    refresh();
+  }
+  $('ra2').addEventListener('click', function () { setRate(2); });
+  $('ra800').addEventListener('click', function () { setRate(800); });
+  $('ra1500').addEventListener('click', function () { setRate(1500); });
+
+  $('play').addEventListener('click', function () { setPlay(!S.playing); });
+  $('shuf').addEventListener('click', function () {
+    genShadow(Math.floor(Math.random() * 2147483000) + 1);
+    refresh();
+  });
+
+  var TOUR = [
+    { v: { sv: 50, dl: 4, hy: 3, dw: 0.5, sg: 2, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 50, dp: 1 },
+      sec: 1, pc: true, rate: 1500,
+      s: '<b>Step 1 &mdash; one clean handover.</b> Shadowing is only 2 dB, so both averaged curves are almost smooth. The blue level falls to P_HO shortly past the boundary, the orange one is already stronger, and the switch happens once. That is what a well tuned cell edge looks like.' },
+    { v: { sv: 50, dl: 10, hy: 0, dw: 0, sg: 9, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 0, dp: 1 },
+      sec: 1, pc: true, rate: 1500,
+      s: '<b>Step 2 &mdash; ping-pong.</b> Hysteresis is zero, the dwell timer is zero and the running average is switched off, so every shadow crossing counts as the neighbour being stronger. The call bounces between the masts, and the raw dips now breach P_min as well, so a few calls are lost outright. Turn the averaging window back up to 50 m and watch most of both disappear.' },
+    { v: { sv: 50, dl: 15, hy: 2, dw: 0.5, sg: 7, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 50, dp: 1 },
+      sec: 1, pc: true, rate: 1500,
+      s: '<b>Step 3 &mdash; margin too large.</b> With ' + DEL + ' at 15 dB the threshold sits 15 dB above the floor, so the trigger is armed over a long stretch of road and fires on every wobble. These are the frequent, unnecessary handovers the notes warn about: each one costs signalling and a gap in the speech, and none of them was needed.' },
+    { v: { sv: 100, dl: 0, hy: 10, dw: 1.5, sg: 9, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 50, dp: 0.8 },
+      sec: 1, pc: true, rate: 1500,
+      s: '<b>Step 4 &mdash; dropped call.</b> ' + DEL + ' is zero, so the handover is not even considered until the link is already at P_min, and the hysteresis and dwell timer delay it further while the car covers 28 m a second. There is no time left to complete the switch, and the crosses on the second plot are lost calls.' },
+    { v: { sv: 60, dl: 5, hy: 4, dw: 0.5, sg: 6, pn: 3.5, sp: 1.5, pm: -95, st: 1, wn: 50, dp: 1 },
+      sec: 3, pc: true, rate: 1500,
+      s: '<b>Step 5 &mdash; smaller cells, sectors and a closed loop.</b> The cells are half the size, so the base station needs 10 n log10 2 less power and the mobile needs less too; 120 degree sectors cut the first tier from six interferers to two, worth 4.77 dB of SIR; and the closed loop keeps the interference floor well under the thermal noise. Switch the loop to 2 Hz to watch it lose the race against the fading.' }
+  ];
+  function applyTour(k) {
+    var st = TOUR[k], key;
+    for (key in st.v) { if (Object.prototype.hasOwnProperty.call(st.v, key)) $(key).value = st.v[key]; }
+    S.sectors = st.sec; S.pc = st.pc; S.rate = st.rate;
+    $('sc1').classList.toggle('on', st.sec === 1);
+    $('sc3').classList.toggle('on', st.sec === 3);
+    $('sc6').classList.toggle('on', st.sec === 6);
+    $('pcOn').classList.toggle('on', st.pc);
+    $('pcOff').classList.toggle('on', !st.pc);
+    $('ra2').classList.toggle('on', st.rate === 2);
+    $('ra800').classList.toggle('on', st.rate === 800);
+    $('ra1500').classList.toggle('on', st.rate === 1500);
+    $('tourNote').innerHTML = st.s;
+    refresh();
+  }
+  for (var z = 0; z < TOUR.length; z++) {
+    (function (kk) { $('tr' + kk).addEventListener('click', function () { applyTour(kk); }); })(z);
+  }
+  $('trR').addEventListener('click', function () {
+    var d = { sv: 50, dl: 4, hy: 3, dw: 0.5, sg: 6, pn: 3.5, sp: 3, pm: -95, st: 1, wn: 50, dp: 1 };
+    for (var key in d) { if (Object.prototype.hasOwnProperty.call(d, key)) $(key).value = d[key]; }
+    S.sectors = 1; S.pc = true; S.rate = 1500;
+    $('sc1').classList.add('on'); $('sc3').classList.remove('on'); $('sc6').classList.remove('on');
+    $('pcOn').classList.add('on'); $('pcOff').classList.remove('on');
+    $('ra1500').classList.add('on'); $('ra800').classList.remove('on'); $('ra2').classList.remove('on');
+    $('tourNote').innerHTML = '<b>Back to the default road.</b> Two masts 3.00 km apart, 6 dB of shadowing, a 4 dB handover margin and 3 dB of hysteresis, with the uplink loop closed at 1500 Hz.';
+    refresh();
+  });
+
+  window.addEventListener('resize', function () { if (!S.playing) drawAll(); });
+
+  genShadow(20260729);
+  genFade(31415927);
+  refresh();
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setPlay(false); } else { setPlay(true); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noise figure, cascades and receiver sensitivity</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --surface-1: #f4f6f8;
+  --surface-2: #ffffff;
+  --plot-bg: #ffffff;
+  --grid: #e4e8ec;
+  --grid-strong: #c8ced4;
+  --axis: #3c4650;
+  --text-primary: #1a1f26;
+  --text-secondary: #55606c;
+  --text-muted: #869099;
+  --series-1: #0072bd;
+  --series-2: #d95319;
+  --series-3: #edb120;
+  --series-4: #7e2f8e;
+  --series-5: #77ac30;
+  --series-6: #4dbeee;
+  --series-7: #a2142f;
+  --good: #77ac30;
+  --warn: #d95319;
+  --bad: #a2142f;
+  --border: #dfe4e9;
+  --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16191d;
+    --surface-1: #1e2328;
+    --surface-2: #232930;
+    --plot-bg: #1a1e23;
+    --grid: #2c333a;
+    --grid-strong: #444d56;
+    --axis: #9aa5b1;
+    --text-primary: #e9edf1;
+    --text-secondary: #b0bac4;
+    --text-muted: #7d8791;
+    --series-1: #4da6ff;
+    --series-2: #ff8c42;
+    --series-3: #ffd24d;
+    --series-4: #c77dda;
+    --series-5: #9fd356;
+    --series-6: #7fd4f5;
+    --series-7: #ff6b6b;
+    --good: #9fd356;
+    --warn: #ff8c42;
+    --bad: #ff6b6b;
+    --border: #2c333a;
+    --border-strong: #49525b;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.4rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button, select { font: inherit; color: inherit; }
+button, select { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
+button:hover, select:hover { background: var(--surface-1); }
+button.on { background: var(--surface-1); border-color: var(--axis); font-weight: 500; }
+button[disabled] { opacity: 0.45; cursor: default; }
+button[disabled]:hover { background: transparent; }
+input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
+.ctl input[type=range] { flex: 1; min-width: 60px; }
+.ctl input[type=range][disabled] { opacity: 0.4; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 78px; text-align: right; font-variant-numeric: tabular-nums; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0.75rem; align-items: center; }
+.btnrow .lbl { font-size: 13px; color: var(--text-secondary); }
+.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; background: var(--plot-bg); border-radius: var(--radius); }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin: 2px 0; }
+.note { font-size: 13px; color: var(--text-secondary); background: var(--surface-1);
+  border-left: 3px solid var(--series-1); border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 8px 12px; margin: 0 0 1rem; }
+.strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.6rem 0 0.9rem; }
+.blk { display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 6px 11px; text-align: left; line-height: 1.35; }
+.blk .bn { font-size: 13px; }
+.blk .bv { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+details { margin: 0 0 1rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
+details summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
+details[open] summary { margin-bottom: 10px; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.5rem 0 0; }
+ol.work li { margin: 5px 0; }
+ol.work code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--text-primary); }
+dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Noise figure, cascades and receiver sensitivity</h1>
+<p class="sub">Every receiver adds noise of its own, and that self-made noise sets the weakest signal it can still hear. This tool builds a receive chain one block at a time &mdash; cable, amplifier, filter, mixer &mdash; and works out how much noise the whole chain adds, where that noise comes from, and what the resulting sensitivity is in dBm. The order of the blocks matters enormously, which is the single most useful thing to take away.</p>
+<p class="sub" style="margin-bottom: 1.4rem;">New to decibels and to dBm? Start with <a href="link-budget.html">the link budget tool</a>, which explains dBm and the noise floor from scratch.</p>
+
+<p class="note">A cascade of stages behaves like a chain of photocopies. Whatever specks the first copy adds are enlarged again by every machine after it, so a fleck on the first sheet ends up the size of a coin. Grit added by the last machine is copied no further and barely shows. Noise in a receiver works the same way: the first block's noise is amplified by everything downstream, so it dominates.</p>
+
+<div class="btnrow">
+  <span class="lbl">Guided tour</span>
+  <button type="button" id="t1">1 &middot; as built</button>
+  <button type="button" id="t2">2 &middot; move the amplifier first</button>
+  <button type="button" id="t3">3 &middot; widen the bandwidth</button>
+  <button type="button" id="t4">4 &middot; starve the amplifier of gain</button>
+  <button type="button" id="t5">5 &middot; textbook check</button>
+</div>
+<p class="note" id="tourNote">Step 1 sets the chain back to its starting state: a 15 dB run of coaxial feeder cable between the antenna and the amplifier. Every decibel of that cable loss lands directly on the system noise figure.</p>
+
+<div class="row">
+  <div class="ctl"><label for="bw">Noise bandwidth B</label><input type="range" id="bw" min="3" max="7.30103" step="0.001" value="5.301"><span class="v" id="bwv">200.0 kHz</span></div>
+  <div class="ctl"><label for="sn">Required SNR</label><input type="range" id="sn" min="3" max="20" step="0.5" value="10"><span class="v" id="snv">10.0 dB</span></div>
+  <div class="ctl"><label for="ta">Antenna noise temp.</label><input type="range" id="ta" min="30" max="300" step="1" value="150"><span class="v" id="tav">150 K</span></div>
+</div>
+<div class="btnrow">
+  <span class="lbl">Level diagram shows</span>
+  <button type="button" id="vs" class="on">sensitivity</button>
+  <button type="button" id="vd">dynamic range</button>
+</div>
+
+<p class="sec"><b>1 &middot; The receive chain</b> <span>&mdash; the physical hardware, from the antenna on the left to the demodulator on the right</span></p>
+<canvas id="c1" style="height: 175px;"></canvas>
+<ul class="legend-note">
+  <li>Each box is one piece of hardware. The number under it is its gain in dB (negative means it loses signal) and its noise figure NF in dB &mdash; how much noise the block adds on top of what it receives.</li>
+  <li>Boxes drawn with a dashed outline are <b>passive</b>: cable, filter, attenuator, diode mixer. A passive part has no power supply, so it can only lose signal, and its noise figure is exactly equal to its loss.</li>
+  <li>The green ring marks the block you are editing. Click any block below to select it, then move it along the chain with the arrow buttons.</li>
+</ul>
+
+<div class="strip" id="strip"></div>
+<div class="btnrow">
+  <button type="button" id="mvL">&larr; move earlier</button>
+  <button type="button" id="mvR">move later &rarr;</button>
+  <button type="button" id="addB">add a block</button>
+  <button type="button" id="delB">remove this block</button>
+</div>
+<div class="row">
+  <div class="ctl"><label for="kind">Block is a</label>
+    <select id="kind" style="flex:1">
+      <option value="feeder">coaxial feeder cable</option>
+      <option value="filt">RF filter</option>
+      <option value="atten">attenuator</option>
+      <option value="pmix">passive mixer</option>
+      <option value="lna">low-noise amplifier</option>
+      <option value="amix">active mixer</option>
+      <option value="ifamp">IF amplifier</option>
+    </select></div>
+  <div class="ctl"><label for="bg">Gain</label><input type="range" id="bg" min="-20" max="30" step="0.01" value="-15"><span class="v" id="bgv">&mdash;</span></div>
+  <div class="ctl"><label for="bn">Noise figure NF</label><input type="range" id="bn" min="0.5" max="15" step="0.01" value="15"><span class="v" id="bnv">&mdash;</span></div>
+</div>
+<details id="expert">
+  <summary>Large-signal setting for this block (needed only for the dynamic-range view)</summary>
+  <div class="row" style="margin-bottom:0">
+    <div class="ctl"><label for="bo">Output IP3</label><input type="range" id="bo" min="-10" max="40" step="0.5" value="40"><span class="v" id="bov">&mdash;</span></div>
+  </div>
+  <p style="font-size:12.5px;color:var(--text-secondary);margin:8px 0 0;">Output third-order intercept point, in dBm. It is the imaginary output level at which a block's unwanted intermodulation products would grow to equal the wanted signal. Real blocks never reach it, but the higher it is, the more strong-signal punishment the block absorbs before it starts making spurious tones of its own.</p>
+</details>
+
+<p class="sec"><b>2 &middot; The level diagram</b> <span>&mdash; signal and noise power in dBm at the output of each block</span></p>
+<canvas id="c2" style="height: 310px;"></canvas>
+<ul class="legend-note" id="ln2"></ul>
+
+<p class="sec"><b>3 &middot; Where the noise actually comes from</b> <span>&mdash; each block's share of the total noise factor</span></p>
+<canvas id="c3" style="height: 128px;"></canvas>
+<ul class="legend-note">
+  <li>The bar is the total noise factor F split into the pieces the Friis cascade formula adds together. The width of a piece is that block's share of the receiver's noise.</li>
+  <li>The first block's piece contains the leading 1 in the formula, which is the thermal noise the antenna's own source resistance delivers. Everything to the right of it is noise the receiver invented.</li>
+  <li>Watch the mixer. It can have the worst noise figure in the chain and still contribute almost nothing, because it sits behind the amplifier's gain.</li>
+</ul>
+
+<div class="cards">
+  <div class="card"><div class="hd">Total gain</div><div class="big" id="cG">&mdash;</div><div class="ft">sum of every block's gain, in dB</div></div>
+  <div class="card"><div class="hd">Total noise figure</div><div class="big" id="cNF">&mdash;</div><div class="ft" id="cNFf">&mdash;</div></div>
+  <div class="card"><div class="hd">System noise temperature</div><div class="big" id="cT">&mdash;</div><div class="ft" id="cTf">&mdash;</div></div>
+  <div class="card"><div class="hd">Noise floor</div><div class="big" id="cN">&mdash;</div><div class="ft" id="cNf">&mdash;</div></div>
+  <div class="card"><div class="hd">Sensitivity</div><div class="big" id="cS">&mdash;</div><div class="ft" id="cSf">&mdash;</div></div>
+  <div class="card"><div class="hd">Spur-free dynamic range</div><div class="big" id="cD">&mdash;</div><div class="ft" id="cDf">&mdash;</div></div>
+</div>
+
+<p class="sec"><b>The arithmetic, on the chain as it stands</b></p>
+<ol class="work" id="work"></ol>
+
+<p class="sec"><b>Words used on this page</b></p>
+<dl class="glossary">
+  <dt>dB (decibel)</dt><dd>A ratio written on a logarithmic scale: 10&nbsp;log<sub>10</sub> of a power ratio. +3 dB is roughly double the power, &minus;3 dB is roughly half, +10 dB is ten times.</dd>
+  <dt>dBm</dt><dd>An absolute power, measured in dB relative to one milliwatt. 0 dBm is 1 mW; &minus;100 dBm is 0.1 picowatt, a normal size for a received radio signal.</dd>
+  <dt>Thermal noise</dt><dd>The random voltage every warm resistor produces, purely because its electrons jiggle. Its power is k&nbsp;T&nbsp;B watts, where k is Boltzmann's constant, T the temperature in kelvin and B the bandwidth in hertz. At room temperature that comes to &minus;174 dBm in every hertz of bandwidth.</dd>
+  <dt>Noise bandwidth B</dt><dd>The width in hertz of the filter that decides how much of that noise the receiver lets through. Doubling it lets in twice the noise, which is 3.01 dB more.</dd>
+  <dt>Noise factor F</dt><dd>The number of times a block worsens the signal-to-noise ratio: F = SNR<sub>in</sub> / SNR<sub>out</sub>, with both ratios as plain numbers, not dB. F is never less than 1.</dd>
+  <dt>Noise figure NF</dt><dd>The same thing written in dB: NF = 10&nbsp;log<sub>10</sub>&nbsp;F. NF = 3 dB means the block adds as much noise as it received, so it throws away half the signal-to-noise ratio.</dd>
+  <dt>Noise temperature T<sub>e</sub></dt><dd>An equivalent way to state the same noise: the temperature a perfect, noiseless block's source would have to be at to make that much noise. T<sub>e</sub> = (F &minus; 1) &times; 290 K.</dd>
+  <dt>Passive block</dt><dd>A block with no power supply, such as cable, a filter or a diode mixer. It can only attenuate, and its noise figure in dB equals its loss in dB.</dd>
+  <dt>Insertion loss, conversion loss</dt><dd>The signal a passive block swallows, in dB. For a mixer it is called conversion loss because the signal also changes frequency on the way through.</dd>
+  <dt>LNA (low-noise amplifier)</dt><dd>The first amplifier in a receiver, chosen for the lowest noise figure that can be bought rather than the most gain. Its job is to lift the signal above the noise of everything behind it.</dd>
+  <dt>Friis cascade formula</dt><dd>The rule that adds up a chain's noise: F = F<sub>1</sub> + (F<sub>2</sub>&minus;1)/G<sub>1</sub> + (F<sub>3</sub>&minus;1)/(G<sub>1</sub>G<sub>2</sub>) + &hellip; Every term must be a plain ratio, never dB, and the answer is converted to dB only at the very end.</dd>
+  <dt>Noise floor</dt><dd>The receiver's own noise power in the wanted bandwidth, in dBm. Any signal below it is buried.</dd>
+  <dt>SNR (signal-to-noise ratio)</dt><dd>How far the wanted signal sits above the noise, in dB. Each modulation scheme needs some minimum SNR to work at its target error rate.</dd>
+  <dt>Sensitivity</dt><dd>The weakest signal, in dBm, that still arrives with the required SNR. Noise floor plus required SNR.</dd>
+  <dt>OIP3 and IIP3</dt><dd>Output and input third-order intercept points, in dBm. They measure how well a block copes with strong signals before it starts generating spurious tones. IIP3 = OIP3 &minus; gain.</dd>
+  <dt>SFDR (spurious-free dynamic range)</dt><dd>The span in dB between the weakest signal a receiver can hear and the strongest one it can hear without its own intermodulation products rising above the noise floor.</dd>
+</dl>
+
+<p class="sub" style="margin-top: 2rem;">Two opposite rules govern the same chain. Noise is dominated by the <b>front</b>: every decibel of loss ahead of the first amplifier adds a decibel to the system noise figure, one for one, which is why moving the feeder cable from in front of the amplifier to behind it can shift sensitivity by more than 10 dB in a single click, and why real base stations bolt the amplifier to the mast beside the antenna instead of at the bottom of the tower. Large-signal behaviour is dominated by the <b>back</b>: the cascade intercept adds reciprocals weighted by the gain that follows, so it is the last, highest-level stage that saturates first. Design the front for noise, the back for headroom, and accept that gain early helps one and hurts the other. Two simplifications are worth naming: passive blocks are assumed to sit at the 290 K reference temperature, and the intercept sum assumes the worst case where every stage's distortion adds in phase. Next, see what a strong nearby signal does to that same front end in <a href="superhet-image.html">the superheterodyne and image tool</a>.</p>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  var T0 = 290;
+  var K_MW = 1.380649e-23 / 1e-3;
+
+  var lin = function (d) { return Math.pow(10, d / 10); };
+  var dB = function (x) { return 10 * L10(Math.max(x, 1e-300)); };
+  var fx = function (v, n) { return (isFinite(v) ? v.toFixed(n).replace('-', '−') : '—'); };
+  var sgn = function (v, n) { return (isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(n) : '—'); };
+  var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+
+  var KINDS = {
+    feeder: { n: 'Coax feeder', p: true,  g: -3,  nf: 3,  ip: 40 },
+    filt:   { n: 'RF filter',   p: true,  g: -2,  nf: 2,  ip: 40 },
+    atten:  { n: 'Attenuator',  p: true,  g: -6,  nf: 6,  ip: 40 },
+    pmix:   { n: 'Passive mixer', p: true, g: -7, nf: 7,  ip: 25 },
+    lna:    { n: 'LNA',         p: false, g: 30,  nf: 1,  ip: 15 },
+    amix:   { n: 'Active mixer', p: false, g: 8,  nf: 9,  ip: 20 },
+    ifamp:  { n: 'IF amplifier', p: false, g: 30, nf: 4,  ip: 30 }
+  };
+
+  var S = { sel: 0, view: 's', B: 2e5, snr: 10, ta: 150, blocks: [] };
+
+  var DEFAULT = function () {
+    return [
+      { k: 'feeder', g: -15, nf: 15, ip: 40 },
+      { k: 'lna',    g: 30,  nf: 1,  ip: 15 },
+      { k: 'filt',   g: -2,  nf: 2,  ip: 40 },
+      { k: 'pmix',   g: -7,  nf: 7,  ip: 25 },
+      { k: 'ifamp',  g: 30,  nf: 4,  ip: 30 }
+    ];
+  };
+
+  var isPassive = function (b) { return KINDS[b.k].p; };
+  var nfOf = function (b) { return isPassive(b) ? Math.max(0, -b.g) : Math.max(0, b.nf); };
+
+  function calc() {
+    var bl = S.blocks, i, j;
+    var F = [], G = [], contrib = [], cum = 1, Ftot = 0, Gtot = 0;
+    for (i = 0; i < bl.length; i++) { F.push(lin(nfOf(bl[i]))); G.push(lin(bl[i].g)); Gtot += bl[i].g; }
+    for (i = 0; i < bl.length; i++) {
+      var c = (i === 0) ? F[0] : (F[i] - 1) / Math.max(cum, 1e-300);
+      contrib.push(c); Ftot += c; cum *= G[i];
+    }
+    if (!isFinite(Ftot) || Ftot < 1) Ftot = 1;
+    var NF = dB(Ftot);
+    var Te = (Ftot - 1) * T0;
+    var Tsys = S.ta + Te;
+    var nfl = -174 + 10 * L10(S.B) + NF;
+    var pmin = nfl + S.snr;
+
+    var invO = 0;
+    for (i = 0; i < bl.length; i++) {
+      var follow = 1;
+      for (j = i + 1; j < bl.length; j++) follow *= G[j];
+      invO += 1 / (lin(bl[i].ip) * Math.max(follow, 1e-300));
+    }
+    var oip3 = bl.length ? dB(1 / Math.max(invO, 1e-300)) : 0;
+    var iip3 = oip3 - Gtot;
+    var sfdr = (2 / 3) * (iip3 - nfl) - S.snr;
+
+    var nOut = [], sOut = [], oCeil = [];
+    var nW = K_MW * Math.max(S.ta, 1e-6) * S.B;
+    nOut.push(dB(nW));
+    for (i = 0; i < bl.length; i++) {
+      var Tei = (F[i] - 1) * T0;
+      nW = G[i] * (nW + K_MW * Tei * S.B);
+      nOut.push(dB(nW));
+      oCeil.push(bl[i].ip);
+    }
+    var pin = (S.view === 's') ? pmin : (2 * iip3 + nfl) / 3;
+    var run = pin; sOut.push(run);
+    for (i = 0; i < bl.length; i++) { run += bl[i].g; sOut.push(run); }
+
+    return { F: F, G: G, contrib: contrib, Ftot: Ftot, NF: NF, Gtot: Gtot, Te: Te, Tsys: Tsys,
+      nfl: nfl, pmin: pmin, oip3: oip3, iip3: iip3, sfdr: sfdr,
+      nOut: nOut, sOut: sOut, oCeil: oCeil, pin: pin };
+  }
+
+  function fit(c) {
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [Math.max(r.width, 1), Math.max(r.height, 1)];
+  }
+
+  function clipText(g, t, maxW) {
+    if (maxW <= 6) return '';
+    if (g.measureText(t).width <= maxW) return t;
+    var s = t;
+    while (s.length > 1 && g.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+    return s + '…';
+  }
+
+  function rrect(g, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    g.beginPath();
+    g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+    g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
+    g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y);
+    g.closePath();
+  }
+
+  function niceStep(span, target) {
+    var raw = Math.max(span, 1e-6) / Math.max(target, 1);
+    var p = Math.pow(10, Math.floor(L10(Math.max(raw, 1e-9))));
+    var m = raw / p;
+    var s = m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10;
+    return s * p;
+  }
+
+  function drawChain(R) {
+    var c = $('c1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var txt = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    var bd = cvv('--border-strong'), sel = cvv('--series-5'), s1 = cvv('--series-1');
+    var n = S.blocks.length, slots = n + 2, pad = 5, gap = 6;
+    var sw = Math.max(18, (w - 2 * pad - (slots - 1) * gap) / slots);
+    var fs = clamp(sw / 6.2, 7, 11);
+    var boxH = 44, boxTop = 62, cy = boxTop + boxH / 2;
+    var xOf = function (i) { return pad + i * (sw + gap); };
+
+    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('signal path', pad, 8);
+    g.textAlign = 'right';
+    g.fillText('gain and noise figure under each block', w - pad, 8);
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(xOf(0) + sw * 0.5, cy); g.lineTo(xOf(slots - 1) + sw * 0.5, cy); g.stroke();
+    for (var a = 0; a < slots - 1; a++) {
+      var ax = xOf(a) + sw + gap / 2;
+      g.beginPath(); g.moveTo(ax - 3, cy - 3.2); g.lineTo(ax + 2.2, cy); g.lineTo(ax - 3, cy + 3.2); g.stroke();
+    }
+
+    var ax0 = xOf(0) + sw / 2;
+    g.strokeStyle = s1; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(ax0, cy); g.lineTo(ax0, boxTop - 4); g.stroke();
+    g.beginPath();
+    g.moveTo(ax0 - Math.min(sw * 0.3, 15), boxTop - 20); g.lineTo(ax0, boxTop - 4);
+    g.lineTo(ax0 + Math.min(sw * 0.3, 15), boxTop - 20); g.stroke();
+    g.font = fnt(fs); g.fillStyle = txt; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText(clipText(g, 'antenna', sw), ax0, boxTop + boxH + 6);
+    g.fillStyle = mut; g.font = fnt(Math.max(fs - 1, 7));
+    g.fillText(clipText(g, 'T = ' + fx(S.ta, 0) + ' K', sw), ax0, boxTop + boxH + 6 + fs + 3);
+
+    for (var i = 0; i < n; i++) {
+      var b = S.blocks[i], x = xOf(i + 1), mid = x + sw / 2;
+      g.fillStyle = cvv('--surface-1');
+      rrect(g, x, boxTop, sw, boxH, 5); g.fill();
+      g.lineWidth = (i === S.sel) ? 2.2 : 1.1;
+      g.strokeStyle = (i === S.sel) ? sel : bd;
+      if (isPassive(b)) g.setLineDash([4, 3]); else g.setLineDash([]);
+      rrect(g, x, boxTop, sw, boxH, 5); g.stroke();
+      g.setLineDash([]);
+
+      g.font = fnt(Math.max(fs - 2, 7)); g.fillStyle = mut;
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(String(i + 1), x + 4, boxTop + 3);
+
+      g.font = fnt(fs); g.fillStyle = txt; g.textAlign = 'center'; g.textBaseline = 'middle';
+      var words = KINDS[b.k].n.split(' ');
+      if (words.length > 1 && sw < 84) {
+        g.fillText(clipText(g, words[0], sw - 8), mid, cy - fs * 0.62);
+        g.fillText(clipText(g, words.slice(1).join(' '), sw - 8), mid, cy + fs * 0.62);
+      } else {
+        g.fillText(clipText(g, KINDS[b.k].n, sw - 8), mid, cy);
+      }
+
+      g.textBaseline = 'top'; g.font = fnt(Math.max(fs - 1, 7));
+      g.fillStyle = b.g >= 0 ? cvv('--good') : cvv('--warn');
+      g.fillText(clipText(g, sgn(b.g, 1) + ' dB', sw), mid, boxTop + boxH + 6);
+      g.fillStyle = mut;
+      g.fillText(clipText(g, 'NF ' + fx(nfOf(b), 1), sw), mid, boxTop + boxH + 6 + fs + 3);
+    }
+
+    var xd = xOf(slots - 1), midd = xd + sw / 2;
+    g.fillStyle = cvv('--surface-1');
+    rrect(g, xd, boxTop, sw, boxH, 5); g.fill();
+    g.lineWidth = 1.1; g.strokeStyle = bd; g.setLineDash([]);
+    rrect(g, xd, boxTop, sw, boxH, 5); g.stroke();
+    g.font = fnt(fs); g.fillStyle = txt; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (sw < 84) { g.fillText(clipText(g, 'demod-', sw - 8), midd, cy - fs * 0.62);
+      g.fillText(clipText(g, 'ulator', sw - 8), midd, cy + fs * 0.62); }
+    else g.fillText(clipText(g, 'demodulator', sw - 8), midd, cy);
+    g.textBaseline = 'top'; g.font = fnt(Math.max(fs - 1, 7)); g.fillStyle = mut;
+    g.fillText(clipText(g, 'needs ' + fx(S.snr, 1) + ' dB', sw), midd, boxTop + boxH + 6);
+    g.fillText(clipText(g, 'of SNR', sw), midd, boxTop + boxH + 6 + fs + 3);
+
+    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    var tot = 'chain: ' + sgn(R.Gtot, 1) + ' dB gain, ' + fx(R.NF, 2) + ' dB noise figure';
+    g.fillText(clipText(g, tot, w - 12), w / 2, h - 5);
+  }
+
+  function drawLevel(R) {
+    var c = $('c2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), gr = cvv('--grid');
+    var s1 = cvv('--series-1'), s2 = cvv('--series-2'), s4 = cvv('--series-4'), ax = cvv('--axis');
+    var n = S.blocks.length;
+    var l = 56, r = 116, t = 16, b = 44;
+    var pw = Math.max(w - l - r, 40), ph = Math.max(h - t - b, 40);
+
+    var vals = R.nOut.concat(R.sOut);
+    if (S.view === 'd') vals = vals.concat(R.oCeil);
+    vals = vals.filter(function (v) { return isFinite(v); });
+    if (!vals.length) vals = [0];
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var padv = Math.max((hi - lo) * 0.12, 4);
+    lo -= padv; hi += padv;
+    if (!(hi > lo)) { hi = lo + 10; }
+    var Y = function (v) { return t + (hi - clamp(v, lo, hi)) / (hi - lo) * ph; };
+    var X = function (i) { return l + (n === 0 ? 0.5 : i / n) * pw; };
+
+    g.fillStyle = cvv('--plot-bg'); g.fillRect(l, t, pw, ph);
+    var st = niceStep(hi - lo, 6);
+    g.font = fnt(11); g.strokeStyle = gr; g.lineWidth = 0.5;
+    for (var v = Math.ceil(lo / st) * st; v <= hi; v += st) {
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(l + pw, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(fx(v, st < 1 ? 1 : 0), l - 6, Y(v));
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, pw, ph);
+    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('dBm', 4, t);
+
+    for (var i = 0; i <= n; i++) {
+      g.strokeStyle = gr; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(i), t); g.lineTo(X(i), t + ph); g.stroke();
+      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      var lab = (i === 0) ? 'antenna' : String(i);
+      g.fillText(clipText(g, lab, pw / (n + 1)), X(i), t + ph + 6);
+    }
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('after block number', l + pw / 2, h - 4);
+
+    var stair = function (arr, col, wd, dash) {
+      g.strokeStyle = col; g.lineWidth = wd; g.setLineDash(dash || []);
+      g.beginPath();
+      for (var i2 = 0; i2 <= n; i2++) {
+        if (i2 === 0) { g.moveTo(X(0), Y(arr[0])); }
+        else { g.lineTo(X(i2), Y(arr[i2 - 1])); g.lineTo(X(i2), Y(arr[i2])); }
+      }
+      g.stroke(); g.setLineDash([]);
+      g.fillStyle = col;
+      for (var i3 = 0; i3 <= n; i3++) { g.beginPath(); g.arc(X(i3), Y(arr[i3]), 2.6, 0, 7); g.fill(); }
+    };
+
+    if (S.view === 'd' && n > 0) {
+      g.strokeStyle = s4; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.beginPath();
+      for (var k = 0; k < n; k++) {
+        g.moveTo(X(k), Y(R.oCeil[k])); g.lineTo(X(k + 1), Y(R.oCeil[k]));
+      }
+      g.stroke(); g.setLineDash([]);
+    }
+    stair(R.nOut, s2, 1.9);
+    stair(R.sOut, s1, 2.2);
+
+    var yS = Y(R.sOut[n]), yN = Y(R.nOut[n]);
+    var snrOut = R.sOut[n] - R.nOut[n];
+    var bx = l + pw + 14;
+    g.strokeStyle = ax; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(bx, yS); g.lineTo(bx, yN); g.stroke();
+    g.beginPath(); g.moveTo(bx - 3, yS + 4); g.lineTo(bx, yS); g.lineTo(bx + 3, yS + 4); g.stroke();
+    g.beginPath(); g.moveTo(bx - 3, yN - 4); g.lineTo(bx, yN); g.lineTo(bx + 3, yN - 4); g.stroke();
+    g.font = fnt(11); g.fillStyle = cvv('--text-primary'); g.textAlign = 'left'; g.textBaseline = 'middle';
+    var ymid = clamp((yS + yN) / 2, t + 10, t + ph - 10);
+    g.fillText(clipText(g, 'SNR', r - 24), bx + 6, ymid - 7);
+    g.fillText(clipText(g, fx(snrOut, 1) + ' dB', r - 24), bx + 6, ymid + 7);
+
+    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillStyle = s1;
+    g.fillText(clipText(g, 'wanted signal', pw - 10), l + 6, Y(R.sOut[0]) - 5);
+    g.fillStyle = s2;
+    g.fillText(clipText(g, 'noise', pw - 10), l + 6, Y(R.nOut[0]) - 5);
+    if (S.view === 'd' && n > 0) {
+      g.fillStyle = s4; g.textAlign = 'right';
+      g.fillText(clipText(g, 'block OIP3 ceiling', pw - 10), l + pw - 6, Y(R.oCeil[n - 1]) - 5);
+    }
+  }
+
+  function pct(share) {
+    if (!isFinite(share) || share < 0) return '0.0%';
+    var p = share * 100;
+    return (p > 0 && p < 0.05) ? '<0.1%' : fx(p, 1) + '%';
+  }
+
+  function drawShares(R) {
+    var c = $('c3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var txt = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    var n = S.blocks.length, pad = 10;
+    var barY = 22, barH = 40, barW = Math.max(w - 2 * pad, 20);
+    var cols = ['--series-1', '--series-2', '--series-3', '--series-4', '--series-5', '--series-6', '--series-7'];
+
+    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('total noise factor F = ' + fx(R.Ftot, 3) + '  (' + fx(R.NF, 2) + ' dB)', pad, 4);
+
+    var x = pad;
+    for (var i = 0; i < n; i++) {
+      var share = R.contrib[i] / R.Ftot;
+      if (!isFinite(share) || share < 0) share = 0;
+      var segW = share * barW;
+      g.fillStyle = cvv(cols[i % cols.length]);
+      g.fillRect(x, barY, Math.max(segW, 0), barH);
+      g.strokeStyle = cvv('--plot-bg'); g.lineWidth = 1;
+      g.strokeRect(x, barY, Math.max(segW, 0), barH);
+      if (segW > 36) {
+        g.fillStyle = cvv('--plot-bg'); g.font = fnt(11);
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(clipText(g, pct(share), segW - 6), x + segW / 2, barY + barH / 2);
+      }
+      x += segW;
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(pad, barY, barW, barH);
+
+    var ly = barY + barH + 14, cw = Math.max(barW / Math.max(Math.min(n, 3), 1), 90);
+    g.textBaseline = 'middle'; g.font = fnt(11);
+    for (var j = 0; j < n; j++) {
+      var col = j % 3, rowi = Math.floor(j / 3);
+      var lx = pad + col * cw, lyy = ly + rowi * 17;
+      g.fillStyle = cvv(cols[j % cols.length]);
+      g.fillRect(lx, lyy - 4, 9, 9);
+      g.fillStyle = txt; g.textAlign = 'left';
+      var sh = R.contrib[j] / R.Ftot;
+      var nm = (j + 1) + ' ' + KINDS[S.blocks[j].k].n + ' ' + pct(sh);
+      g.fillText(clipText(g, nm, cw - 16), lx + 13, lyy);
+    }
+    g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.font = fnt(10.5);
+    g.fillText(clipText(g, 'block 1 also carries the leading 1 in F, the antenna source noise itself', w - 2 * pad), pad, h - 4);
+  }
+
+  function renderStrip() {
+    var html = '';
+    for (var i = 0; i < S.blocks.length; i++) {
+      var b = S.blocks[i];
+      html += '<button type="button" class="blk' + (i === S.sel ? ' on' : '') + '" data-i="' + i +
+        '" aria-pressed="' + (i === S.sel) + '">' +
+        '<span class="bn">' + (i + 1) + ' · ' + KINDS[b.k].n + '</span>' +
+        '<span class="bv">' + sgn(b.g, 2) + ' dB, NF ' + fx(nfOf(b), 2) + ' dB</span></button>';
+    }
+    $('strip').innerHTML = html;
+  }
+
+  function syncBlockCtl() {
+    var b = S.blocks[S.sel];
+    if (!b) { S.sel = 0; b = S.blocks[0]; }
+    var pas = isPassive(b);
+    $('kind').value = b.k;
+    $('bg').max = pas ? '0' : '30';
+    if (pas) b.g = Math.min(b.g, 0);
+    $('bg').value = String(b.g);
+    b.g = +$('bg').value;
+    $('bn').disabled = pas;
+    $('bn').value = String(clamp(pas ? Math.max(nfOf(b), 0.5) : b.nf, 0.5, 15));
+    if (!pas) b.nf = +$('bn').value;
+    $('bo').value = String(b.ip);
+    b.ip = +$('bo').value;
+    $('bgv').textContent = fx(b.g, 2) + ' dB';
+    $('bnv').textContent = fx(nfOf(b), 2) + ' dB';
+    $('bov').textContent = fx(b.ip, 1) + ' dBm';
+    $('mvL').disabled = (S.sel === 0);
+    $('mvR').disabled = (S.sel === S.blocks.length - 1);
+    $('delB').disabled = (S.blocks.length <= 4);
+    $('addB').disabled = (S.blocks.length >= 6);
+  }
+
+  function renderWork(R) {
+    var bl = S.blocks, terms = [], i;
+    var fparts = [], expr = [], vals = [], cum = 1;
+    for (i = 0; i < bl.length; i++) {
+      fparts.push('F' + (i + 1) + ' = ' + fmtNum(R.F[i], 3));
+      expr.push(i === 0 ? fmtNum(R.F[0], 3)
+        : '(' + fmtNum(R.F[i], 3) + '−1)/' + fmtNum(cum, 4));
+      vals.push(fmtNum(R.contrib[i], 4));
+      cum *= R.G[i];
+    }
+    var lines = [];
+    lines.push('Turn every noise figure into a plain noise factor with <code>F = 10<sup>NF/10</sup></code>: ' +
+      fparts.join(', ') + '.');
+    lines.push('Add them the Friis way, each block’s excess divided by all the gain in front of it: <code>F = ' +
+      expr.join(' + ') + '</code>.');
+    lines.push('Evaluated term by term: <code>F = ' + vals.join(' + ') + ' = ' + fmtNum(R.Ftot, 4) +
+      '</code>, so the noise figure is <code>10 log₁₀(' + fmtNum(R.Ftot, 4) + ') = ' + fx(R.NF, 2) + ' dB</code>.');
+    lines.push('As a temperature: <code>Tₑ = (' + fmtNum(R.Ftot, 4) + ' − 1) × 290 = ' + fmtK(R.Te) +
+      '</code>, and with a ' + fx(S.ta, 0) + ' K antenna the system runs at <code>' + fmtK(R.Tsys) + '</code>.');
+    lines.push('Noise floor in ' + fmtB(S.B) + ': <code>−174 + 10 log₁₀(' + fx(S.B, 0) + ') + ' +
+      fx(R.NF, 2) + ' = ' + fx(R.nfl, 2) + ' dBm</code>.');
+    lines.push('Sensitivity, the weakest signal that still arrives with ' + fx(S.snr, 1) +
+      ' dB of SNR: <code>' + fx(R.nfl, 2) + ' + ' + fx(S.snr, 1) + ' = ' + fx(R.pmin, 2) + ' dBm</code>.');
+    lines.push('Large signals run the other way. Summing <code>1/(OIP3ᵢ × gain that follows)</code> gives ' +
+      '<code>OIP3 = ' + fx(R.oip3, 2) + ' dBm</code>, so <code>IIP3 = ' + fx(R.oip3, 2) + ' − ' +
+      par(R.Gtot) + ' = ' + fx(R.iip3, 2) + ' dBm</code> and <code>SFDR = ⅔(' + fx(R.iip3, 2) +
+      ' − ' + par(R.nfl) + ') − ' + fx(S.snr, 1) + ' = ' + fx(R.sfdr, 1) + ' dB</code>.');
+    for (i = 0; i < lines.length; i++) terms.push('<li>' + lines[i] + '</li>');
+    $('work').innerHTML = terms.join('');
+  }
+
+  function par(v) { return (isFinite(v) && v < 0) ? '(' + fx(v, 2) + ')' : fx(v, 2); }
+  function fmtNum(v, n) {
+    if (!isFinite(v)) return '—';
+    var a = Math.abs(v);
+    if (a !== 0 && (a >= 1e5 || a < 1e-3)) return v.toExponential(2).replace('-', '−');
+    return fx(v, n);
+  }
+  function fmtK(T) {
+    if (!isFinite(T)) return '—';
+    return (Math.abs(T) < 1e6 ? fx(T, 0) : T.toExponential(2).replace('-', '−')) + ' K';
+  }
+  function fmtB(B) {
+    if (!isFinite(B)) return '—';
+    return (B < 1e6) ? (B / 1e3).toFixed(1) + ' kHz' : (B / 1e6).toFixed(2) + ' MHz';
+  }
+
+  function legend2(R) {
+    var n = S.blocks.length;
+    var items;
+    if (S.view === 's') {
+      items = [
+        'The blue staircase is the wanted signal, started at exactly the sensitivity level of ' + fx(R.pmin, 1) +
+        ' dBm and stepped up or down by each block’s gain.',
+        'The orange staircase is the noise, started at the antenna’s own <code>k T B</code> = ' +
+        fx(R.nOut[0], 1) + ' dBm and grown block by block as each one adds its share.',
+        'The gap between them at the right is the signal-to-noise ratio the demodulator actually receives: ' +
+        fx(R.sOut[n] - R.nOut[n], 1) + ' dB against the ' + fx(S.snr, 1) + ' dB it needs. A cold antenna buys back a little of it.',
+        'Watch the orange line jump wherever a noisy block sits early. That jump is what a mast-head amplifier prevents.'
+      ];
+    } else {
+      items = [
+        'The blue staircase now starts at ' + fx(R.pin, 1) + ' dBm, the largest input this chain can take before ' +
+        'its own third-order intermodulation products climb above the noise floor.',
+        'The purple dashed steps are each block’s output intercept point OIP3. The vertical gap from the blue ' +
+        'line up to purple is that block’s headroom, and it shrinks along the chain because gain keeps piling up.',
+        'The orange noise staircase is unchanged. The whole span from orange to blue is the spur-free dynamic range plus ' +
+        'the required SNR: ' + fx(R.sfdr, 1) + ' dB of usable window.',
+        'Push any late block’s OIP3 down and the window closes from the top; push any early block’s noise up and it closes from the bottom.'
+      ];
+    }
+    $('ln2').innerHTML = items.map(function (s) { return '<li>' + s + '</li>'; }).join('');
+  }
+
+  function refresh() {
+    var R = calc();
+    $('bwv').textContent = fmtB(S.B);
+    $('snv').textContent = fx(S.snr, 1) + ' dB';
+    $('tav').textContent = fx(S.ta, 0) + ' K';
+
+    $('cG').textContent = sgn(R.Gtot, 1) + ' dB';
+    $('cNF').textContent = fx(R.NF, 2) + ' dB';
+    $('cNF').style.color = R.NF < 3 ? 'var(--good)' : (R.NF < 8 ? 'var(--warn)' : 'var(--bad)');
+    $('cNFf').textContent = 'noise factor F = ' + fx(R.Ftot, 3) + ', Friis cascade';
+    $('cT').textContent = fmtK(R.Tsys);
+    $('cTf').textContent = 'antenna ' + fx(S.ta, 0) + ' K + receiver Tₑ ' + fmtK(R.Te);
+    $('cN').textContent = fx(R.nfl, 2) + ' dBm';
+    $('cNf').textContent = '−174 dBm/Hz + 10log₁₀(B) + NF, in ' + fmtB(S.B);
+    $('cS').textContent = fx(R.pmin, 2) + ' dBm';
+    $('cSf').textContent = 'noise floor + ' + fx(S.snr, 1) + ' dB of required SNR';
+    $('cD').textContent = fx(R.sfdr, 1) + ' dB';
+    $('cDf').textContent = 'from cascade IIP3 ' + fx(R.iip3, 2) + ' dBm (OIP3 ' + fx(R.oip3, 2) + ' dBm)';
+
+    renderStrip();
+    legend2(R);
+    renderWork(R);
+    drawChain(R); drawLevel(R); drawShares(R);
+  }
+
+  function readGlobals() {
+    S.B = Math.pow(10, +$('bw').value);
+    S.snr = +$('sn').value;
+    S.ta = +$('ta').value;
+  }
+
+  function setView(v) {
+    S.view = v;
+    $('vs').classList.toggle('on', v === 's');
+    $('vd').classList.toggle('on', v === 'd');
+    refresh();
+  }
+
+  ['bw', 'sn', 'ta'].forEach(function (id) {
+    $(id).addEventListener('input', function () { readGlobals(); refresh(); });
+  });
+  $('vs').addEventListener('click', function () { setView('s'); });
+  $('vd').addEventListener('click', function () { setView('d'); });
+
+  $('strip').addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== this && !t.hasAttribute('data-i')) t = t.parentNode;
+    if (!t || t === this) return;
+    S.sel = clamp(+t.getAttribute('data-i'), 0, S.blocks.length - 1);
+    syncBlockCtl(); refresh();
+  });
+
+  $('kind').addEventListener('change', function () {
+    var b = S.blocks[S.sel], d = KINDS[$('kind').value];
+    if (!d) return;
+    b.k = $('kind').value; b.g = d.g; b.nf = d.nf; b.ip = d.ip;
+    syncBlockCtl(); refresh();
+  });
+  $('bg').addEventListener('input', function () {
+    var b = S.blocks[S.sel];
+    b.g = clamp(+$('bg').value, -20, isPassive(b) ? 0 : 30);
+    $('bgv').textContent = fx(b.g, 2) + ' dB';
+    if (isPassive(b)) $('bnv').textContent = fx(nfOf(b), 2) + ' dB';
+    refresh();
+  });
+  $('bn').addEventListener('input', function () {
+    var b = S.blocks[S.sel];
+    if (isPassive(b)) return;
+    b.nf = clamp(+$('bn').value, 0.5, 15);
+    $('bnv').textContent = fx(b.nf, 2) + ' dB';
+    refresh();
+  });
+  $('bo').addEventListener('input', function () {
+    var b = S.blocks[S.sel];
+    b.ip = clamp(+$('bo').value, -10, 40);
+    $('bov').textContent = fx(b.ip, 1) + ' dBm';
+    refresh();
+  });
+
+  function move(d) {
+    var i = S.sel, j = i + d;
+    if (j < 0 || j >= S.blocks.length) return;
+    var tmp = S.blocks[i]; S.blocks[i] = S.blocks[j]; S.blocks[j] = tmp;
+    S.sel = j; syncBlockCtl(); refresh();
+  }
+  $('mvL').addEventListener('click', function () { move(-1); });
+  $('mvR').addEventListener('click', function () { move(1); });
+  $('addB').addEventListener('click', function () {
+    if (S.blocks.length >= 6) return;
+    S.blocks.push({ k: 'ifamp', g: KINDS.ifamp.g, nf: KINDS.ifamp.nf, ip: KINDS.ifamp.ip });
+    S.sel = S.blocks.length - 1; syncBlockCtl(); refresh();
+  });
+  $('delB').addEventListener('click', function () {
+    if (S.blocks.length <= 4) return;
+    S.blocks.splice(S.sel, 1);
+    S.sel = clamp(S.sel, 0, S.blocks.length - 1);
+    syncBlockCtl(); refresh();
+  });
+
+  function note(txt) { if (txt) $('tourNote').textContent = txt; }
+
+  function setGlobals(logB, snr, ta) {
+    $('bw').value = String(logB); $('sn').value = String(snr); $('ta').value = String(ta);
+    readGlobals();
+  }
+
+  function tour(step) {
+    if (step === 1) {
+      S.blocks = DEFAULT(); S.sel = 0; setGlobals(5.301, 10, 150); setView('s');
+      note('Step 1 — the chain as built. A 15 dB run of coaxial feeder sits between the antenna and the amplifier, ' +
+        'and every one of those decibels lands on the system noise figure, one for one.');
+    } else if (step === 2) {
+      S.blocks = DEFAULT(); var a = S.blocks[0]; S.blocks[0] = S.blocks[1]; S.blocks[1] = a;
+      S.sel = 1; setGlobals(5.301, 10, 150); setView('s');
+      note('Step 2 — the same parts, one swap. The amplifier now sits at the mast head, ahead of the cable. ' +
+        'Nothing was bought and nothing was tuned, yet the noise figure and the sensitivity both improve by more than 13 dB.');
+    } else if (step === 3) {
+      S.blocks = DEFAULT(); a = S.blocks[0]; S.blocks[0] = S.blocks[1]; S.blocks[1] = a;
+      S.sel = 1; setGlobals(7.30103, 10, 150); setView('s');
+      note('Step 3 — bandwidth widened from 200 kHz to 20 MHz. The noise figure did not move at all, but the ' +
+        'noise floor rose 20 dB, because it rises 3.01 dB for every doubling of bandwidth. Bandwidth is free margin, spent.');
+    } else if (step === 4) {
+      S.blocks = DEFAULT(); a = S.blocks[0]; S.blocks[0] = S.blocks[1]; S.blocks[1] = a;
+      S.blocks[0].g = 10; S.sel = 0; setGlobals(5.301, 10, 150); setView('s');
+      note('Step 4 — the amplifier keeps its 1 dB noise figure but its gain is cut from 30 dB to 10 dB. ' +
+        'It is now too weak to hide the cable and mixer behind it, so the chain gets noticeably worse. Gain matters as much as noise figure.');
+    } else if (step === 5) {
+      S.blocks = [
+        { k: 'feeder', g: -3.01, nf: 3.01, ip: 40 },
+        { k: 'lna',    g: 20,    nf: 6.02, ip: 20 },
+        { k: 'atten',  g: 0,     nf: 0,    ip: 40 },
+        { k: 'atten',  g: 0,     nf: 0,    ip: 40 }
+      ];
+      S.sel = 0; setGlobals(4.47712, 10, 290); setView('s');
+      note('Step 5 — the textbook case. A 3.01 dB cable (a loss factor of exactly 2) in front of a receiver ' +
+        'with F = 4, or 6.02 dB. Friis gives F = 2 + (4 − 1) / 0.5 = 8, which is 9.03 dB. The last two blocks are ' +
+        'lossless 0 dB attenuators, so they contribute nothing. The card should read 9.03 dB.');
+    }
+    syncBlockCtl(); refresh();
+  }
+  ['t1', 't2', 't3', 't4', 't5'].forEach(function (id, i) {
+    $(id).addEventListener('click', function () { tour(i + 1); });
+  });
+
+  $('expert').addEventListener('toggle', function () { refresh(); });
+  window.addEventListener('resize', function () { refresh(); });
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', refresh);
+  else if (mq.addListener) mq.addListener(refresh);
+
+  S.blocks = DEFAULT();
+  readGlobals();
+  syncBlockCtl();
+  refresh();
+})();
+</script>
+</body>
+</html>

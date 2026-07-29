@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spreading, processing gain and the near-far problem</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --plot-bg: #ffffff; --grid: #e4e8ec; --axis: #3c4650;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e;
+    --surface-1: #262624; --accent: #6BB0F0;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --plot-bg: #201f1d; --grid: #34342f; --axis: #9aa5b1;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; font-size: 13px; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.75rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 136px; }
+.ctl input[type=range] { flex: 1; min-width: 80px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 78px; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0.5rem 0 0.75rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; background: var(--plot-bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin-bottom: 2px; }
+.legend-note b { color: var(--text-primary); font-weight: 500; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px;
+  color: var(--text-secondary); margin: 1.25rem 0; }
+.note b { color: var(--text-primary); font-weight: 500; }
+.tour { font-size: 13px; color: var(--text-secondary); margin-top: 8px; min-height: 2.6em; }
+details { margin: 0.75rem 0 1rem; font-size: 13px; }
+summary { cursor: pointer; color: var(--text-secondary); }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; }
+ol.work li { margin-bottom: 3px; }
+ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+.glossary { font-size: 13px; margin-top: 0.5rem; }
+.glossary dt { font-weight: 500; margin-top: 7px; }
+.glossary dd { margin: 0; color: var(--text-secondary); }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; vertical-align: -1px; }
+.warn { color: var(--text-warning); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Spreading, processing gain and the near-far problem</h1>
+<p class="sub">Code-division multiple access lets every handset talk on the whole band at the same time. Each one multiplies its slow data by a fast code, which buries the signal below the noise, and the base station digs it back out by multiplying with the same code again.</p>
+<p class="sub" style="margin-bottom: 1rem;">New to this? Start with <a href="link-budget.html">the link budget</a> for what a noise floor is, then <a href="cellular-reuse.html">cellular reuse</a> for the alternative that buys capacity with geometry instead.</p>
+
+<div class="note"><b>An everyday picture.</b> A room full of people, each pair speaking a different language. Every voice reaches every ear, so the room sounds like noise, yet you follow your own partner because you filter on the language rather than the volume. Now let one pair stand next to you and shout. Language no longer helps: they are simply too loud. That is the near-far problem, and power control is the rule that everyone speaks at the level the listener asks for.</div>
+
+<p class="sec"><b>Guided tour</b> <span>&mdash; each step moves the controls for you and says what changed</span></p>
+<div class="row">
+  <button id="t1">1 &middot; one user</button>
+  <button id="t2">2 &middot; four users</button>
+  <button id="t3">3 &middot; near user shouts</button>
+  <button id="t4">4 &middot; power control on</button>
+  <button id="t5">5 &middot; slow control loop</button>
+  <button id="t6">6 &middot; longer code</button>
+</div>
+<p class="tour" id="tourTxt">Press step 1 to put one handset on the air with nothing to interfere with it.</p>
+
+<div class="grid2">
+  <div class="ctl"><label for="uu">Users on the air</label><input type="range" id="uu" min="1" max="12" step="1" value="4"><span class="v" id="uuv">4</span></div>
+  <div class="ctl"><label for="cg">Code length</label><input type="range" id="cg" min="3" max="8" step="1" value="5"><span class="v" id="cgv">32 chips</span></div>
+  <div class="ctl"><label for="nf">Near-far imbalance</label><input type="range" id="nf" min="0" max="80" step="1" value="0"><span class="v" id="nfv">0 dB</span></div>
+  <div class="ctl"><label for="nz">Noise level</label><input type="range" id="nz" min="-20" max="10" step="1" value="0"><span class="v" id="nzv">0 dB</span></div>
+</div>
+<div class="row">
+  <span class="lbl">Spreading code</span>
+  <button id="bPn" class="on">PN m-sequence</button><button id="bWa">Walsh&ndash;Hadamard</button>
+</div>
+<div class="row">
+  <span class="lbl">Power control</span>
+  <button id="bPcOn" class="on">on</button><button id="bPcOff">off</button>
+  <span class="lbl" style="margin-left: 6px;">command rate</span>
+  <button id="r2">2 Hz</button><button id="r800" class="on">800 Hz</button><button id="r1500">1500 Hz</button>
+</div>
+<div class="row">
+  <span class="lbl">Correlator</span>
+  <button id="bRun">Run</button><button id="bStep">Step one chip</button><button id="bRst">Reset</button>
+  <span class="lbl" id="chipRead">chip 0 of 32</span>
+</div>
+
+<details>
+  <summary>Fixed assumptions behind the numbers</summary>
+  <p style="color: var(--text-secondary); margin: 0.6rem 0 0;">Data rate is held at 9.6 kbit/s, the IS-95 vocoder rate, so the chip rate is the code length times 9.6 kbit/s and a 128-chip code lands on the real 1.2288 Mchip/s. The required energy-per-bit to noise-density ratio is 7 dB, voice activity is 0.4, other-cell interference is 0.6 of own-cell, and the path-loss exponent is 4. Power control moves the transmitter in 1 dB steps and the channel carries Rayleigh fading at a 50 Hz Doppler, which is roughly 60 km/h at 900 MHz.</p>
+</details>
+
+<p class="sec"><b>1 &middot; Two handsets, one base station</b> <span>&mdash; both transmit at once, on the same frequency</span></p>
+<canvas id="cScene" style="height: 360px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> is the far handset &mdash; the one we are trying to receive.</li>
+  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> is the near handset, close to the mast.</li>
+  <li><span class="sw" style="background: var(--series-6)"></span> <b>light blue</b> bars are the other users, all landing in the same band.</li>
+  <li>Bar height is received power at the base station, in decibels against the level the far user should arrive at.</li>
+</ul>
+
+<p class="sec"><b>2 &middot; Data bit, chip sequence, spread product</b> <span>&mdash; s(t) = d(t) &middot; c(t), one multiplication</span></p>
+<canvas id="cWave" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> is the data d(t): two bits, each lasting T<sub>b</sub>.</li>
+  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> is the code c(t): the chip sequence, running T<sub>b</sub>/T<sub>c</sub> times faster.</li>
+  <li><span class="sw" style="background: var(--series-3)"></span> <b>yellow</b> is the product s(t). Where the data bit is +1 it copies the code; where the bit is &minus;1 it inverts it.</li>
+</ul>
+
+<p class="sec"><b>3 &middot; The spectrum, before and after spreading</b> <span>&mdash; same power, spread over G<sub>p</sub> times the bandwidth</span></p>
+<canvas id="cSpec" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> is the data before spreading: tall, and only a few kilohertz wide.</li>
+  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> is the same power after spreading, flattened across the whole chip bandwidth.</li>
+  <li>The dashed line is the floor of noise plus every other user's signal. When orange sits below it, the transmission is invisible to anything that does not know the code.</li>
+</ul>
+
+<p class="sec"><b>4 &middot; The correlator, integrating over one bit</b> <span>&mdash; right code climbs, wrong code stays at zero</span></p>
+<canvas id="cCorr" style="height: 340px;"></canvas>
+<ul class="legend-note">
+  <li>The top panel is what actually arrives at the antenna: every user's chips added together, plus noise. Nothing in it looks like data.</li>
+  <li><span class="sw" style="background: var(--series-5)"></span> <b>green</b> is the running integral z = (1/T<sub>b</sub>)&int;r(t)c(t)dt with the far user's own code. It walks towards the transmitted bit, &plusmn;1.</li>
+  <li><span class="sw" style="background: var(--series-7)"></span> <b>red</b> is the same integral taken with a code nobody is using. It has nothing to lock onto, so it stays near zero.</li>
+  <li>Press <b>Run</b> to sweep the bit, or <b>Step one chip</b> to walk the sum by hand.</li>
+</ul>
+
+<div class="cards">
+  <div class="card"><div class="hd">Processing gain G<sub>p</sub></div><div class="big" id="cGp">&mdash;</div><div class="ft" id="cGpn">&mdash;</div></div>
+  <div class="card"><div class="hd">Chip rate R<sub>c</sub></div><div class="big" id="cRc">&mdash;</div><div class="ft" id="cRcn">&mdash;</div></div>
+  <div class="card"><div class="hd">SIR before despreading</div><div class="big" id="cSi">&mdash;</div><div class="ft" id="cSin">&mdash;</div></div>
+  <div class="card"><div class="hd">SIR after despreading</div><div class="big" id="cSo">&mdash;</div><div class="ft" id="cSon">&mdash;</div></div>
+  <div class="card"><div class="hd">Users supported</div><div class="big" id="cCap">&mdash;</div><div class="ft" id="cCapn">&mdash;</div></div>
+  <div class="card"><div class="hd">Power control range needed</div><div class="big" id="cPr">&mdash;</div><div class="ft" id="cPrn">&mdash;</div></div>
+</div>
+
+<p class="sec"><b>Worked example</b> <span>&mdash; the arithmetic for the settings on screen right now</span></p>
+<ol class="work" id="work"></ol>
+
+<details>
+  <summary>Code properties, checked against the sequences this page generated</summary>
+  <ol class="work" id="codechk" style="margin-top: 0.6rem;"></ol>
+</details>
+
+<p class="sub" style="margin-top: 2rem;">Three things live in these sliders. Spreading buys interference rejection at a fixed exchange rate: every doubling of the code length adds 3 dB to the processing gain and 3 dB to the ratio the correlator delivers, which is why a chip rate is quoted alongside a data rate in every code-division system. The whole band is reused in every cell, so capacity is set not by geometry but by how much interference the correlator can survive &mdash; push the user count past the number in the card and the link stops closing for everybody at once, which is what a soft capacity limit feels like. And processing gain is a ratio, not a level: drag the near-far imbalance up with power control off and watch the ratio after despreading fall exactly as fast as the ratio before it, because 24 dB of gain cannot rescue a signal 60 dB down.</p>
+
+<p class="sub">Where this model is simplified, and it is simplified in five places. Power control is the real closed loop &mdash; a one-bit up or down command, 1 dB per step, at the rate you select &mdash; run over three seconds against a Clarke sum-of-sinusoids Rayleigh channel with a 50 Hz Doppler, and the residual error you see is measured from that simulation rather than assumed. But the fading has one tap and no shadowing, the loop has no measurement error and no feedback delay, and a real loop has both, so the residual here is optimistic. Walsh rows are treated as perfectly chip-aligned, which is true on the downlink from one base station and false on the uplink drawn in section 1; that is why the interference from other users vanishes in Walsh mode and does not in PN mode. The interference each PN user contributes is measured from the actual cross-correlations of the generated m-sequence, averaged over 64 bits, so it lands within about a decibel of the textbook G<sub>p</sub> rather than exactly on it. The capacity card assumes perfect power control and equal rates for everyone. And the honest ceiling stated in every course note applies here too: closed-loop power control at 800 Hz for IS-95 or 1500 Hz for WCDMA tracks path loss and shadowing, but it cannot compensate for fast Rayleigh fading &mdash; set the imbalance to zero, switch the rate between 2 Hz, 800 Hz and 1500 Hz, and read the residual error printed on section 1. It never reaches zero.</p>
+
+<p class="sec"><b>Glossary</b></p>
+<dl class="glossary">
+  <dt>Chip</dt><dd>One symbol of the spreading code. Chips are much shorter than data bits: T<sub>c</sub> against T<sub>b</sub>.</dd>
+  <dt>Spreading</dt><dd>Multiplying the data by the code, s(t) = d(t)c(t). It widens the bandwidth from the data rate to the chip rate without adding power.</dd>
+  <dt>Despreading</dt><dd>Multiplying the received signal by the same code again and averaging over one bit. The wanted signal collapses back to narrowband; everything else stays spread.</dd>
+  <dt>Processing gain G<sub>p</sub></dt><dd>The bandwidth expansion ratio, R<sub>c</sub>/R<sub>b</sub> = T<sub>b</sub>/T<sub>c</sub>. In decibels it is 10&middot;log<sub>10</sub> of that ratio, and it is how many decibels the correlator adds to the signal-to-interference ratio.</dd>
+  <dt>Correlator</dt><dd>The circuit that computes z = (1/T<sub>b</sub>)&int;r(t)c(t)dt over one bit period. Its output is the despread symbol.</dd>
+  <dt>Cross-correlation</dt><dd>The average product of two codes, chip by chip. Zero means the two signals do not disturb each other at all.</dd>
+  <dt>Walsh&ndash;Hadamard code</dt><dd>Rows of a matrix built by H<sub>2n</sub> = [[H<sub>n</sub>, H<sub>n</sub>], [H<sub>n</sub>, &minus;H<sub>n</sub>]]. Any two distinct rows have exactly zero cross-correlation, provided they arrive perfectly aligned.</dd>
+  <dt>PN m-sequence</dt><dd>A pseudo-noise sequence from a shift register with feedback, of period 2<sup>m</sup>&minus;1. Its autocorrelation is 1 at zero lag and exactly &minus;1/L at every other lag, which is what makes it look like noise.</dd>
+  <dt>Near-far problem</dt><dd>A handset close to the base station arrives far stronger than a distant one. Because both occupy the same band, the strong one drowns the weak one no matter what codes they use.</dd>
+  <dt>Power control</dt><dd>The base station tells each handset to raise or lower its power, one bit and 1 dB per command. GSM does this at 2 Hz, IS-95 at 800 Hz, WCDMA at 1500 Hz.</dd>
+  <dt>SIR</dt><dd>Signal-to-interference ratio: wanted power divided by everything else. Quoted before despreading it is measured at chip level and is usually negative; after despreading it is the ratio the decision circuit sees.</dd>
+  <dt>E<sub>b</sub>/N<sub>0</sub></dt><dd>Energy per data bit divided by noise-plus-interference power density. It is the same number as the SIR after despreading, and it is what a modem specification quotes.</dd>
+  <dt>Pole capacity</dt><dd>The user count at which interference alone consumes the whole link budget: N = 1 + (W/R)/(E<sub>b</sub>/N<sub>0</sub>)<sub>req</sub>. No amount of transmit power gets past it.</dd>
+  <dt>Rayleigh fading</dt><dd>The rapid level swings caused by reflections adding and cancelling as the handset moves. Deep fades come and go in milliseconds.</dd>
+  <dt>Decibel (dB)</dt><dd>A ratio on a logarithmic scale: 10&middot;log<sub>10</sub> of a power ratio. Ten decibels is ten times the power, 3 dB is roughly double.</dd>
+</dl>
+
+<p class="sub" style="margin-top: 1.5rem;">Next: <a href="multipath-fading.html">multipath and fading</a> shows the fast Rayleigh channel this page's power-control loop is trying, and failing, to track.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const dB = p => 10 * L10(Math.max(p, 1e-300));
+  const lin = d => Math.pow(10, d / 10);
+  const sinc = x => Math.abs(x) < 1e-9 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
+
+  const RB = 9600;
+  const EBN0_REQ_DB = 7;
+  const VOICE = 0.4;
+  const OTHER = 0.6;
+  const PLE = 4;
+  const FDOP = 50;
+  const PC_DT = 1 / 1500;
+  const PC_N = 4500;
+  const PC_STEP = 1;
+  const TX_MIN = -95, TX_MAX = 15;
+  const MAXU = 12;
+  const RHO_BITS = 64;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const S = {
+    users: 4, chipExp: 5, imb: 0, noiseDb: 0,
+    code: 'pn', pcOn: true, pcRate: 800,
+    chip: 0, bit: 0, playing: false
+  };
+
+  function mkRng(seed) {
+    let s = (seed >>> 0) || 1;
+    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  }
+  function gauss(rng) {
+    const u = Math.max(rng(), 1e-12), v = rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v);
+  }
+
+  const PN_M = 15;
+  const PN_L = (1 << PN_M) - 1;
+  const PN = (function () {
+    const s = new Array(PN_M).fill(1), out = new Int8Array(PN_L);
+    for (let i = 0; i < PN_L; i++) {
+      out[i] = s[PN_M - 1] ? 1 : -1;
+      const fb = s[PN_M - 1] ^ s[0];
+      for (let j = PN_M - 1; j > 0; j--) s[j] = s[j - 1];
+      s[0] = fb;
+    }
+    return out;
+  })();
+  const pnOff = k => (k * 2731 + 977) % PN_L;
+  const PN_WRONG = 16949;
+
+  function walshChip(row, j) {
+    let x = row & j, p = 0;
+    while (x) { p ^= x & 1; x >>= 1; }
+    return p ? -1 : 1;
+  }
+  function walshRowOf(k, N) { return 1 + (k % Math.max(N - 1, 1)); }
+  function walshWrongRow(N) { return S.users >= N - 1 ? 0 : 1 + S.users; }
+
+  function chipOf(k, bit, j, N) {
+    if (S.code === 'walsh') return walshChip(walshRowOf(k, N), j);
+    return PN[(pnOff(k) + bit * N + j) % PN_L];
+  }
+  function chipWrong(bit, j, N) {
+    if (S.code === 'walsh') return walshChip(walshWrongRow(N), j);
+    return PN[(PN_WRONG + bit * N + j) % PN_L];
+  }
+
+  const FADE = [];
+  (function buildFades() {
+    for (let k = 0; k < MAXU; k++) {
+      const rng = mkRng(0x9e3779b9 ^ (k * 2654435761));
+      const NS = 8, al = [], ph = [];
+      for (let n = 0; n < NS; n++) { al.push(rng() * TAU); ph.push(rng() * TAU); }
+      const tr = new Float64Array(PC_N);
+      for (let i = 0; i < PC_N; i++) {
+        const t = i * PC_DT;
+        let re = 0, im = 0;
+        for (let n = 0; n < NS; n++) {
+          const p = TAU * FDOP * Math.cos(al[n]) * t + ph[n];
+          re += Math.cos(p); im += Math.sin(p);
+        }
+        tr[i] = dB(Math.max((re * re + im * im) / NS, 1e-6));
+      }
+      FADE.push(tr);
+    }
+  })();
+
+  function runPc(exc, k) {
+    const f = FADE[k % MAXU];
+    let tx = 0, acc = 0, sum = 0, sq = 0, cnt = 0;
+    const half = Math.floor(PC_N / 2);
+    const rate = S.pcOn ? S.pcRate : 0;
+    for (let i = 0; i < PC_N; i++) {
+      const rx = tx + exc + f[i];
+      if (i >= half) { sum += lin(rx); sq += rx * rx; cnt++; }
+      acc += rate * PC_DT;
+      while (acc >= 1) {
+        acc -= 1;
+        tx += rx > 0 ? -PC_STEP : PC_STEP;
+        if (tx > TX_MAX) tx = TX_MAX;
+        if (tx < TX_MIN) tx = TX_MIN;
+      }
+    }
+    if (cnt < 1) return { mean: lin(exc), rms: Math.abs(exc), tx: 0 };
+    return { mean: sum / cnt, rms: Math.sqrt(sq / cnt), tx: tx };
+  }
+
+  let rhoCache = { key: '', v: null };
+  function rho2Table(N, K) {
+    const key = S.code + '|' + N + '|' + K;
+    if (rhoCache.key === key) return rhoCache.v;
+    const out = new Float64Array(Math.max(K, 1));
+    for (let k = 1; k < K; k++) {
+      if (S.code === 'walsh') {
+        const r0 = walshRowOf(0, N), rk = walshRowOf(k, N);
+        let acc = 0;
+        for (let j = 0; j < N; j++) acc += walshChip(r0, j) * walshChip(rk, j);
+        const r = acc / N;
+        out[k] = r * r;
+      } else {
+        let s2 = 0;
+        for (let b = 0; b < RHO_BITS; b++) {
+          let acc = 0;
+          const base = b * N;
+          for (let j = 0; j < N; j++) {
+            acc += PN[(base + j) % PN_L] * PN[(pnOff(k) + base + j) % PN_L];
+          }
+          const r = acc / N;
+          s2 += r * r;
+        }
+        out[k] = s2 / RHO_BITS;
+      }
+    }
+    rhoCache = { key: key, v: out };
+    return out;
+  }
+
+  let M = {};
+
+  function compute() {
+    const N = 1 << S.chipExp;
+    const K = S.users;
+    const Gp = N;
+    const GpDb = 10 * L10(Gp);
+    const Rc = N * RB;
+    const eta = lin(S.noiseDb);
+
+    const exc = [];
+    for (let k = 0; k < K; k++) exc.push(K > 1 ? S.imb * k / (K - 1) : 0);
+
+    const P = [], rmsE = [], txE = [];
+    for (let k = 0; k < K; k++) {
+      const r = runPc(exc[k], k);
+      P.push(Math.max(r.mean, 1e-300));
+      rmsE.push(r.rms);
+      txE.push(r.tx);
+    }
+
+    const rho2 = rho2Table(N, K);
+    let Iraw = 0, Iafter = 0;
+    for (let k = 1; k < K; k++) { Iraw += P[k]; Iafter += P[k] * rho2[k]; }
+
+    const sirIn = P[0] / Math.max(Iraw + eta, 1e-300);
+    const sirOut = P[0] / Math.max(Iafter + eta / Gp, 1e-300);
+
+    const req = lin(EBN0_REQ_DB);
+    const capRaw = 1 + (Gp / req - eta) / (VOICE * (1 + OTHER));
+    const cap = Math.max(0, Math.floor(capRaw));
+
+    const distRatio = Math.pow(10, S.imb / (10 * PLE));
+
+    let maxRho2 = 0;
+    for (let k = 1; k < K; k++) if (rho2[k] > maxRho2) maxRho2 = rho2[k];
+    const suppDb = Iraw > 1e-300 && Iafter > 1e-300 ? 10 * L10(Iraw / Iafter) : Infinity;
+
+    M = {
+      N: N, K: K, Gp: Gp, GpDb: GpDb, Rc: Rc, eta: eta,
+      exc: exc, P: P, rms: rmsE, tx: txE,
+      rho2: rho2, maxRho2: maxRho2, suppDb: suppDb,
+      Iraw: Iraw, Iafter: Iafter, sirIn: sirIn, sirOut: sirOut,
+      cap: cap, capRaw: capRaw, distRatio: distRatio,
+      dupWalsh: S.code === 'walsh' && K > N - 1,
+      floorPsd: (Iraw + eta) / Gp
+    };
+  }
+
+  function chipStream(bit) {
+    const N = M.N, K = M.K;
+    const rngD = mkRng(0x2545f491 ^ (bit * 2654435761));
+    const d = [];
+    for (let k = 0; k < K; k++) d.push(rngD() < 0.5 ? -1 : 1);
+    const rngN = mkRng(0x1b873593 ^ (bit * 40503));
+    const sd = Math.sqrt(Math.max(M.eta, 0));
+    const r = new Float64Array(N);
+    const own = new Float64Array(N);
+    for (let j = 0; j < N; j++) {
+      let v = 0;
+      for (let k = 0; k < K; k++) v += Math.sqrt(M.P[k]) * d[k] * chipOf(k, bit, j, N);
+      own[j] = Math.sqrt(M.P[0]) * d[0] * chipOf(0, bit, j, N);
+      r[j] = v + gauss(rngN) * sd;
+    }
+    const zr = new Float64Array(N), zw = new Float64Array(N);
+    let ar = 0, aw = 0;
+    const scale = 1 / Math.max(Math.sqrt(M.P[0]), 1e-150);
+    for (let j = 0; j < N; j++) {
+      ar += r[j] * chipOf(0, bit, j, N);
+      aw += r[j] * chipWrong(bit, j, N);
+      zr[j] = ar / N * scale;
+      zw[j] = aw / N * scale;
+    }
+    return { d: d, r: r, own: own, zr: zr, zw: zw };
+  }
+
+  let ST = null;
+  function stream() {
+    if (!ST || ST.bit !== S.bit || ST.key !== M.N + '|' + M.K + '|' + S.code + '|' + M.P[0].toFixed(6) + '|' + M.eta.toFixed(6) + '|' + S.imb + '|' + (S.pcOn ? 1 : 0) + '|' + S.pcRate) {
+      ST = chipStream(S.bit);
+      ST.bit = S.bit;
+      ST.key = M.N + '|' + M.K + '|' + S.code + '|' + M.P[0].toFixed(6) + '|' + M.eta.toFixed(6) + '|' + S.imb + '|' + (S.pcOn ? 1 : 0) + '|' + S.pcRate;
+    }
+    return ST;
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [Math.max(r.width, 1), Math.max(r.height, 1)];
+  }
+
+  function mast(g, x, y, h, col) {
+    g.strokeStyle = col; g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(x - 9, y); g.lineTo(x - 2, y - h); g.lineTo(x + 2, y - h); g.lineTo(x + 9, y);
+    g.moveTo(x - 6, y - h * 0.38); g.lineTo(x + 6, y - h * 0.38);
+    g.moveTo(x - 4, y - h * 0.68); g.lineTo(x + 4, y - h * 0.68);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(x - 8, y - h - 1); g.lineTo(x - 3, y - h - 9);
+    g.moveTo(x + 8, y - h - 1); g.lineTo(x + 3, y - h - 9);
+    g.stroke();
+  }
+  function phone(g, x, y, col, tall) {
+    const w = 11, hh = tall || 19;
+    g.strokeStyle = col; g.lineWidth = 1.8;
+    g.beginPath();
+    g.moveTo(x - w / 2, y); g.lineTo(x - w / 2, y - hh); g.lineTo(x + w / 2, y - hh); g.lineTo(x + w / 2, y); g.closePath();
+    g.stroke();
+    g.beginPath(); g.moveTo(x, y - hh); g.lineTo(x, y - hh - 7); g.stroke();
+  }
+
+  function drawScene() {
+    const c = $('cScene'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grid = cvv('--grid');
+    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c6 = cvv('--series-6'), ax = cvv('--axis');
+    const K = M.K;
+
+    const sceneB = Math.round(h * 0.42);
+    const ground = sceneB - 18;
+    g.strokeStyle = grid; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(12, ground); g.lineTo(w - 12, ground); g.stroke();
+
+    const bsX = Math.round(w * 0.5);
+    mast(g, bsX, ground, 46, ax);
+    g.font = fnt(10.5); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('base station', bsX, ground + 19);
+
+    const maxSpan = Math.min(bsX - 40, w - bsX - 40);
+    const nearD = Math.min(64, Math.max(maxSpan * 0.5, 20));
+    const lg = L10(Math.max(M.distRatio, 1));
+    const farD = nearD + (maxSpan - nearD) * clamp(lg / 2, 0, 1);
+    const nearX = bsX + nearD, farX = bsX - farD;
+
+    const handsets = K > 1
+      ? [[farX, c1, 'far handset'], [nearX, c2, 'near handset']]
+      : [[farX, c1, 'the only handset']];
+    handsets.forEach(function (u) {
+      phone(g, u[0], ground, u[1]);
+      g.fillStyle = u[1]; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(u[2], u[0], ground + 5);
+      g.strokeStyle = u[1]; g.lineWidth = 1; g.globalAlpha = 0.55;
+      g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(u[0], ground - 28); g.lineTo(bsX, ground - 48); g.stroke();
+      g.setLineDash([]); g.globalAlpha = 1;
+    });
+
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText(K > 1
+      ? 'd_far = ' + M.distRatio.toFixed(1) + ' x d_near   (n = 4, not to scale)'
+      : 'one user, nothing to interfere with', bsX, ground - 56);
+    g.textBaseline = 'top'; g.font = fnt(10.5);
+    const rmsFar = M.rms[0], rmsNear = M.rms[K - 1];
+    const pcCol = S.pcOn ? cvv('--text-good') : cvv('--text-warning');
+    drawPair(g, 8, 12, w - 12, sub, pcCol, fitPair(g, w - 24,
+      'same frequency, same time, ' + K.toFixed(0) + ' user' + (K === 1 ? '' : 's'),
+      S.pcOn ? 'power control on, ' + S.pcRate.toFixed(0) + ' Hz, 1 dB steps' : 'power control off',
+      K.toFixed(0) + ' user' + (K === 1 ? '' : 's') + ', one band',
+      S.pcOn ? 'PC ' + S.pcRate.toFixed(0) + ' Hz' : 'PC off'));
+    const resLong = K > 1
+      ? 'residual error: far ' + rmsFar.toFixed(1) + ' dB, near ' + rmsNear.toFixed(1) + ' dB rms'
+      : 'residual error: ' + rmsFar.toFixed(1) + ' dB rms';
+    const resShort = K > 1
+      ? 'residual ' + rmsFar.toFixed(1) + ' / ' + rmsNear.toFixed(1) + ' dB rms'
+      : 'residual ' + rmsFar.toFixed(1) + ' dB rms';
+    g.fillStyle = mut; g.textAlign = 'right';
+    g.fillText(g.measureText(resLong).width + 24 <= w ? resLong : resShort, w - 12, 22);
+
+    const l = 52, r = 14, t = sceneB + 22, b = h - 30;
+    let hi = 5, lo = -12;
+    for (let k = 0; k < K; k++) {
+      const v = dB(M.P[k]);
+      if (v > hi) hi = v;
+      if (v < lo) lo = v;
+    }
+    hi = Math.ceil((hi + 4) / 5) * 5;
+    lo = Math.floor((lo - 4) / 5) * 5;
+    if (hi - lo < 10) hi = lo + 10;
+    const Y = v => t + (hi - clamp(v, lo, hi)) / (hi - lo) * (b - t);
+
+    g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
+    const stepv = (hi - lo) > 60 ? 20 : ((hi - lo) > 25 ? 10 : 5);
+    for (let v = lo; v <= hi + 1e-9; v += stepv) {
+      g.strokeStyle = Math.abs(v) < 1e-9 ? cvv('--border-strong') : grid;
+      g.lineWidth = Math.abs(v) < 1e-9 ? 1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut;
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+
+    const bw = (w - l - r) / Math.max(K, 1);
+    for (let k = 0; k < K; k++) {
+      const v = dB(M.P[k]);
+      const x = l + k * bw + bw * 0.18, bwid = Math.max(bw * 0.64, 3);
+      const col = k === 0 ? c1 : (k === K - 1 && K > 1 ? c2 : c6);
+      const y0 = Y(Math.max(v, 0)), y1 = Y(Math.min(v, 0));
+      g.fillStyle = col; g.globalAlpha = 0.85;
+      g.fillRect(x, y0, bwid, Math.max(y1 - y0, 2));
+      g.globalAlpha = 1;
+      if (bw > 34) {
+        g.fillStyle = mut; g.font = fnt(9.5); g.textAlign = 'center'; g.textBaseline = 'bottom';
+        g.fillText(v.toFixed(0), x + bwid / 2, Math.min(y0, y1) - 2);
+      }
+    }
+
+    g.font = fnt(10.5); g.textBaseline = 'bottom';
+    drawPair(g, h - 6, l, w - r, sub, mut, fitPair(g, w - l - r,
+      'received power at the base station (dB, 0 = the far user’s target)',
+      'user 1 … user ' + K.toFixed(0),
+      'received power (dB, 0 = target)', 'user 1 … ' + K.toFixed(0)));
+  }
+
+  function fitPair(g, span, left, right, leftShort, rightShort) {
+    const wl = g.measureText(left).width, wr = g.measureText(right).width;
+    if (wl + wr + 14 <= span) return [left, right];
+    const sl = g.measureText(leftShort).width, sr = g.measureText(rightShort).width;
+    if (sl + sr + 14 <= span) return [leftShort, rightShort];
+    if (sl <= span) return [leftShort, ''];
+    return ['', ''];
+  }
+  function drawPair(g, y, xl, xr, colL, colR, pair) {
+    if (pair[0]) { g.fillStyle = colL; g.textAlign = 'left'; g.fillText(pair[0], xl, y); }
+    if (pair[1]) { g.fillStyle = colR; g.textAlign = 'right'; g.fillText(pair[1], xr, y); }
+  }
+
+  function stepPath(g, vals, X, Y, n) {
+    g.beginPath();
+    for (let j = 0; j < n; j++) {
+      const x0 = X(j), x1 = X(j + 1), y = Y(vals[j]);
+      if (j === 0) g.moveTo(x0, y); else g.lineTo(x0, y);
+      g.lineTo(x1, y);
+    }
+    g.stroke();
+  }
+
+  function drawWave() {
+    const c = $('cWave'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grid = cvv('--grid');
+    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c3 = cvv('--series-3');
+    const N = M.N, NB = 2, total = N * NB;
+    const l = 40, r = 14, t = 12, b = 30;
+    const X = j => l + j / total * (w - l - r);
+    const panelH = (h - t - b) / 3;
+
+    const rngD = mkRng(0x2545f491 ^ (S.bit * 2654435761));
+    const d0 = rngD() < 0.5 ? -1 : 1;
+    const rngD2 = mkRng(0x2545f491 ^ ((S.bit + 1) * 2654435761));
+    const d1 = rngD2() < 0.5 ? -1 : 1;
+    const bits = [d0, d1];
+
+    const dat = new Float64Array(total), cod = new Float64Array(total), spr = new Float64Array(total);
+    for (let bi = 0; bi < NB; bi++) {
+      for (let j = 0; j < N; j++) {
+        const idx = bi * N + j;
+        dat[idx] = bits[bi];
+        cod[idx] = chipOf(0, S.bit + bi, j, N);
+        spr[idx] = dat[idx] * cod[idx];
+      }
+    }
+
+    const rows = [
+      { v: dat, col: c1, lab: 'data d(t)', short: 'd(t)', sub: 'T_b = ' + (1e3 / RB).toFixed(3) + ' ms per bit', subShort: 'T_b = ' + (1e3 / RB).toFixed(3) + ' ms' },
+      { v: cod, col: c2, lab: 'code c(t)', short: 'c(t)', sub: 'T_c = ' + (1e6 / M.Rc).toFixed(2) + ' µs per chip, ' + N.toFixed(0) + ' chips per bit', subShort: N.toFixed(0) + ' chips per bit' },
+      { v: spr, col: c3, lab: 'spread s(t) = d(t)c(t)', short: 's(t) = d(t)c(t)', sub: 'same power, ' + N.toFixed(0) + ' times the bandwidth', subShort: 'x' + N.toFixed(0) + ' bandwidth' }
+    ];
+
+    rows.forEach(function (row, i) {
+      const top = t + i * panelH, mid = top + panelH / 2, amp = panelH * 0.30;
+      const Y = v => mid - v * amp;
+      g.strokeStyle = grid; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, mid); g.lineTo(w - r, mid); g.stroke();
+
+      g.strokeStyle = row.col; g.lineWidth = i === 0 ? 2 : 1.3;
+      g.globalAlpha = (i > 0 && N > 96) ? 0.85 : 1;
+      stepPath(g, row.v, X, Y, total);
+      g.globalAlpha = 1;
+
+      g.fillStyle = mut; g.font = fnt(9); g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText('+1', l - 5, Y(1));
+      g.fillText('−1', l - 5, Y(-1));
+
+      g.font = fnt(10); g.textBaseline = 'top';
+      drawPair(g, top + 2, l + 4, w - r, row.col, mut,
+        fitPair(g, w - l - r - 8, row.lab, row.sub, row.short, row.subShort));
+
+      g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1; g.setLineDash([3, 3]);
+      g.beginPath(); g.moveTo(X(N), top + 2); g.lineTo(X(N), top + panelH - 2); g.stroke();
+      g.setLineDash([]);
+    });
+
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('bit 1', X(N / 2), h - b + 6);
+    g.fillText('bit 2', X(N * 1.5), h - b + 6);
+    g.textBaseline = 'top';
+    drawPair(g, h - 16, l, w - r, mut, mut, fitPair(g, w - l - r,
+      'time, two bit periods', 'amplitude ±1', 'time', '±1'));
+  }
+
+  function drawSpec() {
+    const c = $('cSpec'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grid = cvv('--grid');
+    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), warn = cvv('--text-warning');
+    const l = 56, r = 16, t = 16, b = 42;
+    const fmax = M.Rc * 1.35;
+    const X = f => l + f / fmax * (w - l - r);
+    const lo = -60, hi = 6;
+    const Y = v => t + (hi - clamp(v, lo, hi)) / (hi - lo) * (h - t - b);
+    const Tb = 1 / RB, Tc = 1 / M.Rc;
+
+    g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let v = 0; v >= lo; v -= 10) {
+      g.strokeStyle = grid; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut;
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i <= 4; i++) {
+      const f = fmax * i / 4;
+      g.strokeStyle = grid; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      g.fillStyle = mut;
+      g.fillText((f / 1e3).toFixed(0), X(f), h - b + 5);
+    }
+
+    const flr = dB(M.floorPsd);
+    g.strokeStyle = warn; g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(l, Y(flr)); g.lineTo(w - r, Y(flr)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = warn; g.font = fnt(10.5); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('noise + other users, ' + flr.toFixed(1) + ' dB', w - r - 2, Y(flr) - 3);
+
+    g.strokeStyle = c2; g.lineWidth = 1.8;
+    g.beginPath();
+    for (let px = l; px <= w - r; px++) {
+      const f = (px - l) / (w - l - r) * fmax;
+      const s = sinc(f * Tc);
+      const v = -10 * L10(M.Gp) + 20 * L10(Math.max(Math.abs(s), 1e-4));
+      const y = Y(v);
+      if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+    }
+    g.stroke();
+
+    g.strokeStyle = c1; g.lineWidth = 2.2;
+    g.beginPath();
+    let started = false;
+    const fEnd = Math.min(RB * 4, fmax);
+    const nPts = 400;
+    for (let i = 0; i <= nPts; i++) {
+      const f = fEnd * i / nPts;
+      const s = sinc(f * Tb);
+      const v = 20 * L10(Math.max(Math.abs(s), 1e-4));
+      const y = Y(v), x = X(f);
+      if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    const xb = X(RB), xc = X(M.Rc);
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.setLineDash([2, 3]);
+    g.beginPath(); g.moveTo(xc, t); g.lineTo(xc, h - b); g.stroke();
+    g.setLineDash([]);
+
+    g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = c1;
+    g.fillText('before spreading — ' + (RB / 1e3).toFixed(1) + ' kHz wide, 0 dB peak', Math.min(xb + 8, w - r - 250), Y(0) + 2);
+    g.fillStyle = c2;
+    g.fillText('after spreading — ' + (M.Rc / 1e3).toFixed(0) + ' kHz wide, ' + (-10 * L10(M.Gp)).toFixed(1) + ' dB peak',
+      l + 6, Y(-10 * L10(M.Gp)) + 18);
+
+    g.font = fnt(10.5); g.textBaseline = 'bottom';
+    drawPair(g, h - 6, l, w - r, sub, mut, fitPair(g, w - l - r,
+      'frequency from the carrier (kHz)', 'power spectral density (dB, ref unspread peak)',
+      'frequency (kHz)', 'PSD (dB)'));
+  }
+
+  function drawCorr() {
+    const c = $('cCorr'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grid = cvv('--grid');
+    const c1 = cvv('--series-1'), c5 = cvv('--series-5'), c7 = cvv('--series-7');
+    const N = M.N, st = stream(), n = clamp(Math.floor(S.chip), 0, N);
+    const l = 60, r = 16, t = 12, b = 34;
+    const X = j => l + j / N * (w - l - r);
+
+    const topT = t, topB = t + (h - t - b) * 0.36;
+    const midY = (topT + topB) / 2;
+    let rmax = 1e-9;
+    for (let j = 0; j < N; j++) rmax = Math.max(rmax, Math.abs(st.r[j]));
+    const ampR = Math.max((topB - topT) / 2 - 28, 6);
+    const Yr = v => midY - v / rmax * ampR;
+
+    g.strokeStyle = grid; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, midY); g.lineTo(w - r, midY); g.stroke();
+    g.strokeStyle = cvv('--text-muted'); g.lineWidth = 1; g.globalAlpha = 0.75;
+    stepPath(g, st.r, X, Yr, N);
+    g.globalAlpha = 1;
+    g.strokeStyle = c1; g.lineWidth = 1.2; g.globalAlpha = 0.9;
+    stepPath(g, st.own, X, Yr, N);
+    g.globalAlpha = 1;
+    g.font = fnt(9.5); g.textBaseline = 'top';
+    drawPair(g, topT + 2, l + 4, w - r - 2, mut, mut, fitPair(g, w - l - r - 6,
+      'received chips r(t): all users plus noise',
+      'peak ±' + rmax.toFixed(2) + ' (far user is ±' + Math.sqrt(M.P[0]).toFixed(2) + ')',
+      'r(t): everyone plus noise', 'peak ±' + rmax.toFixed(2)));
+    g.fillStyle = c1; g.textAlign = 'left';
+    const bl = 'blue: the far user’s own contribution alone';
+    g.fillText(g.measureText(bl).width + l + 8 <= w ? bl : 'blue: far user alone', l + 4, topT + 14);
+
+    const botT = topB + 22, botB = h - b;
+    let zmax = 1.0;
+    for (let j = 0; j < N; j++) zmax = Math.max(zmax, Math.abs(st.zr[j]), Math.abs(st.zw[j]));
+    const span = Math.max(1.6, zmax * 1.12);
+    const Y = v => (botT + botB) / 2 - clamp(v, -span, span) / span * ((botB - botT) / 2 - 6);
+
+    g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
+    [span, span / 2, 0, -span / 2, -span].forEach(function (v) {
+      g.strokeStyle = Math.abs(v) < 1e-9 ? cvv('--border-strong') : grid;
+      g.lineWidth = Math.abs(v) < 1e-9 ? 1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut;
+      g.fillText(v.toFixed(2), l - 6, Y(v));
+    });
+    if (span > 1.6) {
+      g.strokeStyle = cvv('--border-strong'); g.lineWidth = 0.5; g.setLineDash([2, 4]);
+      [1, -1].forEach(function (v) { g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke(); });
+      g.setLineDash([]);
+    }
+
+    if (n > 0) {
+      g.strokeStyle = c7; g.lineWidth = 1.5;
+      g.beginPath();
+      for (let j = 0; j < n; j++) { const x = X(j + 1), y = Y(st.zw[j]); if (j === 0) g.moveTo(X(0), Y(0)); g.lineTo(x, y); }
+      g.stroke();
+      g.strokeStyle = c5; g.lineWidth = 2;
+      g.beginPath();
+      for (let j = 0; j < n; j++) { const x = X(j + 1), y = Y(st.zr[j]); if (j === 0) g.moveTo(X(0), Y(0)); g.lineTo(x, y); }
+      g.stroke();
+      g.fillStyle = c5;
+      g.beginPath(); g.arc(X(n), Y(st.zr[n - 1]), 3.5, 0, TAU); g.fill();
+      g.fillStyle = c7;
+      g.beginPath(); g.arc(X(n), Y(st.zw[n - 1]), 3, 0, TAU); g.fill();
+    }
+
+    g.strokeStyle = cvv('--accent'); g.lineWidth = 1; g.setLineDash([3, 3]);
+    g.beginPath(); g.moveTo(X(n), botT); g.lineTo(X(n), botB); g.stroke();
+    g.setLineDash([]);
+
+    const zFin = n > 0 ? st.zr[n - 1] : 0, wFin = n > 0 ? st.zw[n - 1] : 0;
+    g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = c5;
+    g.fillText('own code: z = ' + zFin.toFixed(3) + (n >= N ? '  → decides ' + (zFin >= 0 ? '+1' : '−1') + ', bit sent was ' + (st.d[0] > 0 ? '+1' : '−1') : ''), l + 4, botT + 2);
+    g.fillStyle = c7;
+    g.fillText('unused code: z = ' + wFin.toFixed(3), l + 4, botT + 15);
+
+    g.font = fnt(10.5); g.textBaseline = 'bottom';
+    drawPair(g, h - 6, l, w - r, sub, mut, fitPair(g, w - l - r,
+      'chips integrated, 0 to T_b', 'correlator output z, normalised to the far user’s amplitude',
+      'chips integrated', 'z, normalised'));
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.font = fnt(10);
+    for (let i = 0; i <= 4; i++) {
+      const j = Math.round(N * i / 4);
+      g.fillText(j.toFixed(0), X(j), h - b + 4);
+    }
+  }
+
+  function drawAll() { drawScene(); drawWave(); drawSpec(); drawCorr(); }
+
+  function fmtDb(v) {
+    if (!isFinite(v)) return v > 0 ? 'unlimited' : '−∞ dB';
+    return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' dB';
+  }
+
+  function updateUI() {
+    compute();
+
+    $('uuv').textContent = S.users.toFixed(0);
+    $('cgv').textContent = M.N.toFixed(0) + ' chips';
+    $('nfv').textContent = S.imb.toFixed(0) + ' dB';
+    $('nzv').textContent = (S.noiseDb >= 0 ? '+' : '−') + Math.abs(S.noiseDb).toFixed(0) + ' dB';
+    $('bPn').classList.toggle('on', S.code === 'pn');
+    $('bWa').classList.toggle('on', S.code === 'walsh');
+    $('bPcOn').classList.toggle('on', S.pcOn);
+    $('bPcOff').classList.toggle('on', !S.pcOn);
+    $('r2').classList.toggle('on', S.pcRate === 2);
+    $('r800').classList.toggle('on', S.pcRate === 800);
+    $('r1500').classList.toggle('on', S.pcRate === 1500);
+    $('bRun').textContent = S.playing ? 'Pause' : 'Run';
+    if (S.chip > M.N) S.chip = M.N;
+    $('chipRead').textContent = 'chip ' + Math.floor(S.chip).toFixed(0) + ' of ' + M.N.toFixed(0);
+
+    $('cGp').textContent = M.GpDb.toFixed(2) + ' dB';
+    $('cGpn').textContent = 'G_p = R_c/R_b = T_b/T_c = ' + M.N.toFixed(0) + ' chips per bit';
+    $('cRc').textContent = (M.Rc / 1e6).toFixed(4) + ' Mchip/s';
+    $('cRcn').textContent = M.N.toFixed(0) + ' x 9.6 kbit/s data rate';
+
+    const siDb = dB(M.sirIn), soDb = dB(M.sirOut);
+    $('cSi').textContent = fmtDb(siDb);
+    $('cSin').textContent = 'chip level, across the ' + (M.Rc / 1e3).toFixed(0) + ' kHz band';
+    $('cSo').textContent = fmtDb(soDb);
+    $('cSo').style.color = soDb >= EBN0_REQ_DB ? 'var(--text-good)' : (soDb >= 0 ? 'var(--text-warning)' : 'var(--series-7)');
+    $('cSon').textContent = S.code === 'walsh'
+      ? 'Walsh rows are orthogonal, so only noise survives'
+      : 'gain of ' + (isFinite(M.suppDb) ? M.suppDb.toFixed(1) : M.GpDb.toFixed(1)) + ' dB, G_p = ' + M.GpDb.toFixed(1) + ' dB';
+
+    $('cCap').textContent = M.cap.toFixed(0);
+    $('cCap').style.color = M.cap >= S.users ? 'var(--text-good)' : 'var(--series-7)';
+    $('cCapn').textContent = M.cap >= S.users
+      ? 'pole capacity, perfect power control, v = 0.4, f = 0.6'
+      : 'only ' + M.cap.toFixed(0) + ' fit; ' + S.users.toFixed(0) + ' are on the air';
+
+    $('cPr').textContent = S.imb.toFixed(0) + ' dB';
+    $('cPrn').textContent = '10 x 4 x log10(' + M.distRatio.toFixed(1) + ') for n = 4';
+
+    const eDb = dB(M.eta);
+    const rhoBar = M.K > 1 ? (function () { let s = 0; for (let k = 1; k < M.K; k++) s += M.rho2[k]; return s / (M.K - 1); })() : 0;
+    const rows = [];
+    rows.push('Processing gain: ' + M.N.toFixed(0) + ' chips per bit, so G_p = R_c/R_b = <b>' + M.N.toFixed(0) + '</b> and G_p(dB) = 10 log10(' + M.N.toFixed(0) + ') = <b>' + M.GpDb.toFixed(2) + ' dB</b>.');
+    rows.push('Rates: R_b = 9.6 kbit/s gives R_c = ' + M.N.toFixed(0) + ' x 9.6 kbit/s = <b>' + (M.Rc / 1e3).toFixed(1) + ' kchip/s</b>, so T_b = ' + (1e3 / RB).toFixed(3) + ' ms and T_c = <b>' + (1e6 / M.Rc).toFixed(3) + ' µs</b>.');
+    rows.push(M.K > 1
+      ? 'Received powers: the far user lands at <b>' + dB(M.P[0]).toFixed(2) + ' dB</b> and the nearest at <b>' + dB(M.P[M.K - 1]).toFixed(2) + ' dB</b>, a gap of <b>' + (dB(M.P[M.K - 1]) - dB(M.P[0])).toFixed(2) + ' dB</b> after ' + (S.pcOn ? S.pcRate.toFixed(0) + ' Hz power control' : 'no power control') + '.'
+      : 'Received power: the single user lands at <b>' + dB(M.P[0]).toFixed(2) + ' dB</b> against its target of 0 dB.');
+    rows.push('Interference before despreading: the other ' + Math.max(M.K - 1, 0).toFixed(0) + ' user' + (M.K === 2 ? '' : 's') + ' contribute <b>' + (M.K > 1 ? dB(M.Iraw).toFixed(2) + ' dB' : 'nothing') + '</b> and thermal noise <b>' + eDb.toFixed(2) + ' dB</b>, so SIR = ' + dB(M.P[0]).toFixed(2) + ' − 10 log10(' + (M.Iraw + M.eta).toFixed(4) + ') = <b>' + dB(M.sirIn).toFixed(2) + ' dB</b>.');
+    rows.push('Despreading: mean squared cross-correlation of the interfering codes is <b>' + rhoBar.toExponential(3) + '</b> against 1/G_p = ' + (1 / M.Gp).toExponential(3) + ', and the noise averages down by G_p to <b>' + dB(M.eta / M.Gp).toFixed(2) + ' dB</b>.');
+    rows.push('After despreading: SIR_out = ' + dB(M.P[0]).toFixed(2) + ' − 10 log10(' + (M.Iafter + M.eta / M.Gp).toExponential(3) + ') = <b>' + dB(M.sirOut).toFixed(2) + ' dB</b>, an improvement of <b>' + (dB(M.sirOut) - dB(M.sirIn)).toFixed(2) + ' dB</b> against a processing gain of ' + M.GpDb.toFixed(2) + ' dB.');
+    rows.push('Link test: E_b/N_0 equals that same <b>' + dB(M.sirOut).toFixed(2) + ' dB</b> against a 7 dB requirement, so the far user’s link <b>' + (dB(M.sirOut) >= EBN0_REQ_DB ? 'closes' : 'does not close') + '</b>.');
+    rows.push('Capacity: N = 1 + [G_p/(E_b/N_0)_req − N_0/P] / (v(1+f)) = 1 + [' + (M.Gp / lin(EBN0_REQ_DB)).toFixed(2) + ' − ' + M.eta.toFixed(3) + '] / (0.4 x 1.6) = <b>' + M.capRaw.toFixed(1) + '</b>, so <b>' + M.cap.toFixed(0) + ' users</b>.');
+    rows.push('Power control range: an imbalance of ' + S.imb.toFixed(0) + ' dB is 10 x n x log10(d_far/d_near) with n = 4, so d_far/d_near = <b>' + M.distRatio.toFixed(2) + '</b> and the loop must cover <b>' + S.imb.toFixed(0) + ' dB</b>. At 1 dB per command that is ' + S.imb.toFixed(0) + ' commands, or <b>' + (S.pcOn ? (S.imb / S.pcRate * 1e3).toFixed(1) + ' ms' : 'never — the loop is off') + '</b>.');
+    rows.push('Residual after the loop settles: <b>' + M.rms[0].toFixed(2) + ' dB</b> rms on the far user and <b>' + M.rms[M.K - 1].toFixed(2) + ' dB</b> rms on the nearest, measured over the last 1.5 s of a 3 s run against 50 Hz Rayleigh fading.');
+    $('work').innerHTML = rows.map(function (x) { return '<li>' + x + '</li>'; }).join('');
+
+    const chk = [];
+    if (S.code === 'walsh') {
+      let worst = 0;
+      for (let a = 0; a < Math.min(M.K, M.N); a++) {
+        for (let bq = a + 1; bq < Math.min(M.K, M.N); bq++) {
+          const ra = walshRowOf(a, M.N), rb = walshRowOf(bq, M.N);
+          if (ra === rb) { worst = 1; continue; }
+          let acc = 0;
+          for (let j = 0; j < M.N; j++) acc += walshChip(ra, j) * walshChip(rb, j);
+          worst = Math.max(worst, Math.abs(acc / M.N));
+        }
+      }
+      chk.push('Walsh matrix built from H_2n = [[H_n, H_n], [H_n, −H_n]], order <b>' + M.N.toFixed(0) + '</b>. Rows in use: ' + (function () { const a = []; for (let k = 0; k < M.K; k++) a.push(walshRowOf(k, M.N)); return a.join(', '); })() + '.');
+      chk.push('Largest cross-correlation magnitude between any two rows in use, at perfect chip alignment: <b>' + worst.toFixed(6) + '</b> (theory: exactly 0).');
+      if (M.dupWalsh) chk.push('<span class="warn">Only ' + (M.N - 1).toFixed(0) + ' usable Walsh rows exist at this code length but ' + M.K.toFixed(0) + ' users are on the air, so some share a code and correlate at 1.0. Lengthen the code or drop users.</span>');
+      chk.push('Walsh orthogonality needs perfect chip alignment. That holds on the downlink from one base station; on the uplink drawn in section 1 the codes arrive misaligned, which is why real uplinks separate users with long PN codes instead.');
+    } else {
+      let worstAuto = 0, allEq = true;
+      const lags = [1, 2, 3, 7, 100, 1234, 16383, 32766];
+      for (let i = 0; i < lags.length; i++) {
+        let acc = 0;
+        for (let q = 0; q < PN_L; q++) acc += PN[q] * PN[(q + lags[i]) % PN_L];
+        const rr = acc / PN_L;
+        worstAuto = Math.max(worstAuto, Math.abs(rr));
+        if (Math.abs(rr + 1 / PN_L) > 1e-9) allEq = false;
+      }
+      chk.push('Sequence: maximal-length shift register, m = <b>' + PN_M.toFixed(0) + '</b>, polynomial x^15 + x + 1, period L = 2^15 − 1 = <b>' + PN_L.toFixed(0) + '</b> chips.');
+      chk.push('Full-period autocorrelation measured at eight lags: 1.000000 at zero lag, and <b>' + (allEq ? 'exactly −1/L' : 'not −1/L') + '</b> elsewhere. |R| off peak = <b>' + worstAuto.toExponential(4) + '</b>, −1/L = ' + (-1 / PN_L).toExponential(4) + '.');
+      chk.push('Each user takes a different phase of that sequence. Measured over ' + RHO_BITS.toFixed(0) + ' bits, the mean squared cross-correlation is <b>' + rhoBar.toExponential(3) + '</b> against the random-code value 1/G_p = ' + (1 / M.Gp).toExponential(3) + ', so the measured suppression is ' + (isFinite(M.suppDb) ? M.suppDb.toFixed(2) : M.GpDb.toFixed(2)) + ' dB against G_p = ' + M.GpDb.toFixed(2) + ' dB.');
+    }
+    $('codechk').innerHTML = chk.map(function (x) { return '<li>' + x + '</li>'; }).join('');
+
+    drawAll();
+  }
+
+  function readInputs() {
+    S.users = Math.round(+$('uu').value);
+    S.chipExp = Math.round(+$('cg').value);
+    S.imb = Math.round(+$('nf').value);
+    S.noiseDb = Math.round(+$('nz').value);
+    const N = 1 << S.chipExp;
+    if (S.chip > N) S.chip = N;
+  }
+  function writeInputs() {
+    $('uu').value = S.users; $('cg').value = S.chipExp;
+    $('nf').value = S.imb; $('nz').value = S.noiseDb;
+  }
+
+  ['uu', 'cg', 'nf', 'nz'].forEach(function (id) {
+    $(id).addEventListener('input', function () { readInputs(); updateUI(); });
+  });
+  $('bPn').addEventListener('click', function () { S.code = 'pn'; ST = null; updateUI(); });
+  $('bWa').addEventListener('click', function () { S.code = 'walsh'; ST = null; updateUI(); });
+  $('bPcOn').addEventListener('click', function () { S.pcOn = true; updateUI(); });
+  $('bPcOff').addEventListener('click', function () { S.pcOn = false; updateUI(); });
+  [2, 800, 1500].forEach(function (rt) {
+    $('r' + rt).addEventListener('click', function () { S.pcRate = rt; S.pcOn = true; updateUI(); });
+  });
+
+  let last = 0, raf = null;
+  function frame(ts) {
+    if (!S.playing) { raf = null; return; }
+    const dt = Math.min(ts - last, 50);
+    last = ts;
+    const chipsPerSec = M.N / 2.2;
+    S.chip += chipsPerSec * dt / 1000;
+    if (S.chip >= M.N) {
+      S.chip = 0;
+      S.bit = (S.bit + 1) % 4096;
+      ST = null;
+    }
+    $('chipRead').textContent = 'chip ' + Math.floor(S.chip).toFixed(0) + ' of ' + M.N.toFixed(0);
+    drawCorr(); drawWave();
+    raf = requestAnimationFrame(frame);
+  }
+  function play(on) {
+    S.playing = on;
+    $('bRun').textContent = on ? 'Pause' : 'Run';
+    if (on && raf === null) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  }
+  $('bRun').addEventListener('click', function () { play(!S.playing); });
+  $('bStep').addEventListener('click', function () {
+    play(false);
+    S.chip = Math.floor(S.chip) + 1;
+    if (S.chip > M.N) { S.chip = 1; S.bit = (S.bit + 1) % 4096; ST = null; }
+    updateUI();
+  });
+  $('bRst').addEventListener('click', function () {
+    play(false); S.chip = 0; S.bit = 0; ST = null; updateUI();
+  });
+
+  const TOUR = [
+    { s: { users: 1, chipExp: 5, imb: 0, noiseDb: 0, code: 'pn', pcOn: true, pcRate: 800 },
+      m: 'Step 1 — one handset, 32 chips per bit. The spread spectrum in section 3 sits right on the noise floor, and the correlator still recovers the bit cleanly because the code lifts it 15 dB.' },
+    { s: { users: 4 },
+      m: 'Step 2 — three more handsets join, all on the same frequency at the same time. The chip-level ratio drops below zero: the wanted signal is now weaker than everything else in the band, yet the correlator output barely moves.' },
+    { s: { imb: 40, pcOn: false },
+      m: 'Step 3 — power control off, and the nearest handset is 40 dB stronger because it is a tenth of the distance away. Processing gain is a ratio, not a rescue: the correlator is swamped and the bit decision becomes a coin toss.' },
+    { s: { pcOn: true, pcRate: 800 },
+      m: 'Step 4 — power control back on at 800 Hz, the IS-95 rate. Forty 1 dB commands take 50 ms, the bars level off, and the link closes again. This is why every code-division system runs a fast closed loop.' },
+    { s: { pcRate: 2 },
+      m: 'Step 5 — the same loop slowed to the GSM rate of 2 Hz. Forty decibels now needs 20 seconds, so within the 3 second run the near user is still shouting. Even at zero imbalance the residual error printed on section 1 never reaches zero, because 1 dB steps cannot follow fast Rayleigh fading.' },
+    { s: { pcRate: 800, imb: 0, chipExp: 8, users: 12 },
+      m: 'Step 6 — 256 chips per bit and twelve users. The code is eight times longer, so the spectrum is eight times wider and 9 dB flatter, and the correlator now has 256 chips to average over. The extra 9 dB of processing gain is what pays for the extra users.' }
+  ];
+  ['t1', 't2', 't3', 't4', 't5', 't6'].forEach(function (id, i) {
+    $(id).addEventListener('click', function () {
+      const step = TOUR[i];
+      Object.keys(step.s).forEach(function (k) { S[k] = step.s[k]; });
+      S.chip = 0; S.bit = 0; ST = null;
+      writeInputs();
+      updateUI();
+      $('tourTxt').textContent = step.m;
+      const cv = $('cScene');
+      if (cv.scrollIntoView) cv.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+    });
+  });
+
+  let rt = null;
+  window.addEventListener('resize', function () {
+    if (rt) clearTimeout(rt);
+    rt = setTimeout(drawAll, 120);
+  });
+
+  readInputs();
+  updateUI();
+  if (!reduce) play(true);
+})();
+</script>
+</body>
+</html>

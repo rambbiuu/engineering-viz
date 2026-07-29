@@ -3,105 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Antenna basics — shapes, beams and boresight</title>
+<title>Antenna patterns, gain and beamwidth</title>
 <style>
 :root {
-  --bg: #fbfaf7;
-  --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
-  --text-warning: #854F0B;
-  --border: #e2e0d8;
-  --border-strong: #b9b7ae;
-  --surface-1: #f1efe8;
-  --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD; --accent-2: #D85A30;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19;
-    --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
-    --text-warning: #FAC775;
-    --border: #34342f;
-    --border-strong: #56554e;
-    --surface-1: #262624;
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --accent: #6FB0F0; --accent-2: #FF9366;
   }
 }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  line-height: 1.5;
-}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+.pre { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
 input, button { font: inherit; color: inherit; }
-button {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 6px 13px;
-  cursor: pointer;
-}
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; font-size: 13px; }
 button:hover { background: var(--surface-1); }
-button.on { border-color: #378ADD; color: #378ADD; }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
-.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+button.on { border-color: var(--accent); color: var(--accent); }
+button[disabled] { opacity: 0.45; cursor: default; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 13px; color: var(--text-secondary); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 120px; }
+.ctl input[type=range] { flex: 1; min-width: 90px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums; }
+.ctl.off label, .ctl.off .v { opacity: 0.4; }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 12px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13px; color: var(--text-secondary); margin-top: 1.25rem; }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px;
+  color: var(--text-secondary); margin-top: 1.25rem; }
+.note b { color: var(--text-primary); font-weight: 500; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin: 2px 0; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
 canvas { width: 100%; display: block; }
+details { margin-top: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.9rem; }
+details summary { cursor: pointer; font-size: 13.5px; color: var(--text-secondary); }
+details p, details li { font-size: 13px; color: var(--text-secondary); }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.2rem; }
+ol.work li { margin: 4px 0; }
+ol.work b { color: var(--text-primary); font-weight: 500; }
+.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+.glossary dt { font-weight: 500; margin-top: 8px; }
+.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
+.tour { font-size: 13px; color: var(--text-secondary); background: var(--surface-1); border-radius: var(--radius);
+  padding: 0.7rem 0.9rem; margin: 0 0 1.25rem; }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Antenna basics &mdash; shapes, beams and boresight</h1>
-<p class="sub">An antenna does not radiate equally in all directions; its shape decides where the energy goes. The beam pattern is the map of that preference, and everything engineers argue about &mdash; gain, beamwidth, sidelobes, front-to-back ratio, where boresight actually points &mdash; is read off that one map. Pick a shape and watch its physical form, its radiation, and its pattern together.</p>
+<h1>Antenna patterns, gain and beamwidth</h1>
+<p class="sub">Every antenna sends more energy in some directions than others, and the map of that preference is called its radiation pattern. Gain, beamwidth, sidelobes and front-to-back ratio are not separate specifications &mdash; they are four numbers read off that one map. Here the map is computed from the textbook field equation for each antenna, and every number below the pictures is measured from the curve you can see, so you can check the tool against its own plot.</p>
+<p class="pre">If decibels, dBi or boresight are new words, start with <a href="link-budget.html">link budget</a>, which introduces the decibel bookkeeping this tool feeds.</p>
 
 <div class="row">
   <span class="lbl">Antenna</span>
-  <button id="t0" class="on">Isotropic</button>
-  <button id="t1">Dipole</button>
-  <button id="t2">Monopole</button>
-  <button id="t3">Patch</button>
-  <button id="t4">Yagi</button>
-  <button id="t5">Horn</button>
-  <button id="t6">Dish</button>
-  <button id="t7">Array</button>
+  <button id="t0" class="on">Half-wave dipole</button>
+  <button id="t1">Quarter-wave monopole</button>
+  <button id="t2">Uniform line source</button>
+  <button id="t3">Uniform array</button>
+  <button id="t4">Circular aperture</button>
 </div>
+
+<div class="grid2">
+  <div class="ctl" id="cD"><label for="ap">Aperture size</label><input type="range" id="ap" min="1" max="30" step="0.5" value="6"><span class="v" id="apv">6.0 &lambda;</span></div>
+  <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0.3" max="30" step="0.1" value="2.4"><span class="v" id="fqv">2.4 GHz</span></div>
+  <div class="ctl"><label for="ef">Radiation efficiency</label><input type="range" id="ef" min="40" max="100" step="1" value="60"><span class="v" id="efv">60 %</span></div>
+  <div class="ctl"><label for="mb">Mechanical boresight</label><input type="range" id="mb" min="-90" max="90" step="1" value="0"><span class="v" id="mbv">0&deg;</span></div>
+</div>
+
 <div class="row">
-  <label class="lbl" for="mech" style="min-width: 152px;">Mechanical pointing</label>
-  <input type="range" id="mech" min="-90" max="90" step="1" value="0" style="flex: 1;">
-  <span id="mechv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">0&deg;</span>
+  <span class="lbl">Guided tour</span>
+  <button id="s1">1</button>
+  <button id="s2">2</button>
+  <button id="s3">3</button>
+  <button id="s4">4</button>
+  <button id="s5">5</button>
+  <button id="pp">Pause motion</button>
 </div>
-<div class="row" style="margin-bottom: 1.25rem;">
-  <label class="lbl" for="elec" style="min-width: 152px;">Electrical steering</label>
-  <input type="range" id="elec" min="-60" max="60" step="1" value="0" style="flex: 1;">
-  <span id="elecv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">0&deg;</span>
-</div>
+<p class="tour" id="tourTxt">Step through the five buttons above and the sliders move for you. Step 1 is the half-wave dipole, the reference every wire antenna is compared against.</p>
 
-<p class="sec"><b>1 &middot; The antenna and what it throws out</b> <span>&mdash; the physical hardware, with the radiated energy shaded around it</span></p>
-<canvas id="phys" style="height: 300px;"></canvas>
+<p class="sec"><b>1 &middot; The hardware, drawn to human scale</b> <span>&mdash; the metal itself on a mast, with the beam it makes coming out of it</span></p>
+<canvas id="phys" style="height: 340px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--accent)"></span>the shaded shape is where the radiation goes, drawn on the same decibel scale as the polar plot in section 2 and laid over the hardware that makes it; it is a shape, not a distance in metres</li>
+  <li>the antenna, the mast and the person are all drawn to the same metre scale, so raising the frequency really does shrink the hardware</li>
+  <li>the dashed line is the mechanical boresight &mdash; the direction the structure is built to aim. Zero degrees is straight to the right, on this picture and both plots below</li>
+</ul>
 
-<p class="sec"><b>2 &middot; Beam pattern</b> <span>&mdash; the same radiation as a polar plot; rings are &minus;3, &minus;10, &minus;20 dB from the peak</span></p>
-<canvas id="pol" style="height: 380px;"></canvas>
+<p class="sec"><b>2 &middot; The pattern as a polar cut</b> <span>&mdash; the same beam seen from the side; rings are decibels below the peak</span></p>
+<canvas id="pol" style="height: 400px;"></canvas>
+<ul class="legend-note">
+  <li>distance from the centre is power relative to the peak: the outer ring is the peak, the centre is 40 dB down (one ten-thousandth of the power)</li>
+  <li>the shaded wedge is the half-power beamwidth, the angular width over which at least half the peak power is delivered</li>
+  <li>ticks outside the circle mark nulls &mdash; directions in which this antenna radiates nothing at all</li>
+</ul>
+
+<p class="sec"><b>3 &middot; The same cut on a decibel scale</b> <span>&mdash; unrolled into a straight axis, which is how sidelobes are actually read</span></p>
+<canvas id="rect" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li>the horizontal axis is direction in degrees, using the same zero as the pictures above; the window narrows automatically as the beam does</li>
+  <li>the upper dashed line is 3 dB below the peak; the width of the curve at that line is the half-power beamwidth</li>
+  <li>the lower dashed line sits on the tallest sidelobe &mdash; the leak that lands on somebody else's receiver</li>
+</ul>
 
 <div class="cards">
+  <div class="card">
+    <div class="hd">Directivity</div>
+    <div class="big" id="cD1">&mdash;</div>
+    <div class="ft" id="cD1n">&mdash;</div>
+  </div>
   <div class="card">
     <div class="hd">Gain</div>
     <div class="big" id="cG">&mdash;</div>
@@ -110,163 +140,362 @@ canvas { width: 100%; display: block; }
   <div class="card">
     <div class="hd">Half-power beamwidth</div>
     <div class="big" id="cB">&mdash;</div>
-    <div class="ft">angular width where power falls to half (&minus;3 dB) of peak</div>
+    <div class="ft" id="cBn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">First sidelobe</div>
+    <div class="big" id="cS">&mdash;</div>
+    <div class="ft" id="cSn">&mdash;</div>
   </div>
   <div class="card">
     <div class="hd">Front-to-back ratio</div>
     <div class="big" id="cF">&mdash;</div>
-    <div class="ft">how much quieter the antenna is behind than in front</div>
+    <div class="ft" id="cFn">&mdash;</div>
   </div>
   <div class="card">
-    <div class="hd">Boresight</div>
-    <div class="big" id="cBo" style="font-size: 20px;">&mdash;</div>
-    <div class="ft" id="cBon">&mdash;</div>
+    <div class="hd">Effective aperture</div>
+    <div class="big" id="cA">&mdash;</div>
+    <div class="ft" id="cAn">&mdash;</div>
   </div>
 </div>
 
 <div class="note" id="note">&mdash;</div>
 
-<p class="sub" style="margin-top: 2rem;">The boresight distinction is the subtle one. <b style="font-weight: 500;">Mechanical boresight</b> is where the metal physically aims &mdash; rotate the antenna and everything turns with it. <b style="font-weight: 500;">Electrical boresight</b> is where the beam actually peaks, which for a phased array you move by changing feed phases while the hardware sits still. On a fixed antenna the two coincide by definition; on an array they part company, and on any real antenna a manufacturing or cable error puts a small permanent offset between them &mdash; the boresight error you calibrate out. Try Array, leave mechanical at 0&deg;, and steer electrically: the metal never moves but the beam swings, exactly the trick the phased-array tool does in detail.</p>
+<p class="sec"><b>The arithmetic, with this state's numbers</b></p>
+<ol class="work" id="work"></ol>
+
+<details>
+  <summary>What the models assume, and how they compare with the rules of thumb engineers quote</summary>
+  <p id="assume">&mdash;</p>
+  <p id="thumb">&mdash;</p>
+  <p>Directivity here is a genuine numerical integral of the plotted field pattern, <b>D = 2 / &int;<sub>0</sub><sup>&pi;</sup> |F(&theta;)|<sup>2</sup> sin&thinsp;&theta; d&theta;</b>, evaluated with Simpson's rule over 20&thinsp;000 intervals. Nothing on this page is read from a table of typical antenna gains.</p>
+</details>
+
+<p class="sec"><b>Words used here</b></p>
+<dl class="glossary">
+  <dt>Wavelength &lambda;</dt><dd>The distance from one wave peak to the next, &lambda; = c/f. At 2.4 GHz it is 12.5 cm. Antenna behaviour depends on size measured in wavelengths, never on size in metres alone.</dd>
+  <dt>Radiation pattern</dt><dd>How much power the antenna sends in each direction, drawn relative to its own strongest direction.</dd>
+  <dt>Isotropic radiator</dt><dd>An imaginary antenna that radiates equally in every direction. It cannot be built, but it is the yardstick for gain.</dd>
+  <dt>Directivity D</dt><dd>Peak power density divided by the average over all directions. A pure shape number: it says how tightly the energy is concentrated, ignoring any heat lost in the antenna.</dd>
+  <dt>Radiation efficiency &eta;</dt><dd>The fraction of the power fed in that actually leaves as radio waves. The rest becomes heat in the conductor, the dielectric and the matching network.</dd>
+  <dt>Gain G, in dBi</dt><dd>G = &eta;D, quoted in decibels relative to the isotropic radiator. The "i" means isotropic. Gain is what a link budget uses, because it counts the losses.</dd>
+  <dt>Half-power beamwidth, HPBW</dt><dd>The angle across the main lobe between the two directions where the power has fallen to half, that is 3 dB below, the peak.</dd>
+  <dt>Sidelobe</dt><dd>Any lobe other than the main one. Quoted in decibels below the peak; it is the main cause of interference into neighbouring links.</dd>
+  <dt>Null</dt><dd>A direction of zero radiation between lobes. Useful: point a null at an interferer and it disappears.</dd>
+  <dt>Boresight</dt><dd>Mechanical boresight is the direction the structure is built to point. Electrical boresight is where the beam actually peaks. The angle between them is the boresight error, and calibrating it out is a real production step.</dd>
+  <dt>Effective aperture A<sub>e</sub></dt><dd>The area of the incoming wavefront the antenna effectively collects, A<sub>e</sub> = G&lambda;<sup>2</sup>/4&pi;. Even a wire has one.</dd>
+  <dt>Array factor</dt><dd>The pattern a set of point sources makes purely by interference of their feeds. The real pattern is the array factor multiplied by the pattern of one element.</dd>
+</dl>
+
+<p class="sub" style="margin-top: 2rem;">Three trades live in these five buttons. First, concentration is the only way to get gain: a dipole spreads power over almost the whole sky and manages 2.15 dBi, while a 6&lambda; dish squeezes it into ten degrees and reaches 25 dBi, and the only thing that changed was the shape of the map. Second, aperture in wavelengths is what counts &mdash; hold the dish at 6&lambda; and slide the frequency from 0.3 to 30 GHz: the pattern never moves, only the hardware shrinks from three metres to three centimetres. Third, sidelobes are the price of a hard-edged aperture: a uniformly illuminated line or array always leaks at &minus;13.3 dB no matter how large it is, a round aperture improves that to &minus;17.6 dB for free, and buying anything better means tapering the illumination, which costs both gain and beamwidth. The next tool, <a href="phased-array.html">phased array</a>, takes the array here and steers it by feeding the elements different phases.</p>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const S = { t: 0, mech: 0, elec: 0 };
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const rad = d => d * Math.PI / 180;
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const RAD = Math.PI / 180, DEG = 180 / Math.PI, C0 = 299792458;
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const fx = (v, n) => isFinite(v) ? v.toFixed(n) : '—';
+  const wrap = a => { let x = a; while (x <= -180) x += 360; while (x > 180) x -= 360; return x; };
+
+  const S = { t: 0, D: 6, f: 2.4, eta: 60, mech: 0, playing: true };
 
   const TYPES = [
-    { key: 'iso', name: 'Isotropic', gain: 0, steer: false,
-      note: 'Isotropic — the imaginary reference antenna that radiates equally in every direction. Nothing real behaves this way, but every gain figure in RF is quoted against it, which is what the "i" in dBi means.' },
-    { key: 'dip', name: 'Half-wave dipole', gain: 2.15, steer: false,
-      note: 'Half-wave dipole — a wire λ/2 long. Its pattern is a doughnut: strong broadside to the wire, and a genuine null off each end. Cheap, predictable, and the second reference antenna in RF (gain in dBd is measured against this one, 2.15 dB below dBi).' },
-    { key: 'mon', name: 'Quarter-wave monopole', gain: 5.15, steer: false,
-      note: 'Quarter-wave monopole — half a dipole standing on a ground plane, which mirrors the missing half. All the energy goes into the upper hemisphere, so it gains 3 dB over a dipole. This is the whip on a car roof or a handheld radio.' },
-    { key: 'pat', name: 'Microstrip patch', gain: 7, steer: false,
-      note: 'Microstrip patch — a metal rectangle printed above a ground plane. Flat, cheap to mass-produce, radiates broadside off the face with a hemispherical beam. The building block of phone, GPS and satellite-terminal arrays.' },
-    { key: 'yag', name: 'Yagi-Uda', gain: 12, steer: false,
-      note: 'Yagi-Uda — one driven dipole plus a reflector behind and several directors in front. The parasitic elements re-radiate with phase shifts that reinforce forward and cancel backward, giving real gain from bare metal rods with no power source. The classic rooftop TV antenna.' },
-    { key: 'hor', name: 'Horn', gain: 17, steer: false,
-      note: 'Horn — a flared waveguide. The flare eases the wave from the guide into free space over a large aperture, giving a clean, well-behaved beam with very low sidelobes. Standard as a lab reference and as the feed for a dish.' },
-    { key: 'dsh', name: 'Parabolic dish', gain: 34, steer: false,
-      note: 'Parabolic dish — a reflector that turns the feed\'s spherical wave into a flat one. Gain scales with aperture area over λ², so a big dish at high frequency gives enormous gain and a pencil beam. Beamwidth ≈ 22/(F_GHz · D_m) degrees for a typical dish.' },
-    { key: 'arr', name: '8-element array', gain: 12, steer: true,
-      note: 'Phased array — eight elements spaced λ/2, each fed with a controlled phase. The beam it forms can be swung electronically with no moving parts, which is what "electrical steering" means below. Steer far off broadside and watch the beam widen and the sidelobes climb.' }
+    { k: 'dip', name: 'Half-wave dipole', usesD: false,
+      form: 'F(θ) = cos((π/2)·cosθ) / sinθ, with θ measured from the wire',
+      note: 'A straight wire one half-wavelength long, fed in the middle. Its pattern is a doughnut wrapped round the wire: strongest broadside, and a true null off each end. Directivity is 1.6409 exactly, which is 2.15 dBi, and that figure is the origin of the other decibel scale you will meet, dBd, quoted against this antenna rather than against isotropic.',
+      assume: 'The dipole is treated as infinitely thin with the classical sinusoidal current distribution, radiating into free space. A real dipole has finite wire thickness, which widens the bandwidth and moves the feed impedance from the textbook 73 Ω, but barely changes the pattern.' },
+    { k: 'mon', name: 'Quarter-wave monopole', usesD: false,
+      form: 'the same F(θ), but only above the ground plane; zero below it',
+      note: 'Half a dipole standing on a conducting sheet. The sheet mirrors the missing half, so the field above it is identical to the dipole’s, while nothing radiates below. The same transmitter power now fills half the space, so the directivity doubles: exactly 3.01 dB more than the dipole. This is the whip on a car roof, a handheld radio, or a rooftop base station.',
+      assume: 'The ground plane is idealised as infinite and perfectly conducting, which is why the pattern below it is exactly zero and the peak sits exactly on the horizon. A real finite ground plane tilts the peak a few degrees upward and fills the underside in at roughly −20 dB, so the perfect lower null drawn here does not exist in hardware.' },
+    { k: 'lin', name: 'Uniform line source', usesD: true,
+      form: 'F = sin u / u, with u = (πL/λ)·sinθ measured from broadside',
+      note: 'A line of length L carrying a uniform current, the simplest model of a slot, a leaky waveguide, or one axis of a flat panel. Uniform means every part of the aperture radiates equally hard, which extracts the maximum possible gain from that length — and pays for it with the worst possible sidelobes. The −13.26 dB first sidelobe is a fixed property of the shape, identical for a slot, an array or an unwindowed Fourier transform.',
+      assume: 'The current is uniform in amplitude and phase along the line, and the line radiates into free space with no reflector, so the cut shows an identical lobe behind. Directivity is integrated over the full sphere and approaches 2L/λ for a long line.' },
+    { k: 'arr', name: 'Uniform array', usesD: true,
+      form: 'AF = sin(Nψ/2) / (N·sin(ψ/2)), with ψ = (2πd/λ)·sinθ and d = λ/2',
+      note: 'The same aperture built from discrete elements instead of a continuous line, half a wavelength apart, all fed in phase. The result is nearly the line source’s pattern, for the good reason that it is sampling the same illumination. Its directivity comes out at very nearly N, so every doubling of the element count buys 3 dB and halves the beamwidth. Note how the first sidelobe climbs from −13.2 dB only as N grows: at four elements it is −11.3 dB, so quoting −13.2 dB for a small array is wrong.',
+      assume: 'This is the array factor of point sources: the elements are treated as isotropic, so the plot is the interference pattern of the feed alone. A real array multiplies this by the element pattern, which suppresses the rearward copy the plot shows here.' },
+    { k: 'cir', name: 'Circular aperture', usesD: true,
+      form: 'F = 2J₁(u) / u, with u = (πD/λ)·sinθ; J₁ is the Bessel function',
+      note: 'A round uniformly illuminated aperture: a dish, a circular horn mouth, an optical lens. Roundness changes the constants: the first sidelobe drops to −17.57 dB and the first null moves out to sinθ = 1.22λ/D, both different from the line source. Using the line source’s −13.26 dB for a dish is wrong by more than 4 dB, and it is the most common mistake in dish tools.',
+      assume: 'The aperture is uniformly illuminated and set in a conducting plane, so the field carries the Huygens obliquity factor (1 + cosθ)/2 and the integrated directivity converges to 4πA/λ². A real dish is illuminated harder in the middle than at the rim, which widens the beam to about 70λ/D and pushes the sidelobes down to roughly −20 to −25 dB — the taper trade this idealised model deliberately leaves out.' }
   ];
 
-  function patt(thDeg) {
-    const t = TYPES[S.t].key;
-    const off = S.mech + (TYPES[S.t].steer ? S.elec : 0);
-    const a = rad(thDeg - off);
-    const ca = Math.cos(a), sa = Math.sin(a);
-    if (t === 'iso') return 1;
-    if (t === 'dip') {
-      const s = Math.abs(ca) < 1e-6 ? 1e-6 : ca;
-      return Math.abs(Math.cos(Math.PI / 2 * sa) / s);
+  const Nel = () => Math.max(2, Math.round(2 * S.D));
+  const lam = () => C0 / (S.f * 1e9);
+
+  function J1(x) {
+    const ax = Math.abs(x);
+    let ans;
+    if (ax < 8) {
+      const y = x * x;
+      const p1 = x * (72362614232 + y * (-7895059235 + y * (242396853.1 + y * (-2972611.439 + y * (15704.48260 + y * (-30.16036606))))));
+      const p2 = 144725228442 + y * (2300535178 + y * (18583304.74 + y * (99447.43394 + y * (376.9991397 + y * 1))));
+      ans = p1 / p2;
+    } else {
+      const z = 8 / ax, y = z * z, xx = ax - 2.356194491;
+      const p1 = 1 + y * (0.183105e-2 + y * (-0.3516396496e-4 + y * (0.2457520174e-5 + y * (-0.240337019e-6))));
+      const p2 = 0.04687499995 + y * (-0.2002690873e-3 + y * (0.8449199096e-5 + y * (-0.88228987e-6 + y * 0.105787412e-6)));
+      ans = Math.sqrt(0.636619772 / ax) * (Math.cos(xx) * p1 - z * Math.sin(xx) * p2);
+      if (x < 0) ans = -ans;
     }
-    if (t === 'mon') {
-      if (Math.abs(thDeg - off) > 90) return 0.02;
-      const s = Math.abs(ca) < 1e-6 ? 1e-6 : ca;
-      return Math.abs(Math.cos(Math.PI / 2 * sa) / s);
-    }
-    if (t === 'pat') {
-      if (Math.abs(thDeg - off) > 90) return 0.06;
-      return Math.pow(Math.max(ca, 0), 0.9);
-    }
-    if (t === 'yag') {
-      const main = Math.pow(Math.max(ca, 0), 9);
-      const back = 0.09 * Math.pow(Math.max(-ca, 0), 3);
-      const side = 0.11 * Math.abs(Math.sin(3.4 * a));
-      return Math.max(main, Math.max(back, side * Math.pow(Math.max(ca, 0), 0.6)));
-    }
-    if (t === 'hor' || t === 'dsh') {
-      const D = t === 'hor' ? 3.2 : 11;
-      const u = Math.PI * D * sa;
-      const sinc = Math.abs(u) < 1e-6 ? 1 : Math.sin(u) / u;
-      const taper = Math.max(ca, 0);
-      const spill = t === 'dsh' ? 0.012 : 0.02;
-      return Math.max(Math.abs(sinc) * taper, spill * (1 - taper * 0.8));
-    }
-    const N = 8, dsp = 0.5;
-    const psi = 2 * Math.PI * dsp * (Math.sin(rad(thDeg - S.mech)) - Math.sin(rad(S.elec)));
-    const den = Math.sin(psi / 2);
-    const af = Math.abs(den) < 1e-9 ? 1 : Math.abs(Math.sin(N * psi / 2) / (N * den));
-    return af * Math.max(Math.cos(rad(thDeg - S.mech)), 0.12);
+    return ans;
+  }
+  const sinc = u => Math.abs(u) < 1e-9 ? 1 : Math.sin(u) / u;
+  const airy = u => Math.abs(u) < 1e-6 ? 1 : 2 * J1(u) / u;
+
+  function model() {
+    const k = TYPES[S.t].k, N = Nel(), Dl = S.D;
+    const dipF = th => {
+      const s = Math.sin(th);
+      return Math.abs(s) < 1e-9 ? 0 : Math.abs(Math.cos(Math.PI / 2 * Math.cos(th)) / s);
+    };
+    if (k === 'dip') return { axis: 'wire', F: dipF };
+    if (k === 'mon') return { axis: 'wire', F: th => th > Math.PI / 2 + 1e-12 ? 0 : dipF(th) };
+    if (k === 'lin') return { axis: 'wire', F: th => Math.abs(sinc(Math.PI * Dl * Math.cos(th))) };
+    if (k === 'arr') return { axis: 'wire', F: th => {
+      const psi = Math.PI * Math.cos(th), den = N * Math.sin(psi / 2);
+      return Math.abs(den) < 1e-9 ? 1 : Math.abs(Math.sin(N * psi / 2) / den);
+    } };
+    return { axis: 'bore', F: th => Math.abs(airy(Math.PI * Dl * Math.sin(th))) * (1 + Math.cos(th)) / 2 };
   }
 
-  function peakDir() {
-    let best = -180, bv = -1;
-    for (let a = -180; a < 180; a += 0.25) {
-      const v = patt(a);
-      if (v > bv) { bv = v; best = a; }
-    }
-    return { dir: best, val: bv };
+  function cutF(m, aDeg) {
+    const a = aDeg * RAD;
+    if (m.axis === 'wire') return m.F(Math.acos(clamp(Math.sin(a), -1, 1)));
+    let t = Math.abs(a) % (2 * Math.PI);
+    if (t > Math.PI) t = 2 * Math.PI - t;
+    return m.F(t);
   }
 
-  function metrics() {
-    const pk = peakDir();
-    if (TYPES[S.t].key === 'iso') return { hpbw: null, ftb: 0, peak: 0, pkval: 1 };
-    let lo = pk.dir, hi = pk.dir;
-    const half = pk.val * 0.7071;
-    let guard = 0;
-    while (patt(lo) > half && guard++ < 1440) lo -= 0.25;
-    guard = 0;
-    while (patt(hi) > half && guard++ < 1440) hi += 0.25;
-    const hpbw = (hi - lo) >= 359 ? null : hi - lo;
-    const backDir = pk.dir + 180;
-    let bmax = 0;
-    for (let a = backDir - 45; a <= backDir + 45; a += 0.5) bmax = Math.max(bmax, patt(a));
-    const ftb = 20 * Math.log10(pk.val / Math.max(bmax, 1e-4));
-    return { hpbw: hpbw, ftb: ftb, peak: pk.dir, pkval: pk.val };
+  function directivity(m) {
+    const n = 20000, h = Math.PI / n;
+    let s = 0;
+    for (let i = 0; i <= n; i++) {
+      const th = i * h, f = m.F(th);
+      const w = (i === 0 || i === n) ? 1 : (i % 2 ? 4 : 2);
+      s += w * f * f * Math.sin(th);
+    }
+    s *= h / 3;
+    return s > 1e-12 ? 2 / s : 1;
   }
+
+  const STEP = 0.02, NS = Math.round(360 / STEP) + 1;
+  const angOf = i => -180 + i * STEP;
+
+  function measure(m, samp) {
+    const half = Math.SQRT1_2;
+    const i0 = Math.round(180 / STEP);
+    const pk = samp[i0] > 0 ? samp[i0] : 1;
+    const edge = dir => {
+      for (let k = 1; k <= 180 / STEP; k++) {
+        const na = dir * k * STEP;
+        if (cutF(m, na) < half * pk) {
+          let lo = dir * (k - 1) * STEP, hi = na;
+          for (let j = 0; j < 50; j++) {
+            const mid = (lo + hi) / 2;
+            if (cutF(m, mid) >= half * pk) lo = mid; else hi = mid;
+          }
+          return (lo + hi) / 2;
+        }
+      }
+      return dir * 180;
+    };
+    const aHi = edge(1), aLo = edge(-1);
+    const scan = dir => {
+      const guard = Math.max(1, Math.round((dir > 0 ? aHi : -aLo) / STEP));
+      let i = clamp(i0 + dir * guard, 0, NS - 1), minI = i;
+      while (i + dir >= 0 && i + dir < NS && samp[i + dir] <= samp[i]) { i += dir; minI = i; }
+      if (i + dir < 0 || i + dir >= NS) return { nullI: minI, lobeI: -1 };
+      let j = minI;
+      while (j + dir >= 0 && j + dir < NS && samp[j + dir] >= samp[j]) j += dir;
+      return { nullI: minI, lobeI: j };
+    };
+    const up = scan(1), dn = scan(-1);
+    let sllI = -1;
+    if (up.lobeI >= 0 && dn.lobeI >= 0) sllI = samp[up.lobeI] >= samp[dn.lobeI] ? up.lobeI : dn.lobeI;
+    else sllI = up.lobeI >= 0 ? up.lobeI : dn.lobeI;
+    const sll = sllI >= 0 ? samp[sllI] : 0;
+    const nulls = [];
+    for (let i = 1; i < NS - 1; i++) {
+      if (samp[i] <= samp[i - 1] && samp[i] <= samp[i + 1] && samp[i] < 0.02 * pk) {
+        if (!nulls.length || angOf(i) - nulls[nulls.length - 1] > 0.4) nulls.push(angOf(i));
+      }
+    }
+    nulls.sort((p, q) => Math.abs(p) - Math.abs(q));
+    let back = 0, backAt = 180;
+    for (let i = 0; i < NS; i++) {
+      if (Math.abs(angOf(i)) < 90) continue;
+      if (samp[i] > back) { back = samp[i]; backAt = angOf(i); }
+    }
+    return {
+      pk: pk, hpbw: aHi - aLo, aLo: aLo, aHi: aHi,
+      nulls: nulls.slice(0, 8),
+      sllDb: sll > 0 ? 20 * L10(sll / pk) : -99, sllAt: sllI >= 0 ? angOf(sllI) : 0,
+      ftbDb: back > 1e-6 ? 20 * L10(pk / back) : 99, backAt: backAt
+    };
+  }
+
+  let M = null;
+  function recompute() {
+    const m = model();
+    const samp = new Float64Array(NS);
+    for (let i = 0; i < NS; i++) samp[i] = cutF(m, angOf(i));
+    const q = measure(m, samp);
+    const D = directivity(m);
+    const G = D * S.eta / 100;
+    const lm = lam();
+    M = {
+      m: m, samp: samp, q: q, D: D, G: G, lam: lm,
+      Dd: 10 * L10(Math.max(D, 1e-12)),
+      Gd: 10 * L10(Math.max(G, 1e-12)),
+      Ae: G * lm * lm / (4 * Math.PI)
+    };
+  }
+  const patAt = a => {
+    let x = a;
+    while (x < -180) x += 360;
+    while (x > 180) x -= 360;
+    return M.samp[clamp(Math.round((x + 180) / STEP), 0, NS - 1)];
+  };
 
   function fit(c) {
     const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    const W = Math.max(1, Math.round(r.width * d)), H = Math.max(1, Math.round(r.height * d));
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
     c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
-    return [r.width, r.height];
+    return [Math.max(1, r.width), Math.max(1, r.height)];
   }
 
-  function drawPhys(time) {
+  const lenTxt = v => v >= 1 ? v.toFixed(2) + ' m' : v >= 0.01 ? (v * 100).toFixed(1) + ' cm' : (v * 1000).toFixed(1) + ' mm';
+
+  function antSize() {
+    const L = lam(), k = TYPES[S.t].k;
+    if (k === 'dip') return L / 2;
+    if (k === 'mon') return 1.5 * L;
+    if (k === 'arr') return (Nel() - 1) * L / 2;
+    return S.D * L;
+  }
+  function sizeTxt() {
+    const L = lam(), k = TYPES[S.t].k;
+    if (k === 'dip') return 'λ/2 = ' + lenTxt(L / 2) + ' of wire';
+    if (k === 'mon') return 'λ/4 = ' + lenTxt(L / 4) + ' rod on a 1.5λ ground plane';
+    if (k === 'lin') return S.D.toFixed(1) + 'λ = ' + lenTxt(S.D * L) + ' long';
+    if (k === 'arr') return Nel() + ' elements at λ/2, ' + lenTxt((Nel() - 1) * L / 2) + ' overall';
+    return S.D.toFixed(1) + 'λ = ' + lenTxt(S.D * L) + ' across';
+  }
+
+  function drawHardware(g, s) {
+    const k = TYPES[S.t].k, L = lam() * s;
+    g.lineCap = 'round';
+    if (k === 'dip') {
+      const hl = L / 4, gap = Math.max(1.5, hl * 0.08);
+      g.lineWidth = Math.max(1.6, L * 0.02);
+      g.beginPath(); g.moveTo(0, -hl); g.lineTo(0, -gap); g.moveTo(0, gap); g.lineTo(0, hl); g.stroke();
+      g.lineWidth = Math.max(1, L * 0.012);
+      g.beginPath(); g.moveTo(0, -gap); g.lineTo(-hl * 0.42, 0); g.moveTo(0, gap); g.lineTo(-hl * 0.42, 0); g.stroke();
+    } else if (k === 'mon') {
+      const rod = L / 4, gp = L * 0.75;
+      g.lineWidth = Math.max(1.6, L * 0.02);
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -rod); g.stroke();
+      g.lineWidth = Math.max(1.4, L * 0.016);
+      g.beginPath(); g.moveTo(-gp, 0); g.lineTo(gp, 0); g.stroke();
+      g.lineWidth = Math.max(0.8, L * 0.008); g.globalAlpha = 0.55;
+      for (let i = -4; i <= 4; i++) {
+        const x = i * gp / 4.2;
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x - gp * 0.07, gp * 0.09); g.stroke();
+      }
+      g.globalAlpha = 1;
+    } else if (k === 'lin') {
+      const hl = S.D * L / 2, t = Math.max(2, hl * 0.09);
+      g.lineWidth = Math.max(1.6, hl * 0.03);
+      g.beginPath(); g.moveTo(0, -hl); g.lineTo(0, hl); g.stroke();
+      g.globalAlpha = 0.2; g.fillRect(-t, -hl, t, 2 * hl); g.globalAlpha = 1;
+      g.lineWidth = Math.max(1, hl * 0.02);
+      g.beginPath(); g.moveTo(-t, -hl); g.lineTo(-t, hl); g.stroke();
+      g.beginPath(); g.moveTo(-t - Math.max(4, hl * 0.16), 0); g.lineTo(-t, 0); g.stroke();
+    } else if (k === 'arr') {
+      const N = Nel(), d = L / 2, hl = (N - 1) * d / 2;
+      const dot = clamp(d * 0.22, 0.8, 3.4);
+      g.lineWidth = Math.max(1, hl * 0.02);
+      g.beginPath(); g.moveTo(-Math.max(4, hl * 0.14), -hl); g.lineTo(-Math.max(4, hl * 0.14), hl); g.stroke();
+      for (let i = 0; i < N; i++) {
+        const y = -hl + i * d;
+        g.beginPath(); g.moveTo(-Math.max(4, hl * 0.14), y); g.lineTo(0, y); g.stroke();
+        g.beginPath(); g.arc(0, y, dot, 0, 7); g.fill();
+      }
+    } else {
+      const hl = S.D * L / 2, foc = 0.4 * S.D * L, dep = hl * hl / (4 * foc);
+      g.lineWidth = Math.max(1.8, hl * 0.05);
+      g.beginPath();
+      for (let i = 0; i <= 40; i++) {
+        const y = -hl + 2 * hl * i / 40, x = -dep + y * y / (4 * foc);
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+      g.lineWidth = Math.max(1, hl * 0.025);
+      g.beginPath(); g.moveTo(-dep, 0); g.lineTo(foc - dep, 0); g.stroke();
+      g.beginPath(); g.arc(foc - dep, 0, Math.max(1.6, hl * 0.07), 0, 7); g.stroke();
+    }
+  }
+
+  function drawPerson(g, x, gy, hpx) {
+    const hr = Math.max(1, hpx * 0.075);
+    g.lineWidth = Math.max(1, hpx * 0.045);
+    g.beginPath(); g.arc(x, gy - hpx + hr, hr, 0, 7); g.stroke();
+    g.beginPath();
+    g.moveTo(x, gy - hpx + 2 * hr); g.lineTo(x, gy - hpx * 0.45);
+    g.moveTo(x, gy - hpx * 0.45); g.lineTo(x - hpx * 0.13, gy);
+    g.moveTo(x, gy - hpx * 0.45); g.lineTo(x + hpx * 0.13, gy);
+    g.moveTo(x - hpx * 0.16, gy - hpx * 0.62); g.lineTo(x + hpx * 0.16, gy - hpx * 0.62);
+    g.stroke();
+  }
+
+  let phase = 0;
+  function drawScene() {
     const c = $('phys'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border-strong');
-    const cx = w * 0.30, cy = h * 0.55;
-    const t = TYPES[S.t].key;
-    const pk = metrics();
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    const acc = cvv('--accent'), bd = cvv('--border-strong');
+    const top = 14, gy = h - 34;
+    const size = antSize();
+    const worldH = Math.max(3.6, size * 1.55);
+    const pxm = (gy - top) / worldH;
+    const hubY = gy - worldH * 0.6 * pxm;
+    const hubX = w * 0.37;
+    const lobeR = Math.min(w * 0.30, (gy - top) * 0.40);
+    let hs = pxm;
+    let mag = 1;
+    if (size * pxm < 34) { mag = 34 / Math.max(size * pxm, 1e-9); hs = pxm * mag; }
 
-    const R = Math.min(w * 0.62, h * 0.42);
     g.save();
-    g.translate(cx, cy);
-    g.rotate(rad(90));
-    for (let ring = 3; ring >= 1; ring--) {
-      g.fillStyle = '#378ADD';
-      g.globalAlpha = 0.05 + ring * 0.035;
-      g.beginPath();
-      for (let a = -180; a <= 180; a += 1.5) {
-        const r = patt(a) / Math.max(pk.pkval, 1e-6) * R * (0.45 + ring * 0.18);
-        const x = r * Math.cos(rad(a)), y = r * Math.sin(rad(a));
-        if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.closePath(); g.fill();
+    g.translate(hubX, hubY);
+    g.fillStyle = acc; g.strokeStyle = acc;
+    g.globalAlpha = 0.18;
+    const lobeAt = a => {
+      const db = 20 * L10(Math.max(patAt(a - S.mech) / M.q.pk, 1e-9));
+      return Math.max(0, (db + 40) / 40) * lobeR;
+    };
+    g.beginPath();
+    for (let a = -180; a <= 180; a += 0.4) {
+      const r = lobeAt(a);
+      const x = r * Math.cos(a * RAD), y = -r * Math.sin(a * RAD);
+      if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
     }
-    g.globalAlpha = 1;
-    g.restore();
-
-    const wob = (time * 0.0012) % 1;
-    g.save();
-    g.translate(cx, cy);
-    g.rotate(rad(90));
-    g.strokeStyle = '#378ADD'; g.globalAlpha = 0.5; g.lineWidth = 1.4;
-    for (let k = 0; k < 3; k++) {
-      const ph = (wob + k / 3) % 1;
-      g.globalAlpha = 0.45 * (1 - ph);
+    g.closePath(); g.fill();
+    g.globalAlpha = 0.75; g.lineWidth = 1.6; g.stroke();
+    for (let ring = 0; ring < 3; ring++) {
+      const ph = (phase + ring / 3) % 1;
+      g.globalAlpha = 0.5 * (1 - ph);
+      g.lineWidth = 1.2;
       g.beginPath();
-      for (let a = -180; a <= 180; a += 1.5) {
-        const r = patt(a) / Math.max(pk.pkval, 1e-6) * R * (0.35 + ph * 0.75);
-        const x = r * Math.cos(rad(a)), y = r * Math.sin(rad(a));
+      for (let a = -180; a <= 180; a += 0.8) {
+        const r = lobeAt(a) * (0.25 + ph * 0.9);
+        const x = r * Math.cos(a * RAD), y = -r * Math.sin(a * RAD);
         if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
       }
       g.closePath(); g.stroke();
@@ -274,212 +503,385 @@ canvas { width: 100%; display: block; }
     g.globalAlpha = 1;
     g.restore();
 
-    g.save();
-    g.translate(cx, cy);
-    g.rotate(rad(S.mech));
-    g.strokeStyle = ink; g.fillStyle = ink; g.lineWidth = 2.4;
-    if (t === 'iso') {
-      g.beginPath(); g.arc(0, 0, 7, 0, 7); g.fill();
-      g.lineWidth = 1; g.setLineDash([3, 3]);
-      g.beginPath(); g.arc(0, 0, 16, 0, 7); g.stroke();
-      g.setLineDash([]);
-    } else if (t === 'dip') {
-      g.beginPath(); g.moveTo(0, -34); g.lineTo(0, -4); g.moveTo(0, 4); g.lineTo(0, 34); g.stroke();
-      g.lineWidth = 1.4;
-      g.beginPath(); g.moveTo(0, -4); g.lineTo(-12, 0); g.moveTo(0, 4); g.lineTo(-12, 2); g.stroke();
-    } else if (t === 'mon') {
-      g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -40); g.stroke();
-      g.lineWidth = 2;
-      g.beginPath(); g.moveTo(-38, 0); g.lineTo(38, 0); g.stroke();
-      g.lineWidth = 1; g.globalAlpha = 0.5;
-      for (let i = -34; i <= 34; i += 9) {
-        g.beginPath(); g.moveTo(i, 0); g.lineTo(i - 5, 7); g.stroke();
-      }
-      g.globalAlpha = 1;
-    } else if (t === 'pat') {
-      g.lineWidth = 2;
-      g.strokeRect(-6, -26, 8, 52);
-      g.globalAlpha = 0.25; g.fillRect(-6, -26, 8, 52); g.globalAlpha = 1;
-      g.beginPath(); g.moveTo(4, -30); g.lineTo(4, 30); g.stroke();
-    } else if (t === 'yag') {
-      g.lineWidth = 2.2;
-      g.beginPath(); g.moveTo(-18, -34); g.lineTo(-18, 34); g.stroke();
-      g.beginPath(); g.moveTo(-4, -27); g.lineTo(-4, 27); g.stroke();
-      [10, 22, 34, 46].forEach((d, i) => {
-        const L = 23 - i * 2;
-        g.beginPath(); g.moveTo(d, -L); g.lineTo(d, L); g.stroke();
-      });
-      g.lineWidth = 1.6;
-      g.beginPath(); g.moveTo(-20, 0); g.lineTo(48, 0); g.stroke();
-    } else if (t === 'hor') {
-      g.lineWidth = 2.2;
-      g.beginPath();
-      g.moveTo(-26, -9); g.lineTo(-2, -9); g.lineTo(30, -30);
-      g.moveTo(-26, 9); g.lineTo(-2, 9); g.lineTo(30, 30);
-      g.stroke();
-      g.beginPath(); g.moveTo(30, -30); g.lineTo(30, 30); g.stroke();
-      g.beginPath(); g.moveTo(-26, -9); g.lineTo(-26, 9); g.stroke();
-    } else if (t === 'dsh') {
-      g.lineWidth = 2.4;
-      g.beginPath();
-      for (let y = -44; y <= 44; y += 2) {
-        const x = -22 + y * y / 120;
-        if (y === -44) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.stroke();
-      g.lineWidth = 1.4;
-      g.beginPath(); g.moveTo(-22, 0); g.lineTo(14, 0); g.stroke();
-      g.beginPath(); g.arc(14, 0, 5, 0, 7); g.stroke();
-    } else {
-      g.lineWidth = 2;
-      for (let i = 0; i < 8; i++) {
-        const y = -49 + i * 14;
-        g.beginPath(); g.moveTo(-2, y - 4); g.lineTo(-2, y + 4); g.stroke();
-        g.beginPath(); g.arc(-2, y, 3.2, 0, 7); g.fill();
-      }
-      g.lineWidth = 1.2; g.globalAlpha = 0.6;
-      g.beginPath(); g.moveTo(-10, -50); g.lineTo(-10, 50); g.stroke();
-      g.globalAlpha = 1;
-    }
-    g.restore();
+    g.fillStyle = cvv('--surface-1');
+    g.fillRect(0, gy, w, h - gy);
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(0, gy + 0.5); g.lineTo(w, gy + 0.5); g.stroke();
 
-    const bl = 74;
-    g.save(); g.translate(cx, cy);
-    g.strokeStyle = sub; g.globalAlpha = 0.8; g.lineWidth = 1.2; g.setLineDash([4, 4]);
+    const halfV = Math.max(6, size * hs / 2);
+    const mastTop = Math.min(gy - 2, hubY + halfV + 7);
+    g.strokeStyle = bd; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(hubX, gy); g.lineTo(hubX, mastTop); g.stroke();
+    g.lineWidth = 2;
+    g.beginPath(); g.moveTo(hubX - 6, mastTop); g.lineTo(hubX + 6, mastTop); g.stroke();
+
+    g.strokeStyle = mut;
+    drawPerson(g, hubX - Math.max(40, w * 0.12), gy, 1.75 * pxm);
+
+    g.save();
+    g.translate(hubX, hubY);
+    g.strokeStyle = sub; g.globalAlpha = 0.85; g.lineWidth = 1.2; g.setLineDash([5, 4]);
     g.beginPath(); g.moveTo(0, 0);
-    g.lineTo(Math.sin(rad(S.mech)) * bl, -Math.cos(rad(S.mech)) * bl);
+    g.lineTo(Math.cos(S.mech * RAD) * lobeR * 1.12, -Math.sin(S.mech * RAD) * lobeR * 1.12);
     g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
     g.restore();
 
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText(TYPES[S.t].name, 10, 10);
-    g.textBaseline = 'bottom';
-    g.fillText('dashed line = where the metal points (mechanical boresight)', 10, h - 8);
+    g.save();
+    g.translate(hubX, hubY);
+    g.rotate(-S.mech * RAD);
+    g.strokeStyle = ink; g.fillStyle = ink;
+    g.shadowColor = cvv('--bg'); g.shadowBlur = 6;
+    drawHardware(g, hs);
+    g.shadowBlur = 0;
+    g.restore();
+
+    const ly = clamp(hubY - halfV - 6, 48, gy - 10);
+    g.strokeStyle = mut; g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(96, 46);
+    g.lineTo(hubX - 44, 46);
+    g.lineTo(hubX - 7, ly);
+    g.stroke();
+
+    const bx = Math.cos(S.mech * RAD) * lobeR * 1.14 + hubX;
+    const by = -Math.sin(S.mech * RAD) * lobeR * 1.14 + hubY;
+    g.fillStyle = sub; g.font = fnt(11);
+    g.textAlign = bx > w - 120 ? 'right' : 'left'; g.textBaseline = 'middle';
+    g.fillText('mechanical boresight ' + fx(S.mech, 0) + '°', clamp(bx + (bx > w - 120 ? -4 : 4), 4, w - 4), clamp(by, 12, gy - 8));
+
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = ink; g.font = fnt(12);
+    g.fillText(TYPES[S.t].name, 8, 6);
+    g.fillStyle = sub; g.font = fnt(11);
+    g.fillText(sizeTxt() + ' at ' + fx(S.f, 1) + ' GHz (λ = ' + lenTxt(lam()) + ')', 8, 22);
+    if (mag > 1.05) g.fillText('hardware drawn ' + fx(mag, 0) + '× larger than true scale to stay visible', 8, 37);
+
+    let bar = 0.001;
+    const nice = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+    for (let i = 0; i < nice.length; i++) if (nice[i] * pxm <= w * 0.26) bar = nice[i];
+    g.strokeStyle = mut; g.fillStyle = mut; g.lineWidth = 1.4;
+    const bx0 = 10, by0 = h - 14;
+    g.beginPath();
+    g.moveTo(bx0, by0 - 4); g.lineTo(bx0, by0); g.lineTo(bx0 + bar * pxm, by0); g.lineTo(bx0 + bar * pxm, by0 - 4);
+    g.stroke();
+    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText(lenTxt(bar) + ' (person is 1.75 m)', bx0 + bar * pxm + 6, by0 + 3);
   }
 
   function drawPolar() {
     const c = $('pol'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
-    const cx = w / 2, cy = h / 2 + 6;
-    const R = Math.min(w / 2 - 46, h / 2 - 26);
-    const m = metrics();
-    const FLOOR = -30;
-    const toR = v => {
-      const db = 20 * Math.log10(Math.max(v / Math.max(m.pkval, 1e-9), 1e-6));
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const bds = cvv('--border-strong'), acc = cvv('--accent'), acc2 = cvv('--accent-2'), warn = cvv('--text-warning');
+    const cx = w / 2, cy = h / 2 + 4;
+    const R = Math.max(30, Math.min(w / 2 - 54, h / 2 - 34));
+    const FLOOR = -40;
+    const rOf = v => {
+      const db = 20 * L10(Math.max(v / M.q.pk, 1e-9));
       return Math.max(0, (db - FLOOR) / -FLOOR) * R;
     };
 
     g.font = fnt(11);
-    [[-3, '−3 dB'], [-10, '−10'], [-20, '−20']].forEach(ring => {
+    [[-3, '−3 dB'], [-10, '−10'], [-20, '−20'], [-30, '−30']].forEach(ring => {
       const rr = (ring[0] - FLOOR) / -FLOOR * R;
-      g.strokeStyle = ring[0] === -3 ? cvv('--border-strong') : bd;
+      g.strokeStyle = ring[0] === -3 ? bds : bd;
       g.lineWidth = ring[0] === -3 ? 1 : 0.5;
       g.setLineDash(ring[0] === -3 ? [4, 4] : []);
       g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.stroke();
       g.setLineDash([]);
-      g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'middle';
       g.fillText(ring[1], cx + 3, cy - rr);
     });
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.fillStyle = sub;
+    g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
+    g.fillStyle = mut;
     for (let a = 0; a < 360; a += 30) {
-      const x = cx + Math.sin(rad(a)) * R, y = cy - Math.cos(rad(a)) * R;
+      const x = cx + Math.cos(a * RAD) * R, y = cy - Math.sin(a * RAD) * R;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(cx, cy); g.lineTo(x, y); g.stroke();
       g.textAlign = 'center'; g.textBaseline = 'middle';
-      const lx = cx + Math.sin(rad(a)) * (R + 18), ly = cy - Math.cos(rad(a)) * (R + 18);
-      g.fillText((a > 180 ? a - 360 : a) + '°', lx, ly);
+      g.fillText((a > 180 ? a - 360 : a).toFixed(0) + '°', cx + Math.cos(a * RAD) * (R + 20), cy - Math.sin(a * RAD) * (R + 20));
     }
 
-    if (m.hpbw !== null) {
-      g.fillStyle = cvv('--text-warning') || sub; g.globalAlpha = 0.14;
+    if (M.q.hpbw < 359) {
+      g.fillStyle = warn; g.globalAlpha = 0.16;
       g.beginPath(); g.moveTo(cx, cy);
-      for (let a = m.peak - m.hpbw / 2; a <= m.peak + m.hpbw / 2; a += 0.5) {
-        g.lineTo(cx + Math.sin(rad(a)) * R, cy - Math.cos(rad(a)) * R);
+      const st = Math.max(0.05, M.q.hpbw / 60);
+      for (let a = M.q.aLo; a <= M.q.aHi + 1e-9; a += st) {
+        const aa = (a + S.mech) * RAD;
+        g.lineTo(cx + Math.cos(aa) * R, cy - Math.sin(aa) * R);
       }
+      const ae = (M.q.aHi + S.mech) * RAD;
+      g.lineTo(cx + Math.cos(ae) * R, cy - Math.sin(ae) * R);
       g.closePath(); g.fill(); g.globalAlpha = 1;
     }
 
-    g.fillStyle = '#378ADD'; g.globalAlpha = 0.16;
+    g.fillStyle = acc; g.strokeStyle = acc;
+    g.globalAlpha = 0.18;
     g.beginPath();
-    for (let a = -180; a <= 180; a += 0.5) {
-      const r = toR(patt(a));
-      const x = cx + Math.sin(rad(a)) * r, y = cy - Math.cos(rad(a)) * r;
-      if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
+    for (let i = 0; i < NS; i += 4) {
+      const a = (angOf(i) + S.mech) * RAD, r = rOf(M.samp[i]);
+      const x = cx + Math.cos(a) * r, y = cy - Math.sin(a) * r;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
     }
-    g.closePath(); g.fill(); g.globalAlpha = 1;
-    g.strokeStyle = '#378ADD'; g.lineWidth = 2;
+    g.closePath(); g.fill();
+    g.globalAlpha = 1; g.lineWidth = 2;
     g.beginPath();
-    for (let a = -180; a <= 180; a += 0.5) {
-      const r = toR(patt(a));
-      const x = cx + Math.sin(rad(a)) * r, y = cy - Math.cos(rad(a)) * r;
-      if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
+    for (let i = 0; i < NS; i += 4) {
+      const a = (angOf(i) + S.mech) * RAD, r = rOf(M.samp[i]);
+      const x = cx + Math.cos(a) * r, y = cy - Math.sin(a) * r;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
     }
     g.closePath(); g.stroke();
 
-    g.strokeStyle = sub; g.lineWidth = 1.2; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(cx, cy);
-    g.lineTo(cx + Math.sin(rad(S.mech)) * R, cy - Math.cos(rad(S.mech)) * R);
-    g.stroke(); g.setLineDash([]);
-
-    if (m.hpbw !== null) {
-      g.strokeStyle = '#D85A30'; g.lineWidth = 2;
-      g.beginPath(); g.moveTo(cx, cy);
-      g.lineTo(cx + Math.sin(rad(m.peak)) * R, cy - Math.cos(rad(m.peak)) * R);
+    g.strokeStyle = mut; g.lineWidth = 1.4;
+    M.q.nulls.forEach(n => {
+      const a = (n + S.mech) * RAD;
+      g.beginPath();
+      g.moveTo(cx + Math.cos(a) * (R + 2), cy - Math.sin(a) * (R + 2));
+      g.lineTo(cx + Math.cos(a) * (R + 9), cy - Math.sin(a) * (R + 9));
       g.stroke();
-      g.fillStyle = '#D85A30'; g.font = fnt(11);
-      g.textAlign = 'center'; g.textBaseline = 'bottom';
-      const lx = cx + Math.sin(rad(m.peak)) * (R * 0.62);
-      const ly = cy - Math.cos(rad(m.peak)) * (R * 0.62);
-      g.fillText('electrical boresight', lx, ly - 4);
+    });
+    if (M.q.nulls.length) {
+      const a = (M.q.nulls[0] + S.mech) * RAD;
+      g.fillStyle = mut; g.font = fnt(10);
+      g.textAlign = Math.cos(a) < 0 ? 'right' : 'left'; g.textBaseline = 'middle';
+      g.fillText('null', cx + Math.cos(a) * (R + 12), cy - Math.sin(a) * (R + 12));
     }
 
+    g.strokeStyle = acc2; g.lineWidth = 1.6;
+    const pa = S.mech * RAD;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(pa) * R, cy - Math.sin(pa) * R); g.stroke();
+
     g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('shaded wedge = half-power beamwidth', 6, 4);
+    g.fillText('shaded wedge = half-power beamwidth ' + fx(M.q.hpbw, 2) + '°', 6, 4);
+    g.fillStyle = acc2;
+    g.fillText('solid radial line = beam peak, at ' + fx(S.mech, 0) + '°', 6, 20);
+    g.fillStyle = mut; g.textBaseline = 'bottom';
+    g.fillText('0° is straight to the right, the same as on the picture above', 6, h - 4);
+  }
+
+  function drawRect() {
+    const c = $('rect'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const acc = cvv('--accent'), acc2 = cvv('--accent-2'), warn = cvv('--text-warning');
+    const l = 46, r = 12, t = 16, b = 40;
+    const span = clamp(6 * M.q.hpbw, 20, 180);
+    const lo = S.mech - span, hi = S.mech + span;
+    const FLOOR = -40;
+    const X = a => l + (a - lo) / (hi - lo) * (w - l - r);
+    const Y = v => t + (0 - clamp(v, FLOOR, 0)) / -FLOOR * (h - t - b);
+
+    g.font = fnt(11); g.fillStyle = mut;
+    for (let v = 0; v >= FLOOR; v -= 10) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText((v === 0 ? '0' : '−' + Math.abs(v).toFixed(0)), l - 6, Y(v));
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('dB below peak', 6, 2);
+
+    const tickStep = span <= 25 ? 5 : span <= 60 ? 15 : 45;
+    const first = Math.ceil(lo / tickStep) * tickStep;
+    for (let a = first; a <= hi + 1e-9; a += tickStep) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(wrap(a).toFixed(0) + '°', X(a), h - b + 6);
+    }
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('direction, degrees (0° = straight right, same as the pictures above)', (l + w - r) / 2, h - 6);
+
+    g.strokeStyle = warn; g.lineWidth = 1; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(l, Y(-3)); g.lineTo(w - r, Y(-3)); g.stroke();
+    if (M.q.sllDb > FLOOR + 0.5 && M.q.sllDb < -0.2) {
+      g.strokeStyle = acc2;
+      g.beginPath(); g.moveTo(l, Y(M.q.sllDb)); g.lineTo(w - r, Y(M.q.sllDb)); g.stroke();
+    }
+    g.setLineDash([]);
+
+    g.strokeStyle = acc; g.lineWidth = 2;
+    g.beginPath();
+    for (let px = l; px <= w - r; px += 1) {
+      const a = lo + (px - l) / (w - l - r) * (hi - lo);
+      const db = 20 * L10(Math.max(patAt(a - S.mech) / M.q.pk, 1e-9));
+      const y = Y(db);
+      if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+    }
+    g.stroke();
+
+    g.strokeStyle = mut; g.lineWidth = 1;
+    M.q.nulls.forEach(n => {
+      const x = X(n + S.mech);
+      if (x < l || x > w - r) return;
+      g.beginPath(); g.moveTo(x, h - b); g.lineTo(x, h - b - 6); g.stroke();
+    });
+
+    const xA = X(M.q.aLo + S.mech), xB = X(M.q.aHi + S.mech);
+    if (xB - xA > 6 && xA > l && xB < w - r) {
+      g.strokeStyle = warn; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(xA, Y(-3)); g.lineTo(xB, Y(-3)); g.stroke();
+      [[xA, 1], [xB, -1]].forEach(p => {
+        g.beginPath();
+        g.moveTo(p[0], Y(-3)); g.lineTo(p[0] + p[1] * 5, Y(-3) - 4);
+        g.moveTo(p[0], Y(-3)); g.lineTo(p[0] + p[1] * 5, Y(-3) + 4);
+        g.stroke();
+      });
+    }
+    g.fillStyle = warn; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('−3 dB, width ' + fx(M.q.hpbw, 2) + '°', l + 4, Y(-3) - 4);
+    if (M.q.sllDb > FLOOR + 0.5 && M.q.sllDb < -0.2) {
+      g.fillStyle = acc2; g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.fillText('first sidelobe ' + fx(M.q.sllDb, 2) + ' dB', w - r - 4, Y(M.q.sllDb) - 3);
+    }
+  }
+
+  function areaTxt(v) {
+    if (!isFinite(v)) return '—';
+    if (v >= 100) return v.toFixed(0);
+    if (v >= 10) return v.toFixed(1);
+    if (v >= 1) return v.toFixed(2);
+    if (v >= 0.01) return v.toFixed(4);
+    return v.toFixed(6);
+  }
+
+  function closedForm() {
+    const k = TYPES[S.t].k;
+    if (k === 'dip') return { v: 1.640922, txt: 'the exact half-wave dipole value, 1.6409' };
+    if (k === 'mon') return { v: 3.281845, txt: 'twice the dipole, 3.2818' };
+    if (k === 'lin') return { v: 2 * S.D, txt: '2L/λ = ' + fx(2 * S.D, 2) + ', the long-line limit' };
+    if (k === 'arr') return { v: Nel(), txt: 'N = ' + Nel() + ', the half-wave-spaced array rule' };
+    return { v: Math.PI * Math.PI * S.D * S.D, txt: '4πA/λ² = π²D² = ' + fx(Math.PI * Math.PI * S.D * S.D, 1) };
   }
 
   function updateUI() {
     const T = TYPES[S.t];
-    $('mechv').textContent = S.mech + '°';
-    $('elecv').textContent = S.elec + '°';
-    $('elec').disabled = !T.steer;
-    $('elec').style.opacity = T.steer ? 1 : 0.4;
-    const m = metrics();
-    $('cG').textContent = T.gain.toFixed(1) + ' dBi';
-    $('cGn').textContent = T.gain === 0
-      ? 'the reference — all other gains are quoted against this'
-      : (T.gain - 2.15).toFixed(1) + ' dBd · ' + Math.pow(10, T.gain / 10).toFixed(0) + '× the power of isotropic on boresight';
-    $('cB').textContent = m.hpbw === null ? 'none' : m.hpbw.toFixed(1) + '°';
-    $('cF').textContent = m.hpbw === null ? '0 dB' : (m.ftb > 40 ? '> 40 dB' : m.ftb.toFixed(1) + ' dB');
-    const off = m.peak - S.mech;
-    if (m.hpbw === null) {
-      $('cBo').textContent = 'no beam';
-      $('cBon').textContent = 'radiates the same in all directions, so there is nothing to point';
-    } else if (Math.abs(off) < 0.5) {
-      $('cBo').textContent = 'aligned';
-      $('cBon').textContent = 'beam peaks exactly where the metal points';
+    $('apv').textContent = fx(S.D, 1) + ' λ';
+    $('fqv').textContent = fx(S.f, 1) + ' GHz';
+    $('efv').textContent = fx(S.eta, 0) + ' %';
+    $('mbv').textContent = fx(S.mech, 0) + '°';
+    $('ap').disabled = !T.usesD;
+    $('cD').classList.toggle('off', !T.usesD);
+
+    const q = M.q, lm = M.lam;
+    $('cD1').textContent = fx(M.Dd, 2) + ' dBi';
+    $('cD1n').textContent = 'D = ' + fx(M.D, 3) + ', integrated over the whole sphere';
+    $('cG').textContent = fx(M.Gd, 2) + ' dBi';
+    $('cGn').textContent = 'G = ηD with η = ' + fx(S.eta, 0) + ' %, costing ' + fx(-10 * L10(S.eta / 100), 2) + ' dB';
+    $('cB').textContent = q.hpbw >= 359 ? '—' : fx(q.hpbw, 2) + '°';
+    $('cBn').textContent = q.hpbw >= 359 ? 'no half-power edge in this cut'
+      : 'from ' + fx(wrap(q.aLo + S.mech), 2) + '° to ' + fx(wrap(q.aHi + S.mech), 2) + '°';
+    if (q.sllDb <= -98) {
+      $('cS').textContent = 'none';
+      $('cSn').textContent = 'this cut has no lobe outside the main beam';
     } else {
-      $('cBo').textContent = (off > 0 ? '+' : '') + off.toFixed(0) + '° off';
-      $('cBon').textContent = 'beam peaks ' + Math.abs(off).toFixed(0) + '° away from where the metal points';
+      $('cS').textContent = fx(q.sllDb, 2) + ' dB';
+      $('cSn').textContent = 'tallest lobe outside the main beam, at ' + fx(wrap(q.sllAt + S.mech), 1) + '°';
     }
-    $('note').textContent = T.note;
+    $('cF').textContent = q.ftbDb > 60 ? '> 60 dB' : fx(q.ftbDb, 2) + ' dB';
+    $('cFn').textContent = q.ftbDb < 0.05
+      ? 'this pattern is bidirectional: the rear lobe matches the front'
+      : 'peak over the strongest direction behind, at ' + fx(wrap(q.backAt + S.mech), 0) + '°';
+    $('cA').textContent = areaTxt(M.Ae) + ' m²';
+    $('cAn').textContent = 'Aₑ = Gλ²/4π at ' + fx(S.f, 1) + ' GHz, λ = ' + lenTxt(lm);
+
+    const cf = closedForm();
+    $('note').innerHTML = '<b>' + T.name + '.</b> ' + T.note +
+      ' <b>Cross-check:</b> integrating the plotted curve gives D = ' + fx(M.D, 3) + ' (' + fx(M.Dd, 2) +
+      ' dBi); the closed form says ' + cf.txt + ' (' + fx(10 * L10(Math.max(cf.v, 1e-12)), 2) + ' dBi), a difference of ' +
+      fx(Math.abs(M.Dd - 10 * L10(Math.max(cf.v, 1e-12))), 3) + ' dB.';
+
+    $('work').innerHTML = [
+      'Wavelength: <b>λ = c/f = 2.998×10⁸ m/s ÷ ' + fx(S.f, 1) + '×10⁹ Hz = ' + fx(lm, 4) + ' m</b> (' + lenTxt(lm) + '), so this antenna measures ' + sizeTxt() + '.',
+      'Pattern: <b>' + T.form + '</b>, plotted above and sampled every 0.02°.',
+      'Directivity: <b>D = 2 / ∫|F|² sinθ dθ = ' + fx(M.D, 3) + '</b>, which is 10·log₁₀(' + fx(M.D, 3) + ') = <b>' + fx(M.Dd, 2) + ' dBi</b>.',
+      'Gain: <b>G = ηD = ' + fx(S.eta / 100, 2) + ' × ' + fx(M.D, 3) + ' = ' + fx(M.G, 3) + '</b> = <b>' + fx(M.Gd, 2) + ' dBi</b>.',
+      'Beamwidth read off the curve at half power: <b>' + (M.q.hpbw >= 359 ? 'not defined in this cut' : fx(M.q.hpbw, 2) + '°') + '</b>.',
+      'Effective aperture: <b>Aₑ = Gλ²/4π = ' + fx(M.G, 3) + ' × (' + fx(lm, 4) + ' m)² / 4π = ' + areaTxt(M.Ae) + ' m²</b>.'
+    ].map(s => '<li>' + s + '</li>').join('');
+
+    $('assume').textContent = T.assume;
+    if (T.k === 'cir') {
+      $('thumb').innerHTML = 'For this ' + fx(S.D, 1) + 'λ aperture the integral of the drawn curve gives a beamwidth of <b>' +
+        fx(M.q.hpbw, 2) + '°</b>. The two rules of thumb engineers quote for a real dish are wider, because they already include the feed taper: <b>70λ/D = ' +
+        fx(70 / S.D, 2) + '°</b> and the microwave-link form <b>22/(f<sub>GHz</sub>·D<sub>m</sub>) = ' + fx(22 / (S.f * S.D * lm), 2) +
+        '°</b>. Those two differ from each other by a fixed 4.8 %, and both are wider than the uniform-illumination floor of 58.96λ/D = ' +
+        fx(58.96 / S.D, 2) + '°.';
+    } else if (T.k === 'lin' || T.k === 'arr') {
+      $('thumb').innerHTML = 'The classic estimate for a uniformly illuminated aperture is <b>50.76λ/L = ' + fx(50.758 / S.D, 2) +
+        '°</b> against the <b>' + fx(M.q.hpbw, 2) + '°</b> measured from the curve. The estimate is a small-angle approximation, so it is within a fraction of a percent for a long aperture and several percent out when the aperture is only a wavelength or two.';
+    } else {
+      $('thumb').innerHTML = 'Wire antennas have no aperture slider because their size is fixed by the wavelength: the dipole is always λ/2 and the monopole always λ/4. Their beamwidths, <b>78.08°</b> and <b>39.04°</b>, are constants of the geometry and do not move with frequency — only the metal shrinks.';
+    }
   }
+
+  function redraw() { drawScene(); drawPolar(); drawRect(); }
+  function refresh() { recompute(); updateUI(); redraw(); }
 
   TYPES.forEach((T, i) => {
     $('t' + i).addEventListener('click', () => {
       S.t = i;
-      TYPES.forEach((_, k) => $('t' + k).classList.remove('on'));
-      $('t' + i).classList.add('on');
-      if (!T.steer) { S.elec = 0; $('elec').value = 0; }
-      updateUI();
+      TYPES.forEach((_, k) => $('t' + k).classList.toggle('on', k === i));
+      refresh();
     });
   });
-  $('mech').addEventListener('input', () => { S.mech = +$('mech').value; updateUI(); });
-  $('elec').addEventListener('input', () => { S.elec = +$('elec').value; updateUI(); });
+  const bind = (id, key, scale) => $(id).addEventListener('input', () => {
+    S[key] = +$(id).value * (scale || 1);
+    refresh();
+  });
+  bind('ap', 'D'); bind('fq', 'f'); bind('ef', 'eta'); bind('mb', 'mech');
 
-  updateUI();
-  function frame(ts) { drawPhys(ts); drawPolar(); requestAnimationFrame(frame); }
-  requestAnimationFrame(frame);
+  const TOUR = [
+    { t: 0, D: 6, f: 2.4, eta: 60, mech: 0,
+      txt: 'Step 1 — the half-wave dipole, the antenna every other one is measured against. Its pattern is the exact cos((π/2)cosθ)/sinθ, which integrates to 2.15 dBi and is 78.08° wide. Note the front-to-back card: a dipole has no front, so it reads 0 dB.' },
+    { t: 1, D: 6, f: 2.4, eta: 60, mech: 0,
+      txt: 'Step 2 — cut the wire in half and stand it on a ground plane. The field above is unchanged, but nothing goes below, so the same power fills half the space: directivity doubles, exactly +3.01 dB, and the elevation beamwidth halves to 39.04°.' },
+    { t: 2, D: 6, f: 2.4, eta: 60, mech: 0,
+      txt: 'Step 3 — a six-wavelength uniform line source. Now there is a real beam, 8.47° wide, and sidelobes appear at −13.26 dB. That number is a property of uniform illumination, not of this particular antenna, and no amount of extra length improves it.' },
+    { t: 3, D: 6, f: 2.4, eta: 60, mech: 0,
+      txt: 'Step 4 — the same six wavelengths built from twelve elements spaced λ/2. Almost the same beam and almost the same sidelobes, because it is sampling the same illumination, and its directivity comes out at very nearly the element count. Drag the aperture slider to 2λ and watch the first sidelobe rise to −11.3 dB at four elements.' },
+    { t: 4, D: 6, f: 12, eta: 60, mech: 25,
+      txt: 'Step 5 — the same six wavelengths made round, and the frequency raised to 12 GHz so the dish is only 15 cm across. Roundness alone drops the first sidelobe to −17.57 dB and moves the first null out to 1.22λ/D. The boresight is tilted 25° up: the hardware, the beam and the dashed line all turn together.' }
+  ];
+  TOUR.forEach((st, i) => {
+    $('s' + (i + 1)).addEventListener('click', () => {
+      S.t = st.t; S.D = st.D; S.f = st.f; S.eta = st.eta; S.mech = st.mech;
+      $('ap').value = st.D; $('fq').value = st.f; $('ef').value = st.eta; $('mb').value = st.mech;
+      TYPES.forEach((_, k) => $('t' + k).classList.toggle('on', k === st.t));
+      $('tourTxt').textContent = st.txt;
+      refresh();
+    });
+  });
+
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  S.playing = !reduce;
+  $('pp').textContent = S.playing ? 'Pause motion' : 'Play motion';
+  $('pp').addEventListener('click', () => {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause motion' : 'Play motion';
+    if (S.playing) requestAnimationFrame(frame);
+  });
+
+  let last = 0;
+  function frame(ts) {
+    if (!S.playing) { last = 0; return; }
+    const dt = last ? Math.min(ts - last, 50) : 16;
+    last = ts;
+    phase = (phase + dt * 0.0004) % 1;
+    drawScene();
+    requestAnimationFrame(frame);
+  }
+
+  let rt = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(redraw, 120);
+  });
+
+  refresh();
+  if (S.playing) requestAnimationFrame(frame);
 })();
 </script>
 </body>

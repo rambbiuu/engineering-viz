@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Erlang B, blocking and trunking efficiency</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --surface-1: #f4f6f8;
+  --surface-2: #ffffff;
+  --plot-bg: #ffffff;
+  --grid: #e4e8ec;
+  --grid-strong: #c8ced4;
+  --axis: #3c4650;
+  --text-primary: #1a1f26;
+  --text-secondary: #55606c;
+  --text-muted: #869099;
+  --series-1: #0072bd;
+  --series-2: #d95319;
+  --series-3: #edb120;
+  --series-4: #7e2f8e;
+  --series-5: #77ac30;
+  --series-6: #4dbeee;
+  --series-7: #a2142f;
+  --good: #77ac30;
+  --warn: #d95319;
+  --bad: #a2142f;
+  --border: #dfe4e9;
+  --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16191d;
+    --surface-1: #1e2328;
+    --surface-2: #232930;
+    --plot-bg: #1a1e23;
+    --grid: #2c333a;
+    --grid-strong: #444d56;
+    --axis: #9aa5b1;
+    --text-primary: #e9edf1;
+    --text-secondary: #b0bac4;
+    --text-muted: #7d8791;
+    --series-1: #4da6ff;
+    --series-2: #ff8c42;
+    --series-3: #ffd24d;
+    --series-4: #c77dda;
+    --series-5: #9fd356;
+    --series-6: #7fd4f5;
+    --series-7: #ff6b6b;
+    --good: #9fd356;
+    --warn: #ff8c42;
+    --bad: #ff6b6b;
+    --border: #2c333a;
+    --border-strong: #49525b;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+h2 { font-size: 15px; font-weight: 500; margin: 1.6rem 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.4rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button, select { font: inherit; color: inherit; }
+button, select { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
+button:hover, select:hover { background: var(--surface-1); }
+button.on { background: var(--surface-1); border-color: var(--axis); font-weight: 500; }
+input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 138px; }
+.ctl input[type=range] { flex: 1; min-width: 60px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 80px; text-align: right; font-variant-numeric: tabular-nums; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0.75rem; align-items: center; }
+.btnrow .lbl { font-size: 13px; color: var(--text-secondary); }
+.btnrow .out { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; background: var(--plot-bg); border-radius: var(--radius); }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin: 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+.note { font-size: 13px; color: var(--text-secondary); background: var(--surface-1);
+  border-left: 3px solid var(--series-1); border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 8px 12px; margin: 0 0 1rem; }
+.term { border-bottom: 1px dotted var(--text-muted); cursor: help; }
+details { margin: 0 0 1rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
+details summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
+details[open] summary { margin-bottom: 10px; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.5rem 0 0; }
+ol.work li { margin: 5px 0; }
+ol.work code, p code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--text-primary); }
+dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+table.tbl th, table.tbl td { text-align: right; padding: 4px 8px; border-bottom: 0.5px solid var(--border); }
+table.tbl th { color: var(--text-secondary); font-weight: 500; }
+table.tbl th:first-child, table.tbl td:first-child { text-align: left; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Erlang B, blocking and trunking efficiency</h1>
+<p class="sub">A cell has a fixed number of radio channels and no idea how many people will call at once. Erlang B turns that gamble into one number: the chance a caller finds every channel busy and gets nothing.</p>
+<p class="sub" style="margin-bottom: 1.4rem;">New to cells and channel groups? Start with <a href="cellular-reuse.html">frequency reuse</a>, which explains where a cell's channel count comes from.</p>
+
+<p class="note">A bank of channels behaves like supermarket checkouts. Ten separate one-queue tills each need slack for their own quiet moments, so most tills sit idle while one has a rush. Pool the ten into a single queue and the rushes cancel out, so the same staff serve far more shoppers. Radio channels do the same thing, and the effect is much stronger than most people expect.</p>
+
+<div class="btnrow">
+  <span class="lbl">Guided tour</span>
+  <button type="button" id="t1">1 &middot; one channel</button>
+  <button type="button" id="t2">2 &middot; ten channels</button>
+  <button type="button" id="t3">3 &middot; fifty channels</button>
+  <button type="button" id="t4">4 &middot; split into three sectors</button>
+  <button type="button" id="t5">5 &middot; spend the licence differently</button>
+</div>
+<p class="note" id="tourNote">Move the sliders, or walk the five steps above. Step 3 is the one worth waiting for.</p>
+
+<div class="row">
+  <div class="ctl"><label for="ch">Channels per cell C</label><input type="range" id="ch" min="1" max="120" step="1" value="30"><span class="v" id="chv">30</span></div>
+  <div class="ctl"><label for="pb">Target blocking</label><input type="range" id="pb" min="0.5" max="10" step="0.1" value="2"><span class="v" id="pbv">2.0 %</span></div>
+  <div class="ctl"><label for="lm">Calls per hour, per user</label><input type="range" id="lm" min="0.5" max="5" step="0.1" value="2"><span class="v" id="lmv">2.0 /h</span></div>
+  <div class="ctl"><label for="hh">Mean holding time H</label><input type="range" id="hh" min="30" max="300" step="5" value="120"><span class="v" id="hhv">120 s</span></div>
+</div>
+
+<div class="btnrow">
+  <span class="lbl">Sectors per cell</span>
+  <button type="button" id="s1" class="on">1 &middot; omni</button>
+  <button type="button" id="s3">3 &middot; 120&deg;</button>
+  <button type="button" id="s6">6 &middot; 60&deg;</button>
+  <span class="lbl" style="margin-left: 10px;">Reuse factor</span>
+  <select id="nre" aria-label="Cluster size N">
+    <option value="1">N = 1</option>
+    <option value="3">N = 3</option>
+    <option value="4">N = 4</option>
+    <option value="7" selected>N = 7</option>
+    <option value="9">N = 9</option>
+    <option value="12">N = 12</option>
+    <option value="13">N = 13</option>
+    <option value="19">N = 19</option>
+    <option value="21">N = 21</option>
+  </select>
+  <span class="out" id="pool">&mdash;</span>
+</div>
+
+<p class="sec"><b>1 &middot; Callers meeting the channel bank</b> <span>&mdash; every slot is one radio channel; a caller who finds them all busy is turned away</span></p>
+<canvas id="c1" style="height: 250px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--good)"></span>green slot &mdash; a call in progress</li>
+  <li><span class="sw" style="background: var(--border-strong)"></span>empty slot &mdash; a free channel</li>
+  <li><span class="sw" style="background: var(--bad)"></span>red arrow &mdash; blocked call, cleared</li>
+  <li>The running count under the bank is a live simulation of arrivals and hang-ups. Leave it a few seconds and its blocked percentage settles near the Erlang B value on the card below.</li>
+</ul>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Offered traffic</div>
+    <div class="big" id="cOff">&mdash;</div>
+    <div class="ft" id="cOffF">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Carried traffic</div>
+    <div class="big" id="cCar">&mdash;</div>
+    <div class="ft">offered minus the blocked share</div>
+  </div>
+  <div class="card">
+    <div class="hd">Blocking probability</div>
+    <div class="big" id="cBlk">&mdash;</div>
+    <div class="ft" id="cBlkF">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Users supported</div>
+    <div class="big" id="cUsr">&mdash;</div>
+    <div class="ft" id="cUsrF">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Channels per sector</div>
+    <div class="big" id="cCps">&mdash;</div>
+    <div class="ft" id="cCpsF">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Utilisation</div>
+    <div class="big" id="cUtl">&mdash;</div>
+    <div class="ft" id="cUtlF">&mdash;</div>
+  </div>
+</div>
+
+<p class="sec"><b>2 &middot; Blocking against offered traffic</b> <span>&mdash; the same curve for several trunk-group sizes, both axes logarithmic</span></p>
+<canvas id="c2" style="height: 310px;"></canvas>
+<ul class="legend-note">
+  <li>Each curve is one trunk-group size C. Read across at your target blocking to get the traffic it will hold.</li>
+  <li><span class="sw" style="background: var(--series-7)"></span>red curve &mdash; the size you have set</li>
+  <li>Dashed line &mdash; your target grade of service. Dot &mdash; where one sector sits on it.</li>
+  <li>The labels sitting on the 1 % row are the standard Erlang B table: 0.0101, 1.361, 4.461, 12.03, 37.90 erlangs.</li>
+</ul>
+
+<p class="sec"><b>3 &middot; Utilisation against trunk-group size</b> <span>&mdash; grade of service held fixed; this rising curve is trunking efficiency</span></p>
+<canvas id="c3" style="height: 250px;"></canvas>
+<ul class="legend-note">
+  <li>Every point keeps the same blocking target, so only the number of channels changes.</li>
+  <li><span class="sw" style="background: var(--series-1)"></span>blue dot &mdash; all C channels pooled</li>
+  <li><span class="sw" style="background: var(--series-2)"></span>orange dot &mdash; one sector's share</li>
+  <li>Sectorising slides you back down the curve. That is its cost, before any interference benefit.</li>
+</ul>
+
+<p class="note" style="margin-top: 1.5rem; border-left-color: var(--warn);">Assumptions, and they are not decoration: calls arrive at random from a large population (Poisson), call lengths are exponentially distributed with mean H, and a blocked caller gives up and never retries. That last one is what makes it Erlang B; queue the blocked callers instead and the answer is Erlang C.</p>
+
+<details>
+  <summary>Worked example &mdash; sizing a 30-channel cell at 2 % blocking</summary>
+  <ol class="work">
+    <li>Per-user traffic: <code>A_u = &lambda;_u &middot; H = 2 calls/h &times; 120 s = 2 &times; 0.0333 h = 0.0667 Er</code>. One erlang is one channel held continuously.</li>
+    <li>Erlang B by the stable recursion, never factorials: <code>B(A,0) = 1</code>, then <code>B(A,k) = A&middot;B(A,k&minus;1) / (k + A&middot;B(A,k&minus;1))</code> for k = 1 to C.</li>
+    <li>There is no closed form for the inverse, so bisect on A until <code>B(A,30) = 0.02</code>. That gives <code>A = 21.93 Er</code>.</li>
+    <li>Carried traffic <code>= A(1 &minus; B) = 21.93 &times; 0.98 = 21.49 Er</code>. Utilisation <code>= 21.49 / 30 = 71.6 %</code>.</li>
+    <li>Users supported <code>= 21.93 / 0.0667 = 329</code>. Halve the holding time and the same channels serve twice as many people.</li>
+    <li>Check against the published table at 1 % blocking: C = 5 gives 1.3608 Er, C = 50 gives 37.9014 Er. Set the sliders there and the cards reproduce both.</li>
+  </ol>
+</details>
+
+<details>
+  <summary>Erlang B at 1 % blocking &mdash; the table this tool reproduces</summary>
+  <table class="tbl">
+    <tr><th>Channels C</th><th>Offered A, Er</th><th>Carried A(1&minus;B), Er</th><th>Utilisation</th></tr>
+    <tr><td>1</td><td>0.0101</td><td>0.0100</td><td>1.0 %</td></tr>
+    <tr><td>5</td><td>1.3608</td><td>1.3472</td><td>26.9 %</td></tr>
+    <tr><td>10</td><td>4.4612</td><td>4.4166</td><td>44.2 %</td></tr>
+    <tr><td>20</td><td>12.0306</td><td>11.9103</td><td>59.6 %</td></tr>
+    <tr><td>50</td><td>37.9014</td><td>37.5224</td><td>75.0 %</td></tr>
+  </table>
+  <p class="sub" style="margin: 10px 0 0;">Ten separate five-channel pools carry 10 &times; 1.3472 = 13.47 Er. One fifty-channel pool carries 37.52 Er, at the same grade of service, from the same fifty channels.</p>
+</details>
+
+<details>
+  <summary>Glossary</summary>
+  <dl class="glossary">
+    <dt>Erlang (Er)</dt><dd>Traffic intensity. One erlang is one channel occupied continuously for the hour. It has no units: it is a time divided by a time.</dd>
+    <dt>Offered traffic A</dt><dd>The traffic callers try to place: arrival rate times mean holding time, <code>A = &lambda;H</code>. It includes the calls that will be blocked.</dd>
+    <dt>Carried traffic</dt><dd>The traffic that actually gets a channel, <code>A(1 &minus; P_b)</code>. Always lower than offered. Erlang B tables list offered, so the two are easy to confuse.</dd>
+    <dt>Grade of service</dt><dd>The blocking probability a network is designed to meet in its busiest hour. 2 % is a common target; 1 % is a generous one.</dd>
+    <dt>Holding time H</dt><dd>Mean length of a call. Erlang B assumes call lengths follow an exponential distribution about this mean.</dd>
+    <dt>Trunk group</dt><dd>A set of channels any caller in the area can take. Erlang B applies to one trunk group at a time.</dd>
+    <dt>Trunking efficiency</dt><dd>The fact that a large trunk group runs at much higher utilisation than several small ones at the same grade of service.</dd>
+    <dt>Blocked calls cleared</dt><dd>The caller who finds everything busy is lost, with no queue and no retry. The assumption behind Erlang B.</dd>
+    <dt>Sectorisation</dt><dd>Splitting a cell into directional wedges. It cuts interference, but it also splits one trunk group into several smaller ones.</dd>
+    <dt>Reuse factor N</dt><dd>Cluster size. The operator's channel licence is divided N ways, so each cell gets a fraction of the total. Only certain N are possible: 1, 3, 4, 7, 9, 12, 13, 19, 21.</dd>
+  </dl>
+</details>
+
+<p class="sub" style="margin-top: 1.5rem;">Three things fall out of these sliders. Doubling the channels far more than doubles the traffic, because a bigger pool absorbs its own rushes: one channel holds 0.0101 Er at 1 % blocking, fifty hold 37.90 Er, which is 3750 times the traffic from fifty times the hardware. Loosening the target from 1 % to 5 % buys real capacity from the same radios, which is why a network designed for a quiet suburb can be re-graded rather than rebuilt. And sectorising a cell chops one trunk group into three or six, sliding utilisation back down the curve, so it only pays when the interference it removes lets you shrink the cluster size N and hand each cell more channels in the first place. Next, see where that channel count comes from in <a href="cellular-reuse.html">frequency reuse</a>.</p>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s, w) { return (w ? w + ' ' : '') + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  var clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var S = { C: 30, pb: 0.02, lam: 2, H: 120, sec: 1, N: 7 };
+  var D = { t: 30, Asec: 0, A: 0, carried: 0, pbAch: 0, users: 0, util: 0, Au: 0 };
+  var SIM = { n: [0], off: 0, blk: 0, flash: 0, last: 0 };
+  var UC = { pb: -1, v: [] };
+  var REF = [1, 5, 10, 20, 50];
+
+  function erlB(A, C) {
+    if (!(C > 0)) return 1;
+    if (!(A > 0)) return 0;
+    var inv = 1;
+    for (var k = 1; k <= C; k++) inv = 1 + inv * k / A;
+    if (!isFinite(inv) || inv <= 0) return 0;
+    return 1 / inv;
+  }
+
+  function invErlB(C, tgt) {
+    if (!(C > 0) || !(tgt > 0)) return 0;
+    if (tgt >= 1) return 1e4;
+    var lo = 0, hi = 1e4;
+    if (erlB(hi, C) < tgt) return hi;
+    for (var i = 0; i < 60; i++) {
+      var m = 0.5 * (lo + hi);
+      if (erlB(m, C) < tgt) lo = m; else hi = m;
+    }
+    var A = 0.5 * (lo + hi);
+    return isFinite(A) && A > 0 ? A : 0;
+  }
+
+  function derive() {
+    D.t = Math.floor(S.C / S.sec);
+    D.Asec = invErlB(D.t, S.pb);
+    D.pbAch = D.t > 0 ? erlB(D.Asec, D.t) : 1;
+    D.A = S.sec * D.Asec;
+    D.carried = D.A * (1 - D.pbAch);
+    D.Au = S.lam * S.H / 3600;
+    D.users = D.Au > 0 ? D.A / D.Au : 0;
+    D.util = S.C > 0 ? D.carried / S.C * 100 : 0;
+  }
+
+  function fit(c) {
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function arrow(g, x0, y0, x1, y1, col) {
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    var a = Math.atan2(y1 - y0, x1 - x0);
+    g.beginPath();
+    g.moveTo(x1, y1);
+    g.lineTo(x1 - 7 * Math.cos(a - 0.4), y1 - 7 * Math.sin(a - 0.4));
+    g.lineTo(x1 - 7 * Math.cos(a + 0.4), y1 - 7 * Math.sin(a + 0.4));
+    g.closePath(); g.fill();
+  }
+
+  function handset(g, x, y, s, col) {
+    g.fillStyle = col;
+    g.beginPath();
+    g.moveTo(x - s * 0.5, y - s * 0.8);
+    g.lineTo(x + s * 0.5, y - s * 0.8);
+    g.lineTo(x + s * 0.5, y + s * 0.8);
+    g.lineTo(x - s * 0.5, y + s * 0.8);
+    g.closePath(); g.fill();
+    g.fillStyle = cvv('--plot-bg');
+    g.fillRect(x - s * 0.34, y - s * 0.56, s * 0.68, s * 0.92);
+  }
+
+  function drawBank() {
+    var c = $('c1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bds = cvv('--border-strong');
+    var good = cvv('--good'), bad = cvv('--bad'), axis = cvv('--axis');
+    var lw = Math.min(86, w * 0.16), rw = Math.min(96, w * 0.18);
+    var x0 = lw + 26, x1 = Math.max(x0 + 40, w - rw - 16);
+    var top = 24, bot = h - 40;
+
+    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('callers', 8, top - 16);
+    var midY = (top + bot) / 2;
+    for (var i = 0; i < 4; i++) {
+      handset(g, 16 + (i % 2) * 22, midY - 24 + Math.floor(i / 2) * 42, 13, axis);
+    }
+    g.fillStyle = mut; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText(S.lam.toFixed(1) + ' calls/h each', 8, midY + 30);
+    g.fillText(S.H.toFixed(0) + ' s per call', 8, midY + 44);
+    arrow(g, lw - 2, midY, x0 - 8, midY, axis);
+
+    var gap = 10, nb = S.sec;
+    var bwid = (x1 - x0 - gap * (nb - 1)) / nb;
+    var t = D.t;
+    for (var s = 0; s < nb; s++) {
+      var bx = x0 + s * (bwid + gap);
+      g.strokeStyle = bds; g.lineWidth = 1;
+      g.strokeRect(bx, top, bwid, bot - top);
+      g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText(nb === 1 ? 'channel bank in this cell' : 'sector ' + (s + 1), bx + bwid / 2, top - 5);
+      g.fillStyle = mut; g.textBaseline = 'top';
+      g.fillText(t.toFixed(0) + (t === 1 ? ' channel' : ' channels'), bx + bwid / 2, bot + 5);
+
+      var iw = bwid - 14, ih = (bot - top) - 14;
+      if (t <= 0) {
+        g.fillStyle = cvv('--bad'); g.font = fnt(10.5);
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('none', bx + bwid / 2, (top + bot) / 2);
+        continue;
+      }
+      var cols = clamp(Math.round(Math.sqrt(t * iw / Math.max(ih, 1))), 1, t);
+      var rows = Math.ceil(t / cols);
+      var cell = Math.max(2, Math.min(iw / cols, ih / rows));
+      var sz = Math.max(1.5, cell - 2);
+      var gx = bx + (bwid - cols * cell) / 2, gy = top + ((bot - top) - rows * cell) / 2;
+      var busy = SIM.n[s] || 0;
+      for (var k = 0; k < t; k++) {
+        var cx = gx + (k % cols) * cell, cy = gy + Math.floor(k / cols) * cell;
+        if (k < busy) { g.fillStyle = good; g.fillRect(cx, cy, sz, sz); }
+        else {
+          g.strokeStyle = bds; g.lineWidth = 1;
+          g.strokeRect(cx + 0.5, cy + 0.5, Math.max(sz - 1, 1), Math.max(sz - 1, 1));
+        }
+      }
+    }
+
+    var fl = 0.35 + 0.65 * clamp(SIM.flash, 0, 1);
+    g.globalAlpha = fl;
+    arrow(g, x1 + 6, top + 38, Math.min(w - 10, x1 + rw - 10), top + 14, bad);
+    g.globalAlpha = 1;
+    g.fillStyle = bad; g.font = fnt(10.5); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('turned away', w - 8, top + 44);
+    g.fillStyle = mut;
+    g.fillText('no queue, no retry', w - 8, top + 58);
+
+    g.textAlign = 'left'; g.textBaseline = 'bottom'; g.font = fnt(11);
+    g.fillStyle = sub;
+    if (reduce) {
+      g.fillText('animation off for reduced motion; slots show the average occupancy', 8, h - 6);
+    } else {
+      var pct = SIM.off > 0 ? SIM.blk / SIM.off * 100 : 0;
+      g.fillText('simulated: ' + SIM.off.toFixed(0) + ' offered, ' + SIM.blk.toFixed(0) +
+        ' blocked = ' + pct.toFixed(2) + ' %   (Erlang B says ' + (D.pbAch * 100).toFixed(2) + ' %)', 8, h - 6);
+    }
+  }
+
+  function pois(m) {
+    if (!(m > 0)) return 0;
+    if (m > 25) return Math.max(0, Math.round(m + Math.sqrt(m) * (Math.random() + Math.random() + Math.random() - 1.5) * 1.155));
+    var L = Math.exp(-m), k = 0, p = 1;
+    do { k++; p *= Math.random(); } while (p > L && k < 400);
+    return k - 1;
+  }
+
+  function step(dtWall) {
+    var t = D.t;
+    var ts = S.H / 2.5;
+    var dt = dtWall * ts;
+    var pEnd = 1 - Math.exp(-dt / Math.max(S.H, 1));
+    var lamS = S.H > 0 ? D.Asec / S.H : 0;
+    for (var s = 0; s < S.sec; s++) {
+      var n = SIM.n[s] || 0, d = 0;
+      for (var i = 0; i < n; i++) if (Math.random() < pEnd) d++;
+      n -= d;
+      var k = pois(lamS * dt);
+      for (var j = 0; j < k; j++) {
+        SIM.off++;
+        if (n < t) n++; else { SIM.blk++; SIM.flash = 1; }
+      }
+      SIM.n[s] = n;
+    }
+    SIM.flash = Math.max(0, SIM.flash - dtWall * 2);
+    if (SIM.off > 4e6) { SIM.off = 0; SIM.blk = 0; }
+  }
+
+  function resetSim() {
+    SIM.n = [];
+    var occ = clamp(Math.round(D.Asec * (1 - D.pbAch)), 0, D.t);
+    for (var s = 0; s < S.sec; s++) SIM.n[s] = reduce ? occ : clamp(SIM.n[s] || occ, 0, D.t);
+    SIM.off = 0; SIM.blk = 0; SIM.flash = 0;
+  }
+
+  function axesBox(g, w, h, l, r, t, b) {
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(l, t); g.lineTo(l, h - b); g.lineTo(w - r, h - b);
+    g.stroke();
+  }
+
+  function drawCurves() {
+    var c = $('c2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), grid = cvv('--grid');
+    var l = 54, r = 16, t = 14, b = 42;
+    var ax0 = L10(0.003), ax1 = L10(400);
+    var ay0 = L10(0.1), ay1 = L10(100);
+    var X = function (A) { return l + (L10(Math.max(A, 1e-6)) - ax0) / (ax1 - ax0) * (w - l - r); };
+    var Y = function (P) { return (h - b) - (L10(clamp(P, 1e-4, 1e4)) - ay0) / (ay1 - ay0) * (h - t - b); };
+
+    g.font = fnt(11); g.lineWidth = 0.5;
+    var xt = [0.01, 0.1, 1, 10, 100];
+    for (var i = 0; i < xt.length; i++) {
+      g.strokeStyle = grid;
+      g.beginPath(); g.moveTo(X(xt[i]), t); g.lineTo(X(xt[i]), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(xt[i] < 1 ? xt[i].toFixed(2) : xt[i].toFixed(0), X(xt[i]), h - b + 6);
+    }
+    var yt = [0.1, 1, 10, 100];
+    for (i = 0; i < yt.length; i++) {
+      g.strokeStyle = grid;
+      g.beginPath(); g.moveTo(l, Y(yt[i])); g.lineTo(w - r, Y(yt[i])); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(yt[i] < 1 ? yt[i].toFixed(1) : yt[i].toFixed(0), l - 6, Y(yt[i]));
+    }
+    axesBox(g, w, h, l, r, t, b);
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('offered traffic A, erlangs', (l + w - r) / 2, h - 6);
+    g.save();
+    g.translate(13, (t + h - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('blocking probability, %', 0, 0);
+    g.restore();
+
+    var list = [];
+    for (i = 0; i < REF.length; i++) list.push({ C: REF[i], col: cvv('--series-' + (i + 1)), lw: 1.6 });
+    if (D.t > 0) list.push({ C: D.t, col: cvv('--series-7'), lw: 2.6 });
+
+    for (var q = 0; q < list.length; q++) {
+      var CC = list[q].C;
+      g.strokeStyle = list[q].col; g.lineWidth = list[q].lw;
+      g.beginPath();
+      var pen = false;
+      for (var px = l; px <= w - r; px += 2) {
+        var frac = (px - l) / Math.max(w - l - r, 1);
+        var A = Math.pow(10, ax0 + frac * (ax1 - ax0));
+        var P = erlB(A, CC) * 100;
+        if (!isFinite(P) || P < 0.1) { pen = false; continue; }
+        var y = Y(P);
+        if (!pen) { g.moveTo(px, y); pen = true; } else g.lineTo(px, y);
+      }
+      g.stroke();
+      if (q < REF.length) {
+        var A1 = invErlB(CC, 0.01);
+        if (A1 > 0) {
+          g.fillStyle = list[q].col; g.font = fnt(10.5);
+          g.textAlign = 'left'; g.textBaseline = 'bottom';
+          var lx = clamp(X(A1) + 4, l, w - r - 42);
+          g.fillText('C = ' + CC.toFixed(0), lx, Y(1) - 20 - (q % 2) * 13);
+        }
+      }
+    }
+
+    g.strokeStyle = cvv('--warn'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(l, Y(S.pb * 100)); g.lineTo(w - r, Y(S.pb * 100)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = cvv('--warn'); g.font = fnt(10.5);
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('target ' + (S.pb * 100).toFixed(1) + ' %', l + 4, Y(S.pb * 100) - 5);
+
+    if (D.t > 0 && D.Asec > 0) {
+      var opx = clamp(X(D.Asec), l, w - r), opy = clamp(Y(S.pb * 100), t, h - b);
+      g.fillStyle = cvv('--series-7');
+      g.beginPath(); g.arc(opx, opy, 5, 0, 6.2832); g.fill();
+      g.font = fnt(10.5); g.textBaseline = 'top';
+      var lbl = D.t.toFixed(0) + ' channels, ' + fmtEr(D.Asec) + ' Er';
+      var rightish = opx > w - r - 130;
+      g.textAlign = rightish ? 'right' : 'left';
+      g.fillText(lbl, opx + (rightish ? -8 : 8), Math.min(opy + 8, h - b - 16));
+    }
+  }
+
+  function drawUtil() {
+    var c = $('c3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), grid = cvv('--grid'), mut = cvv('--text-muted');
+    var l = 50, r = 16, t = 14, b = 42;
+    var X = function (C) { return l + (C - 1) / 119 * (w - l - r); };
+    var Y = function (u) { return (h - b) - clamp(u, 0, 100) / 100 * (h - t - b); };
+
+    g.font = fnt(11); g.lineWidth = 0.5;
+    for (var u = 0; u <= 100; u += 20) {
+      g.strokeStyle = grid;
+      g.beginPath(); g.moveTo(l, Y(u)); g.lineTo(w - r, Y(u)); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(u.toFixed(0) + ' %', l - 6, Y(u));
+    }
+    var xt = [1, 20, 40, 60, 80, 100, 120];
+    for (var i = 0; i < xt.length; i++) {
+      g.strokeStyle = grid;
+      g.beginPath(); g.moveTo(X(xt[i]), t); g.lineTo(X(xt[i]), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(xt[i].toFixed(0), X(xt[i]), h - b + 6);
+    }
+    axesBox(g, w, h, l, r, t, b);
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('channels in one trunk group', (l + w - r) / 2, h - 6);
+    g.save();
+    g.translate(11, (t + h - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('utilisation, % of channels busy', 0, 0);
+    g.restore();
+
+    if (UC.pb !== S.pb) {
+      UC.pb = S.pb; UC.v = [0];
+      for (var m = 1; m <= 120; m++) {
+        var Am = invErlB(m, S.pb);
+        UC.v[m] = Am * (1 - erlB(Am, m)) / m * 100;
+      }
+    }
+    var util = function (C) {
+      var u = UC.v[Math.round(clamp(C, 1, 120))];
+      return isFinite(u) ? u : 0;
+    };
+
+    g.strokeStyle = cvv('--series-1'); g.lineWidth = 2;
+    g.beginPath();
+    for (var C = 1; C <= 120; C++) {
+      var y = Y(util(C));
+      if (C === 1) g.moveTo(X(C), y); else g.lineTo(X(C), y);
+    }
+    g.stroke();
+
+    g.fillStyle = mut; g.font = fnt(10.5); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('grade of service fixed at ' + (S.pb * 100).toFixed(1) + ' %', w - r - 4, t + 4);
+
+    var up = util(S.C);
+    g.fillStyle = cvv('--series-1');
+    g.beginPath(); g.arc(X(S.C), Y(up), 5, 0, 6.2832); g.fill();
+    g.font = fnt(10.5); g.textBaseline = 'bottom';
+    g.textAlign = X(S.C) > w - r - 110 ? 'right' : 'left';
+    g.fillText('C = ' + S.C.toFixed(0) + ' pooled, ' + up.toFixed(1) + ' %',
+      X(S.C) + (X(S.C) > w - r - 110 ? -8 : 8), Y(up) - 8);
+
+    if (S.sec > 1 && D.t > 0) {
+      var us = util(D.t);
+      g.strokeStyle = cvv('--series-2'); g.lineWidth = 1.2; g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(X(S.C), Y(up)); g.lineTo(X(D.t), Y(us)); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cvv('--series-2');
+      g.beginPath(); g.arc(X(D.t), Y(us), 5, 0, 6.2832); g.fill();
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(D.t.toFixed(0) + ' per sector, ' + us.toFixed(1) + ' %', X(D.t) + 8, Y(us) + 6);
+    }
+  }
+
+  function fmtEr(x) {
+    if (!isFinite(x) || x < 0) return '0.0000';
+    return x < 1 ? x.toFixed(4) : x.toFixed(2);
+  }
+
+  function updateCards() {
+    $('cOff').textContent = fmtEr(D.A) + ' Er';
+    $('cOffF').textContent = S.sec === 1 ? 'one trunk group, blocked calls included'
+      : S.sec.toFixed(0) + ' sector trunk groups added up';
+    $('cCar').textContent = fmtEr(D.carried) + ' Er';
+    $('cBlk').textContent = (D.pbAch * 100).toFixed(2) + ' %';
+    $('cBlkF').textContent = D.t > 0 ? 'recomputed at the solved load' : 'fewer channels than sectors';
+    $('cUsr').textContent = D.users.toFixed(0);
+    $('cUsrF').textContent = 'at ' + D.Au.toFixed(4) + ' Er each';
+    $('cCps').textContent = D.t.toFixed(0);
+    $('cCpsF').textContent = S.C.toFixed(0) + ' channels ÷ ' + S.sec.toFixed(0) +
+      (S.sec === 1 ? ' sector' : ' sectors');
+    $('cUtl').textContent = D.util.toFixed(1) + ' %';
+    var lost = S.C - S.sec * D.t;
+    $('cUtlF').textContent = lost > 0
+      ? 'carried ÷ C, ' + lost.toFixed(0) + (lost === 1 ? ' channel stranded' : ' channels stranded')
+      : 'carried traffic ÷ channels per cell';
+  }
+
+  function updateReadouts() {
+    $('chv').textContent = S.C.toFixed(0);
+    $('pbv').textContent = (S.pb * 100).toFixed(1) + ' %';
+    $('lmv').textContent = S.lam.toFixed(1) + ' /h';
+    $('hhv').textContent = S.H.toFixed(0) + ' s';
+    $('pool').textContent = 'cluster licence: ' + S.C.toFixed(0) + ' × ' + S.N.toFixed(0) +
+      ' = ' + (S.C * S.N).toFixed(0) + ' channels';
+    ['1', '3', '6'].forEach(function (k) {
+      $('s' + k).className = (+k === S.sec) ? 'on' : '';
+    });
+    $('nre').value = String(S.N);
+  }
+
+  function readControls() {
+    S.C = clamp(Math.round(+$('ch').value) || 1, 1, 120);
+    S.pb = clamp(+$('pb').value, 0.5, 10) / 100;
+    S.lam = clamp(+$('lm').value, 0.5, 5);
+    S.H = clamp(+$('hh').value, 30, 300);
+    S.N = clamp(Math.round(+$('nre').value) || 1, 1, 21);
+  }
+
+  function refresh() {
+    derive();
+    updateReadouts();
+    updateCards();
+    drawCurves();
+    drawUtil();
+    drawBank();
+  }
+
+  function changed() { readControls(); resetSim(); refresh(); }
+
+  ['ch', 'pb', 'lm', 'hh'].forEach(function (id) {
+    $(id).addEventListener('input', changed);
+  });
+  $('nre').addEventListener('change', changed);
+  ['1', '3', '6'].forEach(function (k) {
+    $('s' + k).addEventListener('click', function () { S.sec = +k; changed(); });
+  });
+
+  function note(txt) { $('tourNote').textContent = txt; }
+
+  function setAll(C, pbPct, sec, N, lam, H) {
+    $('ch').value = String(C); $('pb').value = String(pbPct);
+    $('lm').value = String(lam); $('hh').value = String(H);
+    S.sec = sec; $('nre').value = String(N);
+    changed();
+  }
+
+  function tour(k) {
+    if (k === 1) {
+      setAll(1, 1, 1, 7, 2, 120);
+      note('Step 1 — a single channel at 1 % blocking holds 0.0101 erlangs. The channel is busy 1 % of the time and idle the rest, because any second call is lost.');
+    } else if (k === 2) {
+      setAll(10, 1, 1, 7, 2, 120);
+      note('Step 2 — ten channels, same grade of service: 4.4612 erlangs, 44 % utilisation. Ten times the hardware, but 440 times the traffic.');
+    } else if (k === 3) {
+      setAll(50, 1, 1, 7, 2, 120);
+      note('Step 3 — fifty channels hold 37.90 erlangs at 75 % utilisation. Ten separate five-channel pools would carry 13.47 erlangs from the same fifty channels.');
+    } else if (k === 4) {
+      setAll(50, 1, 3, 7, 2, 120);
+      note('Step 4 — the same fifty channels cut into three sectors of sixteen. Offered traffic falls from 37.90 to 26.63 erlangs; the sectors cannot lend each other a spare channel.');
+    } else if (k === 5) {
+      setAll(70, 1, 1, 4, 2, 120);
+      note('Step 5 — one 280-channel licence, spent two ways. N = 7 gives 40 channels per cell and 29.01 erlangs; N = 4 gives 70 per cell and 56.11 erlangs. Tighter reuse pays, if the interference allows it.');
+    }
+  }
+  ['t1', 't2', 't3', 't4', 't5'].forEach(function (id, i) {
+    $(id).addEventListener('click', function () { tour(i + 1); });
+  });
+
+  window.addEventListener('resize', refresh);
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', refresh);
+  else if (mq.addListener) mq.addListener(refresh);
+
+  readControls();
+  derive();
+  resetSim();
+  refresh();
+
+  if (!reduce) {
+    var last = 0;
+    var frame = function (ts) {
+      if (!last) last = ts;
+      var dt = Math.min(ts - last, 50) / 1000;
+      last = ts;
+      step(dt);
+      drawBank();
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
+})();
+</script>
+</body>
+</html>

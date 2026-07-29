@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link budget</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1.25rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
+.ctl input[type=range] { flex: 1; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 0.5px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Link budget</h1>
+<p class="sub">Every radio link is one running total in decibels: start at the transmitter, add every gain, subtract every loss, and see what is left at the receiver. Compare that against the noise the receiver makes on its own and you know whether the link works &mdash; and by how much margin it survives a bad day.</p>
+
+<div class="grid2">
+  <div class="ctl"><label for="pt">Tx power</label><input type="range" id="pt" min="-10" max="50" step="1" value="20"><span class="v" id="ptv">20 dBm</span></div>
+  <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0.1" max="40" step="0.1" value="2.4"><span class="v" id="fqv">2.4 GHz</span></div>
+  <div class="ctl"><label for="gt">Tx antenna gain</label><input type="range" id="gt" min="0" max="45" step="0.5" value="3"><span class="v" id="gtv">3 dBi</span></div>
+  <div class="ctl"><label for="gr">Rx antenna gain</label><input type="range" id="gr" min="0" max="45" step="0.5" value="3"><span class="v" id="grv">3 dBi</span></div>
+  <div class="ctl"><label for="lt">Feeder losses</label><input type="range" id="lt" min="0" max="15" step="0.5" value="2"><span class="v" id="ltv">2 dB</span></div>
+  <div class="ctl"><label for="lm">Misc / rain / trees</label><input type="range" id="lm" min="0" max="30" step="0.5" value="0"><span class="v" id="lmv">0 dB</span></div>
+  <div class="ctl"><label for="ds">Distance</label><input type="range" id="ds" min="0.05" max="60" step="0.05" value="0.8"><span class="v" id="dsv">0.80 km</span></div>
+  <div class="ctl"><label for="nf">Rx noise figure</label><input type="range" id="nf" min="0.5" max="12" step="0.5" value="5"><span class="v" id="nfv">5 dB</span></div>
+  <div class="ctl"><label for="bw">Rx bandwidth</label><input type="range" id="bw" min="1" max="200" step="1" value="16"><span class="v" id="bwv">1.6 MHz</span></div>
+  <div class="ctl"><label for="cn">Required C/N</label><input type="range" id="cn" min="0" max="30" step="0.5" value="9"><span class="v" id="cnv">9 dB</span></div>
+</div>
+
+<p class="sec"><b>1 &middot; The running total</b> <span>&mdash; power level in dBm from the transmitter to the receiver input; the dashed line is the noise floor</span></p>
+<canvas id="wf" style="height: 300px;"></canvas>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">EIRP</div>
+    <div class="big" id="cE">&mdash;</div>
+    <div class="ft">what leaves the antenna, as if it were isotropic</div>
+  </div>
+  <div class="card">
+    <div class="hd">Free-space loss</div>
+    <div class="big" id="cF">&mdash;</div>
+    <div class="ft">92.4 + 20log(f<sub>GHz</sub>) + 20log(d<sub>km</sub>)</div>
+  </div>
+  <div class="card">
+    <div class="hd">Received power</div>
+    <div class="big" id="cR">&mdash;</div>
+    <div class="ft">the carrier C arriving at the receiver</div>
+  </div>
+  <div class="card">
+    <div class="hd">Fade margin</div>
+    <div class="big" id="cM">&mdash;</div>
+    <div class="ft" id="cMn">&mdash;</div>
+  </div>
+</div>
+
+<p class="sec"><b>2 &middot; The budget as engineers write it</b></p>
+<table id="tbl"></table>
+
+<p class="sec"><b>3 &middot; Received power vs distance</b> <span>&mdash; where this link runs out of margin</span></p>
+<canvas id="dc" style="height: 250px;"></canvas>
+
+<p class="sub" style="margin-top: 2rem;">Three lessons live in these sliders. Doubling the distance costs 6 dB and doubling the frequency costs another 6 &mdash; both are the 20log terms, and neither can be argued with. Antenna gain is free power in both directions, which is why a dish at each end beats a bigger amplifier. And the noise floor, kTB + noise figure, sets the finish line: widen the receiver bandwidth and the floor rises 3 dB per doubling, so a link that fails on a wideband waveform may pass on a narrow one at the same power.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const S = {};
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+
+  const read = () => {
+    S.pt = +$('pt').value; S.f = +$('fq').value; S.gt = +$('gt').value; S.gr = +$('gr').value;
+    S.lt = +$('lt').value; S.lm = +$('lm').value; S.d = +$('ds').value; S.nf = +$('nf').value;
+    S.bw = +$('bw').value / 10; S.cn = +$('cn').value;
+  };
+  const fsl = d => 92.4 + 20 * L10(S.f) + 20 * L10(Math.max(d, 1e-4));
+  const noiseFloor = () => -174 + 10 * L10(S.bw * 1e6) + S.nf;
+  const prx = d => S.pt - S.lt / 2 + S.gt - fsl(d) - S.lm + S.gr - S.lt / 2;
+
+  function stages() {
+    const half = S.lt / 2;
+    return [
+      { n: 'Tx power', v: S.pt, d: 0 },
+      { n: 'Tx feeder', v: S.pt - half, d: -half },
+      { n: 'Tx antenna', v: S.pt - half + S.gt, d: +S.gt },
+      { n: 'free space', v: S.pt - half + S.gt - fsl(S.d), d: -fsl(S.d) },
+      { n: 'misc losses', v: S.pt - half + S.gt - fsl(S.d) - S.lm, d: -S.lm },
+      { n: 'Rx antenna', v: S.pt - half + S.gt - fsl(S.d) - S.lm + S.gr, d: +S.gr },
+      { n: 'Rx feeder', v: prx(S.d), d: -half }
+    ];
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function drawWF() {
+    const c = $('wf'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const st = stages(), nfl = noiseFloor();
+    const lo = Math.min(nfl - 12, Math.min.apply(null, st.map(s => s.v)) - 8);
+    const hi = Math.max.apply(null, st.map(s => s.v)) + 8;
+    const l = 52, r = 12, t = 14, b = 42;
+    const Y = v => t + (hi - v) / (hi - lo) * (h - t - b);
+    const bw = (w - l - r) / st.length;
+
+    g.font = fnt(11); g.fillStyle = sub; g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (let k = 0; k <= 5; k++) {
+      const v = lo + (hi - lo) * k / 5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('dBm', 6, t);
+
+    st.forEach((s, i) => {
+      const x = l + i * bw + bw * 0.16, bwid = bw * 0.68;
+      const prev = i === 0 ? s.v : st[i - 1].v;
+      const up = s.v >= prev;
+      const y0 = Y(Math.max(prev, s.v)), y1 = Y(Math.min(prev, s.v));
+      if (i === 0) {
+        g.fillStyle = '#378ADD';
+        g.fillRect(x, Y(s.v), bwid, Y(lo) - Y(s.v));
+      } else {
+        g.fillStyle = up ? '#1D9E75' : '#D85A30';
+        g.globalAlpha = 0.85;
+        g.fillRect(x, y0, bwid, Math.max(y1 - y0, 1.5));
+        g.globalAlpha = 1;
+        g.strokeStyle = bd; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(x - bw * 0.32, Y(prev)); g.lineTo(x, Y(prev)); g.stroke();
+      }
+      g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      const words = s.n.split(' ');
+      words.forEach((wd, k) => g.fillText(wd, x + bwid / 2, h - b + 6 + k * 12));
+      if (i > 0) {
+        g.fillStyle = up ? '#1D9E75' : '#D85A30'; g.font = fnt(10);
+        g.textBaseline = 'bottom';
+        g.fillText((s.d >= 0 ? '+' : '') + s.d.toFixed(1), x + bwid / 2, Math.min(y0, y1) - 3);
+      }
+    });
+
+    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(l, Y(nfl)); g.lineTo(w - r, Y(nfl)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = cvv('--text-warning'); g.font = fnt(11);
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('noise floor ' + nfl.toFixed(1) + ' dBm', l + 4, Y(nfl) - 3);
+  }
+
+  function drawDist() {
+    const c = $('dc'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const l = 52, r = 12, t = 14, b = 34;
+    const dmin = 0.02, dmax = 100;
+    const X = d => l + (L10(d) - L10(dmin)) / (L10(dmax) - L10(dmin)) * (w - l - r);
+    const nfl = noiseFloor(), thr = nfl + S.cn;
+    const lo = thr - 45, hi = prx(dmin) + 5;
+    const Y = v => t + (hi - v) / (hi - lo) * (h - t - b);
+
+    g.font = fnt(11); g.fillStyle = sub;
+    [0.1, 1, 10, 100].forEach(d => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(d), t); g.lineTo(X(d), h - b); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(d + ' km', X(d), h - b + 6);
+    });
+    for (let v = Math.ceil(lo / 20) * 20; v < hi; v += 20) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+
+    g.fillStyle = cvv('--text-warning'); g.globalAlpha = 0.12;
+    g.fillRect(l, Y(thr), w - l - r, Math.max(0, Y(lo) - Y(thr)));
+    g.globalAlpha = 1;
+    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(l, Y(thr)); g.lineTo(w - r, Y(thr)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = cvv('--text-warning'); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('link fails below here (' + thr.toFixed(0) + ' dBm)', l + 4, Y(thr) - 3);
+
+    g.strokeStyle = '#378ADD'; g.lineWidth = 2;
+    g.beginPath();
+    for (let px = l; px <= w - r; px++) {
+      const frac = (px - l) / (w - l - r);
+      const d = Math.pow(10, L10(dmin) + frac * (L10(dmax) - L10(dmin)));
+      const y = Y(prx(d));
+      if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+    }
+    g.stroke();
+
+    g.fillStyle = '#D4537E';
+    g.beginPath(); g.arc(X(S.d), Y(prx(S.d)), 5, 0, 7); g.fill();
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('you are here', X(S.d), Y(prx(S.d)) - 9);
+  }
+
+  function updateUI() {
+    $('ptv').textContent = S.pt + ' dBm';
+    $('fqv').textContent = S.f.toFixed(1) + ' GHz';
+    $('gtv').textContent = S.gt + ' dBi';
+    $('grv').textContent = S.gr + ' dBi';
+    $('ltv').textContent = S.lt + ' dB';
+    $('lmv').textContent = S.lm + ' dB';
+    $('dsv').textContent = S.d.toFixed(2) + ' km';
+    $('nfv').textContent = S.nf + ' dB';
+    $('bwv').textContent = S.bw.toFixed(1) + ' MHz';
+    $('cnv').textContent = S.cn + ' dB';
+
+    const eirp = S.pt - S.lt / 2 + S.gt;
+    const pr = prx(S.d), nfl = noiseFloor(), cn = pr - nfl, fm = cn - S.cn;
+    $('cE').textContent = eirp.toFixed(1) + ' dBm';
+    $('cF').textContent = fsl(S.d).toFixed(1) + ' dB';
+    $('cR').textContent = pr.toFixed(1) + ' dBm';
+    $('cM').textContent = (fm >= 0 ? '+' : '') + fm.toFixed(1) + ' dB';
+    $('cM').style.color = fm >= 10 ? 'var(--text-good)' : (fm >= 0 ? 'var(--text-warning)' : 'var(--text-warning)');
+    $('cMn').textContent = fm < 0 ? 'link does not close — short by ' + (-fm).toFixed(1) + ' dB'
+      : fm < 10 ? 'closes, but thin — most designs want 10–20 dB' : 'healthy margin for fading';
+
+    const nfl2 = noiseFloor();
+    const rows = [
+      ['Tx power', S.pt.toFixed(1), 'dBm'],
+      ['Tx feeder loss', (-S.lt / 2).toFixed(1), 'dB'],
+      ['Tx antenna gain', '+' + S.gt.toFixed(1), 'dBi'],
+      ['EIRP', eirp.toFixed(1), 'dBm'],
+      ['Free-space loss', (-fsl(S.d)).toFixed(1), 'dB'],
+      ['Misc losses', (-S.lm).toFixed(1), 'dB'],
+      ['Rx antenna gain', '+' + S.gr.toFixed(1), 'dBi'],
+      ['Rx feeder loss', (-S.lt / 2).toFixed(1), 'dB'],
+      ['Received carrier C', pr.toFixed(1), 'dBm'],
+      ['Noise floor kTB + NF', nfl2.toFixed(1), 'dBm'],
+      ['C/N achieved', cn.toFixed(1), 'dB'],
+      ['C/N required', S.cn.toFixed(1), 'dB'],
+      ['Fade margin', (fm >= 0 ? '+' : '') + fm.toFixed(1), 'dB']
+    ];
+    $('tbl').innerHTML = rows.map((r, i) => {
+      const strong = ['EIRP', 'Received carrier C', 'Fade margin'].indexOf(r[0]) >= 0;
+      return '<tr' + (strong ? ' style="font-weight:500"' : '') + '><td>' + r[0] + '</td><td>' + r[1] + '</td><td style="color:var(--text-muted);width:44px">' + r[2] + '</td></tr>';
+    }).join('');
+  }
+
+  ['pt', 'fq', 'gt', 'gr', 'lt', 'lm', 'ds', 'nf', 'bw', 'cn'].forEach(id =>
+    $(id).addEventListener('input', () => { read(); updateUI(); }));
+  read(); updateUI();
+  function frame() { drawWF(); drawDist(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

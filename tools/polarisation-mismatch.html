@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polarisation, tilt and axial ratio</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --text-good: #3B6D11;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --accent: #378ADD;
+  --series-1: #378ADD;
+  --series-2: #D85A30;
+  --series-3: #7F77DD;
+  --series-4: #1D9E75;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --text-good: #C0DD97;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+    --accent: #6FB4F2;
+    --series-1: #6FB4F2;
+    --series-2: #FF8F5E;
+    --series-3: #A79FF0;
+    --series-4: #4FC79C;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+.note { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.75rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
+.ctl input[type=range] { flex: 1; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 68px; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
+.row .rd { font-size: 13px; color: var(--text-muted); }
+details { margin: 0.4rem 0 1rem; }
+summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
+.det { padding: 0.75rem 0 0.25rem; }
+.tour { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 1.25rem 0 0.5rem; }
+.tour button { padding: 5px 11px; font-size: 13px; }
+.tour .lbl { font-size: 13px; color: var(--text-secondary); }
+.narr { font-size: 13px; color: var(--text-secondary); margin: 0 0 0.5rem; min-height: 3em; }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.15rem; }
+.legend-note li { margin: 2px 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.35rem; margin: 0.5rem 0 0; font-variant-numeric: tabular-nums; }
+ol.work li { margin: 3px 0; }
+.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+.glossary dt { font-weight: 500; margin-top: 9px; }
+.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Polarisation, tilt and axial ratio</h1>
+<p class="sub">A radio wave has a direction it wiggles in, and so does the antenna trying to catch it. Polarisation is that direction. If the two disagree the link still works, but part of the power is thrown away before any of the other engineering starts &mdash; and if they disagree by a right angle, in theory none of it arrives at all. This tool draws the wiggle, lets you tilt the receiving antenna against it, and prints the loss.</p>
+<p class="note">New to antennas? Start with <a href="antenna-basics.html">antenna basics</a> for what a dipole is and what a beam looks like. Everything here happens in the plane across the beam, not along it.</p>
+<p class="sub">An everyday version: a letterbox slot only takes a letter held the right way round. The letter is the wave, the slot is the antenna. A circular wave is a letter that spins as it flies &mdash; it always half-fits, whatever angle the slot is at.</p>
+
+<div class="grid2">
+  <div class="ctl"><label for="ab">Amplitude ratio A/B</label><input type="range" id="ab" min="0" max="1" step="0.01" value="0.6"><span class="v" id="abv">0.60</span></div>
+  <div class="ctl"><label for="dp">Phase difference &delta;</label><input type="range" id="dp" min="-180" max="180" step="1" value="90"><span class="v" id="dpv">90&deg;</span></div>
+  <div class="ctl"><label for="ps">Receive tilt &psi;</label><input type="range" id="ps" min="0" max="90" step="1" value="0"><span class="v" id="psv">0&deg;</span></div>
+</div>
+
+<div class="row">
+  <span class="lbl">Rotation sense</span>
+  <button id="sR" type="button">Right hand</button>
+  <button id="sL" type="button">Left hand</button>
+  <span class="rd" id="senseRd">&mdash;</span>
+</div>
+<div class="row">
+  <span class="lbl">Receive antenna</span>
+  <button id="rLin" type="button" class="on">Linear</button>
+  <button id="rRH" type="button">RHCP</button>
+  <button id="rLH" type="button">LHCP</button>
+  <button id="rEll" type="button">Elliptical</button>
+</div>
+<div class="row">
+  <span class="lbl">Animation</span>
+  <button id="run" type="button">Freeze</button>
+  <span class="rd">the field vector turns once per radio-frequency cycle</span>
+</div>
+
+<details id="expert">
+  <summary>Receive antenna detail &mdash; axial ratio and sense of the elliptical option</summary>
+  <div class="det">
+    <div class="grid2">
+      <div class="ctl"><label for="ra">Receive AR</label><input type="range" id="ra" min="0" max="6" step="0.1" value="3"><span class="v" id="rav">3.0 dB</span></div>
+    </div>
+    <div class="row">
+      <span class="lbl">Elliptical sense</span>
+      <button id="eR" type="button" class="on">Right hand</button>
+      <button id="eL" type="button">Left hand</button>
+      <span class="rd">these two apply only to the elliptical receive antenna</span>
+    </div>
+  </div>
+</details>
+
+<div class="tour">
+  <span class="lbl">Guided tour</span>
+  <button id="t1" type="button">1</button>
+  <button id="t2" type="button">2</button>
+  <button id="t3" type="button">3</button>
+  <button id="t4" type="button">4</button>
+  <button id="t5" type="button">5</button>
+</div>
+<p class="narr" id="narr">Press 1 to start. Each step moves the controls for you and says what changed.</p>
+
+<p class="sec"><b>1 &middot; The field vector and the antenna it has to fit</b> <span>&mdash; left, the link seen from the side; right, the same wave seen head-on</span></p>
+<canvas id="cv1" style="height: 340px;"></canvas>
+<ul class="legend-note">
+  <li>Left is the hardware. The transmitter has two elements at right angles: a vertical one (violet, amplitude B) and a horizontal one seen end-on (green, amplitude A). Feeding them different amplitudes and a phase difference is how any polarisation is made.</li>
+  <li>The coral rod at the far end is the receiving dipole, tilted by &psi;. Circular receive antennas are drawn as a crossed pair, because that is what they are.</li>
+  <li>Right is the head-on view, looking back down the beam at the oncoming wave. The blue arrow is the electric field; its tip traces the pale blue path once per cycle.</li>
+  <li>A straight path means linear polarisation, a circle means circular, anything between is elliptical. The dashed line is the ellipse's long axis and &tau; is its tilt.</li>
+</ul>
+
+<p class="sec"><b>2 &middot; The two halves against time</b> <span>&mdash; E<sub>x</sub> = A cos &omega;t and E<sub>y</sub> = B cos(&omega;t + &delta;)</span></p>
+<canvas id="cv2" style="height: 210px;"></canvas>
+<ul class="legend-note">
+  <li>Green is E<sub>x</sub>, the horizontal half of the field; violet is E<sub>y</sub>, the vertical half. Their heights are A and B.</li>
+  <li>The bar across the top measures &delta;, the phase difference: how far the violet peak sits from the green one, as a fraction of one cycle.</li>
+  <li>&delta; = 0 puts the peaks together and the tip in section 1 walks a straight line. &delta; = &plusmn;90&deg; with equal heights makes a circle. Everything else is an ellipse.</li>
+  <li>The vertical line is the instant drawn in section 1; it appears twice because the two marked instants are one whole cycle apart and the field is identical at both.</li>
+</ul>
+
+<p class="sec"><b>3 &middot; Loss against receive tilt</b> <span>&mdash; the same wave, the receiving antenna rotated through a right angle</span></p>
+<canvas id="cv3" style="height: 250px;"></canvas>
+<ul class="legend-note">
+  <li>The blue curve is the power thrown away by the mismatch, in dB. Zero at the top is a perfect fit; further down is worse.</li>
+  <li>The coral dot is the tilt you have set with the &psi; slider.</li>
+  <li>A flat curve means the link does not care how the antenna is rotated. That, and only that, is what circular polarisation buys you.</li>
+  <li>The shaded band is where real antennas stop, 25 to 35 dB. The ideal formula's null is infinitely deep; no hardware is.</li>
+</ul>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Axial ratio</div>
+    <div class="big" id="cAR">&mdash;</div>
+    <div class="ft" id="cARf">long axis &divide; short axis, in dB</div>
+  </div>
+  <div class="card">
+    <div class="hd">Tilt angle &tau;</div>
+    <div class="big" id="cTau">&mdash;</div>
+    <div class="ft">long axis, measured up from horizontal</div>
+  </div>
+  <div class="card">
+    <div class="hd">Polarisation loss factor</div>
+    <div class="big" id="cPLF">&mdash;</div>
+    <div class="ft">fraction of the power accepted, 1 is perfect</div>
+  </div>
+  <div class="card">
+    <div class="hd">Polarisation loss</div>
+    <div class="big" id="cLoss">&mdash;</div>
+    <div class="ft">&minus;10 log<sub>10</sub>(PLF), in dB</div>
+  </div>
+  <div class="card">
+    <div class="hd">Cross-polar discrimination</div>
+    <div class="big" id="cXPD">&mdash;</div>
+    <div class="ft" id="cXPDf">this wave against the wave orthogonal to it</div>
+  </div>
+</div>
+
+<p class="sec"><b>4 &middot; The arithmetic, on the numbers now on screen</b></p>
+<ol class="work" id="work"></ol>
+
+<p class="sub" style="margin-top: 2rem;">Three results are worth carrying away. A 45&deg; mismatch between two linear antennas costs exactly 3.01 dB, and the cost then runs away fast: 6.02 dB at 60&deg; and 21.19 dB at 85&deg;, so the last few degrees of alignment are worth more than all the earlier ones. A linear antenna against a perfectly circular wave loses 3.01 dB at every rotation angle, which is the trade circular polarisation offers &mdash; a fixed 3 dB in exchange for never caring about orientation again, which is why satellite and GPS links use it. And a real circular antenna is specified by its axial ratio, because the peak-to-peak swing of that 3 dB figure, as the far end rotates, is equal to the axial ratio in dB: 3 dB of axial ratio swings the loss from 1.76 to 4.76 dB, so half the axial ratio is the number to budget for. The one place this tool flatters reality is the null: the formula gives infinite rejection at a right angle, while a real antenna manages 25 to 35 dB of cross-polar discrimination, limited by its own imperfection and by rain depolarising the wave on the way. Plan a frequency-reuse scheme on 30 dB, never on infinity.</p>
+
+<p class="note">Next: <a href="link-budget.html">link budget</a>, where a polarisation loss like this is one more line in the running total, alongside free-space loss and feeder loss.</p>
+
+<p class="sec"><b>Glossary</b></p>
+<dl class="glossary">
+  <dt>Polarisation</dt>
+  <dd>The direction the electric field of a wave points, seen in the plane across the beam. It is set by the antenna that launched the wave.</dd>
+  <dt>Linear, circular, elliptical</dt>
+  <dd>The three shapes the field vector's tip can trace: a straight line, a circle, or an ellipse between the two.</dd>
+  <dt>E<sub>x</sub> and E<sub>y</sub></dt>
+  <dd>The horizontal and vertical halves of the field. Any polarisation is two of these added together with some phase difference.</dd>
+  <dt>Phase difference &delta;</dt>
+  <dd>How far the vertical half lags or leads the horizontal half, as an angle. One whole cycle is 360&deg;.</dd>
+  <dt>Axial ratio (AR)</dt>
+  <dd>The long axis of the ellipse divided by the short one, always 1 or more. In dB it is 20 log<sub>10</sub>(AR), because it is a ratio of field amplitudes, not powers. 0 dB is a perfect circle; a straight line is infinite.</dd>
+  <dt>Tilt angle &tau;</dt>
+  <dd>The angle of the ellipse's long axis, measured up from the horizontal.</dd>
+  <dt>RHCP and LHCP</dt>
+  <dd>Right- and left-hand circular polarisation: the two directions the field can rotate. Point your thumb along the direction the wave travels; the hand whose fingers curl the way the field turns names the sense.</dd>
+  <dt>Polarisation loss factor (PLF)</dt>
+  <dd>The fraction of the arriving power that the receiving antenna can accept, from 1 (perfect fit) down to 0 (completely crossed).</dd>
+  <dt>Polarisation loss</dt>
+  <dd>The same thing in decibels: &minus;10 log<sub>10</sub>(PLF). A PLF of 0.5 is 3.01 dB of loss.</dd>
+  <dt>Cross-polar discrimination (XPD)</dt>
+  <dd>How much better an antenna hears the polarisation it wants than the one at right angles to it. Real systems get 25 to 35 dB, which is what lets two links share a frequency on opposite polarisations.</dd>
+  <dt>Decibel (dB)</dt>
+  <dd>A ratio on a logarithmic scale. 3 dB is a factor of two in power, 10 dB is a factor of ten, 20 dB is a factor of a hundred.</dd>
+  <dt>Dipole</dt>
+  <dd>The simplest antenna: a straight rod. It is linearly polarised along its own length, which is why tilting it matters.</dd>
+</dl>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const TAU = Math.PI * 2, D2R = Math.PI / 180, R2D = 180 / Math.PI;
+  const LIN_AR = 1e6;
+  const CAP_DB = 40;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const S = { ab: 0.6, dphi: 90, psi: 0, rx: 'lin', rxar: 3, esense: 1, run: !reduce };
+  let phase = 0;
+
+  const read = () => {
+    S.ab = +$('ab').value;
+    S.dphi = +$('dp').value;
+    S.psi = +$('ps').value;
+    S.rxar = +$('ra').value;
+  };
+
+  function ellipse() {
+    const A = S.ab, B = 1, d = S.dphi * D2R;
+    const disc = Math.sqrt(Math.max(A * A * A * A + B * B * B * B + 2 * A * A * B * B * Math.cos(2 * d), 0));
+    const oa = Math.sqrt(Math.max(0.5 * (A * A + B * B + disc), 0));
+    const ob = Math.sqrt(Math.max(0.5 * (A * A + B * B - disc), 0));
+    const lin = !(ob > 1e-7 && ob > oa * 1e-6);
+    const sd = Math.sin(d);
+    let tau = 0.5 * Math.atan2(2 * A * B * Math.cos(d), A * A - B * B);
+    if (tau <= -Math.PI / 2 + 1e-9) tau += Math.PI;
+    return {
+      A: A, B: B, d: d, oa: oa, ob: ob, lin: lin,
+      ar: lin ? LIN_AR : oa / ob,
+      tau: tau,
+      sense: Math.abs(sd) < 1e-9 ? 0 : (sd < 0 ? 1 : -1)
+    };
+  }
+
+  function rxPol() {
+    if (S.rx === 'rh') return { ar: 1, sense: 1, lin: false };
+    if (S.rx === 'lh') return { ar: 1, sense: -1, lin: false };
+    if (S.rx === 'ell') return { ar: Math.pow(10, S.rxar / 20), sense: S.esense, lin: false };
+    return { ar: LIN_AR, sense: 0, lin: true };
+  }
+
+  function plf(src, rx, psiRad) {
+    const s1 = src.sense === 0 ? 1 : src.sense, s2 = rx.sense === 0 ? 1 : rx.sense;
+    const a1 = src.ar, a2 = rx.ar;
+    const num = 4 * (s1 * a1) * (s2 * a2)
+      + (a1 * a1 - 1) * (a2 * a2 - 1) * Math.cos(2 * (src.tau - psiRad));
+    const den = 2 * (a1 * a1 + 1) * (a2 * a2 + 1);
+    return clamp(0.5 + num / den, 0, 1);
+  }
+
+  const lossDb = p => -10 * L10(Math.max(p, 1e-12));
+
+  function sweep(src, rx) {
+    const out = [];
+    for (let i = 0; i <= 180; i++) {
+      const psi = i * 0.5;
+      out.push({ psi: psi, p: plf(src, rx, psi * D2R) });
+    }
+    return out;
+  }
+
+  function xpd(src, rx) {
+    const co = plf(src, rx, S.psi * D2R);
+    const orth = { ar: src.ar, tau: src.tau + Math.PI / 2, lin: src.lin,
+      sense: src.sense === 0 ? 1 : -src.sense };
+    const cr = plf(orth, rx, S.psi * D2R);
+    return 10 * L10(Math.max(co, 1e-12) / Math.max(cr, 1e-12));
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function ctext(g, s, x, y, lo, hi) {
+    const half = g.measureText(s).width / 2;
+    g.fillText(s, clamp(x, lo + half, hi - half), y);
+  }
+
+  function head(g, x, y, ang, s) {
+    g.beginPath();
+    g.moveTo(x, y);
+    g.lineTo(x - s * Math.cos(ang - 0.42), y - s * Math.sin(ang - 0.42));
+    g.lineTo(x - s * Math.cos(ang + 0.42), y - s * Math.sin(ang + 0.42));
+    g.closePath();
+    g.fill();
+  }
+
+  function drawField() {
+    const c = $('cv1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const cw = cvv('--series-1'), ca = cvv('--series-2'), cy2 = cvv('--series-3'), cx2 = cvv('--series-4');
+    const e = ellipse();
+    const LW = clamp(w * 0.40, 150, 268);
+
+    g.font = fnt(11);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = mut;
+    g.fillText('the link, from the side', 6, 4);
+    g.fillText('looking into the beam', LW + 10, 4);
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(LW, 20); g.lineTo(LW, h - 10); g.stroke();
+
+    const ay = h * 0.46, gy = h - 40, txx = 34, rxx = LW - 42;
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(10, gy); g.lineTo(LW - 12, gy); g.stroke();
+
+    g.strokeStyle = mut; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(txx, ay); g.lineTo(txx, gy); g.stroke();
+    g.beginPath(); g.moveTo(rxx, ay); g.lineTo(rxx, gy); g.stroke();
+
+    g.lineCap = 'round';
+    g.strokeStyle = cy2; g.lineWidth = 3.5;
+    g.beginPath(); g.moveTo(txx, ay - 24 * e.B); g.lineTo(txx, ay + 24 * e.B); g.stroke();
+    if (e.A > 0.005) {
+      g.strokeStyle = cx2; g.lineWidth = 3.5;
+      g.beginPath(); g.moveTo(txx - 10 * e.A, ay + 3 * e.A); g.lineTo(txx + 10 * e.A, ay - 3 * e.A); g.stroke();
+    }
+
+    g.strokeStyle = cw; g.lineWidth = 1.6; g.globalAlpha = 0.55;
+    const span = rxx - txx - 56, step = span / 3;
+    for (let k = 0; k < 3; k++) {
+      let x = txx + 34 + ((phase / TAU) * step + k * step) % Math.max(span, 1);
+      g.beginPath();
+      g.moveTo(x, ay - 20);
+      g.quadraticCurveTo(x + 7, ay, x, ay + 20);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+
+    g.strokeStyle = mut; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(txx + 16, ay + 40); g.lineTo(rxx - 22, ay + 40); g.stroke();
+    g.fillStyle = mut;
+    head(g, rxx - 22, ay + 40, 0, 6);
+    g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('the wave travels this way', (txx + rxx) / 2, ay + 46);
+
+    const ps = S.psi * D2R, rl = 26;
+    g.strokeStyle = ca; g.lineWidth = 3.5;
+    g.beginPath();
+    g.moveTo(rxx - 0.35 * rl * Math.cos(ps), ay + rl * Math.sin(ps));
+    g.lineTo(rxx + 0.35 * rl * Math.cos(ps), ay - rl * Math.sin(ps));
+    g.stroke();
+    if (S.rx !== 'lin') {
+      const p2 = ps + Math.PI / 2;
+      g.beginPath();
+      g.moveTo(rxx - 0.35 * rl * Math.cos(p2), ay + rl * Math.sin(p2));
+      g.lineTo(rxx + 0.35 * rl * Math.cos(p2), ay - rl * Math.sin(p2));
+      g.stroke();
+    }
+    g.lineCap = 'butt';
+
+    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+    ctext(g, 'transmitter', txx, gy + 6, 2, LW - 6);
+    ctext(g, 'receiver', rxx, gy + 6, 2, LW - 6);
+    g.fillStyle = mut;
+    ctext(g, 'crossed pair', txx, gy + 19, 2, LW - 6);
+    ctext(g, S.rx === 'lin' ? 'dipole at ' + S.psi.toFixed(0) + '°' : 'crossed pair', rxx, gy + 19, 2, LW - 6);
+
+    const px = LW + 8, pw = w - LW - 16;
+    const cx = px + pw / 2, cyc = h * 0.5 + 4;
+    const R = Math.max(30, Math.min(pw / 2 - 18, h / 2 - 40));
+    const unit = R / 1.45;
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx - R, cyc); g.lineTo(cx + R, cyc); g.stroke();
+    g.beginPath(); g.moveTo(cx, cyc - R); g.lineTo(cx, cyc + R); g.stroke();
+    g.fillStyle = mut; g.font = fnt(10);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('E x, horizontal', cx + R, cyc - 3);
+    g.save();
+    g.translate(cx - 4, cyc - R + 2);
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('E y, vertical', 0, 0);
+    g.restore();
+
+    const N = 160, pts = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N * TAU;
+      pts.push([cx + e.A * Math.cos(t) * unit, cyc - e.B * Math.cos(t + e.d) * unit]);
+    }
+    g.strokeStyle = cw; g.globalAlpha = 0.35; g.lineWidth = 2;
+    g.beginPath();
+    pts.forEach((p, i) => { if (i === 0) g.moveTo(p[0], p[1]); else g.lineTo(p[0], p[1]); });
+    g.stroke();
+    g.globalAlpha = 1;
+
+    if (!e.lin && e.oa > 1e-6) {
+      g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([5, 4]);
+      g.beginPath();
+      g.moveTo(cx - Math.cos(e.tau) * e.oa * unit, cyc + Math.sin(e.tau) * e.oa * unit);
+      g.lineTo(cx + Math.cos(e.tau) * e.oa * unit, cyc - Math.sin(e.tau) * e.oa * unit);
+      g.stroke();
+      g.setLineDash([]);
+    }
+
+    g.strokeStyle = ca; g.lineWidth = 3; g.lineCap = 'round';
+    const rr = R * 0.94;
+    g.beginPath();
+    g.moveTo(cx - rr * Math.cos(ps), cyc + rr * Math.sin(ps));
+    g.lineTo(cx + rr * Math.cos(ps), cyc - rr * Math.sin(ps));
+    g.stroke();
+    if (S.rx !== 'lin') {
+      const p2 = ps + Math.PI / 2;
+      g.globalAlpha = 0.75;
+      g.beginPath();
+      g.moveTo(cx - rr * Math.cos(p2), cyc + rr * Math.sin(p2));
+      g.lineTo(cx + rr * Math.cos(p2), cyc - rr * Math.sin(p2));
+      g.stroke();
+      g.globalAlpha = 1;
+    }
+    g.lineCap = 'butt';
+
+    g.strokeStyle = cw; g.lineWidth = 2.5;
+    g.beginPath();
+    for (let i = 0; i <= 26; i++) {
+      const t = phase - (26 - i) / 26 * 1.9;
+      const x = cx + e.A * Math.cos(t) * unit, y = cyc - e.B * Math.cos(t + e.d) * unit;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    const tipx = cx + e.A * Math.cos(phase) * unit, tipy = cyc - e.B * Math.cos(phase + e.d) * unit;
+    g.strokeStyle = cw; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(cx, cyc); g.lineTo(tipx, tipy); g.stroke();
+    g.fillStyle = cw;
+    g.beginPath(); g.arc(tipx, tipy, 4, 0, TAU); g.fill();
+
+    if (e.sense !== 0) {
+      const a0 = -0.9, a1 = -0.35, ra = R * 0.99;
+      g.strokeStyle = mut; g.lineWidth = 1.2;
+      g.beginPath();
+      g.arc(cx, cyc, ra, e.sense > 0 ? a1 : a0, e.sense > 0 ? a0 : a1, e.sense > 0);
+      g.stroke();
+      const ae = e.sense > 0 ? a0 : a1;
+      g.fillStyle = mut;
+      head(g, cx + ra * Math.cos(ae), cyc + ra * Math.sin(ae), ae + (e.sense > 0 ? -Math.PI / 2 : Math.PI / 2), 6);
+    }
+
+    g.fillStyle = sub; g.font = fnt(10.5);
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    const senseTxt = e.sense === 0 ? 'no rotation, linear' : (e.sense > 0 ? 'right-hand rotation' : 'left-hand rotation');
+    g.fillText('blue: field vector, ' + senseTxt, px + 2, h - 20);
+    g.fillText('coral: receive antenna at ψ = ' + S.psi.toFixed(0) + '°', px + 2, h - 7);
+  }
+
+  function drawComp() {
+    const c = $('cv2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const cx2 = cvv('--series-4'), cy2 = cvv('--series-3');
+    const e = ellipse();
+    const l = 44, r = 14, t = 34, b = 30;
+    const X = wt => l + wt / (2 * TAU) * (w - l - r);
+    const Y = v => t + (1.1 - v) / 2.2 * (h - t - b);
+
+    g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let k = -1; k <= 1; k += 0.5) {
+      g.strokeStyle = bd; g.lineWidth = k === 0 ? 1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(k)); g.lineTo(w - r, Y(k)); g.stroke();
+      g.fillStyle = mut;
+      g.fillText(k.toFixed(1), l - 6, Y(k));
+    }
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    const labs = ['0', 'T/2', 'T', '3T/2', '2T'];
+    for (let k = 0; k <= 4; k++) {
+      const wt = k * Math.PI;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(wt), t); g.lineTo(X(wt), h - b); g.stroke();
+      g.fillStyle = mut;
+      g.fillText(labs[k], X(wt), h - b + 6);
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.font = fnt(10);
+    g.fillText('E field, normalised', 4, t - 12);
+    g.textAlign = 'right';
+    g.fillText('time, T = one cycle', w - r, h - b + 18);
+
+    const curve = (amp, ph, col) => {
+      g.strokeStyle = col; g.lineWidth = 2;
+      g.beginPath();
+      for (let px = 0; px <= 240; px++) {
+        const wt = px / 240 * 2 * TAU;
+        const y = Y(amp * Math.cos(wt + ph));
+        if (px === 0) g.moveTo(X(wt), y); else g.lineTo(X(wt), y);
+      }
+      g.stroke();
+    };
+    curve(e.A, 0, cx2);
+    curve(e.B, e.d, cy2);
+
+    g.font = fnt(10.5); g.textBaseline = 'bottom'; g.textAlign = 'right';
+    const lgy = 'E y  B = ' + e.B.toFixed(2);
+    g.fillStyle = cy2; g.fillText(lgy, w - r, t - 3);
+    g.fillStyle = cx2; g.fillText('E x  A = ' + e.A.toFixed(2), w - r - g.measureText(lgy).width - 14, t - 3);
+
+    const xa = X(2 * Math.PI - e.d), xb = X(2 * Math.PI), ya = t + 12;
+    g.strokeStyle = mut; g.lineWidth = 1;
+    if (Math.abs(xb - xa) > 14) {
+      g.beginPath(); g.moveTo(xa, ya); g.lineTo(xb, ya); g.stroke();
+      g.fillStyle = mut;
+      head(g, xa, ya, Math.PI, 5);
+      head(g, xb, ya, 0, 5);
+      g.setLineDash([3, 3]);
+      g.beginPath(); g.moveTo(xa, ya); g.lineTo(xa, Y(e.B)); g.stroke();
+      g.beginPath(); g.moveTo(xb, ya); g.lineTo(xb, Y(e.A)); g.stroke();
+      g.setLineDash([]);
+    }
+    g.fillStyle = sub; g.font = fnt(11);
+    g.textAlign = 'center'; g.textBaseline = 'bottom';
+    const lx = clamp((xa + xb) / 2, l + 30, w - r - 30);
+    g.fillText('δ = ' + S.dphi.toFixed(0) + '°', lx, ya - 4);
+
+    [phase, phase + TAU].forEach((wt, i) => {
+      if (wt > 2 * TAU) return;
+      g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([2, 3]);
+      g.beginPath(); g.moveTo(X(wt), t); g.lineTo(X(wt), h - b); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cx2;
+      g.beginPath(); g.arc(X(wt), Y(e.A * Math.cos(wt)), 3.5, 0, TAU); g.fill();
+      g.fillStyle = cy2;
+      g.beginPath(); g.arc(X(wt), Y(e.B * Math.cos(wt + e.d)), 3.5, 0, TAU); g.fill();
+      if (i === 0) {
+        g.fillStyle = mut; g.font = fnt(10);
+        g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillText('now', clamp(X(wt), l + 14, w - r - 14), t + 1);
+      }
+    });
+  }
+
+  function drawSweep() {
+    const c = $('cv3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const cw = cvv('--series-1'), ca = cvv('--series-2'), warn = cvv('--text-warning');
+    const e = ellipse(), rx = rxPol(), sw = sweep(e, rx);
+    const l = 50, r = 14, t = 18, b = 40;
+
+    let mn = 1e9, mx = -1e9;
+    sw.forEach(s => { const d = lossDb(s.p); if (d < mn) mn = d; if (d > mx) mx = d; });
+    const yMax = Math.min(CAP_DB, Math.max(6, Math.ceil(Math.min(mx, CAP_DB) / 3) * 3));
+    const X = p => l + p / 90 * (w - l - r);
+    const Y = d => t + clamp(d, 0, yMax) / yMax * (h - t - b);
+
+    g.font = fnt(11);
+    for (let k = 0; k <= 5; k++) {
+      const v = yMax * k / 5;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(1), l - 6, Y(v));
+    }
+    for (let a = 0; a <= 90; a += 15) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(a.toFixed(0) + '°', X(a), h - b + 6);
+    }
+    g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('polarisation loss (dB)', 4, 3);
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('receive antenna tilt ψ (degrees)', w - r, h - b + 20);
+
+    if (yMax >= 25) {
+      g.fillStyle = warn; g.globalAlpha = 0.12;
+      g.fillRect(l, Y(25), w - l - r, Y(Math.min(35, yMax)) - Y(25));
+      g.globalAlpha = 1;
+      g.fillStyle = warn; g.font = fnt(10);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText('real antennas stop here: XPD 25 to 35 dB', l + 5, Y(25) + 2);
+    }
+
+    g.save();
+    g.beginPath(); g.rect(l, t, w - l - r, h - t - b); g.clip();
+    g.strokeStyle = cw; g.lineWidth = 2;
+    g.beginPath();
+    sw.forEach((s, i) => {
+      const x = X(s.psi), y = Y(lossDb(s.p));
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    });
+    g.stroke();
+    g.restore();
+
+    const here = lossDb(plf(e, rx, S.psi * D2R));
+    g.fillStyle = ca;
+    g.beginPath(); g.arc(X(S.psi), Y(here), 5, 0, TAU); g.fill();
+    g.font = fnt(11); g.textBaseline = 'bottom';
+    g.textAlign = S.psi > 60 ? 'right' : 'left';
+    const lx = clamp(X(S.psi) + (S.psi > 60 ? -9 : 9), l + 4, w - r - 4);
+    g.fillText((here >= CAP_DB ? 'deeper than ' + CAP_DB.toFixed(0) : here.toFixed(2)) + ' dB', lx, clamp(Y(here) - 8, t + 12, h - b - 4));
+
+    const rip = (Math.min(mx, CAP_DB) - mn) / 2;
+    g.fillStyle = sub; g.font = fnt(11);
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    let msg;
+    if (mx - mn < 0.01) {
+      msg = 'flat: rotating the antenna changes nothing';
+    } else if (mx >= CAP_DB) {
+      msg = 'ideal null, deeper than the axis; hardware stops in the shaded band';
+    } else if (e.lin !== rx.lin && Math.abs(rip * 2 - (e.lin ? 20 * L10(rx.ar) : 20 * L10(e.ar))) < 0.02) {
+      msg = 'swing ' + mn.toFixed(2) + ' to ' + mx.toFixed(2) + ' dB, peak to peak ' + (mx - mn).toFixed(2) + ' dB = the axial ratio';
+    } else {
+      msg = 'swing ' + mn.toFixed(2) + ' to ' + mx.toFixed(2) + ' dB';
+    }
+    g.fillText(msg, w - r - 4, t + 3);
+  }
+
+  function drawAll() { drawField(); drawComp(); drawSweep(); }
+
+  function updateUI() {
+    const e = ellipse(), rx = rxPol(), sw = sweep(e, rx);
+    const p = plf(e, rx, S.psi * D2R), ls = lossDb(p), xp = xpd(e, rx);
+    const arDb = e.lin ? 999 : 20 * L10(e.ar);
+
+    $('abv').textContent = S.ab.toFixed(2);
+    $('dpv').textContent = S.dphi.toFixed(0) + '°';
+    $('psv').textContent = S.psi.toFixed(0) + '°';
+    $('rav').textContent = S.rxar.toFixed(1) + ' dB';
+
+    $('sR').classList.toggle('on', e.sense === 1);
+    $('sL').classList.toggle('on', e.sense === -1);
+    $('senseRd').textContent = e.sense === 0
+      ? 'linear wave, no rotation'
+      : (e.sense > 0 ? 'right hand, δ is negative' : 'left hand, δ is positive');
+    $('eR').classList.toggle('on', S.esense === 1);
+    $('eL').classList.toggle('on', S.esense === -1);
+    [['rLin', 'lin'], ['rRH', 'rh'], ['rLH', 'lh'], ['rEll', 'ell']].forEach(pair => {
+      $(pair[0]).classList.toggle('on', S.rx === pair[1]);
+    });
+    $('run').textContent = S.run ? 'Freeze' : 'Run';
+
+    $('cAR').textContent = arDb > CAP_DB ? '> ' + CAP_DB.toFixed(0) + ' dB' : arDb.toFixed(2) + ' dB';
+    $('cARf').textContent = arDb > CAP_DB
+      ? 'a straight line: the short axis is zero, so the ratio runs away'
+      : 'long ÷ short = ' + e.ar.toFixed(3) + ', as 20 log10; 0 dB is a circle';
+    $('cTau').textContent = (e.tau * R2D).toFixed(1) + '°';
+    $('cPLF').textContent = p.toFixed(4);
+    $('cLoss').textContent = ls >= CAP_DB ? '> ' + CAP_DB.toFixed(1) + ' dB' : ls.toFixed(2) + ' dB';
+    $('cLoss').style.color = ls < 0.5 ? 'var(--text-good)' : (ls < 4 ? 'var(--text-primary)' : 'var(--text-warning)');
+    const xps = Math.abs(xp) < 0.05 ? 0 : xp;
+    $('cXPD').textContent = xps >= CAP_DB ? '> ' + CAP_DB.toFixed(0) + ' dB'
+      : (xps <= -CAP_DB ? '< −' + CAP_DB.toFixed(0) + ' dB' : xps.toFixed(1).replace('-', '−') + ' dB');
+    $('cXPDf').textContent = xps >= CAP_DB
+      ? 'ideal rejection is infinite here; real antennas manage 25 to 35 dB'
+      : (xps < 0 ? 'negative: this antenna prefers the orthogonal wave'
+        : (xps === 0 ? 'no rejection at all: this pairing cannot tell the two apart'
+          : 'how much this wave beats the wave orthogonal to it'));
+
+    const psiTxt = S.psi.toFixed(1);
+    let dTau = ((e.tau * R2D - S.psi) % 180 + 180) % 180;
+    if (dTau > 90) dTau = 180 - dTau;
+    const rxTxt = S.rx === 'lin' ? 'linear' : S.rx === 'rh' ? 'right-hand circular'
+      : S.rx === 'lh' ? 'left-hand circular'
+      : 'elliptical, AR ' + S.rxar.toFixed(1) + ' dB, ' + (S.esense > 0 ? 'right hand' : 'left hand');
+    const rows = [
+      'Two halves of the field: A = ' + e.A.toFixed(2) + ' across, B = ' + e.B.toFixed(2) + ' up, phase difference δ = ' + S.dphi.toFixed(0) + '°.',
+      'Long half-axis OA = √{½[A² + B² + √(A⁴ + B⁴ + 2A²B² cos 2δ)]} = ' + e.oa.toFixed(4) + '.',
+      'Short half-axis OB, same with a minus sign = ' + e.ob.toFixed(4) + '.',
+      'Axial ratio AR = OA / OB = ' + (e.lin ? 'runs away, the wave is linear' : e.ar.toFixed(4) + ', and 20 log10(AR) = ' + arDb.toFixed(2) + ' dB') + '.',
+      'Tilt τ = ½ atan2(2AB cos δ, A² − B²) = ½ atan2(' + (2 * e.A * e.B * Math.cos(e.d)).toFixed(3).replace('-', '−') + ', ' + (e.A * e.A - e.B * e.B).toFixed(3).replace('-', '−') + ') = ' + (e.tau * R2D).toFixed(1).replace('-', '−') + '°.',
+      'Receive antenna is ' + rxTxt + ' at ψ = ' + psiTxt + '°, so Δτ = ' + dTau.toFixed(1) + '°.',
+      'PLF = ½ + [4·AR₁·AR₂ + (AR₁²−1)(AR₂²−1) cos 2Δτ] / [2(AR₁²+1)(AR₂²+1)] = ' + p.toFixed(4) + ', with an axial ratio made negative when the two senses are opposite.',
+      'Loss = −10 log10(' + p.toFixed(4) + ') = ' + (ls >= CAP_DB ? 'deeper than ' + CAP_DB.toFixed(0) + ' dB in theory, 25 to 35 dB in hardware' : ls.toFixed(2) + ' dB') + '.'
+    ];
+    $('work').innerHTML = rows.map(x => '<li>' + x + '</li>').join('');
+
+    let mn = 1e9, mx = -1e9;
+    sw.forEach(s => { const d = lossDb(s.p); if (d < mn) mn = d; if (d > mx) mx = d; });
+    S.spread = mx - mn;
+  }
+
+  function refresh() { updateUI(); if (!S.run) drawAll(); }
+
+  let rafId = 0, last = 0;
+  function frame(ts) {
+    const dt = Math.min(ts - last, 50);
+    last = ts;
+    phase = (phase + dt * 0.0022) % TAU;
+    drawAll();
+    rafId = requestAnimationFrame(frame);
+  }
+  function start() { if (!rafId) { last = performance.now(); rafId = requestAnimationFrame(frame); } }
+  function stop() { if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } }
+
+  ['ab', 'dp', 'ps', 'ra'].forEach(id =>
+    $(id).addEventListener('input', () => { read(); refresh(); }));
+
+  function setSense(s) {
+    const mag = Math.abs(S.dphi) % 180 === 0 ? 90 : Math.abs(S.dphi);
+    $('dp').value = String(s > 0 ? -mag : mag);
+    read(); refresh();
+  }
+  $('sR').addEventListener('click', () => setSense(1));
+  $('sL').addEventListener('click', () => setSense(-1));
+  $('eR').addEventListener('click', () => { S.esense = 1; refresh(); });
+  $('eL').addEventListener('click', () => { S.esense = -1; refresh(); });
+  [['rLin', 'lin'], ['rRH', 'rh'], ['rLH', 'lh'], ['rEll', 'ell']].forEach(pair => {
+    $(pair[0]).addEventListener('click', () => {
+      S.rx = pair[1];
+      if (pair[1] === 'ell') $('expert').open = true;
+      refresh();
+    });
+  });
+  $('run').addEventListener('click', () => {
+    S.run = !S.run;
+    if (S.run) start(); else stop();
+    refresh();
+  });
+
+  const TOUR = [
+    { ab: 1, dp: 0, ps: 45, rx: 'lin',
+      t: 'Step 1 — the phase difference is zero, so both halves peak together and the field tip walks a straight line at 45 degrees. The dipole is lined up with it, so nothing is lost.' },
+    { ab: 1, dp: 0, ps: 0, rx: 'lin',
+      t: 'Step 2 — same wave, dipole rotated 45 degrees away from it. Half the power is gone: 3.01 dB, which is what cos squared of 45 degrees comes to.' },
+    { ab: 0, dp: 0, ps: 0, rx: 'lin',
+      t: 'Step 3 — the horizontal element is switched off, so the wave is purely vertical while the dipole lies horizontal. The ideal formula lets nothing through; the shaded band in section 3 is where real hardware actually stops.' },
+    { ab: 1, dp: 90, ps: 0, rx: 'lin',
+      t: 'Step 4 — equal halves, 90 degrees apart: a circle, axial ratio 0 dB. Now every dipole angle loses exactly 3.01 dB and the curve in section 3 is flat. That flatness is the whole reason circular polarisation exists.' },
+    { ab: 0, dp: 0, ps: 0, rx: 'ell', ra: 3,
+      t: 'Step 5 — a real circular antenna is never perfect. At 3 dB axial ratio against this linear wave the loss swings between 1.76 and 4.76 dB as the source rotates: a peak-to-peak swing equal to the axial ratio itself, so budget half the axial ratio either way.' }
+  ];
+  TOUR.forEach((st, i) => {
+    $('t' + (i + 1)).addEventListener('click', () => {
+      $('ab').value = String(st.ab);
+      $('dp').value = String(st.dp);
+      $('ps').value = String(st.ps);
+      if (st.ra !== undefined) $('ra').value = String(st.ra);
+      S.rx = st.rx;
+      if (st.rx === 'ell') $('expert').open = true;
+      read();
+      $('narr').textContent = st.t;
+      refresh();
+    });
+  });
+
+  window.addEventListener('resize', () => { if (!S.run) drawAll(); });
+
+  read();
+  updateUI();
+  drawAll();
+  if (S.run) start();
+})();
+</script>
+</body>
+</html>

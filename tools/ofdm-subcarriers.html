@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OFDM subcarriers and the cyclic prefix</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --plot-bg: #ffffff; --grid: #e4e8ec; --axis: #3c4650;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e;
+    --surface-1: #262624; --accent: #6BB0F0;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --plot-bg: #201f1d; --grid: #34342f; --axis: #9aa5b1;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; font-size: 13px; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.75rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
+.ctl input[type=range] { flex: 1; min-width: 80px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 72px; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0.5rem 0 0.75rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; background: var(--plot-bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin-bottom: 2px; }
+.legend-note b { color: var(--text-primary); font-weight: 500; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px;
+  color: var(--text-secondary); margin: 1.25rem 0; }
+.note b { color: var(--text-primary); font-weight: 500; }
+.tour { font-size: 13px; color: var(--text-secondary); margin-top: 8px; min-height: 2.6em; }
+details { margin: 0.75rem 0 1rem; font-size: 13px; }
+summary { cursor: pointer; color: var(--text-secondary); }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; }
+ol.work li { margin-bottom: 3px; }
+ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+.glossary { font-size: 13px; margin-top: 0.5rem; }
+.glossary dt { font-weight: 500; margin-top: 7px; }
+.glossary dd { margin: 0; color: var(--text-secondary); }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>OFDM subcarriers and the cyclic prefix</h1>
+<p class="sub">Orthogonal frequency-division multiplexing (OFDM) splits one wide channel into many narrow ones that overlap without interfering. Each subcarrier is a tone whose spectrum is a sinc, and the tones are spaced so that every peak lands exactly on every other one's null &mdash; that is what "orthogonal" means here. Wi-Fi, LTE, 5G, DAB and DVB all work this way. Two things break it: an echo arriving late, and a receiver tuned slightly off frequency.</p>
+<p class="sub" style="margin-bottom: 1rem;">New to this? Start with <a href="sampling-aliasing.html">sampling and aliasing</a> and <a href="iq-constellation.html">the I/Q constellation</a>, which explain the sinc shape and the constellation dots used below.</p>
+
+<div class="note"><b>An everyday picture.</b> Think of a choir where each singer holds a note that fits a whole number of times into one bar. Over a full bar every other singer's contribution averages to nothing, so you can pick out any one voice cleanly. If one singer drifts slightly off pitch, their note no longer cancels &mdash; it smears into everyone else's part. That smearing is intercarrier interference, and the frequency-offset slider below creates it.</div>
+
+<p class="sec"><b>Guided tour</b> <span>&mdash; each step moves the controls for you and says what changed</span></p>
+<div class="row">
+  <button id="t1">1 &middot; orthogonal</button>
+  <button id="t2">2 &middot; long echo</button>
+  <button id="t3">3 &middot; guard off</button>
+  <button id="t4">4 &middot; off frequency</button>
+  <button id="t5">5 &middot; more subcarriers</button>
+</div>
+<p class="tour" id="tourTxt">Press step 1 to set the tool back to a clean, working OFDM symbol.</p>
+
+<div class="grid2">
+  <div class="ctl"><label for="nn">Subcarriers N</label><input type="range" id="nn" min="3" max="7" step="1" value="5"><span class="v" id="nnv">32</span></div>
+  <div class="ctl"><label for="cp">Guard length T<sub>cp</sub></label><input type="range" id="cp" min="0" max="0.25" step="0.00625" value="0.0625"><span class="v" id="cpv">6.25 %</span></div>
+  <div class="ctl"><label for="ds">Channel delay spread</label><input type="range" id="ds" min="0" max="5" step="0.1" value="1"><span class="v" id="dsv">1.0 &micro;s</span></div>
+  <div class="ctl"><label for="fo">Frequency offset &epsilon;</label><input type="range" id="fo" min="0" max="0.4" step="0.005" value="0"><span class="v" id="fov">0.000</span></div>
+</div>
+<div class="row">
+  <span class="lbl">Cyclic prefix</span>
+  <button id="bCpOn" class="on">on</button><button id="bCpOff">off</button>
+</div>
+
+<details>
+  <summary>More controls</summary>
+  <div class="row" style="margin-top: 0.6rem;">
+    <span class="lbl">Subcarrier modulation</span>
+    <button id="m2" class="on">QPSK</button><button id="m4">16-QAM</button><button id="m6">64-QAM</button>
+    <button id="newsym">New data symbol</button>
+  </div>
+  <p style="color: var(--text-secondary); margin: 0;">The occupied bandwidth is held at 960 kHz throughout, so changing N trades subcarrier spacing against symbol length. Background thermal noise is fixed at 25 dB signal-to-noise ratio so that interference has something to be compared against.</p>
+</details>
+
+<p class="sec"><b>1 &middot; The symbol in time, and the echo that arrives late</b> <span>&mdash; the guard is a copy of the symbol's own tail, pasted on the front</span></p>
+<canvas id="cT" style="height: 340px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> is the transmitted waveform &mdash; the real part of the sum of all N subcarriers.</li>
+  <li><span class="sw" style="background: var(--series-3)"></span> <b>yellow blocks</b> are the cyclic prefix: the last T<sub>cp</sub> of each symbol, copied to its front. Nothing new is sent there.</li>
+  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> is the same signal arriving late down a reflected path. While its delay stays inside the yellow block, the receiver's window sees only the current symbol and nothing is lost.</li>
+  <li>When the echo runs past the guard, the shaded red strip marks the part of the receiver's window still carrying the <i>previous</i> symbol. That is intersymbol interference.</li>
+</ul>
+
+<p class="sec"><b>2 &middot; Why the subcarriers do not interfere</b> <span>&mdash; peaks on nulls in frequency, whole cycles in time</span></p>
+<div class="row">
+  <span class="lbl">View</span>
+  <button id="vF" class="on">frequency</button><button id="vT">time</button>
+</div>
+<canvas id="cS" style="height: 300px;"></canvas>
+<ul class="legend-note" id="legS"></ul>
+
+<p class="sec"><b>3 &middot; What the channel does to each subcarrier</b> <span>&mdash; the same echoes, seen as a frequency response</span></p>
+<canvas id="cH" style="height: 250px;"></canvas>
+<ul class="legend-note">
+  <li>Each stem is one subcarrier's channel gain |H<sub>k</sub>| in decibels. The taps are normalised so the channel's average power gain across <i>all</i> frequencies is 0 dB; across this one narrow band the average can sit well above or below that.</li>
+  <li><span class="sw" style="background: var(--series-7)"></span> <b>red stems</b> are subcarriers more than 6 dB down &mdash; they sit in a notch, and the receiver has to amplify their noise to recover them.</li>
+  <li>With a short delay spread the whole band rides on one gentle hump: the channel is flat. Drag the delay spread up and the notches appear.</li>
+</ul>
+
+<p class="sec"><b>4 &middot; The constellation the receiver actually sees</b> <span>&mdash; after one-tap equalisation, every subcarrier plotted together</span></p>
+<canvas id="cC" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li>Grey crosses are the ideal transmitted points. Each dot is one subcarrier of one symbol after dividing out its own channel gain.</li>
+  <li><span class="sw" style="background: var(--series-7)"></span> <b>red dots</b> come from the faded subcarriers marked in section 3. Dividing by a small gain multiplies their noise, so they scatter furthest.</li>
+  <li>Intercarrier interference from a frequency offset blurs <i>every</i> dot at once, because it does not depend on the channel.</li>
+</ul>
+
+<div class="cards">
+  <div class="card"><div class="hd">Subcarrier spacing &Delta;f</div><div class="big" id="cDF">&mdash;</div><div class="ft" id="cDFn">&mdash;</div></div>
+  <div class="card"><div class="hd">Symbol duration</div><div class="big" id="cTS">&mdash;</div><div class="ft" id="cTSn">&mdash;</div></div>
+  <div class="card"><div class="hd">Guard overhead</div><div class="big" id="cOV">&mdash;</div><div class="ft" id="cOVn">&mdash;</div></div>
+  <div class="card"><div class="hd">ICI power</div><div class="big" id="cICI">&mdash;</div><div class="ft">1 &minus; sinc<sup>2</sup>(&epsilon;), relative to the power on one subcarrier</div></div>
+  <div class="card"><div class="hd">Effective SNR ceiling</div><div class="big" id="cSNR">&mdash;</div><div class="ft" id="cSNRn">&mdash;</div></div>
+  <div class="card"><div class="hd">Peak-to-average power</div><div class="big" id="cPAPR">&mdash;</div><div class="ft" id="cPAPRn">&mdash;</div></div>
+</div>
+
+<p class="sec"><b>Worked example</b> <span>&mdash; the arithmetic for the settings on screen right now</span></p>
+<ol class="work" id="work"></ol>
+
+<p class="sub" style="margin-top: 2rem;">Three trade-offs live in these sliders. Packing more subcarriers into the same bandwidth makes each one narrower and each symbol longer, so a guard of the same percentage covers a longer echo &mdash; that is why a channel with a lot of delay spread pushes designers towards large fast Fourier transforms. The guard itself is pure overhead: at 25 % of the symbol you throw away a fifth of your capacity to buy immunity, and the only way to get it back is to shorten the guard until the echoes start bleeding through. And a frequency offset of a few percent of the subcarrier spacing puts a hard ceiling on signal-to-noise ratio that no amount of transmit power can lift, which is why OFDM receivers spend so much effort on synchronisation. Watch the peak-to-average number as you raise N: many subcarriers occasionally line up in phase, and the power amplifier has to stay linear over that peak or it clips and regrows the spectrum into the neighbours' band.</p>
+
+<p class="sub">Where this model is simplified, and it is simplified in four places. The channel taps are given zero phase and an exponential power profile rather than random phases, so this is a deterministic delay profile rather than one realisation of Rayleigh fading &mdash; the companion multipath tool is the place for that. The interference from an echo that overruns the guard is estimated as 2&middot;a<sup>2</sup>&middot;(&tau;&nbsp;&minus;&nbsp;T<sub>cp</sub>)/T<sub>u</sub> summed over the taps that overrun, the standard small-overrun approximation; the exact value depends on which data the previous symbol carried. The intercarrier interference power 1&nbsp;&minus;&nbsp;sinc<sup>2</sup>(&epsilon;) is the large-N limit, and it is quoted relative to the total power falling on the subcarrier rather than to the surviving wanted part, so the true wanted-to-interference ratio is a few tenths of a decibel lower. Finally the equaliser is given perfect knowledge of the channel; a real receiver estimates it from pilots and the estimate is worst exactly where the channel is deepest in a notch.</p>
+
+<p class="sec"><b>Glossary</b></p>
+<dl class="glossary">
+  <dt>Subcarrier</dt><dd>One of the N narrow tones that make up an OFDM signal. Each carries its own data symbol.</dd>
+  <dt>Subcarrier spacing &Delta;f</dt><dd>The frequency step between neighbouring subcarriers, in hertz. It is fixed by the symbol length: &Delta;f = 1/T<sub>u</sub>.</dd>
+  <dt>Useful symbol time T<sub>u</sub></dt><dd>The part of the symbol the receiver integrates over. Every subcarrier fits a whole number of cycles into it, which is what makes them orthogonal.</dd>
+  <dt>Orthogonal</dt><dd>Two signals are orthogonal when multiplying them together and averaging over one symbol gives exactly zero, so neither disturbs the other.</dd>
+  <dt>sinc</dt><dd>The function sin(&pi;x)/(&pi;x). It is the spectrum of a rectangular time window, peaks at 1 when x = 0, and is exactly zero at every other whole number.</dd>
+  <dt>Cyclic prefix (CP), or guard interval</dt><dd>A copy of the end of a symbol pasted onto its front. An echo shorter than the guard then still looks to the receiver like a clean, whole symbol.</dd>
+  <dt>Delay spread</dt><dd>How long after the first arrival the last usable echo turns up, in microseconds. It is set by the size of the reflecting environment.</dd>
+  <dt>Intersymbol interference (ISI)</dt><dd>Energy from the previous symbol still arriving inside the current symbol's receive window.</dd>
+  <dt>Intercarrier interference (ICI)</dt><dd>Energy from neighbouring subcarriers leaking into this one because orthogonality has been broken.</dd>
+  <dt>Frequency offset &epsilon;</dt><dd>The receiver's local oscillator error, measured in units of the subcarrier spacing. &epsilon; = 0.1 means the receiver is one tenth of a subcarrier out.</dd>
+  <dt>One-tap equaliser</dt><dd>Dividing each subcarrier by its own complex channel gain H<sub>k</sub>. OFDM's headline advantage: a wideband channel is corrected one narrow tone at a time.</dd>
+  <dt>Peak-to-average power ratio (PAPR)</dt><dd>The ratio of the highest instantaneous power in a symbol to its mean power, in decibels. It sets how much headroom the transmit amplifier needs.</dd>
+  <dt>Decibel (dB)</dt><dd>A ratio on a logarithmic scale: 10&middot;log<sub>10</sub> of a power ratio. Ten decibels is ten times the power, 3 dB is roughly double.</dd>
+</dl>
+
+<p class="sub" style="margin-top: 1.5rem;">Next: <a href="cellular-reuse.html">cellular reuse and interference</a> shows what happens when many of these carriers have to share one spectrum allocation across a network.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const sinc = x => Math.abs(x) < 1e-9 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
+
+  const BW = 960e3;
+  const SNRDB = 25;
+  const FADE_DB = -6;
+  const FADE = Math.pow(10, FADE_DB / 20);
+  const OS = 4;
+  const NTAP = 5;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const S = { nExp: 5, cpFrac: 0.0625, tau: 1.0, eps: 0, bits: 2, cpOn: true, view: 'freq', seed: 20260729 };
+
+  let M = {};
+
+  function mkRng(seed) {
+    let s = (seed >>> 0) || 1;
+    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  }
+  function gauss(rng) {
+    const u = Math.max(rng(), 1e-12), v = rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v);
+  }
+
+  function levels(bits) {
+    const n = 1 << (bits / 2), out = [];
+    for (let i = 0; i < n; i++) out.push(2 * i - (n - 1));
+    return out;
+  }
+  function normFactor(bits) {
+    const lv = levels(bits);
+    let e = 0;
+    lv.forEach(a => lv.forEach(b => { e += a * a + b * b; }));
+    return Math.sqrt(e / (lv.length * lv.length));
+  }
+  function idealPts(bits) {
+    const lv = levels(bits), g = normFactor(bits), out = [];
+    lv.forEach(a => lv.forEach(b => out.push({ re: a / g, im: b / g })));
+    return out;
+  }
+
+  function taps(tauUs) {
+    const tmax = tauUs * 1e-6;
+    if (tmax < 5e-8) return [{ t: 0, a: 1 }];
+    const td = tmax / 2, out = [];
+    let p = 0;
+    for (let i = 0; i < NTAP; i++) {
+      const t = tmax * i / (NTAP - 1), pw = Math.exp(-t / td);
+      out.push({ t: t, a: pw }); p += pw;
+    }
+    out.forEach(o => { o.a = Math.sqrt(o.a / Math.max(p, 1e-12)); });
+    return out;
+  }
+
+  function compute() {
+    const N = 1 << S.nExp;
+    const df = BW / N;
+    const Tu = 1 / df;
+    const Tcp = S.cpOn ? S.cpFrac * Tu : 0;
+    const Tsym = Tu + Tcp;
+    const tp = taps(S.tau);
+
+    let m1 = 0, m2 = 0;
+    tp.forEach(o => { const p = o.a * o.a; m1 += p * o.t; m2 += p * o.t * o.t; });
+    const sigTau = Math.sqrt(Math.max(m2 - m1 * m1, 0));
+
+    let isi = 0;
+    tp.forEach(o => { const ex = o.t - Tcp; if (ex > 0) isi += 2 * o.a * o.a * Math.min(ex / Tu, 1); });
+    isi = clamp(isi, 0, 1);
+
+    const aW = sinc(S.eps);
+    const ici = clamp(1 - aW * aW, 0, 1);
+
+    const H = [];
+    let faded = 0, hmin = Infinity;
+    for (let i = 0; i < N; i++) {
+      const k = i - N / 2, f = k * df;
+      let re = 0, im = 0;
+      for (let j = 0; j < tp.length; j++) {
+        const ph = -TAU * f * tp[j].t;
+        re += tp[j].a * Math.cos(ph); im += tp[j].a * Math.sin(ph);
+      }
+      const mag = Math.hypot(re, im);
+      if (mag < FADE) faded++;
+      if (mag < hmin) hmin = mag;
+      H.push({ k: k, re: re, im: im, mag: mag });
+    }
+
+    const ideal = idealPts(S.bits);
+    const rngD = mkRng(S.seed);
+    const dataC = [], dataP = [];
+    for (let i = 0; i < N; i++) dataC.push(ideal[Math.floor(rngD() * ideal.length) % ideal.length]);
+    for (let i = 0; i < N; i++) dataP.push(ideal[Math.floor(rngD() * ideal.length) % ideal.length]);
+
+    const wCur = idft(dataC, N), wPrev = idft(dataP, N);
+    let mx = 0, sum = 0;
+    for (let n = 0; n < wCur.length; n++) {
+      const p = wCur[n].re * wCur[n].re + wCur[n].im * wCur[n].im;
+      sum += p; if (p > mx) mx = p;
+    }
+    const mean = sum / Math.max(wCur.length, 1);
+    const papr = mean > 1e-14 ? 10 * L10(mx / mean) : 0;
+
+    let wmax = 1e-9;
+    for (let n = 0; n < wCur.length; n++) wmax = Math.max(wmax, Math.abs(wCur[n].re), Math.abs(wPrev[n].re));
+
+    const rngN = mkRng(S.seed ^ 0x5bf03635);
+    const nvar = Math.pow(10, -SNRDB / 10);
+    const iv = ici + isi;
+    const sd = Math.sqrt(Math.max(nvar + iv, 0) / 2);
+    const pts = [];
+    for (let i = 0; i < N; i++) {
+      const X = dataC[i], h = H[i];
+      const gRe = h.re * aW, gIm = h.im * aW;
+      const den = Math.max(gRe * gRe + gIm * gIm, 1e-6);
+      const nRe = gauss(rngN) * sd, nIm = gauss(rngN) * sd;
+      pts.push({
+        re: X.re + (nRe * gRe + nIm * gIm) / den,
+        im: X.im + (nIm * gRe - nRe * gIm) / den,
+        faded: h.mag < FADE
+      });
+    }
+
+    M = {
+      N: N, df: df, Tu: Tu, Tcp: Tcp, Tsym: Tsym, taps: tp, sigTau: sigTau,
+      isi: isi, ici: ici, aW: aW, H: H, faded: faded, hmin: hmin,
+      wCur: wCur, wPrev: wPrev, wmax: wmax, papr: papr, pts: pts, ideal: ideal,
+      eta: Tu / Tsym, overhead: Tcp / Tsym
+    };
+  }
+
+  function idft(X, N) {
+    const NN = N * OS, out = new Array(NN);
+    for (let n = 0; n < NN; n++) {
+      let re = 0, im = 0;
+      for (let i = 0; i < N; i++) {
+        const k = i - N / 2, ph = TAU * k * n / NN;
+        const c = Math.cos(ph), s = Math.sin(ph);
+        re += X[i].re * c - X[i].im * s;
+        im += X[i].re * s + X[i].im * c;
+      }
+      out[n] = { re: re / N, im: im / N };
+    }
+    return out;
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [Math.max(r.width, 1), Math.max(r.height, 1)];
+  }
+
+  function txAt(t) {
+    const Tu = M.Tu, Tcp = M.Tcp, Tsym = M.Tsym, NN = M.wCur.length;
+    if (t < 0 || t >= 2 * Tsym) return null;
+    const inB = t >= Tsym;
+    const local = inB ? t - Tsym : t;
+    const tt = local - Tcp;
+    const w = inB ? M.wCur : M.wPrev;
+    let idx = Math.floor(((tt / Tu) % 1 + 1) % 1 * NN);
+    if (idx >= NN) idx = NN - 1;
+    return w[idx].re;
+  }
+
+  function drawTime() {
+    const c = $('cT'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
+    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c3 = cvv('--series-3'), c7 = cvv('--series-7'), c5 = cvv('--series-5');
+    const Tu = M.Tu, Tcp = M.Tcp, Tsym = M.Tsym, tmax = S.tau * 1e-6;
+    const aEcho = M.taps[M.taps.length - 1].a;
+    const l = 46, r = 12;
+    const panels = [
+      { t: 12, b: h * 0.50, t0: 0, t1: 2 * Tsym, ttl: 'two consecutive symbols' },
+      { t: h * 0.56, b: h - 26, t0: 0, t1: 0, ttl: 'zoom on the symbol boundary' }
+    ];
+    const span = Math.max(Tcp, tmax, Tu * 0.05) * 3.2;
+    panels[1].t0 = Math.max(Tsym - span * 0.42, 0);
+    panels[1].t1 = Math.min(Tsym + span * 0.58, 2 * Tsym);
+    if (panels[1].t1 - panels[1].t0 < 1e-9) panels[1].t1 = panels[1].t0 + Tu * 0.1;
+
+    panels.forEach(function (P, pi) {
+      const top = P.t, bot = P.b, mid = (top + bot) / 2, amp = (bot - top) / 2 - 12;
+      const X = t => l + (t - P.t0) / (P.t1 - P.t0) * (w - l - r);
+      const inW = t => t >= P.t0 && t <= P.t1;
+
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, mid); g.lineTo(w - r, mid); g.stroke();
+
+      g.fillStyle = c3; g.globalAlpha = 0.30;
+      [0, Tsym].forEach(function (s) {
+        const x0 = Math.max(X(s), l), x1 = Math.min(X(s + Tcp), w - r);
+        if (x1 > x0) g.fillRect(x0, top, x1 - x0, bot - top);
+      });
+      g.globalAlpha = 1;
+
+      if (tmax > Tcp + 1e-12) {
+        const a = Tsym + Tcp, b2 = Tsym + Math.min(tmax, Tu + Tcp);
+        const x0 = Math.max(X(a), l), x1 = Math.min(X(b2), w - r);
+        if (x1 > x0) {
+          g.fillStyle = c7; g.globalAlpha = 0.20;
+          g.fillRect(x0, top, x1 - x0, bot - top);
+          g.globalAlpha = 1;
+        }
+      }
+
+      g.strokeStyle = c2; g.lineWidth = 1.3; g.globalAlpha = 0.85;
+      g.beginPath();
+      let started = false;
+      for (let px = l; px <= w - r; px += 1) {
+        const t = P.t0 + (px - l) / (w - l - r) * (P.t1 - P.t0);
+        const v = txAt(t - tmax);
+        if (v === null) { started = false; continue; }
+        const y = mid - v * aEcho / M.wmax * amp;
+        if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
+      }
+      g.stroke(); g.globalAlpha = 1;
+
+      g.strokeStyle = c1; g.lineWidth = 1.6;
+      g.beginPath(); started = false;
+      for (let px = l; px <= w - r; px += 1) {
+        const t = P.t0 + (px - l) / (w - l - r) * (P.t1 - P.t0);
+        const v = txAt(t);
+        if (v === null) { started = false; continue; }
+        const y = mid - v / M.wmax * amp;
+        if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
+      }
+      g.stroke();
+
+      g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+      [0, Tsym, 2 * Tsym].forEach(function (s) {
+        if (!inW(s)) return;
+        g.setLineDash([3, 3]);
+        g.beginPath(); g.moveTo(X(s), top); g.lineTo(X(s), bot); g.stroke();
+        g.setLineDash([]);
+      });
+
+      g.font = fnt(10.5); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(P.ttl, l + 3, top + 2);
+
+      if (pi === 0) {
+        g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+        if (Tcp > 0) {
+          g.fillText('CP', X(Tcp / 2), bot - 14);
+          g.strokeStyle = c3; g.lineWidth = 1.2;
+          g.beginPath();
+          g.moveTo(X(Tsym - Tcp / 2), top + 16);
+          g.bezierCurveTo(X(Tsym - Tcp / 2), top + 2, X(Tcp / 2), top + 2, X(Tcp / 2), top + 16);
+          g.stroke();
+          g.fillStyle = cvv('--text-warning');
+          g.fillText('the tail is copied to the front', (X(Tcp / 2) + X(Tsym - Tcp / 2)) / 2, top + 16);
+        } else {
+          g.fillStyle = cvv('--text-warning');
+          g.fillText('no guard interval', X(Tsym * 0.5), top + 16);
+        }
+        g.fillStyle = sub; g.textAlign = 'center';
+        const fw0 = Tsym + Tcp, fw1 = 2 * Tsym;
+        g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(X(fw0), bot - 6); g.lineTo(X(fw0), bot - 1); g.lineTo(X(fw1), bot - 1); g.lineTo(X(fw1), bot - 6);
+        g.stroke();
+        g.textBaseline = 'bottom';
+        g.fillText('receiver window Tᵤ = ' + (Tu * 1e6).toFixed(1) + ' µs', (X(fw0) + X(fw1)) / 2, bot - 3);
+      } else {
+        g.textAlign = 'left'; g.textBaseline = 'bottom'; g.font = fnt(10.5);
+        if (tmax > Tcp + 1e-12) {
+          g.fillStyle = c7;
+          g.fillText('previous symbol still arriving — ' + ((tmax - Tcp) * 1e6).toFixed(2) + ' µs of the window is spoiled',
+            Math.min(X(Tsym + Tcp) + 4, w - r - 250), bot - 4);
+        } else {
+          g.fillStyle = c5;
+          g.fillText('echo lands inside the guard — the window is clean', Math.min(X(Tsym) + 4, w - r - 240), bot - 4);
+        }
+      }
+
+      g.font = fnt(10); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText('0', l - 5, mid);
+    });
+
+    const P = panels[1];
+    const Xb = t => l + (t - P.t0) / (P.t1 - P.t0) * (w - l - r);
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i <= 4; i++) {
+      const t = P.t0 + (P.t1 - P.t0) * i / 4;
+      g.fillText(((t - Tsym) * 1e6).toFixed(2), Xb(t), h - 22);
+    }
+    g.textAlign = 'left';
+    g.fillText('time relative to the symbol boundary (µs)', l, h - 11);
+    g.textAlign = 'right';
+    g.fillStyle = mut;
+    g.fillText('amplitude, normalised', w - r, h - 11);
+  }
+
+  function drawSpec() {
+    const c = $('cS'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
+    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c4 = cvv('--series-4');
+    const N = M.N, df = M.df;
+    const KS = Math.min(4, N / 2);
+    const fmax = (KS + 0.65) * df;
+    const l = 46, r = 14, t = 16, b = 44;
+    const X = f => l + (f + fmax) / (2 * fmax) * (w - l - r);
+    const Y = v => t + (1 - clamp(v, 0, 1)) * (h - t - b);
+
+    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(10); g.fillStyle = mut;
+    for (let i = 0; i <= 4; i++) {
+      const v = i / 4;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(2), l - 5, Y(v));
+    }
+
+    const ks = [];
+    for (let k = -KS; k <= KS; k++) if (k >= -N / 2 && k <= N / 2 - 1) ks.push(k);
+
+    ks.forEach(function (k) {
+      g.strokeStyle = k === 0 ? c1 : c4;
+      g.globalAlpha = k === 0 ? 1 : 0.42;
+      g.lineWidth = k === 0 ? 2 : 1.2;
+      g.beginPath();
+      for (let px = l; px <= w - r; px++) {
+        const f = -fmax + (px - l) / (w - l - r) * 2 * fmax;
+        const y = Y(Math.abs(sinc((f - k * df) / df)));
+        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke();
+    });
+    g.globalAlpha = 1;
+
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.setLineDash([2, 3]);
+    ks.forEach(function (k) {
+      const f = (k - S.eps) * df;
+      if (Math.abs(f) > fmax) return;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+    });
+    g.setLineDash([]);
+
+    const fs = -S.eps * df;
+    ks.forEach(function (k) {
+      const v = Math.abs(sinc((fs - k * df) / df));
+      const isW = k === 0;
+      if (!isW && v < 0.004) return;
+      g.fillStyle = isW ? c1 : c2;
+      g.beginPath(); g.arc(X(fs), Y(v), isW ? 4.5 : 3.5, 0, TAU); g.fill();
+    });
+
+    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    const wantV = Math.abs(sinc(S.eps));
+    if (S.eps < 1e-6) {
+      g.fillStyle = cvv('--text-good');
+      g.fillText('sampled exactly here: every neighbour is zero', Math.min(X(fs) + 8, w - r - 250), Y(0) - 4);
+    } else {
+      g.fillStyle = c2;
+      g.fillText('sampled ' + S.eps.toFixed(3) + ' Δf early — neighbours no longer zero',
+        Math.min(X(fs) + 8, w - r - 250), Y(0.16));
+    }
+    g.fillStyle = c1; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('wanted = ' + wantV.toFixed(3), X(fs), Math.max(Y(wantV) - 8, t + 13));
+
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    const fdp = df < 20e3 ? 1 : 0;
+    ks.forEach(function (k) {
+      g.fillText((k * df / 1e3).toFixed(fdp), X(k * df), h - b + 5);
+    });
+    g.textAlign = 'left';
+    g.fillText('frequency offset from band centre (kHz), tick = one subcarrier', l, h - b + 22);
+    g.save();
+    g.translate(11, (t + h - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top'; g.fillStyle = mut;
+    g.fillText('|spectrum|, normalised', 0, 0);
+    g.restore();
+  }
+
+  function drawOrtho() {
+    const c = $('cS'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
+    const c1 = cvv('--series-1'), c4 = cvv('--series-4'), c5 = cvv('--series-5'), c2 = cvv('--series-2');
+    const Tu = M.Tu, df = M.df;
+    const kA = 1, kB = 2;
+    const l = 46, r = 14, t = 14, b = 44;
+    const midT = t + (h - t - b) * 0.30, ampT = (h - t - b) * 0.18;
+    const midB = t + (h - t - b) * 0.76, ampB = (h - t - b) * 0.20;
+    const X = tt => l + tt / Tu * (w - l - r);
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    [midT, midB].forEach(function (m) { g.beginPath(); g.moveTo(l, m); g.lineTo(w - r, m); g.stroke(); });
+
+    const NS = 720;
+    const fA = kA * df, fB = (kB + S.eps) * df;
+    const vals = [];
+    let acc = 0;
+    for (let i = 0; i <= NS; i++) {
+      const tt = Tu * i / NS;
+      const a = Math.cos(TAU * fA * tt), bb = Math.cos(TAU * fB * tt);
+      const p = a * bb;
+      if (i > 0) acc += (p + vals[i - 1].p) / 2 * (Tu / NS);
+      vals.push({ t: tt, a: a, b: bb, p: p, I: 2 * acc / Tu });
+    }
+
+    function line(col, wd, key, mid, amp, alpha) {
+      g.strokeStyle = col; g.lineWidth = wd; g.globalAlpha = alpha === undefined ? 1 : alpha;
+      g.beginPath();
+      for (let i = 0; i <= NS; i++) {
+        const y = mid - clamp(vals[i][key], -1.6, 1.6) * amp;
+        if (i === 0) g.moveTo(X(vals[i].t), y); else g.lineTo(X(vals[i].t), y);
+      }
+      g.stroke(); g.globalAlpha = 1;
+    }
+
+    line(c1, 1.6, 'a', midT, ampT);
+    line(c4, 1.6, 'b', midT, ampT);
+    line(mut, 1, 'p', midB, ampB, 0.5);
+    line(c5, 2, 'I', midB, ampB);
+
+    const endI = vals[NS].I;
+    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillStyle = c1;
+    g.fillText('subcarrier k = ' + kA + ' — ' + kA.toFixed(0) + ' whole cycle' + (kA === 1 ? '' : 's') + ' in Tᵤ', l + 4, t + 14);
+    g.fillStyle = c4;
+    g.fillText('subcarrier k = ' + kB + (S.eps > 1e-6 ? ' shifted by ε — ' + (kB + S.eps).toFixed(3) + ' cycles' : ' — ' + kB.toFixed(0) + ' whole cycles'), l + 4, t + 28);
+    g.fillStyle = c5;
+    g.fillText('running average of their product, normalised', l + 4, midB - ampB - 6);
+
+    g.strokeStyle = Math.abs(endI) < 0.01 ? c5 : c2; g.lineWidth = 1;
+    g.setLineDash([3, 3]);
+    g.beginPath(); g.moveTo(l, midB - endI * ampB); g.lineTo(w - r, midB - endI * ampB); g.stroke();
+    g.setLineDash([]);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillStyle = Math.abs(endI) < 0.01 ? cvv('--text-good') : c2;
+    g.fillText('ends at ' + endI.toFixed(4) + (Math.abs(endI) < 0.01 ? ' — orthogonal' : ' — leakage'), w - r - 4, midB - endI * ampB - 5);
+
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i <= 4; i++) {
+      const tt = Tu * i / 4;
+      g.fillText((tt * 1e6).toFixed(1), X(tt), h - b + 5);
+    }
+    g.textAlign = 'left';
+    g.fillText('time within one useful symbol Tᵤ (µs)', l, h - b + 22);
+    g.textAlign = 'right'; g.fillStyle = mut;
+    g.fillText('amplitude, normalised', w - r, h - b + 22);
+  }
+
+  function drawChan() {
+    const c = $('cH'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
+    const c1 = cvv('--series-1'), c7 = cvv('--series-7');
+    const N = M.N;
+    const l = 50, r = 14, t = 14, b = 42;
+    const lo = -30, hi = 12;
+    const dB = m => clamp(20 * L10(Math.max(m, 1e-4)), lo, hi);
+    const X = i => l + (N === 1 ? 0.5 : (i + 0.5) / N) * (w - l - r);
+    const Y = v => t + (hi - clamp(v, lo, hi)) / (hi - lo) * (h - t - b);
+
+    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(10); g.fillStyle = mut;
+    for (let v = -30; v <= 10; v += 10) {
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 5, Y(v));
+    }
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
+
+    g.strokeStyle = c7; g.lineWidth = 1; g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(l, Y(FADE_DB)); g.lineTo(w - r, Y(FADE_DB)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = c7; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('−6 dB — below here a subcarrier counts as faded', l + 4, Y(FADE_DB) - 3);
+
+    const bw2 = Math.max((w - l - r) / N * 0.5, 1);
+    for (let i = 0; i < N; i++) {
+      const v = dB(M.H[i].mag), fd = M.H[i].mag < FADE;
+      g.strokeStyle = fd ? c7 : c1; g.lineWidth = Math.min(bw2, 4);
+      g.beginPath(); g.moveTo(X(i), Y(0)); g.lineTo(X(i), Y(v)); g.stroke();
+      if (N <= 64) { g.fillStyle = fd ? c7 : c1; g.beginPath(); g.arc(X(i), Y(v), 2, 0, TAU); g.fill(); }
+    }
+
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    const step = N / 8;
+    for (let i = 0; i < N; i += step) g.fillText((i - N / 2).toFixed(0), X(i), h - b + 6);
+    g.fillText((N / 2 - 1).toFixed(0), X(N - 1), h - b + 6);
+    g.textAlign = 'left';
+    g.fillText('subcarrier index k, 0 = band centre', l, h - b + 22);
+    g.textAlign = 'right'; g.fillStyle = mut;
+    g.fillText('|Hₖ| (dB), 0 dB = average power gain', w - r, h - b + 22);
+  }
+
+  function drawConst() {
+    const c = $('cC'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
+    const c1 = cvv('--series-1'), c7 = cvv('--series-7');
+    const b = 40, t = 12;
+    const size = Math.max(Math.min(w - 120, h - b - t), 40);
+    const cx = w / 2, cy = t + size / 2;
+    const R = 1.9;
+    const X = v => cx + v / R * (size / 2);
+    const Y = v => cy - v / R * (size / 2);
+
+    g.save();
+    g.beginPath(); g.rect(cx - size / 2, cy - size / 2, size, size); g.clip();
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (let i = -2; i <= 2; i++) {
+      const v = i * 0.5 * R / 2;
+      g.beginPath(); g.moveTo(X(v), cy - size / 2); g.lineTo(X(v), cy + size / 2); g.stroke();
+      g.beginPath(); g.moveTo(cx - size / 2, Y(v)); g.lineTo(cx + size / 2, Y(v)); g.stroke();
+    }
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx - size / 2, Y(0)); g.lineTo(cx + size / 2, Y(0)); g.stroke();
+    g.beginPath(); g.moveTo(X(0), cy - size / 2); g.lineTo(X(0), cy + size / 2); g.stroke();
+
+    g.strokeStyle = mut; g.lineWidth = 1; g.globalAlpha = 0.8;
+    M.ideal.forEach(function (p) {
+      const x = X(p.re), y = Y(p.im);
+      g.beginPath(); g.moveTo(x - 3, y); g.lineTo(x + 3, y); g.moveTo(x, y - 3); g.lineTo(x, y + 3); g.stroke();
+    });
+    g.globalAlpha = 1;
+
+    M.pts.forEach(function (p) {
+      g.fillStyle = p.faded ? c7 : c1;
+      g.globalAlpha = p.faded ? 0.95 : 0.75;
+      g.beginPath(); g.arc(X(p.re), Y(p.im), 2.6, 0, TAU); g.fill();
+    });
+    g.globalAlpha = 1;
+    g.restore();
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.strokeRect(cx - size / 2, cy - size / 2, size, size);
+
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('in-phase I (normalised)', cx, cy + size / 2 + 6);
+    g.save();
+    g.translate(cx - size / 2 - 12, cy); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('quadrature Q (normalised)', 0, 0);
+    g.restore();
+    g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillStyle = mut;
+    g.fillText(M.N.toFixed(0) + ' subcarriers, ' + (1 << S.bits).toFixed(0) + '-point constellation, thermal SNR ' + SNRDB.toFixed(0) + ' dB',
+      8, h - 8);
+  }
+
+  function drawAll() {
+    drawTime();
+    if (S.view === 'freq') drawSpec(); else drawOrtho();
+    drawChan();
+    drawConst();
+  }
+
+  function legendSpec() {
+    if (S.view === 'freq') {
+      return '<li>Each curve is one subcarrier’s spectrum, |sinc((f − kΔf)Tᵤ)|. The <b>blue</b> one is the subcarrier being received; the <b>purple</b> ones are its neighbours.</li>'
+        + '<li>The dashed vertical lines are the instants the receiver samples the spectrum. With no offset they land exactly on every neighbour’s null.</li>'
+        + '<li><span class="sw" style="background: var(--series-2)"></span> <b>orange dots</b> show what each neighbour contributes at the sampling instant. They are the intercarrier interference, and they are zero only when ε = 0.</li>';
+    }
+    return '<li>The <b>blue</b> and <b>purple</b> waves are two subcarriers over one useful symbol time. Each fits a whole number of cycles into Tᵤ.</li>'
+      + '<li>The <b>grey</b> trace is their product; the <span class="sw" style="background: var(--series-5)"></span> <b>green</b> trace is the running average of that product.</li>'
+      + '<li>The green trace returning to exactly zero at the right-hand edge is the definition of orthogonality. Add a frequency offset and the cycle count stops being a whole number, so it no longer returns to zero.</li>';
+  }
+
+  function fmtDb(v, unit) { return v.toFixed(1) + (unit || ' dB'); }
+
+  function updateUI() {
+    compute();
+    $('nnv').textContent = M.N.toFixed(0);
+    $('cpv').textContent = S.cpOn ? (S.cpFrac * 100).toFixed(2) + ' % Tᵤ' : 'off';
+    $('dsv').textContent = S.tau.toFixed(1) + ' µs';
+    $('fov').textContent = S.eps.toFixed(3);
+    $('bCpOn').classList.toggle('on', S.cpOn);
+    $('bCpOff').classList.toggle('on', !S.cpOn);
+    $('vF').classList.toggle('on', S.view === 'freq');
+    $('vT').classList.toggle('on', S.view === 'time');
+    [2, 4, 6].forEach(function (bt) { $('m' + bt).classList.toggle('on', S.bits === bt); });
+    $('legS').innerHTML = legendSpec();
+
+    $('cDF').textContent = (M.df / 1e3).toFixed(2) + ' kHz';
+    $('cDFn').textContent = 'N = ' + M.N.toFixed(0) + ' subcarriers across a fixed 960 kHz band';
+    $('cTS').textContent = (M.Tsym * 1e6).toFixed(1) + ' µs';
+    $('cTSn').textContent = 'Tᵤ = ' + (M.Tu * 1e6).toFixed(1) + ' µs plus guard ' + (M.Tcp * 1e6).toFixed(2) + ' µs';
+    $('cOV').textContent = (M.overhead * 100).toFixed(1) + ' %';
+    $('cOVn').textContent = 'efficiency η = Tᵤ/(Tᵤ + T_cp) = ' + (M.eta * 100).toFixed(1) + ' %';
+
+    if (M.ici < 1e-9) {
+      $('cICI').textContent = 'none';
+    } else {
+      $('cICI').textContent = fmtDb(10 * L10(M.ici));
+    }
+    const floor = M.ici + M.isi;
+    if (floor < 1e-9) {
+      $('cSNR').textContent = 'no ceiling';
+      $('cSNR').style.color = 'var(--text-good)';
+      $('cSNRn').textContent = 'nothing but thermal noise limits this link';
+    } else {
+      const ceil = -10 * L10(floor);
+      $('cSNR').textContent = fmtDb(ceil);
+      $('cSNR').style.color = ceil >= 20 ? 'var(--text-good)' : (ceil >= 10 ? 'var(--text-warning)' : 'var(--series-7)');
+      $('cSNRn').textContent = M.isi > 1e-9
+        ? 'set by ICI and by the echo beyond the guard'
+        : 'set by ICI alone: −10·log₁₀(1 − sinc²ε)';
+    }
+    $('cPAPR').textContent = fmtDb(M.papr);
+    $('cPAPRn').textContent = 'this symbol; worst case ≈ ' + (10 * L10(M.N)).toFixed(1) + ' dB at N = ' + M.N.toFixed(0);
+
+    const tmax = S.tau * 1e-6;
+    const rows = [
+      'Subcarrier spacing: 960 kHz shared by N = ' + M.N.toFixed(0) + ' subcarriers gives <b>Δf = ' + (M.df / 1e3).toFixed(2) + ' kHz</b>.',
+      'Useful symbol time: Tᵤ = 1/Δf = 1/' + (M.df / 1e3).toFixed(2) + ' kHz = <b>' + (M.Tu * 1e6).toFixed(2) + ' µs</b>.',
+      'Guard: ' + (S.cpOn ? (S.cpFrac * 100).toFixed(2) + ' % of Tᵤ' : '0 % (switched off)') + ' gives T_cp = <b>' + (M.Tcp * 1e6).toFixed(2) + ' µs</b>, so efficiency η = Tᵤ/(Tᵤ + T_cp) = <b>' + (M.eta * 100).toFixed(1) + ' %</b>.',
+      'Echo test: the last tap arrives at τ = ' + (tmax * 1e6).toFixed(2) + ' µs, which is <b>' + (tmax <= M.Tcp ? 'inside' : 'beyond') + '</b> the ' + (M.Tcp * 1e6).toFixed(2) + ' µs guard, so the interference from the overrun is <b>' + (M.isi < 1e-9 ? 'zero' : (10 * L10(M.isi)).toFixed(1) + ' dB') + '</b>.',
+      'Frequency offset: sinc(' + S.eps.toFixed(3) + ') = <b>' + M.aW.toFixed(4) + '</b>, so the wanted subcarrier keeps ' + (100 * M.aW * M.aW).toFixed(2) + ' % of its power and <b>' + (100 * M.ici).toFixed(2) + ' %</b> spills into the neighbours as ICI.',
+      'Interference floor: ICI + overrun = <b>' + (100 * floor).toFixed(3) + ' %</b> of a subcarrier’s power, capping the signal-to-noise ratio at <b>' + (floor < 1e-9 ? 'no ceiling' : (-10 * L10(floor)).toFixed(1) + ' dB') + '</b>.',
+      'Channel: r.m.s. delay spread σ = <b>' + (M.sigTau * 1e6).toFixed(3) + ' µs</b>, coherence bandwidth ≈ 1/(5σ) = <b>' + (M.sigTau > 1e-12 ? (1 / (5 * M.sigTau) / 1e3).toFixed(0) + ' kHz' : 'unbounded — the channel has a single tap') + '</b> against a 960 kHz band, and <b>' + M.faded.toFixed(0) + '</b> of ' + M.N.toFixed(0) + ' subcarriers sit more than 6 dB down.'
+    ];
+    $('work').innerHTML = rows.map(function (x) { return '<li>' + x + '</li>'; }).join('');
+
+    drawAll();
+  }
+
+  function readInputs() {
+    S.nExp = +$('nn').value;
+    S.cpFrac = +$('cp').value;
+    S.tau = +$('ds').value;
+    S.eps = +$('fo').value;
+  }
+  function writeInputs() {
+    $('nn').value = S.nExp; $('cp').value = S.cpFrac; $('ds').value = S.tau; $('fo').value = S.eps;
+  }
+
+  ['nn', 'cp', 'ds', 'fo'].forEach(function (id) {
+    $(id).addEventListener('input', function () { readInputs(); updateUI(); });
+  });
+  $('bCpOn').addEventListener('click', function () { S.cpOn = true; updateUI(); });
+  $('bCpOff').addEventListener('click', function () { S.cpOn = false; updateUI(); });
+  $('vF').addEventListener('click', function () { S.view = 'freq'; updateUI(); });
+  $('vT').addEventListener('click', function () { S.view = 'time'; updateUI(); });
+  [2, 4, 6].forEach(function (bt) {
+    $('m' + bt).addEventListener('click', function () { S.bits = bt; updateUI(); });
+  });
+  $('newsym').addEventListener('click', function () {
+    S.seed = (S.seed * 1103515245 + 12345) >>> 0 || 1;
+    updateUI();
+  });
+
+  const TOUR = [
+    { s: { nExp: 5, cpFrac: 0.0625, tau: 1.0, eps: 0, cpOn: true },
+      m: 'Step 1 — back to a clean symbol. 32 subcarriers 30 kHz apart, a guard of 6.25 % lasting 2.08 µs, and echoes out to 1 µs. The echo lands inside the guard, every subcarrier peak sits on its neighbours’ nulls, and the constellation is tight.' },
+    { s: { tau: 5.0 },
+      m: 'Step 2 — delay spread raised to 5 µs. The echo now arrives long after the 2.08 µs guard ends, so part of the previous symbol is still inside the receive window: the red strip in section 1. Section 3 has also grown real notches, because the channel now changes across the band.' },
+    { s: { cpOn: false },
+      m: 'Step 3 — guard switched off. Overhead drops to zero, which looks like free capacity, but now every echo overruns and the interference floor rises further. Without a cyclic prefix the channel is no longer a clean circular convolution and orthogonality goes with it.' },
+    { s: { tau: 1.0, cpOn: true, eps: 0.15 },
+      m: 'Step 4 — guard back on, echoes short again, but the receiver is tuned 0.15 of a subcarrier spacing off. Look at section 2: the sampling instants have slid off the nulls, so every neighbour now contributes. No extra transmit power can beat this ceiling.' },
+    { s: { nExp: 7, eps: 0, tau: 5.0 },
+      m: 'Step 5 — 128 subcarriers in the same 960 kHz. Each one is only 7.5 kHz wide, the symbol is eight times longer, and the same 6.25 % guard now covers 8.3 µs, so the 5 µs echo fits again. The price is peak-to-average power: more subcarriers means more chances for them all to add up at once.' }
+  ];
+
+  ['t1', 't2', 't3', 't4', 't5'].forEach(function (id, i) {
+    $(id).addEventListener('click', function () {
+      const step = TOUR[i];
+      Object.keys(step.s).forEach(function (k) { S[k] = step.s[k]; });
+      writeInputs();
+      updateUI();
+      $('tourTxt').textContent = step.m;
+      const c = $('cT');
+      if (c.scrollIntoView) c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+    });
+  });
+
+  let rt = null;
+  window.addEventListener('resize', function () {
+    if (rt) clearTimeout(rt);
+    rt = setTimeout(drawAll, 120);
+  });
+
+  readInputs();
+  updateUI();
+})();
+</script>
+</body>
+</html>

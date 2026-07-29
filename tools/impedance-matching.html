@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impedance, VSWR and the Smith chart</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --c1: #378ADD; --c2: #D85A30; --c3: #1D9E75; --c4: #7F77DD; --c5: #B07C1E;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --c1: #62A8EE; --c2: #EE8055; --c3: #45C79B; --c4: #A29AF0; --c5: #DBAA45;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 11px; cursor: pointer; font-size: 13px; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--c1); color: var(--c1); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--c1); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.75rem; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.lbl { font-size: 13px; color: var(--text-secondary); }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
+.ctl input[type=range] { flex: 1; min-width: 90px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; touch-action: none; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin-bottom: 2px; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px; color: var(--text-secondary); margin: 1.25rem 0; }
+.note b { color: var(--text-primary); font-weight: 500; }
+.tourtext { font-size: 13px; color: var(--text-secondary); min-height: 2.6em; margin: 6px 0 0; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.9rem; margin-top: 1.25rem; }
+summary { font-size: 14px; cursor: pointer; }
+.comp { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.comp .cn { font-size: 13px; min-width: 104px; }
+.comp input[type=range] { flex: 1; min-width: 110px; }
+.comp .v, .comp .xr { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 66px; text-align: right; }
+.comp .xr { color: var(--text-muted); }
+.hint { font-size: 12.5px; color: var(--text-muted); margin: 6px 0 0; }
+ol.work { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; padding-left: 1.3rem; }
+ol.work li { margin-bottom: 3px; }
+dl.glossary { font-size: 13px; margin-top: 0.5rem; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Impedance, VSWR and the Smith chart</h1>
+<p class="sub">A transmitter expects the cable and the antenna to swallow everything it sends. When the antenna does not look like the cable, part of the wave turns round and comes back, and the cable ends up carrying two waves at once. This tool lets you drag that mismatch around, read what it costs in decibels, and then fit small parts one at a time until the reflection is gone. The Smith chart is the map that makes each part a single, predictable move.</p>
+<p class="hint">New to decibels, dBm and the idea of a power budget? Start with <a href="link-budget.html">link budget</a> first. Nothing here needs any prior knowledge of the chart itself.</p>
+
+<div class="note"><b>An everyday picture.</b> The cable is a rope, and the antenna is whatever is holding the far end. Tie the rope to a wall and every pulse you send bounces straight back at you. Hand it to someone who moves with the rope and absorbs the motion, and nothing returns. The antenna's impedance decides which of those two the far end behaves like.</div>
+
+<div class="grid2">
+  <div class="ctl"><label for="rr">Antenna R</label><input type="range" id="rr" min="1" max="500" step="1" value="75"><span class="v" id="rrv">75 &#937;</span></div>
+  <div class="ctl"><label for="xx">Antenna X</label><input type="range" id="xx" min="-300" max="300" step="1" value="60"><span class="v" id="xxv">+60 &#937;</span></div>
+  <div class="ctl"><label for="ff">Frequency</label><input type="range" id="ff" min="0.1" max="10" step="0.1" value="2"><span class="v" id="ffv">2.0 GHz</span></div>
+  <div class="ctl"><label for="ll">Cable length</label><input type="range" id="ll" min="0" max="0.5" step="0.005" value="0"><span class="v" id="llv">0.000 &#955;</span></div>
+</div>
+<div class="row">
+  <span class="lbl">System impedance Z<sub>0</sub></span>
+  <button id="z50" class="on">50 &#937;</button>
+  <button id="z75">75 &#937;</button>
+  <span class="lbl" style="margin-left: 12px;">Wave animation</span>
+  <button id="pp">Pause</button>
+</div>
+
+<div class="row">
+  <span class="lbl">Guided tour</span>
+  <button id="t0">1</button><button id="t1">2</button><button id="t2">3</button><button id="t3">4</button><button id="t4">5</button>
+  <button id="tr">Reset</button>
+</div>
+<p class="tourtext" id="tour">Press 1 to walk through a mismatched antenna, a length of cable, and the two parts that fix it. Or move any slider yourself.</p>
+
+<p class="sec"><b>1 &middot; What a mismatch actually looks like</b> <span>&mdash; the wave on the cable, with the reflected part drawn coming back</span></p>
+<canvas id="pic" style="height: 270px;"></canvas>
+<ul class="legend-note">
+  <li>The blue line is the voltage on the cable at this instant. The dashed outline is how far it swings at each point along the cable.</li>
+  <li>Where the outgoing wave and the returning wave add you get a peak, V<sub>max</sub>. Where they cancel you get a dip, V<sub>min</sub>. Their ratio is the VSWR.</li>
+  <li>A flat outline means nothing is coming back. The more the outline bulges, the worse the match.</li>
+</ul>
+
+<p class="sec"><b>2 &middot; The Smith chart</b> <span>&mdash; every impedance in the world, folded into one circle; drag the point to move the antenna</span></p>
+<canvas id="sm" style="height: 430px;"></canvas>
+<ul class="legend-note">
+  <li>The outer circle is total reflection. The centre is a perfect match, where the antenna looks exactly like Z<sub>0</sub>.</li>
+  <li>The faint circles are constant resistance and the faint arcs are constant reactance, both counted in units of Z<sub>0</sub>. The chart is a map of impedance, not of position.</li>
+  <li>The orange dot is the antenna itself. The blue dot is what the transmitter finally sees. The dashed circle through the blue dot is a circle of constant VSWR.</li>
+  <li>Each part you fit draws one arc: a series part slides along a resistance circle, a shunt part slides along a conductance circle.</li>
+</ul>
+<p class="hint">Drag anywhere inside the chart to move the antenna impedance. The R and X sliders follow, and stop at their limits.</p>
+
+<details id="net">
+  <summary>Build a matching network &mdash; fit parts one at a time</summary>
+  <p class="hint" style="margin-top: 8px;">Parts are fitted between the antenna end and the transmitter, in the order added. A series part goes in line with the signal; a shunt part goes across it.</p>
+  <div class="row" style="margin: 10px 0 0;">
+    <button id="asL">Add series L</button>
+    <button id="asC">Add series C</button>
+    <button id="apL">Add shunt L</button>
+    <button id="apC">Add shunt C</button>
+    <button id="acl">Clear all</button>
+  </div>
+  <div id="clist"></div>
+  <p class="hint" id="cnone">No parts fitted. The transmitter is looking straight down the cable at the antenna.</p>
+</details>
+
+<div class="cards">
+  <div class="card"><div class="hd">Reflection |&#915;|</div><div class="big" id="cG">&mdash;</div><div class="ft">fraction of the wave amplitude that comes back</div></div>
+  <div class="card"><div class="hd">VSWR</div><div class="big" id="cV">&mdash;</div><div class="ft">V<sub>max</sub> / V<sub>min</sub> on the cable, a ratio</div></div>
+  <div class="card"><div class="hd">Return loss</div><div class="big" id="cR">&mdash;</div><div class="ft">quoted positive; bigger means less comes back</div></div>
+  <div class="card"><div class="hd">Mismatch loss</div><div class="big" id="cM">&mdash;</div><div class="ft">power that never got into the antenna</div></div>
+  <div class="card"><div class="hd">Reflected power</div><div class="big" id="cP">&mdash;</div><div class="ft">100 &times; |&#915;|<sup>2</sup>, per cent</div></div>
+  <div class="card"><div class="hd">Match bandwidth</div><div class="big" id="cB">&mdash;</div><div class="ft" id="cBn">&mdash;</div></div>
+</div>
+
+<p class="sec"><b>3 &middot; The match across frequency</b> <span>&mdash; a match is only ever a match over a band; this is how wide that band is</span></p>
+<canvas id="sw" style="height: 250px;"></canvas>
+<ul class="legend-note">
+  <li>The blue curve is VSWR against frequency. The dashed line at 2 is the specification most antennas are sold against.</li>
+  <li>The shaded band is where the match holds. Its width in megahertz is the match bandwidth card above.</li>
+  <li>A match that fights a large resistance ratio is a narrow spike; a gentle one is a broad dish. That is what the Q figure is measuring.</li>
+</ul>
+
+<p class="sec"><b>The arithmetic, with this antenna's numbers in it</b></p>
+<ol class="work" id="work"></ol>
+
+<p class="sub" style="margin-top: 2rem;">Two numbers are worth keeping permanently calibrated. Return loss and mismatch loss are <b>not</b> the same figure and not each other's negative: return loss describes the wave coming back, mismatch loss describes the power that failed to go in. A VSWR of 2.0 is 9.54 dB of return loss, which sounds alarming, and only <b>0.51 dB</b> of mismatch loss, which is nothing &mdash; eleven per cent of the power turns round, yet the link gives up half a decibel. That is exactly why VSWR 2 is a routine, shippable antenna specification, and why a student who believes VSWR 2 costs 9.5 dB will over-design every match they ever build. The other lesson is in section 3: cable length moves the point around the chart without ever shrinking the VSWR circle, real parts shrink it, and the narrower the match the faster it falls off the band edge. Two simplifications are made here and should be named: the antenna is modelled as a fixed resistance in series with one reactive part, so that its reactance moves with frequency the way a real component would rather than staying frozen; and mismatch loss is the best case, because it ignores what the returned power does when it reaches the amplifier.</p>
+
+<p class="hint">Where next: <a href="antenna-basics.html">antenna basics</a> for what the antenna is doing with the power that does get in.</p>
+
+<p class="sec"><b>Glossary</b></p>
+<dl class="glossary">
+  <dt>Impedance Z, in ohms</dt><dd>How much voltage a component demands for a given current, written R + jX. R is the part that absorbs power; X is the part that only stores and returns it.</dd>
+  <dt>Reactance X, in ohms</dt><dd>The storing part of impedance. Positive X behaves like an inductor, negative X like a capacitor.</dd>
+  <dt>Characteristic impedance Z<sub>0</sub>, in ohms</dt><dd>The impedance a cable wants to see at its far end. 50 ohm is standard for radio, 75 ohm for television and video.</dd>
+  <dt>Normalised impedance z</dt><dd>Impedance divided by Z<sub>0</sub>, so z = 1 means a perfect match. The Smith chart is drawn in these units, which is why one chart serves every system.</dd>
+  <dt>Reflection coefficient &#915;</dt><dd>The fraction of the wave amplitude that bounces off the load, with a phase. &#915; = (Z<sub>L</sub> &minus; Z<sub>0</sub>) / (Z<sub>L</sub> + Z<sub>0</sub>).</dd>
+  <dt>VSWR</dt><dd>Voltage standing wave ratio: the biggest voltage swing on the cable divided by the smallest. 1 is perfect, and it never goes below 1.</dd>
+  <dt>Return loss, in dB</dt><dd>How far below the outgoing wave the reflection sits, quoted as a positive number. 20 dB return loss is a good match; 6 dB is a poor one.</dd>
+  <dt>Mismatch loss, in dB</dt><dd>How much of the transmitter's power never entered the antenna because it was reflected.</dd>
+  <dt>Admittance Y, susceptance B</dt><dd>The upside-down view: Y = 1 / Z, measured in siemens. Its storing part is the susceptance B. Parts fitted across the line add susceptance, which is why shunt parts are easier to think about in admittance.</dd>
+  <dt>Series and shunt</dt><dd>A series part sits in line with the signal and adds reactance. A shunt part sits across the line, from signal to ground, and adds susceptance.</dd>
+  <dt>Electrical length, in wavelengths</dt><dd>A cable's length measured in wavelengths rather than metres. Half a wavelength of cable takes the impedance once all the way round the chart and back to where it started.</dd>
+  <dt>L-network</dt><dd>The two-part matching network used here: one shunt part and one series part. Its Q, and therefore its bandwidth, is fixed by the resistance ratio it has to bridge.</dd>
+  <dt>Q</dt><dd>How sharply tuned something is. For an L-network bridging R<sub>high</sub> to R<sub>low</sub>, Q = &#8730;(R<sub>high</sub>/R<sub>low</sub> &minus; 1), and the match holds over roughly f<sub>0</sub>/Q.</dd>
+</dl>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const S = { R: 75, X: 60, z0: 50, f: 2, lw: 0, comps: [], playing: !RM, geo: null, sw: null };
+
+  const cDiv = (p, q) => {
+    const d = q[0] * q[0] + q[1] * q[1];
+    if (!(d > 1e-30)) return [0, 0];
+    return [(p[0] * q[0] + p[1] * q[1]) / d, (p[1] * q[0] - p[0] * q[1]) / d];
+  };
+  const cInv = p => cDiv([1, 0], p);
+  const cAbs = p => Math.hypot(p[0], p[1]);
+  const rot = (p, a) => [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a)];
+  const norm = Z => [Z[0] / S.z0, Z[1] / S.z0];
+  const zToG = z => cDiv([z[0] - 1, z[1]], [z[0] + 1, z[1]]);
+  const gToZ = g => cDiv([1 + g[0], g[1]], [1 - g[0], -g[1]]);
+
+  const LMIN = 0.1, LMAX = 100, CMIN = 0.05, CMAX = 50;
+  const valOf = c => {
+    const lo = c.t.charAt(1) === 'L' ? LMIN : CMIN, hi = c.t.charAt(1) === 'L' ? LMAX : CMAX;
+    return lo * Math.pow(hi / lo, clamp(c.idx, 0, 1000) / 1000);
+  };
+  const idxOf = (t, v) => Math.round(1000 * Math.log(v / (t.charAt(1) === 'L' ? LMIN : CMIN))
+    / Math.log((t.charAt(1) === 'L' ? LMAX : CMAX) / (t.charAt(1) === 'L' ? LMIN : CMIN)));
+  const compName = t => (t.charAt(0) === 's' ? 'series ' : 'shunt ') + (t.charAt(1) === 'L' ? 'L' : 'C');
+  const compX = (c, fHz) => c.t.charAt(1) === 'L'
+    ? TAU * fHz * valOf(c) * 1e-9
+    : -1 / (TAU * fHz * valOf(c) * 1e-12);
+
+  const f0Hz = () => S.f * 1e9;
+
+  function loadZ(fHz) {
+    let x = 0;
+    if (S.X > 0) x = S.X * fHz / f0Hz();
+    else if (S.X < 0) x = S.X * f0Hz() / fHz;
+    return [S.R, x];
+  }
+  function lineTheta(fHz) { return 2 * TAU * S.lw * (fHz / f0Hz()); }
+  function afterLine(fHz) {
+    const gL = zToG(norm(loadZ(fHz)));
+    const gi = rot(gL, -lineTheta(fHz));
+    const z = gToZ(gi);
+    return [z[0] * S.z0, z[1] * S.z0];
+  }
+  function applyComp(Z, c, fHz) {
+    const X = compX(c, fHz);
+    if (c.t.charAt(0) === 's') return [Z[0], Z[1] + X];
+    const Y = cInv(Z);
+    return cInv([Y[0], Y[1] - 1 / X]);
+  }
+  function inputZ(fHz) {
+    let Z = afterLine(fHz);
+    for (let i = 0; i < S.comps.length; i++) Z = applyComp(Z, S.comps[i], fHz);
+    return Z;
+  }
+  const gammaAt = fHz => zToG(norm(inputZ(fHz)));
+  const vswrOf = g => { const gc = clamp(g, 0, 0.9999995); return (1 + gc) / (1 - gc); };
+
+  function trace() {
+    const f = f0Hz();
+    const segs = [];
+    let Z = loadZ(f);
+    const gL = zToG(norm(Z));
+    const nodes = [gL];
+    if (S.lw > 1e-6) {
+      const th = 2 * TAU * S.lw, pts = [];
+      for (let i = 0; i <= 120; i++) pts.push(rot(gL, -th * i / 120));
+      segs.push({ pts: pts, c: '--c4' });
+      const z = gToZ(pts[120]);
+      Z = [z[0] * S.z0, z[1] * S.z0];
+      nodes.push(pts[120]);
+    }
+    for (let i = 0; i < S.comps.length; i++) {
+      const c = S.comps[i], X = compX(c, f), Z0v = Z, pts = [];
+      let Zt = Z0v;
+      for (let k = 0; k <= 60; k++) {
+        const t = k / 60;
+        if (c.t.charAt(0) === 's') Zt = [Z0v[0], Z0v[1] + t * X];
+        else { const Y = cInv(Z0v); Zt = cInv([Y[0], Y[1] - t / X]); }
+        pts.push(zToG(norm(Zt)));
+      }
+      Z = Zt;
+      segs.push({ pts: pts, c: c.t.charAt(0) === 's' ? '--c3' : '--c5' });
+      nodes.push(pts[60]);
+    }
+    return { segs: segs, nodes: nodes, gL: gL, gIn: nodes[nodes.length - 1] };
+  }
+
+  function sweep() {
+    const f0 = f0Hz(), fa = 0.3 * f0, fb = 1.7 * f0, N = 1600;
+    const v = new Float64Array(N + 1);
+    for (let i = 0; i <= N; i++) v[i] = vswrOf(cAbs(gammaAt(fa + (fb - fa) * i / N)));
+    const i0 = Math.round((f0 - fa) / (fb - fa) * N);
+    let lo = null, hi = null, eLo = false, eHi = false;
+    if (v[i0] <= 2) {
+      let a = i0, b = i0;
+      while (a > 0 && v[a - 1] <= 2) a--;
+      while (b < N && v[b + 1] <= 2) b++;
+      lo = fa + (fb - fa) * a / N; hi = fa + (fb - fa) * b / N;
+      eLo = a === 0; eHi = b === N;
+    }
+    return { v: v, fa: fa, fb: fb, N: N, lo: lo, hi: hi, eLo: eLo, eHi: eHi };
+  }
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function label(g, txt, x, y, align, base, w) {
+    let a = align;
+    if (align === 'center') {
+      const half = g.measureText(txt).width / 2;
+      if (x - half < 2) a = 'left'; else if (x + half > w - 2) a = 'right';
+    }
+    g.textAlign = a; g.textBaseline = base;
+    g.fillText(txt, clamp(x, 3, w - 3), y);
+  }
+
+  let ph = 0;
+
+  function drawPic() {
+    const c = $('pic'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border-strong');
+    const xT = 100, xA = Math.max(xT + 120, w - 56), yw = 72, amp = 46, yc = 172;
+    const gm = clamp(cAbs(zToG(norm(loadZ(f0Hz())))), 0, 0.999999);
+    const gph = Math.atan2(zToG(norm(loadZ(f0Hz())))[1], zToG(norm(loadZ(f0Hz())))[0]);
+    const SPAN = 1.5;
+    const dOf = x => SPAN * (xA - x) / (xA - xT);
+    const env = d => Math.hypot(1 + gm * Math.cos(gph - 2 * TAU * d), gm * Math.sin(gph - 2 * TAU * d)) / (1 + gm);
+    const inst = d => (Math.cos(TAU * d + ph) + gm * Math.cos(gph - TAU * d + ph)) / (1 + gm);
+
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.fillStyle = cvv('--surface-1');
+    g.beginPath(); g.rect(14, 146, 78, 52); g.fill(); g.stroke();
+    g.fillStyle = cvv('--text-primary'); g.font = fnt(11);
+    label(g, 'transmitter', 53, 166, 'center', 'middle', w);
+    label(g, 'source', 53, 180, 'center', 'middle', w);
+
+    g.strokeStyle = bd; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(92, yc - 5); g.lineTo(xA, yc - 5); g.moveTo(92, yc + 5); g.lineTo(xA, yc + 5); g.stroke();
+
+    g.lineWidth = 2; g.strokeStyle = cvv('--text-primary');
+    g.beginPath(); g.moveTo(xA, yc); g.lineTo(xA, yc - 48); g.stroke();
+    g.beginPath(); g.moveTo(xA - 13, yc - 48); g.lineTo(xA + 13, yc - 48); g.stroke();
+    g.fillStyle = sub; g.font = fnt(11);
+    label(g, 'antenna', xA, yc + 20, 'center', 'top', w);
+    label(g, '(the load)', xA, yc + 33, 'center', 'top', w);
+    label(g, 'coaxial cable, 1.5 wavelengths shown', (xT + xA) / 2, yc + 20, 'center', 'top', w);
+
+    g.strokeStyle = cvv('--border'); g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(xT, yw); g.lineTo(xA, yw); g.stroke();
+
+    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([4, 3]);
+    for (let s = -1; s <= 1; s += 2) {
+      g.beginPath();
+      for (let x = xT; x <= xA; x++) {
+        const y = yw - s * env(dOf(x)) * amp;
+        if (x === xT) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    g.setLineDash([]);
+
+    g.strokeStyle = cvv('--c1'); g.lineWidth = 2;
+    g.beginPath();
+    for (let x = xT; x <= xA; x++) {
+      const y = yw - inst(dOf(x)) * amp;
+      if (x === xT) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    g.font = fnt(11);
+    if (gm > 0.02) {
+      let xmax = xT, xmin = xT, emax = -1, emin = 2;
+      for (let x = xT; x <= xA; x++) {
+        const e = env(dOf(x));
+        if (e > emax) { emax = e; xmax = x; }
+        if (e < emin) { emin = e; xmin = x; }
+      }
+      [[xmax, 'V max', cvv('--c2')], [xmin, 'V min', cvv('--c3')]].forEach(function (m) {
+        g.strokeStyle = m[2]; g.lineWidth = 1.4;
+        g.beginPath(); g.moveTo(m[0], yw - env(dOf(m[0])) * amp); g.lineTo(m[0], yw + env(dOf(m[0])) * amp); g.stroke();
+        g.fillStyle = m[2];
+        label(g, m[1], m[0], yw - amp - 16, 'center', 'top', w);
+      });
+      g.fillStyle = sub;
+      label(g, 'VSWR = V max / V min = ' + vswrOf(gm).toFixed(2), xT + 2, yw + amp + 16, 'left', 'top', w);
+    } else {
+      g.fillStyle = cvv('--text-good');
+      label(g, 'flat cable: nothing is coming back, VSWR = ' + vswrOf(gm).toFixed(2), xT + 2, yw + amp + 16, 'left', 'top', w);
+    }
+
+    const arw = function (x1, x2, y, col, txt) {
+      g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(x1, y); g.lineTo(x2, y); g.stroke();
+      const s = x2 > x1 ? 1 : -1;
+      g.beginPath(); g.moveTo(x2, y); g.lineTo(x2 - s * 7, y - 4); g.lineTo(x2 - s * 7, y + 4); g.closePath(); g.fill();
+      g.font = fnt(11);
+      label(g, txt, x2 + s * 8, y, s > 0 ? 'left' : 'right', 'middle', w);
+    };
+    arw(112, 172, yc + 48, cvv('--c1'), 'power going out');
+    if (gm > 0.005) arw(xA - 40, xA - 100, yc + 70, cvv('--c2'),
+      'reflected wave coming back, |' + 'Γ' + '| = ' + gm.toFixed(3));
+    else {
+      g.fillStyle = mut; g.font = fnt(11);
+      label(g, 'no reflected wave', xA - 100, yc + 70, 'right', 'middle', w);
+    }
+
+    if (S.lw > 1e-6) {
+      const xm = xA - (S.lw / SPAN) * (xA - xT);
+      g.strokeStyle = cvv('--c4'); g.lineWidth = 1.2; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(xm, 20); g.lineTo(xm, yc + 10); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cvv('--c4'); g.font = fnt(11);
+      label(g, 'chart point', xm, yc - 22, 'center', 'bottom', w);
+      label(g, S.lw.toFixed(3) + ' λ back', xm, yc - 9, 'center', 'bottom', w);
+    }
+  }
+
+  function drawSmith() {
+    const c = $('sm'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border'), bds = cvv('--border-strong');
+    const cx = w / 2, cy = h / 2 - 2, R = Math.max(40, Math.min(w / 2 - 62, h / 2 - 30));
+    S.geo = { cx: cx, cy: cy, R: R };
+    const PX = p => [cx + p[0] * R, cy - p[1] * R];
+
+    g.fillStyle = cvv('--surface-1');
+    g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
+
+    g.save();
+    g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.clip();
+    g.strokeStyle = bd; g.lineWidth = 1;
+    [0.2, 0.5, 1, 2, 5].forEach(function (r) {
+      g.beginPath(); g.arc(cx + R * r / (1 + r), cy, R / (1 + r), 0, TAU); g.stroke();
+    });
+    [0.2, 0.5, 1, 2, 5].forEach(function (x) {
+      [x, -x].forEach(function (xs) {
+        g.beginPath(); g.arc(cx + R, cy - R / xs, R / Math.abs(xs), 0, TAU); g.stroke();
+      });
+    });
+    g.restore();
+
+    g.strokeStyle = bds; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.stroke();
+    g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke();
+
+    g.font = fnt(10); g.fillStyle = mut;
+    [[0, '0'], [0.2, '0.2'], [0.5, '0.5'], [1, '1'], [2, '2'], [5, '5']].forEach(function (t) {
+      const u = (t[0] - 1) / (t[0] + 1);
+      label(g, t[1], cx + u * R, cy + 5, 'center', 'top', w);
+    });
+    [0.2, 0.5, 1, 2, 5].forEach(function (x) {
+      [x, -x].forEach(function (xs) {
+        const gg = zToG([0, xs]), p = PX([gg[0] * 1.075, gg[1] * 1.075]);
+        label(g, (xs > 0 ? 'j' : '-j') + Math.abs(xs), p[0], p[1], 'center', 'middle', w);
+      });
+    });
+
+    const tr = trace();
+    const gin = cAbs(tr.gIn);
+    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([5, 4]);
+    g.beginPath(); g.arc(cx, cy, Math.max(gin * R, 0.5), 0, TAU); g.stroke();
+    g.setLineDash([]);
+
+    tr.segs.forEach(function (sg) {
+      g.strokeStyle = cvv(sg.c); g.lineWidth = 2.4;
+      g.beginPath();
+      sg.pts.forEach(function (p, i) { const q = PX(p); if (i === 0) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]); });
+      g.stroke();
+    });
+
+    g.fillStyle = cvv('--text-muted');
+    g.beginPath(); g.arc(cx, cy, 3, 0, TAU); g.fill();
+    g.font = fnt(10);
+    if (gin > 0.09) label(g, 'perfect match', cx, cy + 8, 'center', 'top', w);
+
+    const pl = PX(tr.gL);
+    g.fillStyle = cvv('--c2');
+    g.beginPath(); g.arc(pl[0], pl[1], 6, 0, TAU); g.fill();
+    g.font = fnt(11);
+    label(g, 'antenna ' + S.R.toFixed(0) + (S.X < 0 ? ' - j' : ' + j') + Math.abs(S.X).toFixed(0) + ' Ω',
+      pl[0], pl[1] - 11, 'center', 'bottom', w);
+
+    if (tr.nodes.length > 1) {
+      const pi = PX(tr.gIn);
+      g.fillStyle = cvv('--c1');
+      g.beginPath(); g.arc(pi[0], pi[1], 6, 0, TAU); g.fill();
+      const Zi = inputZ(f0Hz());
+      label(g, 'transmitter sees ' + Zi[0].toFixed(1) + (Zi[1] < 0 ? ' - j' : ' + j') + Math.abs(Zi[1]).toFixed(1) + ' Ω',
+        pi[0], pi[1] + 12, 'center', 'top', w);
+    }
+
+    g.fillStyle = sub; g.font = fnt(11);
+    label(g, 'normalised to Z0 = ' + S.z0.toFixed(0) + ' Ω', 4, 4, 'left', 'top', w);
+    label(g, 'VSWR circle ' + vswrOf(gin).toFixed(2), 4, 20, 'left', 'top', w);
+    g.fillStyle = mut; g.font = fnt(10);
+    label(g, 'circles: resistance r = R/Z0    arcs: reactance x = X/Z0', 4, h - 4, 'left', 'bottom', w);
+  }
+
+  function drawSweep() {
+    const c = $('sw'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 54, r = 14, t = 16, b = 40;
+    const sw = S.sw, VT = 6;
+    const X = f => l + (f - sw.fa) / (sw.fb - sw.fa) * (w - l - r);
+    const Y = v => t + (VT - clamp(v, 1, VT)) / (VT - 1) * (h - t - b);
+
+    g.fillStyle = cvv('--surface-1');
+    g.fillRect(l, t, w - l - r, h - t - b);
+
+    if (sw.lo !== null) {
+      g.fillStyle = cvv('--c3'); g.globalAlpha = 0.16;
+      g.fillRect(X(sw.lo), t, Math.max(X(sw.hi) - X(sw.lo), 1), h - t - b);
+      g.globalAlpha = 1;
+    }
+
+    g.font = fnt(11); g.fillStyle = mut; g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (let k = 0; k <= 4; k++) {
+      const f = sw.fa + (sw.fb - sw.fa) * k / 4;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      label(g, (f / 1e9).toFixed(2), X(f), h - b + 6, 'center', 'top', w);
+    }
+    for (let v = 1; v <= VT; v++) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      label(g, v.toFixed(0), l - 6, Y(v), 'right', 'middle', w);
+    }
+    g.fillStyle = sub;
+    label(g, 'frequency (GHz)', (l + w - r) / 2, h - 8, 'center', 'bottom', w);
+    label(g, 'VSWR', l - 6, t - 4, 'right', 'bottom', w);
+
+    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(l, Y(2)); g.lineTo(w - r, Y(2)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = cvv('--text-warning'); g.font = fnt(11);
+    label(g, 'VSWR 2 limit', w - r - 4, Y(2) - 3, 'right', 'bottom', w);
+
+    g.save();
+    g.beginPath(); g.rect(l, t, w - l - r, h - t - b); g.clip();
+    g.strokeStyle = cvv('--c1'); g.lineWidth = 2;
+    g.beginPath();
+    for (let i = 0; i <= sw.N; i += 2) {
+      const f = sw.fa + (sw.fb - sw.fa) * i / sw.N, y = Y(sw.v[i]);
+      if (i === 0) g.moveTo(X(f), y); else g.lineTo(X(f), y);
+    }
+    g.stroke();
+    g.restore();
+
+    const f0 = f0Hz();
+    g.strokeStyle = cvv('--c2'); g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(X(f0), t); g.lineTo(X(f0), h - b); g.stroke();
+    g.fillStyle = cvv('--c2');
+    label(g, 'operating frequency', X(f0), t + 2, 'center', 'top', w);
+
+    if (sw.lo !== null) {
+      g.fillStyle = cvv('--text-good'); g.font = fnt(11);
+      label(g, 'match holds across ' + ((sw.hi - sw.lo) / 1e6).toFixed(0) + ' MHz',
+        (X(sw.lo) + X(sw.hi)) / 2, Y(2) + 6, 'center', 'top', w);
+    } else {
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(11);
+      label(g, 'VSWR never drops to 2 at this frequency', X(f0), h - b - 6, 'center', 'bottom', w);
+    }
+  }
+
+  let compSig = '';
+  function renderComps() {
+    const sig = S.comps.map(function (c) { return c.t; }).join(',');
+    if (sig !== compSig) {
+      $('clist').innerHTML = S.comps.map(function (c, i) {
+        return '<div class="comp"><span class="cn">' + (i + 1) + ' &middot; ' + compName(c.t) + '</span>' +
+          '<input type="range" min="0" max="1000" step="1" value="' + c.idx + '" data-i="' + i +
+          '" aria-label="' + compName(c.t) + ' value"><span class="v"></span><span class="xr"></span>' +
+          '<button data-rm="' + i + '">Remove</button></div>';
+      }).join('');
+      compSig = sig;
+    }
+    const rows = $('clist').children;
+    S.comps.forEach(function (c, i) {
+      const row = rows[i];
+      if (!row) return;
+      const v = valOf(c), x = compX(c, f0Hz());
+      row.querySelector('input').value = c.idx;
+      row.querySelector('.v').textContent = v.toFixed(2) + (c.t.charAt(1) === 'L' ? ' nH' : ' pF');
+      row.querySelector('.xr').textContent = (x >= 0 ? '+' : '') + x.toFixed(1) + ' Ω';
+    });
+    $('cnone').style.display = S.comps.length ? 'none' : '';
+  }
+
+  function work() {
+    const gL = zToG(norm(loadZ(f0Hz()))), gm = clamp(cAbs(gL), 0, 0.999999);
+    const sgn = S.X < 0 ? ' - j' : ' + j', ax = Math.abs(S.X).toFixed(0);
+    const num = (S.R - S.z0).toFixed(0) + sgn + ax, den = (S.R + S.z0).toFixed(0) + sgn + ax;
+    const rl = gm < 1e-9 ? null : -20 * L10(gm);
+    return [
+      'Γ = (Z_L − Z0)/(Z_L + Z0) = (' + num + ')/(' + den + ') → |Γ| = ' + gm.toFixed(4),
+      'VSWR = (1 + ' + gm.toFixed(4) + ')/(1 − ' + gm.toFixed(4) + ') = ' + vswrOf(gm).toFixed(2),
+      'return loss = −20 log10(' + gm.toFixed(4) + ') = ' + (rl === null ? 'infinite, a perfect match' : rl.toFixed(2) + ' dB'),
+      'reflected power = 100 × ' + gm.toFixed(4) + '² = ' + (100 * gm * gm).toFixed(2) + ' %',
+      'mismatch loss = −10 log10(1 − ' + gm.toFixed(4) + '²) = ' + (-10 * L10(Math.max(1 - gm * gm, 1e-12))).toFixed(3) + ' dB'
+    ];
+  }
+
+  function update() {
+    $('rrv').textContent = S.R.toFixed(0) + ' Ω';
+    $('xxv').textContent = (S.X >= 0 ? '+' : '−') + Math.abs(S.X).toFixed(0) + ' Ω';
+    $('ffv').textContent = S.f.toFixed(1) + ' GHz';
+    $('llv').textContent = S.lw.toFixed(3) + ' λ';
+    $('z50').className = S.z0 === 50 ? 'on' : '';
+    $('z75').className = S.z0 === 75 ? 'on' : '';
+    $('pp').textContent = S.playing ? 'Pause' : 'Play';
+
+    const gm = clamp(cAbs(gammaAt(f0Hz())), 0, 0.999999);
+    const vs = vswrOf(gm);
+    $('cG').textContent = gm.toFixed(3);
+    $('cV').textContent = vs < 1000 ? vs.toFixed(2) : vs.toFixed(0);
+    $('cR').textContent = gm < 1e-9 ? '∞ dB' : (-20 * L10(gm)).toFixed(2) + ' dB';
+    $('cM').textContent = (-10 * L10(Math.max(1 - gm * gm, 1e-12))).toFixed(3) + ' dB';
+    $('cP').textContent = (100 * gm * gm).toFixed(2) + ' %';
+
+    S.sw = sweep();
+    const sw = S.sw;
+    if (sw.lo === null) {
+      $('cB').textContent = '0 MHz';
+      $('cBn').textContent = 'VSWR at the operating frequency is above 2, so there is no band';
+    } else {
+      const bw = (sw.hi - sw.lo) / 1e6;
+      $('cB').textContent = (bw >= 100 ? bw.toFixed(0) : bw.toFixed(1)) + ' MHz';
+      const Rl = Math.max(afterLine(f0Hz())[0], 1e-6);
+      const Q = Math.sqrt(Math.max(Math.max(Rl, S.z0) / Math.min(Rl, S.z0) - 1, 0));
+      const est = Q > 0.01 ? 'L-network Q = ' + Q.toFixed(2) + ', so f0/Q ≈ '
+        + (S.f * 1000 / Q).toFixed(0) + ' MHz' : 'resistance already equals Z0, so no L-network Q applies';
+      $('cBn').textContent = (sw.eLo || sw.eHi ? 'at least this wide; ' : 'span where VSWR stays under 2; ') + est;
+    }
+
+    $('work').innerHTML = work().map(function (s) { return '<li>' + s + '</li>'; }).join('');
+    renderComps();
+    drawSmith(); drawSweep();
+    if (!S.playing) drawPic();
+  }
+
+  function setSliders() {
+    $('rr').value = S.R; $('xx').value = S.X; $('ff').value = S.f; $('ll').value = S.lw;
+  }
+
+  $('rr').addEventListener('input', function () { S.R = +this.value; update(); });
+  $('xx').addEventListener('input', function () { S.X = +this.value; update(); });
+  $('ff').addEventListener('input', function () { S.f = +this.value; update(); });
+  $('ll').addEventListener('input', function () { S.lw = +this.value; update(); });
+  $('z50').addEventListener('click', function () { S.z0 = 50; update(); });
+  $('z75').addEventListener('click', function () { S.z0 = 75; update(); });
+  $('pp').addEventListener('click', function () {
+    S.playing = !S.playing; update();
+    if (S.playing) requestAnimationFrame(frame);
+  });
+
+  [['asL', 'sL'], ['asC', 'sC'], ['apL', 'pL'], ['apC', 'pC']].forEach(function (a) {
+    $(a[0]).addEventListener('click', function () {
+      if (S.comps.length >= 4) return;
+      S.comps.push({ t: a[1], idx: 500 });
+      update();
+    });
+  });
+  $('acl').addEventListener('click', function () { S.comps = []; update(); });
+  $('clist').addEventListener('input', function (e) {
+    const i = e.target.getAttribute('data-i');
+    if (i === null) return;
+    S.comps[+i].idx = +e.target.value;
+    update();
+  });
+  $('clist').addEventListener('click', function (e) {
+    const i = e.target.getAttribute('data-rm');
+    if (i === null) return;
+    S.comps.splice(+i, 1);
+    update();
+  });
+
+  const sm = $('sm');
+  let dragging = false;
+  function pick(e) {
+    if (!S.geo) return;
+    const r = sm.getBoundingClientRect();
+    let u = (e.clientX - r.left - S.geo.cx) / S.geo.R;
+    let v = (S.geo.cy - (e.clientY - r.top)) / S.geo.R;
+    const m = Math.hypot(u, v);
+    if (m > 0.98) { u = u * 0.98 / m; v = v * 0.98 / m; }
+    const z = gToZ([u, v]);
+    S.R = clamp(Math.round(z[0] * S.z0), 1, 500);
+    S.X = clamp(Math.round(z[1] * S.z0), -300, 300);
+    setSliders(); update();
+  }
+  sm.addEventListener('pointerdown', function (e) {
+    dragging = true; sm.setPointerCapture(e.pointerId); pick(e); e.preventDefault();
+  });
+  sm.addEventListener('pointermove', function (e) { if (dragging) pick(e); });
+  sm.addEventListener('pointerup', function () { dragging = false; });
+  sm.addEventListener('pointercancel', function () { dragging = false; });
+
+  const TOUR = [
+    { txt: 'Step 1 — the antenna on its own. A 75 + j60 ohm antenna on a 50 ohm system reflects about a fifth of the wave amplitude, which is roughly a fifth of the power turning round and coming back up the cable.',
+      st: { R: 75, X: 60, z0: 50, f: 2, lw: 0, comps: [] } },
+    { txt: 'Step 2 — a quarter wavelength of cable added between the antenna and the transmitter. The point swings half way round the chart, but the dashed VSWR circle it rides on has not shrunk at all. Cable moves an impedance; it does not repair one.',
+      st: { R: 75, X: 60, z0: 50, f: 2, lw: 0.25, comps: [] } },
+    { txt: 'Step 3 — cable removed, a shunt capacitor of about 1.3 pF fitted across the line. The point slides along a constant-conductance circle until it lands on the r = 1 circle, where the resistance the transmitter sees is finally 50 ohm. The VSWR reading gets worse on the way, which is normal: half a match is not a match.',
+      st: { R: 75, X: 60, z0: 50, f: 2, lw: 0, comps: [{ t: 'pC', idx: 472 }] } },
+    { txt: 'Step 4 — a series inductor of about 4.8 nH cancels the reactance that is left. The point slides along the r = 1 circle straight into the centre, VSWR falls to about 1.01, and almost nothing comes back.',
+      st: { R: 75, X: 60, z0: 50, f: 2, lw: 0, comps: [{ t: 'pC', idx: 472 }, { t: 'sL', idx: 561 }] } },
+    { txt: 'Step 5 — the same two parts, now used at 2.4 GHz. Nothing was touched except the frequency, and the parts and the antenna have all moved by different amounts: VSWR climbs from 1.01 to about 1.8, and roughly 8 per cent of the power comes back where essentially none did before. That is what the match bandwidth card is counting.',
+      st: { R: 75, X: 60, z0: 50, f: 2.4, lw: 0, comps: [{ t: 'pC', idx: 472 }, { t: 'sL', idx: 561 }] } }
+  ];
+  TOUR.forEach(function (step, i) {
+    $('t' + i).addEventListener('click', function () {
+      S.R = step.st.R; S.X = step.st.X; S.z0 = step.st.z0; S.f = step.st.f; S.lw = step.st.lw;
+      S.comps = step.st.comps.map(function (c) { return { t: c.t, idx: c.idx }; });
+      if (S.comps.length) $('net').open = true;
+      $('tour').textContent = step.txt;
+      for (let k = 0; k < TOUR.length; k++) $('t' + k).className = k === i ? 'on' : '';
+      setSliders(); update();
+    });
+  });
+  $('tr').addEventListener('click', function () {
+    S.R = 75; S.X = 60; S.z0 = 50; S.f = 2; S.lw = 0; S.comps = [];
+    $('tour').textContent = 'Back to the starting antenna. Move any slider, or drag the point on the chart.';
+    for (let k = 0; k < TOUR.length; k++) $('t' + k).className = '';
+    setSliders(); update();
+  });
+
+  let last = 0;
+  function frame(ts) {
+    const dt = Math.min(ts - last, 50);
+    last = ts;
+    ph += dt / 1000 * TAU * 0.4;
+    if (ph > TAU) ph -= TAU;
+    drawPic();
+    if (S.playing) requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', function () { update(); drawPic(); });
+  setSliders(); update(); drawPic();
+  if (S.playing) requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

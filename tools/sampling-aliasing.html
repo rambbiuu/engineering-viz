@@ -6,246 +6,839 @@
 <title>Sampling and aliasing</title>
 <style>
 :root {
-  --bg: #fbfaf7;
-  --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
-  --text-warning: #854F0B;
-  --border: #e2e0d8;
-  --border-strong: #b9b7ae;
-  --surface-1: #f1efe8;
-  --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --text-bad: #9C3A1B;
+  --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --series-1: #378ADD; --series-2: #D85A30; --series-3: #B4831C; --series-4: #1D9E75;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19;
-    --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
-    --text-warning: #FAC775;
-    --border: #34342f;
-    --border-strong: #56554e;
-    --surface-1: #262624;
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --text-bad: #FF9E7A;
+    --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --series-1: #5AA6E8; --series-2: #EE7B52; --series-3: #E3B14A; --series-4: #35BE92;
   }
 }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  line-height: 1.5;
-}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+h2 { font-size: 15px; font-weight: 500; margin: 2rem 0 0.35rem; }
 .sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
+.hint { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
 input, button { font: inherit; color: inherit; }
-input:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
-.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; font-size: 13px; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
+.ctl input[type=range] { flex: 1; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 68px; text-align: right; font-variant-numeric: tabular-nums; }
+.btnrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0.4rem 0; }
+.btnrow .lbl { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.85rem; margin: 0 0 1.25rem; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.7rem; }
+.sec { margin: 1.6rem 0 6px; font-size: 14px; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 12px; }
-.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-top: 1.5rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 canvas { width: 100%; display: block; }
+ul.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 7px 0 0; padding: 0.6rem 0.9rem 0.65rem 1.9rem; background: var(--surface-1); border-radius: var(--radius); }
+ul.legend-note li { margin: 3px 0; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.4rem 0 0; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0.6rem 0 0; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; font-variant-numeric: tabular-nums; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.4rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 9px; }
+dl.glossary dd { margin: 0; color: var(--text-secondary); }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Sampling and aliasing</h1>
-<p class="sub">A digital receiver never sees the whole wave &mdash; only snapshots taken f&#8347; times per second. Take them fast enough (more than twice the signal frequency, the Nyquist rule) and the snapshots pin down the true wave. Too slow, and a fake low-frequency ghost fits the same dots.</p>
+<p class="sub">A digital receiver never sees a wave. It sees a list of numbers &mdash; the height of the wave, measured f<sub>s</sub> times every second, and nothing in between. If the measurements come fast enough, that list pins down the original wave exactly. If they come too slowly, a completely different, slower wave fits the same list of numbers just as well, and no amount of processing afterwards can tell the two apart. That impostor is called an <b style="font-weight:500">alias</b>, and this page is about when it appears.</p>
+<p class="hint">New to reading a frequency axis? Start with the <a href="fourier-series.html">Fourier series builder</a> first.</p>
 
-<div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; margin-bottom: 1.25rem;">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <label class="lbl" for="fs1" style="min-width: 118px;">Signal frequency</label>
-    <input type="range" id="fs1" min="1" max="20" step="0.5" value="3" style="flex: 1;">
-    <span id="fs1v" style="font-size: 14px; font-weight: 500; min-width: 56px; text-align: right; font-variant-numeric: tabular-nums;">3.0 Hz</span>
-  </div>
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <label class="lbl" for="fsr">Sample rate</label>
-    <input type="range" id="fsr" min="2" max="40" step="1" value="20" style="flex: 1;">
-    <span id="fsrv" style="font-size: 14px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums;">20 Sa/s</span>
-  </div>
+<div class="grid2">
+  <div class="ctl"><label for="fSig">Signal frequency f</label><input type="range" id="fSig" min="0.5" max="20" step="0.1" value="7"><span class="v" id="fSigv">7.0 Hz</span></div>
+  <div class="ctl"><label for="fSam">Sample rate f<sub>s</sub></label><input type="range" id="fSam" min="2" max="40" step="0.5" value="10"><span class="v" id="fSamv">10.0 Sa/s</span></div>
 </div>
 
-<p class="sec"><b>1 &middot; Time view</b> <span>&mdash; blue = the real signal; dots = the only thing the ADC keeps; dashed = the wave the receiver reconstructs from those dots</span></p>
-<canvas id="tv" style="height: 280px;"></canvas>
+<details id="expert">
+  <summary>More controls &mdash; how the wave is put back together</summary>
+  <div class="btnrow">
+    <span class="lbl">Interpolation</span>
+    <button id="bHold">Hold</button>
+    <button id="bSinc" class="on">Sinc</button>
+    <span style="font-size:12px;color:var(--text-muted)">how the converter joins the dots back up</span>
+  </div>
+  <div class="btnrow">
+    <span class="lbl">Reconstruction filter</span>
+    <button id="bFiltOn" class="on">On</button>
+    <button id="bFiltOff">Off</button>
+    <span style="font-size:12px;color:var(--text-muted)">a low-pass filter after the converter, cutting at half the sample rate</span>
+  </div>
+  <div class="grid2" style="margin-top:0.6rem;margin-bottom:0.2rem">
+    <div class="ctl"><label for="nImg">Alias images shown</label><input type="range" id="nImg" min="1" max="4" step="1" value="2"><span class="v" id="nImgv">2</span></div>
+    <div class="ctl"><label for="offs">Sampling clock offset</label><input type="range" id="offs" min="0" max="0.95" step="0.05" value="0"><span class="v" id="offsv">0.00 Ts</span></div>
+  </div>
+</details>
 
-<p class="sec"><b>2 &middot; Frequency view</b> <span>&mdash; the shaded zone is what this sample rate can represent (0 to f&#8347;/2); anything outside folds back inside as a ghost</span></p>
-<canvas id="fv" style="height: 190px;"></canvas>
+<h2>A guided tour</h2>
+<div class="steps">
+  <button class="tourbtn" id="t0">1 &middot; Fast enough</button>
+  <button class="tourbtn" id="t1">2 &middot; Exactly at the limit</button>
+  <button class="tourbtn" id="t2">3 &middot; Too slow</button>
+  <button class="tourbtn" id="t3">4 &middot; The wheel stops</button>
+  <button class="tourbtn" id="t4">5 &middot; It runs backwards</button>
+</div>
+<p class="tour-note" id="tourNote">Press step 1 to start. Each step drives the two sliders for you and says what changed.</p>
+
+<p class="sec"><b>1 &middot; The physical picture &mdash; a wheel under a strobe light</b> <span>&mdash; a spinning wheel lit only by brief flashes, which is sampling made visible</span></p>
+<div class="btnrow" style="margin-bottom:4px"><button id="play" class="on">Pause</button><span style="font-size:12px;color:var(--text-muted)">the wheel is shown six times slower than real time, so both spins are slowed equally and the effect is unchanged</span></div>
+<canvas id="cWheel" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li>The <b style="font-weight:500;color:var(--series-1)">blue spoke</b> is where the marked spoke really is. The wheel turns at the signal frequency, f turns every second.</li>
+  <li>The <b style="font-weight:500;color:var(--series-2)">orange spoke</b> is the only thing you ever see, because the room is dark except for a strobe light that flashes f<sub>s</sub> times a second. It jumps to a new place at each flash and holds still in between. The faded orange marks are the previous three flashes, so you can read which way it is stepping.</li>
+  <li>Your eye joins those jumps into a smooth motion, and that invented motion is the alias. It can run forwards, run backwards, or stop dead, none of which the wheel is doing.</li>
+  <li>This is why wagon wheels roll backwards in old films: the camera is a strobe taking 24 pictures a second, and the wheel turns faster than that.</li>
+</ul>
+
+<p class="sec"><b>2 &middot; The wave and the dots it leaves behind</b> <span>&mdash; the real wave, the samples the converter keeps, and the wave that gets rebuilt from them</span></p>
+<canvas id="cTime" style="height: 310px;"></canvas>
+<ul class="legend-note" id="timeNote"></ul>
+
+<p class="sec"><b>3 &middot; The frequency picture &mdash; why the impostor exists</b> <span>&mdash; sampling copies the whole spectrum to every multiple of the sample rate; when the copies touch, the signal is corrupted</span></p>
+<canvas id="cSpec" style="height: 265px;"></canvas>
+<ul class="legend-note" id="specNote"></ul>
+
+<p class="sec"><b>4 &middot; The folding diagram</b> <span>&mdash; put any frequency in at the bottom, read off the frequency the samples will show</span></p>
+<canvas id="cFold" style="height: 265px;"></canvas>
+<ul class="legend-note" id="foldNote"></ul>
 
 <div class="cards">
   <div class="card">
-    <div class="hd">Nyquist limit (f&#8347;/2)</div>
-    <div class="big" id="cNy">&mdash;</div>
-    <div class="ft">highest frequency this sample rate can capture truthfully</div>
+    <div class="hd">Nyquist rate</div>
+    <div class="big" id="cNyq">&mdash;</div>
+    <div class="ft">2f &mdash; the sample rate you must beat</div>
   </div>
   <div class="card">
-    <div class="hd">What the ADC believes it sees</div>
-    <div class="big" id="cAl">&mdash;</div>
-    <div class="ft" id="cAln">&mdash;</div>
+    <div class="hd">Oversampling ratio</div>
+    <div class="big" id="cOsr">&mdash;</div>
+    <div class="ft" id="cOsrn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Apparent frequency</div>
+    <div class="big" id="cAli">&mdash;</div>
+    <div class="ft" id="cAlin">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Verdict</div>
+    <div class="big" id="cVer">&mdash;</div>
+    <div class="ft" id="cVern">&mdash;</div>
   </div>
 </div>
 
-<p class="sub" style="margin-top: 2rem;">Try it: leave the signal at 3 Hz and drag the sample rate down below 6 Sa/s &mdash; watch the dashed ghost appear and the spike jump inside the shaded zone. This is why your 2&ndash;18 GHz receiver either needs a blisteringly fast ADC or must mix the signal down to a lower frequency first: an emitter above the Nyquist limit does not disappear, it shows up disguised at the wrong frequency.</p>
+<h2>The arithmetic, with the current numbers</h2>
+<ol class="work" id="work"></ol>
+
+<h2>Glossary</h2>
+<dl class="glossary">
+  <dt>Sample</dt><dd>One measurement of the wave's height, taken at one instant. Between samples the converter knows nothing at all.</dd>
+  <dt>Sample rate, f<sub>s</sub></dt><dd>How many samples are taken each second, in samples per second (Sa/s). Written in hertz too, since it is a rate of repetition.</dd>
+  <dt>Sampling period, T<sub>s</sub></dt><dd>The time between two samples, equal to 1 &divide; f<sub>s</sub>, in seconds.</dd>
+  <dt>Nyquist rate</dt><dd>Twice the highest frequency in the signal, 2f, in Sa/s. The sample rate must be strictly greater than this. Equal is not good enough.</dd>
+  <dt>Nyquist frequency, or the Nyquist limit</dt><dd>Half the sample rate, f<sub>s</sub>&nbsp;&divide;&nbsp;2, in Hz. The highest frequency a given sample rate can represent honestly.</dd>
+  <dt>Aliasing</dt><dd>A frequency above the Nyquist limit turning up in the samples disguised as a different, lower frequency. The disguise is perfect: the samples of the two are identical numbers.</dd>
+  <dt>Alias frequency, or apparent frequency</dt><dd>The lower frequency the impostor appears at, in Hz. Computed as the distance from f to the nearest whole multiple of f<sub>s</sub>.</dd>
+  <dt>Anti-alias filter</dt><dd>A low-pass filter placed <i>before</i> the converter, removing everything above the Nyquist limit so that nothing can fold. The only real cure, because once a signal is aliased it cannot be separated afterwards.</dd>
+  <dt>Reconstruction filter</dt><dd>A low-pass filter placed <i>after</i> the converter, cutting at the Nyquist limit, to smooth the output back into one continuous wave and throw away the copies at higher frequencies.</dd>
+  <dt>Zero-order hold</dt><dd>What a plain digital-to-analogue converter does: hold each sample value steady until the next one arrives, producing a staircase.</dd>
+  <dt>Sinc interpolation</dt><dd>The ideal way to join the dots. Each sample is replaced by the curve sinc(u) = sin(&pi;u) &divide; (&pi;u), and the curves are added up. It is the exact mathematical equivalent of an ideal low-pass filter at the Nyquist limit.</dd>
+  <dt>Image, or replica</dt><dd>A copy of the signal's spectrum that sampling creates at every whole multiple of f<sub>s</sub>. The copies are real: they come out of the converter unless a reconstruction filter removes them.</dd>
+  <dt>Folding</dt><dd>The way input frequency maps to apparent frequency: the frequency axis is creased at every multiple of half the sample rate and folded back like an accordion.</dd>
+  <dt>Oversampling ratio</dt><dd>f<sub>s</sub> divided by the Nyquist rate 2f. A dimensionless number, written with a &times;. Anything above 1 works; 1 exactly does not.</dd>
+</dl>
+
+<p class="sub" style="margin-top: 2rem;">The rule is short and it is strict: f<sub>s</sub> must be greater than 2f, not equal to it. Step 2 of the tour shows why the equality case fails &mdash; with f<sub>s</sub> = 2f every sample can land on a zero crossing, and a wave whose samples are all zero cannot be told from silence. Two practical consequences follow. First, the only defence is a filter <i>in front of</i> the converter: aliasing is not a processing error you can undo later, because the impostor and the original produce byte-for-byte identical data. Second, real designs do not sit near the limit; audio uses 44.1 kSa/s for a 20 kHz band, about 1.1&times;, and only gets away with it because the anti-alias filter is very steep, while instrumentation commonly runs 5&times; or more so that a gentle, cheap filter suffices. One deliberate exception is worth knowing: radio receivers sometimes sample <i>on purpose</i> below the carrier frequency, letting a known band fold down to baseband, which is the same arithmetic used as a tool rather than suffered as a fault. The model here uses a single sine wave and an ideal converter with no quantisation noise and no jitter; add those and the picture gets worse, never better.</p>
+<p class="hint" style="margin-top:1rem">Next: see what happens once information is written onto a carrier, in <a href="modulation.html">the modulation playground</a>, then look at the receiver's-eye view in <a href="iq-constellation.html">the IQ constellation explorer</a>.</p>
 
 <script>
 (function () {
-  const $ = id => document.getElementById(id);
-  const S = { f: 3, fs: 20 };
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var TAU = Math.PI * 2;
+  var EPS = 1e-9;
+  var clamp = function (v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); };
+  var num = function (v, d) { return v.toFixed(d).replace('-', '−'); };
 
-  function folded() {
-    const n = Math.round(S.f / S.fs);
-    return S.f - n * S.fs;
-  }
+  var sinc = function (u) {
+    var x = Math.PI * u;
+    return Math.abs(x) < 1e-9 ? 1 : Math.sin(x) / x;
+  };
 
-  function updateUI() {
-    $('fs1v').textContent = S.f.toFixed(1) + ' Hz';
-    $('fsrv').textContent = S.fs + ' Sa/s';
-    $('cNy').textContent = (S.fs / 2).toFixed(1) + ' Hz';
-    const fa = Math.abs(folded());
-    const ok = S.f <= S.fs / 2;
-    $('cAl').textContent = fa.toFixed(1) + ' Hz';
-    $('cAl').style.color = ok ? '' : 'var(--text-warning)';
-    $('cAln').innerHTML = ok
-      ? 'correct — the sample rate is fast enough'
-      : '<span style="color: var(--text-warning);">aliased! the real ' + S.f.toFixed(1) + ' Hz signal is disguised as ' + fa.toFixed(1) + ' Hz</span>';
+  var S = { f: 7, fs: 10, interp: 'sinc', filt: true, imgs: 2, off: 0, playing: true };
+
+  var fsSafe = function () { return Math.max(S.fs, 1e-6); };
+  var fSafe = function () { return Math.max(S.f, 1e-6); };
+  var Ts = function () { return 1 / fsSafe(); };
+  var rSigned = function () { return S.f - fsSafe() * Math.round(S.f / fsSafe()); };
+  var fAlias = function () { return Math.abs(rSigned()); };
+  var foldFreq = function (x) { var s = fsSafe(); return Math.abs(x - s * Math.round(x / s)); };
+  var verdict = function () {
+    var half = fsSafe() / 2;
+    if (S.f < half - EPS) return 'clear';
+    if (S.f <= half + EPS) return 'boundary';
+    return 'aliased';
+  };
+  var atEdge = function () { return Math.abs(fAlias() - fsSafe() / 2) < 1e-9; };
+  var tSample = function (k) { return (k + S.off) / fsSafe(); };
+  var xSample = function (k) { return Math.sin(TAU * S.f * tSample(k)); };
+
+  var recon = function (t, kLo, kHi) {
+    var sum = 0;
+    for (var k = kLo; k <= kHi; k++) sum += xSample(k) * sinc(fsSafe() * (t - tSample(k)));
+    return sum;
+  };
+  var zoh = function (t) {
+    var k = Math.floor(t * fsSafe() - S.off);
+    return xSample(k);
+  };
+  var holdDroop = function () { return sinc(fAlias() / fsSafe()); };
+
+  function viewSpan() {
+    var T = Math.max(3.5 / fSafe(), 9 / fsSafe());
+    T = Math.min(T, 90 / fsSafe(), 40 / fSafe());
+    return clamp(T, 0.02, 12);
   }
 
   function fit(c) {
-    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
     return [r.width, r.height];
   }
 
-  function drawTime() {
-    const c = $('tv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+  function dashLine(g, x0, y0, x1, y1, pat) {
+    g.setLineDash(pat); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.setLineDash([]);
+  }
+
+  var SLOW = 1 / 6;
+  var tAnim = 0, lastTs = 0, raf = 0;
+
+  function drawWheel() {
+    var c = $('cWheel'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
-    const l = 14, r = 14, t = 14, b = 24;
-    const yc = (h - b + t) / 2, ampl = (h - t - b) / 2 * 0.8;
-    const T = 1;
-    const X = tt => l + tt / T * (w - l - r);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border-strong');
+    var c1 = cvv('--series-1'), c2 = cvv('--series-2'), c3 = cvv('--series-3');
+
+    var r = rSigned();
+    var dirTrue = 'forwards';
+    var dirApp = Math.abs(r) < 1e-6 ? 'not at all' : (r > 0 ? 'forwards' : 'backwards');
+
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = c1;
+    g.fillText('real spin ' + S.f.toFixed(2) + ' turns/s ' + dirTrue, 4, 6);
+    g.fillStyle = c3;
+    g.fillText('strobe ' + S.fs.toFixed(1) + ' flashes/s', 4, 24);
+    g.fillStyle = c2;
+    g.fillText(Math.abs(r) < 1e-6
+      ? 'apparent spin 0.00 turns/s — the wheel looks frozen'
+      : (atEdge()
+        ? 'apparent spin ' + Math.abs(r).toFixed(2) + ' turns/s, direction undecidable'
+        : 'apparent spin ' + Math.abs(r).toFixed(2) + ' turns/s ' + dirApp), 4, 42);
+    if (atEdge() && Math.abs(r) > 1e-6) {
+      g.fillStyle = mut; g.font = fnt(11);
+      g.fillText(w > 470
+        ? 'the spoke flips half a turn at every flash, so forwards and backwards fit equally well'
+        : 'the spoke flips half a turn at every flash', 4, 60);
+      g.font = fnt(12);
+    }
+
+    var top = (atEdge() && Math.abs(r) > 1e-6) ? 80 : 64, bot = h - 30;
+    var R = Math.min((bot - top) / 2 - 8, w * 0.26, 92);
+    if (R < 24) R = 24;
+    var cx = w / 2, cy = (top + bot) / 2;
+
+    g.strokeStyle = bd; g.lineWidth = 2;
+    g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke();
+    g.beginPath(); g.arc(cx, cy, R * 0.1, 0, TAU); g.fillStyle = bd; g.fill();
+
+    var thTrue = TAU * S.f * tAnim;
+    g.strokeStyle = bd; g.lineWidth = 1; g.globalAlpha = 0.45;
+    for (var i = 1; i < 6; i++) {
+      var a = thTrue + i * TAU / 6;
+      g.beginPath(); g.moveTo(cx, cy);
+      g.lineTo(cx + Math.cos(a) * R * 0.94, cy - Math.sin(a) * R * 0.94);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+
+    var kNow = Math.floor(tAnim * fsSafe() - S.off);
+    g.lineWidth = 3;
+    for (var j = 3; j >= 0; j--) {
+      var ang = TAU * S.f * tSample(kNow - j);
+      g.globalAlpha = j === 0 ? 1 : 0.28 - j * 0.06;
+      g.strokeStyle = c2;
+      g.beginPath(); g.moveTo(cx, cy);
+      g.lineTo(cx + Math.cos(ang) * R * 0.94, cy - Math.sin(ang) * R * 0.94);
+      g.stroke();
+      g.fillStyle = c2;
+      g.beginPath(); g.arc(cx + Math.cos(ang) * R * 0.94, cy - Math.sin(ang) * R * 0.94, j === 0 ? 5 : 3.5, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+
+    g.strokeStyle = c1; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(thTrue) * R * 0.94, cy - Math.sin(thTrue) * R * 0.94);
+    g.stroke();
+    g.fillStyle = c1;
+    g.beginPath(); g.arc(cx + Math.cos(thTrue) * R * 0.94, cy - Math.sin(thTrue) * R * 0.94, 4.5, 0, TAU); g.fill();
+
+    g.font = fnt(11);
+    var lx = cx + Math.cos(thTrue) * (R + 16), ly = cy - Math.sin(thTrue) * (R + 16);
+    g.fillStyle = c1;
+    g.textAlign = Math.cos(thTrue) >= 0 ? 'left' : 'right';
+    g.textBaseline = 'middle';
+    g.fillText('real', clamp(lx, 22, w - 22), clamp(ly, 10, h - 10));
+    var angN = TAU * S.f * tSample(kNow);
+    var sx = cx + Math.cos(angN) * (R + 16), sy = cy - Math.sin(angN) * (R + 16);
+    g.fillStyle = c2;
+    g.textAlign = Math.cos(angN) >= 0 ? 'left' : 'right';
+    g.fillText('strobe', clamp(sx, 30, w - 30), clamp(sy, 10, h - 10));
+
+    if (Math.abs(r) > 1e-6 && !atEdge()) {
+      var arcR = R * 0.5;
+      var a0 = angN, sweep = (r > 0 ? 1 : -1) * 0.85;
+      g.strokeStyle = c2; g.lineWidth = 1.6; g.globalAlpha = 0.75;
+      g.beginPath(); g.arc(cx, cy, arcR, -a0, -(a0 + sweep), sweep > 0);
+      g.stroke();
+      var ae = a0 + sweep;
+      var hx = cx + Math.cos(ae) * arcR, hy = cy - Math.sin(ae) * arcR;
+      var tang = ae + (sweep > 0 ? Math.PI / 2 : -Math.PI / 2);
+      g.beginPath();
+      g.moveTo(hx, hy);
+      g.lineTo(hx + Math.cos(tang + 2.5) * 8, hy - Math.sin(tang + 2.5) * 8);
+      g.lineTo(hx + Math.cos(tang - 2.5) * 8, hy - Math.sin(tang - 2.5) * 8);
+      g.closePath(); g.fillStyle = c2; g.fill();
+      g.globalAlpha = 1;
+    } else if (Math.abs(r) <= 1e-6) {
+      g.fillStyle = c2; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('looks frozen', cx, cy + R * 0.55);
+    }
+
+    var frac = tAnim * fsSafe() - S.off;
+    frac = frac - Math.floor(frac);
+    var glow = Math.exp(-5 * frac);
+    g.fillStyle = c3; g.globalAlpha = 0.18 + 0.82 * glow;
+    g.beginPath(); g.arc(20, h - 16, 7, 0, TAU); g.fill();
+    g.globalAlpha = 1;
+    g.strokeStyle = bd; g.lineWidth = 1;
+    g.beginPath(); g.arc(20, h - 16, 7, 0, TAU); g.stroke();
+    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText('strobe lamp', 33, h - 16);
+    g.textAlign = 'right';
+    g.fillStyle = sub;
+    g.fillText(S.playing ? 'running at 1/6 speed' : 'paused', w - 4, h - 16);
+  }
+
+  function drawTime() {
+    var c = $('cTime'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var ink = cvv('--text-primary');
+    var c1 = cvv('--series-1'), c2 = cvv('--series-2'), c3 = cvv('--series-3');
+
+    var l = 46, rr = 14, t = 30, b = 40;
+    var pw = Math.max(w - l - rr, 10), ph = Math.max(h - t - b, 10);
+    var T = viewSpan();
+    var X = function (tt) { return l + tt / T * pw; };
+    var yc = t + ph / 2, amp = ph / 2 * 0.86;
+    var Y = function (v) { return yc - clamp(v, -1.6, 1.6) * amp; };
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.beginPath(); g.moveTo(l, yc); g.lineTo(w - r, yc); g.stroke();
+    g.font = fnt(11); g.fillStyle = mut;
+    [1, 0.5, 0, -0.5, -1].forEach(function (v) {
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(l + pw, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText((v > 0 ? '+' : '') + num(v, 1), l - 6, Y(v));
+    });
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('amplitude', 4, t - 16);
 
-    g.strokeStyle = '#378ADD'; g.lineWidth = 2;
-    g.beginPath();
-    for (let x = l; x <= w - r; x++) {
-      const tt = (x - l) / (w - l - r) * T;
-      const y = yc - Math.sin(2 * Math.PI * S.f * tt) * ampl;
-      if (x === l) g.moveTo(x, y); else g.lineTo(x, y);
+    var nTick = 5;
+    for (var q = 0; q <= nTick; q++) {
+      var tt = T * q / nTick;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(tt), t); g.lineTo(X(tt), t + ph); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(tt.toFixed(T < 0.5 ? 3 : 2), X(tt), t + ph + 6);
     }
-    g.stroke();
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('time (seconds)', l + pw / 2, h - 4);
 
-    const ff = folded();
-    const aliased = Math.abs(Math.abs(ff) - S.f) > 0.01;
-    if (aliased) {
-      g.strokeStyle = '#D85A30'; g.lineWidth = 2; g.setLineDash([6, 5]);
+    g.strokeStyle = c1; g.lineWidth = 2; g.globalAlpha = 0.9;
+    g.beginPath();
+    for (var px = 0; px <= pw; px += 0.4) {
+      var tt2 = px / pw * T;
+      var y = Y(Math.sin(TAU * S.f * tt2));
+      if (px === 0) g.moveTo(l + px, y); else g.lineTo(l + px, y);
+    }
+    g.stroke(); g.globalAlpha = 1;
+
+    var kLo = Math.ceil(-S.off), kHi = Math.floor(T * fsSafe() - S.off);
+    var nSamp = Math.max(kHi - kLo + 1, 0);
+
+    if (S.interp === 'hold') {
+      g.strokeStyle = c3; g.lineWidth = 1.6; g.globalAlpha = 0.85;
       g.beginPath();
-      for (let x = l; x <= w - r; x++) {
-        const tt = (x - l) / (w - l - r) * T;
-        const y = yc - Math.sin(2 * Math.PI * ff * tt) * ampl;
-        if (x === l) g.moveTo(x, y); else g.lineTo(x, y);
+      var started = false;
+      for (var k2 = kLo - 1; k2 <= kHi; k2++) {
+        var t0 = tSample(k2), t1 = tSample(k2 + 1);
+        var v = xSample(k2);
+        var xa = clamp(X(t0), l, l + pw), xb = clamp(X(t1), l, l + pw);
+        if (xb <= l || xa >= l + pw) continue;
+        if (!started) { g.moveTo(xa, Y(v)); started = true; } else { g.lineTo(xa, Y(v)); }
+        g.lineTo(xb, Y(v));
+      }
+      g.stroke(); g.globalAlpha = 1;
+    }
+
+    var drawRec = !(S.interp === 'hold' && !S.filt);
+    var recPts = [];
+    if (drawRec) {
+      var mLo = kLo - 96, mHi = kHi + 96;
+      var droop = S.interp === 'hold' ? holdDroop() : 1;
+      var lag = S.interp === 'hold' ? Ts() / 2 : 0;
+      g.strokeStyle = c2; g.lineWidth = 2.2; g.setLineDash([7, 4]);
+      g.beginPath();
+      for (var px2 = 0; px2 <= pw; px2 += 1.5) {
+        var tt3 = px2 / pw * T;
+        var val = droop * recon(tt3 - lag, mLo, mHi);
+        var yy = Y(val);
+        recPts.push([l + px2, yy]);
+        if (px2 === 0) g.moveTo(l + px2, yy); else g.lineTo(l + px2, yy);
       }
       g.stroke(); g.setLineDash([]);
     }
 
-    g.strokeStyle = ink; g.fillStyle = ink; g.globalAlpha = 0.85;
-    for (let k = 0; k * (1 / S.fs) <= T; k++) {
-      const tt = k / S.fs;
-      const y = yc - Math.sin(2 * Math.PI * S.f * tt) * ampl;
-      g.lineWidth = 1;
-      g.beginPath(); g.moveTo(X(tt), yc); g.lineTo(X(tt), y); g.stroke();
-      g.beginPath(); g.arc(X(tt), y, 4, 0, 7); g.fill();
+    g.strokeStyle = ink; g.fillStyle = ink;
+    for (var k = kLo; k <= kHi; k++) {
+      var ts2 = tSample(k), xs = X(ts2), ys = Y(xSample(k));
+      if (nSamp <= 45) {
+        g.globalAlpha = 0.45; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(xs, Y(0)); g.lineTo(xs, ys); g.stroke();
+      }
+      g.globalAlpha = 0.95;
+      g.beginPath(); g.arc(xs, ys, nSamp <= 45 ? 3.6 : 2.4, 0, TAU); g.fill();
     }
     g.globalAlpha = 1;
 
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
-    g.fillText('1 second of time', w - r, h - 4);
-    g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillStyle = '#378ADD'; g.fillText('real signal ' + S.f.toFixed(1) + ' Hz', 14, 6);
-    if (aliased) {
-      g.fillStyle = '#D85A30';
-      g.fillText('ghost the receiver believes: ' + Math.abs(ff).toFixed(1) + ' Hz', 14, 22);
+    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = c1;
+    g.fillText('real wave ' + S.f.toFixed(2) + ' Hz', 4, 4);
+    g.fillStyle = ink;
+    g.fillText(nSamp.toFixed(0) + ' samples kept', 160, 4);
+
+    if (drawRec && recPts.length > 4) {
+      var idx = Math.floor(recPts.length * 0.6), best = -1;
+      for (var q2 = Math.floor(recPts.length * 0.45); q2 < recPts.length - 2; q2++) {
+        var dev = Math.abs(recPts[q2][1] - Y(0));
+        if (dev > best) { best = dev; idx = q2; }
+      }
+      var pxl = recPts[idx][0], pyl = recPts[idx][1];
+      var above = pyl <= Y(0), ly2;
+      if (above) { ly2 = pyl - 24; if (ly2 < t + 14) { ly2 = pyl + 22; above = false; } }
+      else { ly2 = pyl + 24; if (ly2 > t + ph - 14) { ly2 = pyl - 22; above = true; } }
+      g.strokeStyle = c2; g.lineWidth = 1; g.globalAlpha = 0.8;
+      g.beginPath(); g.moveTo(pxl, pyl); g.lineTo(pxl, ly2); g.stroke();
+      g.globalAlpha = 1;
+      var v2 = verdict();
+      var lab = v2 === 'clear'
+        ? 'rebuilt wave, same ' + S.f.toFixed(2) + ' Hz'
+        : (fAlias() < 1e-6 ? 'rebuilt as a flat line, 0.00 Hz' : 'ghost at ' + fAlias().toFixed(2) + ' Hz');
+      g.font = fnt(11); g.fillStyle = c2;
+      var tw = g.measureText(lab).width;
+      var tx = clamp(pxl, l + tw / 2 + 2, l + pw - tw / 2 - 2);
+      g.textAlign = 'center'; g.textBaseline = above ? 'bottom' : 'top';
+      g.fillText(lab, tx, ly2);
     }
   }
 
-  function drawFreq() {
-    const c = $('fv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+  function drawSpec() {
+    var c = $('cSpec'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const l = 14, r = 14, t = 16, b = 34;
-    const FMAX = 42;
-    const X = f => l + f / FMAX * (w - l - r);
-    const Y0 = h - b, Y1 = t + 8;
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var c1 = cvv('--series-1'), c2 = cvv('--series-2'), bad = cvv('--text-bad');
 
-    g.fillStyle = '#378ADD'; g.globalAlpha = 0.08;
-    g.fillRect(X(0), t, X(S.fs / 2) - X(0), Y0 - t);
+    var l = 20, rr = 20, t = 28, b = 44;
+    var pw = Math.max(w - l - rr, 10), ph = Math.max(h - t - b, 10);
+    var B = S.f;
+    var Fmax = S.imgs * fsSafe() + Math.max(B, fsSafe() * 0.3);
+    if (!(Fmax > 0)) Fmax = 1;
+    var X = function (f) { return l + (f + Fmax) / (2 * Fmax) * pw; };
+    var y0 = t + ph, yTop = t + 6;
+    var Y = function (v) { return y0 - clamp(v, 0, 1) * (y0 - yTop); };
+
+    var cents = [];
+    for (var n = -S.imgs; n <= S.imgs; n++) cents.push(n * fsSafe());
+
+    var triH = function (f, cc) { var u = 1 - Math.abs(f - cc) / Math.max(B, 1e-9); return u > 0 ? u : 0; };
+    var ovLeft = null, ovRight = null;
+    g.fillStyle = bad; g.globalAlpha = 0.4;
+    for (var px = 0; px <= pw; px += 1) {
+      var f = (px / pw) * 2 * Fmax - Fmax;
+      var h1 = 0, h2 = 0;
+      for (var i = 0; i < cents.length; i++) {
+        var hv = triH(f, cents[i]);
+        if (hv > h1) { h2 = h1; h1 = hv; } else if (hv > h2) { h2 = hv; }
+      }
+      if (h2 > 0) {
+        g.fillRect(l + px, Y(h2), 1.6, y0 - Y(h2));
+        if (ovLeft === null) ovLeft = px;
+        ovRight = px;
+      }
+    }
+    g.globalAlpha = 1;
+
+    g.strokeStyle = bd; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(l, y0); g.lineTo(l + pw, y0); g.stroke();
+
+    for (var m = 0; m < cents.length; m++) {
+      var cc = cents[m], base = (m === S.imgs);
+      g.beginPath();
+      g.moveTo(X(cc - B), Y(0)); g.lineTo(X(cc), Y(1)); g.lineTo(X(cc + B), Y(0));
+      g.closePath();
+      g.fillStyle = base ? c1 : c2;
+      g.globalAlpha = base ? 0.2 : 0.11;
+      g.fill();
+      g.globalAlpha = 1;
+      g.strokeStyle = base ? c1 : c2;
+      g.lineWidth = base ? 2 : 1.3;
+      if (!base) g.setLineDash([5, 3]);
+      g.beginPath();
+      g.moveTo(X(cc - B), Y(0)); g.lineTo(X(cc), Y(1)); g.lineTo(X(cc + B), Y(0));
+      g.stroke();
+      g.setLineDash([]);
+    }
+
+    if (ovLeft !== null) {
+      var fx0 = fsSafe() / 2, hy = triH(fx0, 0);
+      var ax = clamp(X(fx0), l + 70, l + pw - 70), ay = clamp(Y(hy) - 8, yTop + 26, y0 - 12);
+      g.strokeStyle = bad; g.lineWidth = 1; g.globalAlpha = 0.9;
+      g.beginPath(); g.moveTo(X(fx0), Y(hy)); g.lineTo(ax, ay); g.stroke();
+      g.globalAlpha = 1;
+      g.fillStyle = bad; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText('copies overlap here', ax, ay - 2);
+    }
+
+    g.strokeStyle = sub; g.lineWidth = 1;
+    [-fsSafe() / 2, fsSafe() / 2].forEach(function (fh) {
+      dashLine(g, X(fh), yTop - 4, X(fh), y0, [4, 4]);
+    });
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('half the sample rate, ' + (S.fs / 2).toFixed(2) + ' Hz', clamp(X(fsSafe() / 2), l + 60, l + pw - 60), yTop - 6);
+
+    var fa = fAlias();
+    g.strokeStyle = c2; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(X(fa), y0); g.lineTo(X(fa), Y(0.62)); g.stroke();
+    g.beginPath(); g.moveTo(X(-fa), y0); g.lineTo(X(-fa), Y(0.62)); g.stroke();
+    g.strokeStyle = c1; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(X(S.f), y0); g.lineTo(X(S.f), Y(0.86)); g.stroke();
+    g.beginPath(); g.moveTo(X(-S.f), y0); g.lineTo(X(-S.f), Y(0.86)); g.stroke();
+
+    g.font = fnt(11); g.textBaseline = 'bottom';
+    g.fillStyle = c1; g.textAlign = 'left';
+    g.fillText('the tone, ' + S.f.toFixed(2) + ' Hz', clamp(X(S.f) + 5, l, l + pw - 110), Y(0.86));
+    if (verdict() !== 'clear') {
+      g.fillStyle = c2;
+      g.fillText('lands at ' + fa.toFixed(2) + ' Hz', clamp(X(fa) + 5, l, l + pw - 100), Y(0.62));
+    }
+
+    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    var pxPerImg = Math.max(fsSafe() / (2 * Fmax) * pw, 1);
+    var everyImg = Math.max(1, Math.ceil(38 / pxPerImg));
+    for (var nn = -S.imgs; nn <= S.imgs; nn++) {
+      if (nn % everyImg !== 0) continue;
+      var fx = nn * fsSafe();
+      if (X(fx) < l + 12 || X(fx) > l + pw - 12) continue;
+      g.fillText(nn === 0 ? '0' : num(fx, fsSafe() < 5 ? 1 : 0), X(fx), y0 + 6);
+    }
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText(pw > 430
+      ? 'frequency (Hz) — negative frequencies included, as the mathematics requires'
+      : 'frequency (Hz), positive and negative', l + pw / 2, h - 4);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = mut;
+    g.fillText('spectrum height (arbitrary scale)', 4, 4);
+  }
+
+  function drawFold() {
+    var c = $('cFold'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var c1 = cvv('--series-1'), c2 = cvv('--series-2'), c4 = cvv('--series-4');
+
+    var l = 54, rr = 16, t = 22, b = 46;
+    var pw = Math.max(w - l - rr, 10), ph = Math.max(h - t - b, 10);
+    var Fx = Math.max(2 * fsSafe(), 1.25 * fSafe(), 1e-3);
+    var Fy = Math.max(fsSafe() / 2, 1e-3);
+    var X = function (f) { return l + clamp(f / Fx, 0, 1) * pw; };
+    var Y = function (v) { return t + ph - clamp(v / Fy, 0, 1) * ph; };
+
+    g.fillStyle = c4; g.globalAlpha = 0.13;
+    g.fillRect(l, t, X(Fy) - l, ph);
     g.globalAlpha = 1;
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.beginPath(); g.moveTo(l, Y0); g.lineTo(w - r, Y0); g.stroke();
-    g.font = fnt(11); g.fillStyle = sub;
-    for (let f = 0; f <= FMAX - 2; f += 5) {
-      g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(f, X(f), Y0 + 6);
-    }
-    g.textAlign = 'center';
-    g.fillText('frequency (Hz)', l + (w - l - r) / 2, h - 12);
-
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
-    g.beginPath(); g.moveTo(X(S.fs / 2), t); g.lineTo(X(S.fs / 2), Y0); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('Nyquist ' + (S.fs / 2).toFixed(1) + ' Hz', X(S.fs / 2) + 5, t);
-
-    g.globalAlpha = 0.35; g.strokeStyle = '#D85A30'; g.lineWidth = 2;
-    for (let k = 1; k <= 4; k++) {
-      [k * S.fs - S.f, k * S.fs + S.f].forEach(fi => {
-        if (fi > 0.01 && fi <= FMAX && Math.abs(fi - S.f) > 0.01) {
-          g.beginPath(); g.moveTo(X(fi), Y0); g.lineTo(X(fi), Y1 + 24); g.stroke();
-        }
-      });
-    }
-    g.globalAlpha = 1;
-
-    const fa = Math.abs(folded());
-    if (Math.abs(fa - S.f) > 0.01) {
-      g.strokeStyle = '#D85A30'; g.lineWidth = 2.5;
-      g.beginPath(); g.moveTo(X(fa), Y0); g.lineTo(X(fa), Y1 + 12); g.stroke();
-      g.fillStyle = '#D85A30'; g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('ghost ' + fa.toFixed(1) + ' Hz', X(fa) + 5, Y1 + 12);
+    for (var q = 0; q <= 4; q++) {
+      var yv = Fy * q / 4;
+      g.beginPath(); g.moveTo(l, Y(yv)); g.lineTo(l + pw, Y(yv)); g.stroke();
+      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(yv.toFixed(1), l - 6, Y(yv));
     }
 
-    g.strokeStyle = '#378ADD'; g.lineWidth = 2.5;
-    g.beginPath(); g.moveTo(X(S.f), Y0); g.lineTo(X(S.f), Y1); g.stroke();
-    g.fillStyle = '#378ADD'; g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('signal ' + S.f.toFixed(1) + ' Hz', X(S.f) + 5, Y1);
+    var half = fsSafe() / 2;
+    var minGap = 46;
+    var everyN = Math.max(1, Math.ceil(minGap / Math.max(half / Fx * pw, 1)));
+    var maxK = Math.ceil(Fx / half);
+    for (var k = 0; k <= maxK; k++) {
+      var fv = k * half;
+      if (fv > Fx) break;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(fv), t); g.lineTo(X(fv), t + ph); g.stroke();
+      if (k % everyN !== 0) continue;
+      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(fv.toFixed(Fx < 12 ? 1 : 0), X(fv), t + ph + 6);
+    }
+
+    g.strokeStyle = c2; g.lineWidth = 2.4;
+    g.beginPath();
+    g.moveTo(X(0), Y(foldFreq(0)));
+    for (var kk = 1; kk <= maxK; kk++) {
+      var fb = Math.min(kk * half, Fx);
+      g.lineTo(X(fb), Y(foldFreq(fb)));
+      if (fb >= Fx) break;
+    }
+    g.stroke();
+
+    var fa = fAlias();
+    g.strokeStyle = c1; g.lineWidth = 1.4;
+    dashLine(g, X(S.f), t + ph, X(S.f), Y(fa), [5, 4]);
+    dashLine(g, X(S.f), Y(fa), l, Y(fa), [5, 4]);
+    g.fillStyle = c1;
+    g.beginPath(); g.arc(X(S.f), Y(fa), 5, 0, TAU); g.fill();
+
+    g.font = fnt(11); g.fillStyle = c1;
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('f = ' + S.f.toFixed(2) + ' Hz', clamp(X(S.f), l + 34, l + pw - 34), t + ph + 20);
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('shows as ' + fa.toFixed(2) + ' Hz', l + 6, clamp(Y(fa) - 5, t + 12, t + ph));
+
+    g.fillStyle = c4; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    var stripW = X(Fy) - l;
+    if (stripW > 210) g.fillText('below half the sample rate — nothing folds', l + 6, t + 6);
+    else if (stripW > 78) g.fillText('no folding', l + 6, t + 6);
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('frequency actually present (Hz)', l + pw / 2, h - 4);
+    g.save();
+    g.translate(12, t + ph / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = sub;
+    g.fillText('frequency the samples show (Hz)', 0, 0);
+    g.restore();
   }
 
-  function recalc() {
-    S.f = +$('fs1').value;
-    S.fs = +$('fsr').value;
-    updateUI();
+  function notes() {
+    var v = verdict(), fa = fAlias(), r = rSigned();
+    var recTxt;
+    if (S.interp === 'sinc') {
+      recTxt = 'The dashed orange curve is ideal sinc interpolation: every sample is replaced by the curve sin(&pi;u)/(&pi;u) and the results are added. That is exactly what a perfect low-pass filter at ' + (S.fs / 2).toFixed(2) + ' Hz would produce, so the reconstruction filter switch changes nothing here.';
+    } else if (S.filt) {
+      recTxt = 'The yellow staircase is the raw output of an ordinary converter, which holds each sample until the next arrives. The dashed orange curve is that staircase after the low-pass filter. The hold is not free: it costs a factor sinc(f<sub>a</sub>/f<sub>s</sub>) = ' + holdDroop().toFixed(3) + ' in amplitude (' + num(20 * Math.log10(Math.max(holdDroop(), 1e-9)), 2) + ' dB) and half a sample period of delay.';
+    } else {
+      recTxt = 'The yellow staircase is the raw converter output with no filter after it. Those hard steps carry copies of the signal at every multiple of ' + S.fs.toFixed(1) + ' Hz, which is what the reconstruction filter is there to remove. Switch it on to see the smooth result.';
+    }
+    var stateTxt = v === 'clear'
+      ? 'The dots pin down one wave and one wave only, so the rebuilt curve sits on top of the original.'
+      : (v === 'boundary'
+        ? 'The sample rate is exactly twice the signal frequency. With this clock offset every sample lands on a zero crossing, so the dots are all at zero and the rebuilt curve is flat. Drag the sampling clock offset in the extra controls and watch an amplitude appear from nowhere — whatever survives depends on luck, not design.'
+        : (atEdge()
+          ? 'The alias lands exactly on half the sample rate, ' + fa.toFixed(2) + ' Hz, which is the same degenerate case as f<sub>s</sub> = 2f: the samples carry no reliable amplitude, and with this clock offset they may be all zero. Move either slider slightly and the ghost reappears.'
+          : 'The dots fit a slower wave, ' + fa.toFixed(2) + ' Hz, just as well as they fit the real one'
+            + (r < 0 ? ', and turned upside down, because the offset from the nearest multiple of the sample rate is negative.' : '.')));
+    $('timeNote').innerHTML =
+      '<li>The <b style="font-weight:500;color:var(--series-1)">blue curve</b> is the real, continuous wave. The <b style="font-weight:500">black dots</b> are the only thing the converter keeps; the thin stems mark the instants it looked.</li>'
+      + '<li>' + stateTxt + '</li>'
+      + '<li>' + recTxt + '</li>'
+      + '<li>The time window is chosen to keep both the wave and the dots legible, so it changes as you move the sliders. Read the numbers off the axis rather than counting pixels.</li>';
+
+    var overlap = S.f > S.fs / 2 + EPS;
+    $('specNote').innerHTML =
+      '<li>The <b style="font-weight:500;color:var(--series-1)">solid blue triangle</b> at the centre is the signal itself: a cartoon of a baseband spectrum whose highest frequency is f = ' + S.f.toFixed(2) + ' Hz, drawn on both sides of zero as the mathematics requires. The tall blue stems mark the tone at &plusmn;' + S.f.toFixed(2) + ' Hz.</li>'
+      + '<li>The <b style="font-weight:500;color:var(--series-2)">dashed orange triangles</b> are the images. Sampling does not just measure the signal; it copies the whole spectrum to every whole multiple of the sample rate, ' + S.fs.toFixed(1) + ' Hz. They are as real as the original.</li>'
+      + '<li>' + (overlap
+        ? '<b style="font-weight:500;color:var(--text-bad)">The shaded band is where copies overlap.</b> Inside it two different frequencies contribute to the same place on the axis, and nothing downstream can separate them again. That overlap is aliasing, seen in the frequency domain.'
+        : 'No shading: the copies clear each other, because f is below half the sample rate. The gap between the triangle edge at ' + S.f.toFixed(2) + ' Hz and the copy edge at ' + (S.fs - S.f).toFixed(2) + ' Hz is the room an anti-alias filter needs to do its work.') + '</li>'
+      + '<li>Widening the signal or lowering the sample rate closes that gap. Those are the only two things a designer can change.</li>';
+
+    $('foldNote').innerHTML =
+      '<li>Read it as a lookup table. Find the frequency that is really present along the bottom axis, go up to the zigzag, and read across to the left for the frequency the samples will report.</li>'
+      + '<li>Inside the <b style="font-weight:500;color:var(--series-4)">shaded strip</b>, below half the sample rate, the line is a plain 45-degree diagonal: what goes in comes out. That strip is the only honest part of the axis.</li>'
+      + '<li>Past it the line creases and comes back down. The frequency axis is folded like an accordion at every multiple of ' + (S.fs / 2).toFixed(2) + ' Hz, which is where the name comes from.</li>'
+      + '<li>The <b style="font-weight:500;color:var(--series-1)">blue marker</b> is the current setting: ' + S.f.toFixed(2) + ' Hz in, ' + fAlias().toFixed(2) + ' Hz out. Every peak of the zigzag is a frequency that reports as ' + (S.fs / 2).toFixed(2) + ' Hz, and every valley is one that reports as 0 Hz and disappears.</li>';
   }
-  ['fs1', 'fsr'].forEach(id => $(id).addEventListener('input', recalc));
-  recalc();
-  function frame() { drawTime(); drawFreq(); requestAnimationFrame(frame); }
-  requestAnimationFrame(frame);
+
+  function cards() {
+    var v = verdict(), fa = fAlias(), r = rSigned();
+    var osr = fsSafe() / (2 * fSafe());
+    $('cNyq').textContent = (2 * S.f).toFixed(2) + ' Sa/s';
+    $('cOsr').textContent = osr.toFixed(2) + '×';
+    $('cOsrn').textContent = 'f' + 'ₛ' + ' ÷ 2f. Above 1.00 works; 1.00 exactly does not';
+    $('cAli').textContent = fa.toFixed(2) + ' Hz';
+    $('cAli').style.color = v === 'clear' ? '' : 'var(--text-bad)';
+    $('cAlin').textContent = v === 'clear'
+      ? 'the true frequency, correctly recovered'
+      : (fa < 1e-6
+        ? 'the wave reads as a constant and vanishes'
+        : (atEdge()
+          ? 'exactly half the sample rate — amplitude and direction are both unreliable here'
+          : '|f − f' + 'ₛ' + ' × round(f/f' + 'ₛ' + ')|' + (r < 0 ? ', phase inverted' : '')));
+    var vt = { clear: 'Clear', boundary: 'At the boundary', aliased: 'Aliased' };
+    $('cVer').textContent = vt[v];
+    $('cVer').style.color = v === 'clear' ? 'var(--text-good)' : (v === 'boundary' ? 'var(--text-warning)' : 'var(--text-bad)');
+    $('cVern').textContent = v === 'clear'
+      ? (S.fs).toFixed(1) + ' Sa/s is strictly above the Nyquist rate ' + (2 * S.f).toFixed(2) + ' Sa/s'
+      : (v === 'boundary'
+        ? 'equality case: f' + 'ₛ' + ' = 2f exactly. Nyquist demands f' + 'ₛ' + ' > 2f, so this fails'
+        : (S.fs).toFixed(1) + ' Sa/s is below the Nyquist rate ' + (2 * S.f).toFixed(2) + ' Sa/s');
+
+    var m = Math.round(S.f / fsSafe());
+    var v2 = verdict();
+    var lines = [
+      'Sample rate f' + 'ₛ' + ' = ' + S.fs.toFixed(1) + ' Sa/s, so the Nyquist limit is f' + 'ₛ' + '/2 = ' + (S.fs / 2).toFixed(2) + ' Hz.',
+      'Signal frequency f = ' + S.f.toFixed(2) + ' Hz, which is ' + (v2 === 'clear' ? 'below' : (v2 === 'boundary' ? 'exactly on' : 'above')) + ' that limit.',
+      'Nearest whole multiple of the sample rate: round(' + S.f.toFixed(2) + ' ÷ ' + S.fs.toFixed(1) + ') = ' + m.toFixed(0) + ', giving ' + (m * S.fs).toFixed(2) + ' Hz.',
+      'Signed distance to it: ' + S.f.toFixed(2) + ' − ' + (m * S.fs).toFixed(2) + ' = ' + num(rSigned(), 2) + ' Hz'
+        + (atEdge() ? ' — sitting exactly on half the sample rate, where the sign carries no meaning.'
+          : (rSigned() < 0 ? ' — negative, so the rebuilt wave comes back upside down.' : '.')),
+      'Apparent frequency: |' + num(rSigned(), 2) + '| = ' + fAlias().toFixed(2) + ' Hz.',
+      'Oversampling ratio: ' + S.fs.toFixed(1) + ' ÷ (2 × ' + S.f.toFixed(2) + ') = ' + (fsSafe() / (2 * fSafe())).toFixed(2) + '×, so the verdict is ' + vt[v2].toLowerCase() + '.'
+    ];
+    $('work').innerHTML = lines.map(function (s) { return '<li>' + s + '</li>'; }).join('');
+  }
+
+  function readouts() {
+    $('fSigv').textContent = S.f.toFixed(1) + ' Hz';
+    $('fSamv').textContent = S.fs.toFixed(1) + ' Sa/s';
+    $('nImgv').textContent = S.imgs.toFixed(0);
+    $('offsv').textContent = S.off.toFixed(2) + ' Ts';
+    $('bHold').classList.toggle('on', S.interp === 'hold');
+    $('bSinc').classList.toggle('on', S.interp === 'sinc');
+    $('bFiltOn').classList.toggle('on', S.filt);
+    $('bFiltOff').classList.toggle('on', !S.filt);
+  }
+
+  function redraw() {
+    readouts(); cards(); notes();
+    drawWheel(); drawTime(); drawSpec(); drawFold();
+  }
+
+  function readInputs() {
+    S.f = +$('fSig').value;
+    S.fs = +$('fSam').value;
+    S.imgs = +$('nImg').value;
+    S.off = +$('offs').value;
+    if (!isFinite(S.f) || S.f <= 0) S.f = 0.5;
+    if (!isFinite(S.fs) || S.fs <= 0) S.fs = 2;
+    redraw();
+  }
+
+  ['fSig', 'fSam', 'nImg', 'offs'].forEach(function (id) {
+    $(id).addEventListener('input', readInputs);
+  });
+  $('bHold').addEventListener('click', function () { S.interp = 'hold'; redraw(); });
+  $('bSinc').addEventListener('click', function () { S.interp = 'sinc'; redraw(); });
+  $('bFiltOn').addEventListener('click', function () { S.filt = true; redraw(); });
+  $('bFiltOff').addEventListener('click', function () { S.filt = false; redraw(); });
+
+  var TOUR = [
+    { f: 3, fs: 20, msg: 'Step 1 — f = 3 Hz sampled at 20 Sa/s, about 3.3 times faster than the Nyquist rate. The dots pin the wave down, the rebuilt curve sits on the real one, and in the spectrum the copies stand well clear of each other.' },
+    { f: 7, fs: 14, msg: 'Step 2 — f raised to 7 Hz and the rate dropped to 14 Sa/s, which is exactly twice f. This is the equality case, and it fails: every sample lands on a zero crossing, the rebuilt wave is a flat line, and the triangles in the spectrum touch edge to edge. Nyquist requires the rate to be strictly greater than 2f.' },
+    { f: 7, fs: 10, msg: 'Step 3 — same 7 Hz signal, rate cut to 10 Sa/s. Now the samples fit a 3 Hz wave, turned upside down, just as well as the 7 Hz one. The spectrum shows the copies overlapping, and the fold diagram maps 7 Hz onto 3 Hz.' },
+    { f: 10, fs: 10, msg: 'Step 4 — signal and sample rate now equal, 10 Hz against 10 Sa/s. Every sample catches the wave at the same point in its cycle, so the apparent frequency is 0 Hz: the wheel looks frozen and the wave reads as a constant. It has not stopped; you have stopped seeing it.' },
+    { f: 9, fs: 10, msg: 'Step 5 — f nudged down to 9 Hz at 10 Sa/s. The distance to the nearest multiple of the rate is now −1 Hz, so the apparent motion reverses: the wheel runs backwards at 1 turn a second. This is the wagon-wheel effect, and it is the same arithmetic as every other step.' }
+  ];
+  TOUR.forEach(function (st, i) {
+    $('t' + i).addEventListener('click', function () {
+      $('fSig').value = st.f; $('fSam').value = st.fs;
+      readInputs();
+      $('tourNote').textContent = st.msg;
+      for (var j = 0; j < TOUR.length; j++) $('t' + j).classList.toggle('on', j === i);
+    });
+  });
+
+  var lastInk = '';
+  function loop(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min(ts - lastTs, 50);
+    lastTs = ts;
+    tAnim += dt / 1000 * SLOW;
+    if (tAnim > 1e6) tAnim = 0;
+    var ink = cvv('--text-primary');
+    if (ink !== lastInk) { lastInk = ink; drawTime(); drawSpec(); drawFold(); }
+    drawWheel();
+    raf = requestAnimationFrame(loop);
+  }
+  function setPlaying(p) {
+    S.playing = p;
+    $('play').textContent = p ? 'Pause' : 'Play';
+    $('play').classList.toggle('on', p);
+    if (p && !raf) { lastTs = 0; raf = requestAnimationFrame(loop); }
+    if (!p && raf) { cancelAnimationFrame(raf); raf = 0; }
+    drawWheel();
+  }
+  $('play').addEventListener('click', function () { setPlaying(!S.playing); });
+
+  window.addEventListener('resize', redraw);
+  var darkQ = matchMedia('(prefers-color-scheme: dark)');
+  if (darkQ.addEventListener) darkQ.addEventListener('change', redraw);
+  else if (darkQ.addListener) darkQ.addListener(redraw);
+
+  readInputs();
+  setPlaying(!matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  window.__samplingProbe = function () {
+    var T = viewSpan(), worst = 0;
+    for (var i = 1; i < 20; i++) {
+      var tt = T * i / 20;
+      var got = recon(tt, Math.ceil(-S.off) - 96, Math.floor(T * fsSafe() - S.off) + 96);
+      var want = Math.sin(TAU * rSigned() * tt + TAU * Math.round(S.f / fsSafe()) * S.off);
+      worst = Math.max(worst, Math.abs(got - want));
+    }
+    return {
+      f: S.f, fs: S.fs, alias: fAlias(), signed: rSigned(),
+      osr: fsSafe() / (2 * fSafe()), verdict: verdict(),
+      nyqRate: 2 * S.f, droop: holdDroop(), span: viewSpan(),
+      reconError: worst,
+      cards: {
+        nyq: $('cNyq').textContent, osr: $('cOsr').textContent,
+        alias: $('cAli').textContent, verdict: $('cVer').textContent
+      }
+    };
+  };
 })();
 </script>
 </body>

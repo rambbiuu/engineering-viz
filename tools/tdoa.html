@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TDoA geolocation</title>
+<title>Time difference of arrival</title>
 <style>
 :root {
   --bg: #fbfaf7;
@@ -11,9 +11,17 @@
   --text-secondary: #5f5e5a;
   --text-muted: #8a8985;
   --text-warning: #854F0B;
+  --text-good: #3B6D11;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
   --surface-1: #f1efe8;
+  --surface-2: #ffffff;
+  --accent: #378ADD;
+  --series-1: #378ADD;
+  --series-2: #D85A30;
+  --series-3: #7F77DD;
+  --series-4: #1D9E75;
+  --emitter: #D4537E;
   --radius: 8px;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -24,197 +32,1226 @@
     --text-secondary: #b4b2a9;
     --text-muted: #888780;
     --text-warning: #FAC775;
+    --text-good: #C0DD97;
     --border: #34342f;
     --border-strong: #56554e;
     --surface-1: #262624;
+    --surface-2: #1f1f1d;
+    --accent: #6FB4F2;
+    --series-1: #6FB4F2;
+    --series-2: #FF8F5E;
+    --series-3: #A79FF0;
+    --series-4: #4FC79C;
+    --emitter: #F58BAE;
   }
 }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  line-height: 1.5;
-}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+.note { font-size: 13px; color: var(--text-muted); margin: 0 0 1.25rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
 input, button { font: inherit; color: inherit; }
-button {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 6px 14px;
-  cursor: pointer;
-}
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
 button:hover { background: var(--surface-1); }
-button.on { border-color: #378ADD; color: #378ADD; }
-button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.75rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
+.ctl input[type=range] { flex: 1; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
+.row .rd { font-size: 13px; color: var(--text-muted); }
+details { margin: 0.4rem 0 1rem; }
+summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
+.det { padding: 0.75rem 0 0.25rem; }
+.tour { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 1.25rem 0 0.5rem; }
+.tour button { padding: 5px 11px; font-size: 13px; }
+.tour .lbl { font-size: 13px; color: var(--text-secondary); }
+.narr { font-size: 13px; color: var(--text-secondary); margin: 0 0 0.5rem; min-height: 2.6em; }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 0; list-style: none; }
+.legend-note li { margin: 3px 0; display: flex; align-items: center; gap: 8px; }
+.sw { width: 14px; height: 4px; border-radius: 2px; flex: none; display: inline-block; }
+.sw.dot { width: 9px; height: 9px; border-radius: 50%; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.25rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .hd { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big.narrow { font-size: 17px; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var(--border); border-radius: var(--radius); }
+canvas { width: 100%; display: block; border: 0.5px solid var(--border); border-radius: var(--radius); }
+#cv1, #cv2 { cursor: crosshair; touch-action: none; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.35rem; margin: 0.5rem 0 0; font-variant-numeric: tabular-nums; }
+ol.work li { margin: 3px 0; }
+.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+.glossary dt { font-weight: 500; margin-top: 9px; }
+.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
+abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>TDoA geolocation</h1>
-<p class="sub">The other big way to find an emitter &mdash; no antenna arrays, no bearings. Several receiver sites timestamp the same signal; it arrives earliest at the nearest one. Each pair's arrival-time difference draws a curve of possible positions (a hyperbola), and the curves cross at one point: the emitter. Map is 10 &times; 6 km.</p>
+<h1>Time difference of arrival</h1>
+<p class="sub">Several receiver sites timestamp the same signal, and it reaches the nearest one first. Each pair of sites turns its arrival-time difference into a curve of possible positions, and the curves cross where the emitter is.</p>
+<p class="note">If bearings are more familiar, start with <a href="aoa-triangulation.html">AoA triangulation</a>. Map is 10 &times; 6 km. Drag any site or the emitter.</p>
 
-<div class="row" style="margin-bottom: 1.25rem;">
-  <span class="lbl">Receiver sites</span>
-  <button id="n3" class="on">3</button>
-  <button id="n4">4</button>
-  <button id="n5">5</button>
-  <span style="font-size: 13px; color: var(--text-muted);">each extra site adds another independent curve</span>
+<div class="grid2">
+  <div class="ctl">
+    <label for="sg">Clock error</label>
+    <input type="range" id="sg" min="0" max="500" step="5" value="50">
+    <span class="v" id="sgv">50 ns rms</span>
+  </div>
 </div>
 
-<p class="sub" style="margin: 0 0 6px; font-size: 13px;">Click anywhere on the map to move the emitter.</p>
-<canvas id="map" style="height: 420px;"></canvas>
+<div class="row">
+  <span class="lbl">Receiver sites</span>
+  <button id="n3" type="button" class="on">3</button>
+  <button id="n4" type="button">4</button>
+  <button id="n5" type="button">5</button>
+  <span class="rd">each extra site adds one more curve</span>
+</div>
+<div class="row">
+  <span class="lbl">Reference site</span>
+  <span id="refBtns" style="display: flex; gap: 8px; flex-wrap: wrap;"></span>
+  <span class="rd">every difference is measured against this one</span>
+</div>
+<div class="row">
+  <span class="lbl">Measurement</span>
+  <button id="roll" type="button">New measurement</button>
+  <button id="reset" type="button">Reset layout</button>
+  <button id="run" type="button">Freeze wave</button>
+</div>
 
-<div class="cards" id="cards"></div>
+<details id="expert">
+  <summary>Emitter position and error-free curves</summary>
+  <div class="det">
+    <div class="grid2">
+      <div class="ctl"><label for="ex">Emitter east</label><input type="range" id="ex" min="0.2" max="9.8" step="0.05" value="5.9"><span class="v" id="exv">5.90 km</span></div>
+      <div class="ctl"><label for="ey">Emitter north</label><input type="range" id="ey" min="0.2" max="5.8" step="0.05" value="3.6"><span class="v" id="eyv">3.60 km</span></div>
+    </div>
+    <div class="row">
+      <span class="lbl">Error-free curves</span>
+      <button id="tgTrue" type="button">Show</button>
+      <span class="rd">where the curves would sit with perfect clocks</span>
+    </div>
+  </div>
+</details>
 
-<p class="sub" style="margin-top: 2rem;">Compare with AoA triangulation: TDoA needs no knowledge of the signal's frequency and no antenna spacing tricks &mdash; but it demands that the sites share clocks synchronized to nanoseconds (1 &micro;s of clock error = 300 m of position error), and a signal with sharp timing structure to timestamp. AoA needs neither, but needs the phase-coherent array you have been studying. Note that three sites is the practical minimum in a plane, and extra sites overdetermine the fix &mdash; which is what lets a real system detect and reject a bad measurement.</p>
+<div class="tour">
+  <span class="lbl">Guided tour</span>
+  <button id="t1" type="button">1</button>
+  <button id="t2" type="button">2</button>
+  <button id="t3" type="button">3</button>
+  <button id="t4" type="button">4</button>
+  <button id="t5" type="button">5</button>
+</div>
+<p class="narr" id="narr">Press 1 to start. Each step moves the controls and says what changed.</p>
+
+<p class="sec"><b>1 &middot; The wave reaching the sites</b> <span>&mdash; one pulse, and the clock reading it makes at each site</span></p>
+<canvas id="cv1" style="height: 430px;" role="img" aria-label="Map of receiver sites with an expanding wavefront from the emitter and a timeline of arrival times"></canvas>
+<ul class="legend-note">
+  <li><span class="sw dot" style="background: var(--emitter);"></span>the emitter, where the pulse starts</li>
+  <li><span class="sw dot" style="background: var(--text-primary);"></span>a receiver site with a clock</li>
+  <li><span class="sw" style="background: var(--accent);"></span>the wavefront, expanding at the speed of light</li>
+  <li><span class="sw" style="background: var(--text-muted);"></span>timeline &mdash; arrival times after the first site</li>
+</ul>
+
+<p class="sec"><b>2 &middot; Curves, bands and the fix</b> <span>&mdash; each pair draws one curve; the band is the clock error</span></p>
+<canvas id="cv2" style="height: 430px;" role="img" aria-label="Hyperbolic position curves with uncertainty bands, the true emitter and the computed fix, with a magnified inset"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-1);"></span>one curve per site pair, measured</li>
+  <li><span class="sw" style="background: var(--series-1); opacity: 0.3; height: 9px;"></span>band &mdash; the curve &plusmn; one sigma</li>
+  <li><span class="sw dot" style="background: var(--emitter);"></span>true emitter position</li>
+  <li><span class="sw dot" style="background: var(--text-primary);"></span>the least-squares fix, and the inset zoom</li>
+</ul>
+
+<div class="cards" id="pairCards"></div>
+
+<p class="sec"><b>3 &middot; Timing error becomes position error</b> <span>&mdash; the exchange rate, and what geometry does to it</span></p>
+<canvas id="cv3" style="height: 300px;" role="img" aria-label="Position error in metres against clock error in nanoseconds, with the speed-of-light reference slope"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--text-muted);"></span>reference slope &mdash; 0.2998 m per ns</li>
+  <li><span class="sw" style="background: var(--series-2);"></span>that slope times <abbr title="Position dilution of precision: how much the site geometry multiplies a timing error on its way to becoming a position error. One is ideal.">PDOP</abbr></li>
+  <li><span class="sw" style="background: var(--series-1);"></span>measured rms miss over 24 draws</li>
+  <li><span class="sw dot" style="background: var(--emitter);"></span>this measurement, at this clock error</li>
+</ul>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Fix position</div>
+    <div class="big narrow" id="cFix">&mdash;</div>
+    <div class="ft">east, north, in km on this map</div>
+  </div>
+  <div class="card">
+    <div class="hd">Position error</div>
+    <div class="big" id="cErr">&mdash;</div>
+    <div class="ft" id="cErrF">fix to true emitter, in metres</div>
+  </div>
+  <div class="card">
+    <div class="hd">PDOP</div>
+    <div class="big" id="cDop">&mdash;</div>
+    <div class="ft" id="cDopF">geometry multiplier, 1 is ideal</div>
+  </div>
+  <div class="card">
+    <div class="hd">Residual</div>
+    <div class="big" id="cRes">&mdash;</div>
+    <div class="ft" id="cResF">how badly the ranges disagree, in metres</div>
+  </div>
+  <div class="card">
+    <div class="hd">Range per nanosecond</div>
+    <div class="big" id="cC">&mdash;</div>
+    <div class="ft" id="cCF">&mdash;</div>
+  </div>
+</div>
+
+<details>
+  <summary>Worked example &mdash; the arithmetic on the numbers now on screen</summary>
+  <div class="det"><ol class="work" id="work"></ol></div>
+</details>
+
+<p class="sub" style="margin-top: 1.5rem;">A nanosecond of clock error is 30 cm of range error, so a microsecond is 300 m &mdash; and the site geometry multiplies that by the PDOP before it reaches the answer. Drag the emitter outside the ring of sites and watch PDOP, and the expected miss with it, climb several times over for the same clocks.</p>
+
+<details>
+  <summary>The engineering lesson, and where this model simplifies</summary>
+  <div class="det">
+    <p class="sub" style="margin: 0 0 0.75rem;">TDoA buys freedom from the antenna array that AoA needs, and pays for it with a clock-synchronisation problem. The exchange rate is fixed by the speed of light and cannot be argued with: 0.2998 m per nanosecond of error between any two sites. What an engineer can change is the geometry, and that is what PDOP measures &mdash; keep the emitter inside the ring of sites and PDOP sits near 1, let it drift outside and PDOP climbs past 5, multiplying every nanosecond by five before it lands on the map. Three sites in a plane give exactly two independent curves for two unknowns, so the residual is always zero and a broken clock is undetectable; the fourth site is the one that lets the system notice it is being lied to.</p>
+    <p class="sub" style="margin: 0;">Simplifications made here, stated plainly. The map is a flat 10 &times; 6 km plane, not the curved earth. Every path is direct line of sight, with no multipath and no atmospheric delay &mdash; both of which add a positive, correlated bias that this Gaussian model does not capture. Clock errors are drawn independently per site from a normal distribution, so the error on any pair's difference has rms &radic;2 times the per-site figure. The sweep in section 3 solves each trial from a start near the true position, so it measures local sensitivity and not the chance of the solver landing somewhere else entirely.</p>
+  </div>
+</details>
+
+<p class="note">Next: <a href="link-budget.html">link budget</a> &mdash; whether the pulse is strong enough to timestamp at all.</p>
+
+<details>
+  <summary>Glossary</summary>
+  <div class="det">
+    <dl class="glossary">
+      <dt>Time difference of arrival (TDoA)</dt>
+      <dd>Finding an emitter from the differences between the times its signal reaches several receivers. No receiver needs to know when the signal was sent.</dd>
+      <dt>Hyperbola</dt>
+      <dd>The curve of all points whose distances to two fixed points differ by a fixed amount. One time difference gives one hyperbola; the emitter is somewhere on it. A difference of exactly zero flattens the curve into a straight line halfway between the two sites.</dd>
+      <dt>Reference site</dt>
+      <dd>The site every other site's timestamp is subtracted from. Which one you pick changes the curves drawn, but not the fix.</dd>
+      <dt>Clock error</dt>
+      <dd>How far a site's timestamp is from true time. Only the differences between sites matter, so a fault shared by all of them cancels out.</dd>
+      <dt>rms</dt>
+      <dd>Root mean square: the typical size of a fluctuating quantity. An rms clock error of 50 ns means most draws land within about 50 ns of zero.</dd>
+      <dt>Sigma (&sigma;)</dt>
+      <dd>One standard deviation, the same thing as the rms figure here. About two thirds of draws fall inside &plusmn;1&sigma;.</dd>
+      <dt>Least squares</dt>
+      <dd>Choosing the position that makes the leftover disagreement as small as possible when there are more measurements than unknowns.</dd>
+      <dt>Residual</dt>
+      <dd>What is left over after the best fit: how far the measurements still disagree with each other. Zero means there was no redundancy to check with.</dd>
+      <dt>PDOP</dt>
+      <dd>Position dilution of precision. Multiply the range error by PDOP to get the position error. It depends only on where the sites sit relative to the emitter, and it is evaluated here at the computed fix.</dd>
+      <dt>c</dt>
+      <dd>The speed of light, 299 792 458 m/s. Handily, that is 0.2998 m per nanosecond and 299.79 m per microsecond.</dd>
+    </dl>
+  </div>
+</details>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const S = { ex: 0.5, ey: 0.3, n: 3 };
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const TAU = Math.PI * 2;
+
+  const C = 0.299792458;          /* km per microsecond, and metres per nanosecond */
   const KMX = 10, KMY = 6;
-  const COLS = ['#7F77DD', '#1D9E75', '#D85A30', '#378ADD'];
+  const SWEEP_MAX = 500, SWEEP_N = 26, TRIALS = 24;
+  const RING_KM = 13, RING_MS = 2600;
+  const PAIRCOL = ['--series-1', '--series-2', '--series-3', '--series-4'];
 
   const LAYOUT = {
-    3: [[0.18, 0.82], [0.82, 0.82], [0.5, 0.16]],
-    4: [[0.16, 0.84], [0.84, 0.84], [0.84, 0.16], [0.16, 0.16]],
-    5: [[0.16, 0.84], [0.84, 0.84], [0.9, 0.4], [0.5, 0.12], [0.1, 0.4]]
+    3: [[1.8, 4.9], [8.2, 4.9], [5.0, 1.0]],
+    4: [[1.6, 5.0], [8.4, 5.0], [8.4, 1.0], [1.6, 1.0]],
+    5: [[1.6, 5.0], [8.4, 5.0], [9.0, 2.4], [5.0, 0.7], [1.0, 2.4]]
   };
-  const sites = () => LAYOUT[S.n];
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const km = p => ({ x: p[0] * KMX, y: p[1] * KMY });
-  const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
-  const emitterKm = () => ({ x: S.ex * KMX, y: S.ey * KMY });
+  const EX0 = 5.9, EY0 = 3.6;
+  const S = {
+    n: 3, ref: 0, sig: 50, seed: 1, ex: EX0, ey: EY0,
+    run: !reduceMotion, showTrue: false,
+    pos: LAYOUT[3].map(p => p.slice()), z: []
+  };
+  /* signed readouts: never print a negative zero, always a proper minus sign */
+  const sgnFix = (v, d) => (Number(v.toFixed(d)) < 0 ? '−' : '+') + Math.abs(v).toFixed(d);
+  const numFix = (v, d) => (Number(v.toFixed(d)) < 0 ? '−' : '') + Math.abs(v).toFixed(d);
 
-  function pairs() {
-    const ST = sites(), out = [];
-    for (let i = 1; i < ST.length; i++) {
-      out.push({ a: 0, b: i, col: COLS[(i - 1) % COLS.length] });
+  /* ---------- seeded randomness ---------- */
+  function mulberry32(a) {
+    let s = a >>> 0;
+    return function () {
+      s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gauss(rnd) {
+    const u = Math.max(rnd(), 1e-12), v = rnd();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v);
+  }
+  /* unit normals held fixed per site, so the slider scales one realisation smoothly */
+  function roll() {
+    const rnd = mulberry32(Math.imul(S.seed, 2654435761) + S.n * 7919 + 17);
+    S.z = [];
+    for (let i = 0; i < S.n; i++) S.z.push(gauss(rnd));
+  }
+
+  /* ---------- geometry ---------- */
+  const sx = i => S.pos[i][0], sy = i => S.pos[i][1];
+  const rangeTo = (i, x, y) => Math.max(Math.hypot(x - sx(i), y - sy(i)), 1e-9);
+  const trueRange = i => rangeTo(i, S.ex, S.ey);
+  const others = () => {
+    const o = [];
+    for (let i = 0; i < S.n; i++) if (i !== S.ref) o.push(i);
+    return o;
+  };
+  /* measured arrival time at site i, in microseconds, including its clock error */
+  const measT = i => trueRange(i) / C + (S.z[i] || 0) * S.sig / 1000;
+  const trueT = i => trueRange(i) / C;
+  /* measured range difference r_i - r_ref, in km */
+  const rhoOf = i => C * (measT(i) - measT(S.ref));
+  const rhoTrue = i => trueRange(i) - trueRange(S.ref);
+  /* one-sigma range error on a pair difference: two independent clocks */
+  const sigPairKm = () => Math.SQRT2 * C * S.sig / 1000;
+
+  /* ---------- weighted least squares on the range differences ----------
+     W = I - 11'/(1+n) whitens the shared reference clock, which makes the
+     answer identical to solving for position plus one common clock offset. */
+  function costAt(x, y, idx, rho) {
+    const rr = rangeTo(S.ref, x, y);
+    let ss = 0, sm = 0;
+    for (let k = 0; k < idx.length; k++) {
+      const e = rho[k] - (rangeTo(idx[k], x, y) - rr);
+      ss += e * e; sm += e;
+    }
+    return ss - sm * sm / (1 + idx.length);
+  }
+
+  function gridStart(idx, rho) {
+    let bx = KMX / 2, by = KMY / 2, bc = Infinity;
+    for (let i = 0; i <= 44; i++) {
+      const x = KMX * i / 44;
+      for (let j = 0; j <= 26; j++) {
+        const y = KMY * j / 26;
+        const c = costAt(x, y, idx, rho);
+        if (c < bc) { bc = c; bx = x; by = y; }
+      }
+    }
+    return { x: bx, y: by };
+  }
+
+  function gaussNewton(idx, rho, start) {
+    const n = idx.length;
+    const MAXIT = 40;
+    let x = start.x, y = start.y, ok = false, conv = false, iter = 0, used = 0;
+    if (n < 2) return { x: x, y: y, ok: false, conv: false, iter: 0 };
+    for (iter = 1; iter <= MAXIT; iter++) {
+      used = iter;
+      const rr = rangeTo(S.ref, x, y);
+      const arx = (x - sx(S.ref)) / rr, ary = (y - sy(S.ref)) / rr;
+      let m00 = 0, m01 = 0, m11 = 0, b0 = 0, b1 = 0, h0 = 0, h1 = 0, se = 0;
+      for (let k = 0; k < n; k++) {
+        const i = idx[k], ri = rangeTo(i, x, y);
+        const gx = (x - sx(i)) / ri - arx, gy = (y - sy(i)) / ri - ary;
+        const e = rho[k] - (ri - rr);
+        m00 += gx * gx; m01 += gx * gy; m11 += gy * gy;
+        b0 += gx * e; b1 += gy * e;
+        h0 += gx; h1 += gy; se += e;
+      }
+      const f = 1 / (1 + n);
+      m00 -= h0 * h0 * f; m01 -= h0 * h1 * f; m11 -= h1 * h1 * f;
+      b0 -= h0 * se * f; b1 -= h1 * se * f;
+      const det = m00 * m11 - m01 * m01;
+      if (!isFinite(det) || Math.abs(det) < 1e-12) break;
+      let dx = (m11 * b0 - m01 * b1) / det;
+      let dy = (m00 * b1 - m01 * b0) / det;
+      if (!isFinite(dx) || !isFinite(dy)) break;
+      const st = Math.hypot(dx, dy);
+      if (st > 2) { dx *= 2 / st; dy *= 2 / st; }
+      x += dx; y += dy;
+      if (!isFinite(x) || !isFinite(y) || Math.abs(x) > 400 || Math.abs(y) > 400) break;
+      if (st < 1e-9) { ok = true; conv = true; break; }
+      if (iter === MAXIT) ok = true;
+    }
+    const good = ok && isFinite(x) && isFinite(y);
+    return { x: x, y: y, ok: good, conv: good && conv, iter: used };
+  }
+
+  function solveFix() {
+    const idx = others();
+    const rho = idx.map(rhoOf);
+    if (idx.length < 2) return { ok: false, x: 0, y: 0, iter: 0 };
+    const g = gaussNewton(idx, rho, gridStart(idx, rho));
+    return g;
+  }
+
+  /* ---------- PDOP, from the site unit vectors plus a common clock column ---------- */
+  function inv3(A) {
+    const a = A[0][0], b = A[0][1], c = A[0][2];
+    const d = A[1][0], e = A[1][1], f = A[1][2];
+    const g = A[2][0], h = A[2][1], i = A[2][2];
+    const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    if (!isFinite(det) || Math.abs(det) < 1e-12) return null;
+    return [
+      [(e * i - f * h) / det, (c * h - b * i) / det, (b * f - c * e) / det],
+      [(f * g - d * i) / det, (a * i - c * g) / det, (c * d - a * f) / det],
+      [(d * h - e * g) / det, (b * g - a * h) / det, (a * e - b * d) / det]
+    ];
+  }
+  function pdopAt(x, y) {
+    const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (let i = 0; i < S.n; i++) {
+      const r = rangeTo(i, x, y);
+      const g = [(x - sx(i)) / r, (y - sy(i)) / r, 1];
+      for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) A[a][b] += g[a] * g[b];
+    }
+    const Q = inv3(A);
+    if (!Q) return null;
+    const v = Q[0][0] + Q[1][1];
+    if (!isFinite(v) || v <= 0) return null;
+    return Math.sqrt(v);
+  }
+
+  /* ---------- residual, invariant to the choice of reference ---------- */
+  function residualM(fx, fy) {
+    const d = [];
+    for (let i = 0; i < S.n; i++) {
+      const rho = i === S.ref ? 0 : rhoOf(i);
+      d.push(rho - rangeTo(i, fx, fy));
+    }
+    let m = 0;
+    d.forEach(v => { m += v; });
+    m /= d.length;
+    let sse = 0;
+    d.forEach(v => { sse += (v - m) * (v - m); });
+    const dof = S.n - 3;
+    if (dof <= 0) return 0;
+    return Math.sqrt(Math.max(sse, 0) / dof) * 1000;
+  }
+
+  /* ---------- hyperbola points, in km ----------
+     Signed single branch: points P with dist(P,F1) - dist(P,F2) = 2a. */
+  function hyperT(F1, F2, a) {
+    const cH = Math.hypot(F1[0] - F2[0], F1[1] - F2[1]) / 2;
+    const b = Math.sqrt(Math.max(cH * cH - a * a, 1e-12));
+    const tb = Math.asinh(30 / Math.max(b, 1e-3));
+    const ta = Math.abs(a) > 1e-3 ? Math.acosh(Math.max(30 / Math.abs(a), 1)) : 8;
+    return clamp(Math.min(tb, ta), 1.2, 7);
+  }
+  function hyperPts(F1, F2, aS, T, allowClamp) {
+    const cH = Math.hypot(F1[0] - F2[0], F1[1] - F2[1]) / 2;
+    if (!(cH > 1e-6)) return null;
+    const lim = cH - 1e-6;
+    let a = aS;
+    if (Math.abs(a) >= lim) {
+      if (!allowClamp) return null;
+      a = a < 0 ? -lim : lim;
+    }
+    const b = Math.sqrt(Math.max(cH * cH - a * a, 0));
+    const mx = (F1[0] + F2[0]) / 2, my = (F1[1] + F2[1]) / 2;
+    const ux = (F2[0] - F1[0]) / (2 * cH), uy = (F2[1] - F1[1]) / (2 * cH);
+    const vx = -uy, vy = ux;
+    const out = [];
+    const N = 180;
+    for (let k = 0; k <= N; k++) {
+      const t = -T + 2 * T * k / N;
+      const xp = a * Math.cosh(t), yp = b * Math.sinh(t);
+      out.push([mx + ux * xp + vx * yp, my + uy * xp + vy * yp]);
     }
     return out;
   }
 
+  /* ---------- canvas helpers ---------- */
   function fit(c) {
-    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
-    return [r.width, r.height];
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [Math.max(r.width, 1), Math.max(r.height, 1)];
   }
-
-  function drawHyperbola(g, w, h, F1, F2, aS, col) {
-    const cH = dist(F1, F2) / 2;
-    if (Math.abs(aS) >= cH - 1e-6) return;
-    const b = Math.sqrt(cH * cH - aS * aS);
-    const mx = (F1.x + F2.x) / 2, my = (F1.y + F2.y) / 2;
-    const ux = (F2.x - F1.x) / (2 * cH), uy = (F2.y - F1.y) / (2 * cH);
-    const vx = -uy, vy = ux;
-    const X = x => x / KMX * w, Y = y => y / KMY * h;
-    g.strokeStyle = col; g.lineWidth = 1.8;
+  /* isotropic, centred map box */
+  function mapBox(w, h, pad, botExtra) {
+    const availW = Math.max(w - 2 * pad, 20);
+    const availH = Math.max(h - 2 * pad - (botExtra || 0), 20);
+    const s = Math.min(availW / KMX, availH / KMY);
+    return {
+      s: s,
+      ox: pad + (availW - s * KMX) / 2,
+      oy: pad + (availH - s * KMY) / 2,
+      w: s * KMX, h: s * KMY
+    };
+  }
+  const mkX = m => (x => m.ox + x * m.s);
+  const mkY = m => (y => m.oy + (KMY - y) * m.s);
+  function ctext(g, s, x, y, lo, hi) {
+    const half = g.measureText(s).width / 2;
+    g.fillText(s, clamp(x, lo + half, hi - half), y);
+  }
+  function poly(g, pts, X, Y) {
     g.beginPath();
-    let first = true;
-    for (let t = -3.2; t <= 3.2; t += 0.04) {
-      const xp = aS * Math.cosh(t), yp = b * Math.sinh(t);
-      const gx = mx + ux * xp + vx * yp, gy = my + uy * xp + vy * yp;
-      if (first) { g.moveTo(X(gx), Y(gy)); first = false; } else g.lineTo(X(gx), Y(gy));
+    for (let i = 0; i < pts.length; i++) {
+      const px = X(pts[i][0]), py = Y(pts[i][1]);
+      if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
     }
+  }
+  function gridBox(g, m, X, Y, step) {
+    g.strokeStyle = cvv('--border'); g.lineWidth = 0.5;
+    for (let i = 0; i <= KMX; i += step) {
+      g.beginPath(); g.moveTo(X(i), Y(0)); g.lineTo(X(i), Y(KMY)); g.stroke();
+    }
+    for (let j = 0; j <= KMY; j += step) {
+      g.beginPath(); g.moveTo(X(0), Y(j)); g.lineTo(X(KMX), Y(j)); g.stroke();
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(m.ox, m.oy, m.w, m.h);
+  }
+  function siteGlyph(g, px, py, colour) {
+    g.strokeStyle = colour; g.lineWidth = 1.4;
+    g.beginPath();
+    g.moveTo(px - 5, py); g.lineTo(px, py - 13); g.lineTo(px + 5, py);
     g.stroke();
+    g.fillStyle = colour;
+    g.beginPath(); g.arc(px, py - 15, 2.6, 0, TAU); g.fill();
+    g.beginPath(); g.arc(px, py, 2.6, 0, TAU); g.fill();
+  }
+  function emitterGlyph(g, px, py, colour, r) {
+    g.fillStyle = colour;
+    g.beginPath(); g.arc(px, py, r, 0, TAU); g.fill();
+    g.strokeStyle = colour; g.lineWidth = 1.2;
+    for (let k = 1; k <= 2; k++) {
+      g.beginPath();
+      g.arc(px, py, r + 3.5 * k, -Math.PI * 0.85, -Math.PI * 0.15);
+      g.stroke();
+    }
+  }
+  function crossGlyph(g, px, py, colour, r) {
+    g.strokeStyle = colour; g.lineWidth = 1.8;
+    g.beginPath();
+    g.moveTo(px - r, py); g.lineTo(px + r, py);
+    g.moveTo(px, py - r); g.lineTo(px, py + r);
+    g.stroke();
+    g.beginPath(); g.arc(px, py, r * 0.55, 0, TAU); g.stroke();
   }
 
-  function draw() {
-    const c = $('map'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+  /* ---------- cached solution ---------- */
+  const V = {};
+  function recompute() {
+    const idx = others();
+    V.idx = idx;
+    V.rho = idx.map(rhoOf);
+    V.fix = solveFix();
+    V.offMap = V.fix.ok && (V.fix.x < -4 || V.fix.x > KMX + 4 || V.fix.y < -4 || V.fix.y > KMY + 4);
+    V.pdop = V.fix.ok && !V.offMap ? pdopAt(V.fix.x, V.fix.y) : pdopAt(S.ex, S.ey);
+    V.errM = V.fix.ok ? Math.hypot(V.fix.x - S.ex, V.fix.y - S.ey) * 1000 : null;
+    V.resM = V.fix.ok ? residualM(V.fix.x, V.fix.y) : null;
+    V.sweep = sweep();
+  }
+
+  function sweep() {
+    const idx = others();
+    const out = [];
+    if (idx.length < 2) return out;
+    for (let k = 0; k < SWEEP_N; k++) {
+      const sg = SWEEP_MAX * k / (SWEEP_N - 1);
+      if (sg === 0) { out.push({ sig: 0, rms: 0 }); continue; }
+      const rnd = mulberry32(Math.imul(S.seed, 40503) + k * 104729 + S.n * 31 + 5);
+      let acc = 0, got = 0;
+      for (let t = 0; t < TRIALS; t++) {
+        const z = [];
+        for (let i = 0; i < S.n; i++) z.push(gauss(rnd));
+        const rho = idx.map(i => rhoTrue(i) + C * (z[i] - z[S.ref]) * sg / 1000);
+        const f = gaussNewton(idx, rho, { x: S.ex, y: S.ey });
+        if (f.ok) {
+          const d = Math.hypot(f.x - S.ex, f.y - S.ey) * 1000;
+          if (isFinite(d)) { acc += d * d; got++; }
+        }
+      }
+      out.push({ sig: sg, rms: got ? Math.sqrt(acc / got) : null });
+    }
+    return out;
+  }
+
+  /* ---------- section 1: the wave and the timeline ---------- */
+  let ringKm = 0;
+
+  function drawMap() {
+    const c = $('cv1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const ST = sites();
+    const txt = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    const acc = cvv('--accent'), emc = cvv('--emitter');
+    const TL = 118;
+    const m = mapBox(w, h, 10, TL);
+    const X = mkX(m), Y = mkY(m);
+
+    gridBox(g, m, X, Y, 1);
+
+    const ex = X(S.ex), ey = Y(S.ey);
+
+    g.save();
+    g.beginPath(); g.rect(m.ox, m.oy, m.w, m.h); g.clip();
+    for (let k = 0; k < 3; k++) {
+      const rk = ringKm - k * 1.7;
+      if (rk <= 0) continue;
+      g.globalAlpha = clamp(0.55 - k * 0.16, 0.06, 0.6) * clamp(1.15 - rk / RING_KM, 0.12, 1);
+      g.strokeStyle = acc; g.lineWidth = k === 0 ? 2.2 : 1.2;
+      g.beginPath(); g.arc(ex, ey, rk * m.s, 0, TAU); g.stroke();
+    }
+    g.globalAlpha = 1;
+    g.restore();
+
+    /* rays to each site, dimmed until the front arrives */
+    for (let i = 0; i < S.n; i++) {
+      const reached = ringKm >= trueRange(i);
+      g.strokeStyle = mut; g.lineWidth = 1;
+      g.globalAlpha = reached ? 0.5 : 0.2;
+      g.setLineDash([3, 4]);
+      g.beginPath(); g.moveTo(ex, ey); g.lineTo(X(sx(i)), Y(sy(i))); g.stroke();
+      g.setLineDash([]);
+      g.globalAlpha = 1;
+    }
+
+    emitterGlyph(g, ex, ey, emc, 5);
+    g.fillStyle = emc; g.font = fnt(11.5);
+    g.textAlign = 'center'; g.textBaseline = 'bottom';
+    ctext(g, 'emitter', ex, ey - 13, m.ox, m.ox + m.w);
+
+    for (let i = 0; i < S.n; i++) {
+      const px = X(sx(i)), py = Y(sy(i));
+      const reached = ringKm >= trueRange(i);
+      if (reached) {
+        g.strokeStyle = acc; g.lineWidth = 1.6; g.globalAlpha = 0.85;
+        g.beginPath(); g.arc(px, py, 9, 0, TAU); g.stroke();
+        g.globalAlpha = 1;
+      }
+      siteGlyph(g, px, py, txt);
+      g.fillStyle = sub; g.font = fnt(11.5);
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      ctext(g, 'site ' + (i + 1), px, py + 5, m.ox, m.ox + m.w);
+      if (reached) {
+        g.fillStyle = acc; g.font = fnt(11);
+        g.textBaseline = 'bottom'; g.textAlign = 'center';
+        ctext(g, (measT(i) - firstT()).toFixed(2) + ' µs', px, py - 20, m.ox, m.ox + m.w);
+      }
+    }
+
+    g.fillStyle = mut; g.font = fnt(11);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    const slow = Math.round(RING_MS / 1000 / (RING_KM / C * 1e-6) / 1000) * 1000;
+    g.fillText('slowed about ' + slow.toLocaleString('en-GB') + ' times · 1 km grid', m.ox + 6, m.oy + 5);
+
+    drawTimeline(g, w, h, TL);
+  }
+
+  const firstT = () => {
+    let t = Infinity;
+    for (let i = 0; i < S.n; i++) t = Math.min(t, measT(i));
+    return isFinite(t) ? t : 0;
+  };
+
+  function drawTimeline(g, w, h, TL) {
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    const acc = cvv('--accent'), bd = cvv('--border');
+    const l = 14, r = 14;
+    const y0 = h - TL + 44;
+    const t0 = firstT();
+    let span = 0.5;
+    for (let i = 0; i < S.n; i++) span = Math.max(span, measT(i) - t0);
+    span *= 1.16;
+    const X = t => l + clamp(t / span, 0, 1) * (w - l - r);
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let i = 1; i < KMX; i++) {
-      g.beginPath(); g.moveTo(w * i / KMX, 0); g.lineTo(w * i / KMX, h); g.stroke();
+    const step = span > 12 ? 5 : span > 5 ? 2 : span > 2 ? 1 : 0.5;
+    for (let t = 0; t <= span + 1e-9; t += step) {
+      g.beginPath(); g.moveTo(X(t), y0 - 20); g.lineTo(X(t), y0 + 5); g.stroke();
+      g.fillStyle = mut; g.font = fnt(10);
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      ctext(g, t.toFixed(step < 1 ? 1 : 0), X(t), y0 + 22, 0, w);
     }
-    for (let i = 1; i < KMY; i++) {
-      g.beginPath(); g.moveTo(0, h * i / KMY); g.lineTo(w, h * i / KMY); g.stroke();
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, y0); g.lineTo(w - r, y0); g.stroke();
+
+    /* moving cursor tied to the expanding wavefront */
+    const rel = ringKm / C - t0 + firstTTrue();
+    if (ringKm > 0 && rel >= -span * 0.05 && rel <= span * 1.05) {
+      g.strokeStyle = acc; g.lineWidth = 1.2; g.globalAlpha = 0.7;
+      g.beginPath(); g.moveTo(X(rel), y0 - 22); g.lineTo(X(rel), y0 + 6); g.stroke();
+      g.globalAlpha = 1;
     }
 
-    const E = emitterKm();
-    pairs().forEach(p => {
-      const F1 = km(ST[p.a]), F2 = km(ST[p.b]);
-      const aS = (dist(E, F1) - dist(E, F2)) / 2;
-      drawHyperbola(g, w, h, F1, F2, aS, p.col);
+    const ticks = [];
+    for (let i = 0; i < S.n; i++) {
+      ticks.push({ i: i, tm: measT(i) - t0, tt: trueT(i) - firstTTrue(), reached: ringKm >= trueRange(i) });
+    }
+    ticks.sort((a, b) => a.tm - b.tm);
+    g.font = fnt(10.5);
+    const edge = [-1e9, -1e9];
+    ticks.forEach(tk => {
+      const px = X(tk.tm), pt = X(tk.tt);
+      const lab = 's' + (tk.i + 1) + '  +' + tk.tm.toFixed(2);
+      const half = g.measureText(lab).width / 2;
+      let row = 0;
+      if (px - half < edge[0] + 5) row = px - half < edge[1] + 5 ? 0 : 1;
+      edge[row] = Math.max(edge[row], px + half);
+      const top = y0 - 13 - row * 13;
+      if (Math.abs(pt - px) > 2) {
+        g.strokeStyle = mut; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(pt, y0 - 6); g.lineTo(pt, y0 + 4); g.stroke();
+      }
+      g.strokeStyle = tk.reached ? cvv('--text-primary') : mut;
+      g.lineWidth = tk.reached ? 2 : 1;
+      g.beginPath(); g.moveTo(px, top); g.lineTo(px, y0 + 4); g.stroke();
+      g.fillStyle = tk.reached ? cvv('--text-primary') : mut;
+      g.textAlign = 'center'; g.textBaseline = 'bottom';
+      ctext(g, lab, px, top - 3, 0, w);
     });
 
-    ST.forEach((st, i) => {
-      const sx = st[0] * w, sy = st[1] * h;
-      g.fillStyle = cvv('--text-primary');
-      g.beginPath(); g.arc(sx, sy, 7, 0, 7); g.fill();
-      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center';
-      const above = st[1] < 0.5;
-      g.textBaseline = above ? 'bottom' : 'top';
-      g.fillText('site ' + (i + 1), sx, above ? sy - 12 : sy + 12);
+    g.fillStyle = sub; g.font = fnt(11);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('arrival time after the first site, µs — thin mark is the error-free time', l, y0 + 36);
+  }
+  const firstTTrue = () => {
+    let t = Infinity;
+    for (let i = 0; i < S.n; i++) t = Math.min(t, trueT(i));
+    return isFinite(t) ? t : 0;
+  };
+
+  /* ---------- section 2: curves, bands, fix ---------- */
+  function drawCurves(g, X, Y, lw) {
+    const sp = sigPairKm();
+    V.idx.forEach((i, k) => {
+      const F1 = S.pos[S.ref], F2 = S.pos[i];
+      const cH = Math.hypot(F1[0] - F2[0], F1[1] - F2[1]) / 2;
+      if (!(cH > 1e-6)) return;
+      const a = -V.rho[k] / 2;
+      if (Math.abs(a) >= cH - 1e-6) return;
+      const T = hyperT(F1, F2, a);
+      const col = cvv(PAIRCOL[k % PAIRCOL.length]);
+
+      if (sp > 1e-9) {
+        const lo = hyperPts(F1, F2, -(V.rho[k] + sp) / 2, T, true);
+        const hi = hyperPts(F1, F2, -(V.rho[k] - sp) / 2, T, true);
+        if (lo && hi) {
+          g.beginPath();
+          for (let q = 0; q < lo.length; q++) {
+            const px = X(lo[q][0]), py = Y(lo[q][1]);
+            if (q === 0) g.moveTo(px, py); else g.lineTo(px, py);
+          }
+          for (let q = hi.length - 1; q >= 0; q--) g.lineTo(X(hi[q][0]), Y(hi[q][1]));
+          g.closePath();
+          g.fillStyle = col; g.globalAlpha = 0.16; g.fill(); g.globalAlpha = 1;
+        }
+      }
+
+      if (S.showTrue) {
+        const tp = hyperPts(F1, F2, -rhoTrue(i) / 2, T, false);
+        if (tp) {
+          poly(g, tp, X, Y);
+          g.strokeStyle = col; g.lineWidth = 1; g.setLineDash([2, 4]);
+          g.globalAlpha = 0.8; g.stroke();
+          g.globalAlpha = 1; g.setLineDash([]);
+        }
+      }
+
+      const pts = hyperPts(F1, F2, a, T, false);
+      if (pts) {
+        poly(g, pts, X, Y);
+        g.strokeStyle = col; g.lineWidth = lw; g.stroke();
+      }
     });
-
-    const ex = S.ex * w, ey = S.ey * h;
-    g.fillStyle = '#D4537E';
-    g.beginPath(); g.arc(ex, ey, 6.5, 0, 7); g.fill();
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('emitter', ex, ey - 11);
-
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('each curve = all points matching one pair’s time difference', 10, 8);
   }
 
+  function drawFixPanel() {
+    const c = $('cv2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const txt = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    const emc = cvv('--emitter'), acc = cvv('--accent');
+    const m = mapBox(w, h, 10, 0);
+    const X = mkX(m), Y = mkY(m);
+
+    gridBox(g, m, X, Y, 1);
+
+    g.save();
+    g.beginPath(); g.rect(m.ox, m.oy, m.w, m.h); g.clip();
+    drawCurves(g, X, Y, 1.8);
+    g.restore();
+
+    for (let i = 0; i < S.n; i++) {
+      const px = X(sx(i)), py = Y(sy(i));
+      if (i === S.ref) {
+        g.strokeStyle = acc; g.lineWidth = 1.4;
+        g.beginPath(); g.arc(px, py, 10, 0, TAU); g.stroke();
+      }
+      siteGlyph(g, px, py, txt);
+      g.fillStyle = i === S.ref ? acc : sub; g.font = fnt(11.5);
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      ctext(g, i === S.ref ? 'site ' + (i + 1) + ' (ref)' : 'site ' + (i + 1),
+        px, py + 5, m.ox, m.ox + m.w);
+    }
+
+    emitterGlyph(g, X(S.ex), Y(S.ey), emc, 5);
+
+    /* the magnified inset */
+    const iw = clamp(Math.min(w * 0.36, m.h * 0.52), 118, 200);
+    const ix = m.ox + m.w - iw - 8, iy = m.oy + m.h - iw - 8;
+    let cxk = S.ex, cyk = S.ey, spanKm = 0.05;
+    const pd = V.pdop === null ? 1 : clamp(V.pdop, 0.2, 20);
+    if (V.fix.ok && !V.offMap) {
+      cxk = (S.ex + V.fix.x) / 2; cyk = (S.ey + V.fix.y) / 2;
+      const miss = Math.hypot(V.fix.x - S.ex, V.fix.y - S.ey);
+      spanKm = Math.max(0.04, 8 * pd * C * S.sig / 1000, 3 * miss);
+    } else {
+      spanKm = Math.max(0.4, 8 * pd * C * S.sig / 1000);
+    }
+    spanKm = clamp(spanKm, 0.03, 14);
+    const isc = iw / spanKm;
+    const IX = x => ix + iw / 2 + (x - cxk) * isc;
+    const IY = y => iy + iw / 2 - (y - cyk) * isc;
+
+    /* the window this inset shows, marked on the main map */
+    const boxPx = spanKm * m.s;
+    if (boxPx > 3) {
+      g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([3, 3]);
+      g.strokeRect(X(cxk) - boxPx / 2, Y(cyk) - boxPx / 2, boxPx, boxPx);
+      g.setLineDash([]);
+    } else {
+      g.strokeStyle = mut; g.lineWidth = 1;
+      g.beginPath(); g.arc(X(cxk), Y(cyk), 5, 0, TAU); g.stroke();
+    }
+
+    g.fillStyle = cvv('--surface-2');
+    g.fillRect(ix, iy, iw, iw);
+    g.save();
+    g.beginPath(); g.rect(ix, iy, iw, iw); g.clip();
+    drawCurves(g, IX, IY, 1.5);
+    emitterGlyph(g, IX(S.ex), IY(S.ey), emc, 4);
+    if (V.fix.ok && !V.offMap) crossGlyph(g, IX(V.fix.x), IY(V.fix.y), txt, 7);
+    g.restore();
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(ix, iy, iw, iw);
+
+    const barKm = niceSpan(spanKm / 3);
+    const barPx = barKm * isc;
+    g.strokeStyle = mut; g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(ix + 8, iy + iw - 10); g.lineTo(ix + 8 + barPx, iy + iw - 10);
+    g.stroke();
+    g.fillStyle = mut; g.font = fnt(10);
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText(barKm >= 1 ? barKm.toFixed(1) + ' km' : (barKm * 1000).toFixed(0) + ' m',
+      ix + 8, iy + iw - 13);
+    g.fillStyle = sub; g.font = fnt(10.5);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('zoom on the crossing', ix + 6, iy + 4);
+
+    if (V.fix.ok && !V.offMap) {
+      const fx = X(V.fix.x), fy = Y(V.fix.y);
+      crossGlyph(g, fx, fy, txt, 7);
+      g.fillStyle = txt; g.font = fnt(11.5);
+      g.textAlign = 'center'; g.textBaseline = 'bottom';
+      const lab = V.errM === null ? 'fix' : 'fix, ' + fmtErr(V.errM) + ' out';
+      ctext(g, lab, fx, fy - 11, m.ox, m.ox + m.w);
+    } else {
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(11.5);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(V.offMap
+        ? 'the fix has run off the map, ' + fmtErr(V.errM) + ' away'
+        : 'no fix — the sites and the emitter are almost in a line',
+        m.ox + 6, m.oy + 20);
+    }
+
+    g.fillStyle = mut; g.font = fnt(11);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('each curve holds every position matching one pair’s time difference',
+      m.ox + 6, m.oy + 5);
+  }
+
+  function niceSpan(v) {
+    if (!(v > 0)) return 0.01;
+    const e = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+    const f = v / e;
+    return (f >= 5 ? 5 : f >= 2 ? 2 : 1) * e;
+  }
+  function niceUp(v) {
+    if (!(v > 0) || !isFinite(v)) return 1;
+    const e = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+    const f = v / e;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+  }
+  function fmtErr(mtr) {
+    if (!isFinite(mtr)) return '—';
+    if (mtr >= 1000) return (mtr / 1000).toFixed(2) + ' km';
+    if (mtr >= 100) return mtr.toFixed(0) + ' m';
+    return mtr.toFixed(1) + ' m';
+  }
+
+  /* ---------- section 3: error against clock error ---------- */
+  function drawSweep() {
+    const c = $('cv3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 58, r = 116, t = 16, b = 44;
+    const X = s => l + (s / SWEEP_MAX) * (w - l - r);
+    const pd = V.pdop;
+
+    let top = C * SWEEP_MAX * 1.2;
+    if (pd !== null) top = Math.max(top, pd * C * SWEEP_MAX * 1.2);
+    V.sweep.forEach(p => { if (p.rms !== null && isFinite(p.rms)) top = Math.max(top, p.rms * 1.15); });
+    if (V.errM !== null && isFinite(V.errM)) top = Math.max(top, V.errM * 1.15);
+    top = clamp(niceUp(top), 60, 6000);
+    const Y = v => t + (1 - clamp(v, 0, top) / top) * (h - t - b);
+
+    g.font = fnt(11);
+    for (let k = 0; k <= 5; k++) {
+      const v = top * k / 5;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    for (let s = 0; s <= SWEEP_MAX; s += 100) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(s), t); g.lineTo(X(s), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(s.toFixed(0), X(s), h - b + 6);
+    }
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('clock error per site, ns rms  (500 ns = 0.5 µs)', (l + w - r) / 2, h - b + 22);
+    g.save();
+    g.translate(13, (t + h - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillStyle = sub; g.fillText('position error, m', 0, 0);
+    g.restore();
+
+    /* reference slope: c times sigma, the raw exchange rate */
+    const yRef = clamp(Y(C * SWEEP_MAX), t + 20, h - b - 20);
+    g.strokeStyle = mut; g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(SWEEP_MAX), Y(C * SWEEP_MAX)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = mut; g.font = fnt(10.5);
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText('c × σ = 0.2998 m/ns', w - r + 6, yRef);
+    g.fillText('1 µs would be 300 m', w - r + 6, yRef + 14);
+
+    /* GPS-class sync marker; the note sits top-left, where a rising curve never reaches */
+    g.fillStyle = mut;
+    g.beginPath(); g.arc(X(10), Y(C * 10), 3.2, 0, TAU); g.fill();
+    g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('grey dot: 10 ns → 3.0 m, GPS-class sync', l + 8, t + 3);
+
+    /* PDOP-scaled prediction */
+    if (pd !== null && isFinite(pd)) {
+      g.strokeStyle = cvv('--series-2'); g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(SWEEP_MAX), Y(pd * C * SWEEP_MAX)); g.stroke();
+      g.fillStyle = cvv('--series-2'); g.font = fnt(10.5);
+      g.textAlign = 'left'; g.textBaseline = 'middle';
+      let yPd = clamp(Y(pd * C * SWEEP_MAX), t + 8, h - b - 8);
+      if (Math.abs(yPd - yRef) < 26) yPd = clamp(yRef - 18, t + 8, h - b - 8);
+      g.fillText('PDOP ' + pd.toFixed(2) + ' × cσ', w - r + 6, yPd);
+    }
+
+    /* measured rms miss */
+    g.strokeStyle = cvv('--series-1'); g.lineWidth = 2;
+    g.beginPath();
+    let started = false;
+    V.sweep.forEach(p => {
+      if (p.rms === null || !isFinite(p.rms)) return;
+      const px = X(p.sig), py = Y(p.rms);
+      if (!started) { g.moveTo(px, py); started = true; } else g.lineTo(px, py);
+    });
+    if (started) g.stroke();
+
+    /* this measurement */
+    if (V.errM !== null && isFinite(V.errM)) {
+      const px = X(S.sig), py = Y(V.errM);
+      g.fillStyle = cvv('--emitter');
+      g.beginPath(); g.arc(px, py, 5, 0, TAU); g.fill();
+      g.fillStyle = cvv('--emitter'); g.font = fnt(11);
+      g.textBaseline = 'bottom';
+      const right = px > l + (w - l - r) * 0.66;
+      g.textAlign = right ? 'right' : 'center';
+      g.fillText(fmtErr(V.errM) + ' now', right ? px - 8 : px, py - (right ? 2 : 8));
+    }
+    if (pd === null) {
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(11);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText('geometry is degenerate — move a site off the line', l + 6, t + 4);
+    }
+  }
+
+  /* ---------- readouts ---------- */
   function updateUI() {
-    const ST = sites(), E = emitterKm();
-    const box = $('cards');
+    $('sgv').textContent = S.sig.toFixed(0) + ' ns rms';
+    $('exv').textContent = S.ex.toFixed(2) + ' km';
+    $('eyv').textContent = S.ey.toFixed(2) + ' km';
+
+    const box = $('pairCards');
     box.innerHTML = '';
-    pairs().forEach(p => {
-      const F1 = km(ST[p.a]), F2 = km(ST[p.b]);
-      const us = (dist(E, F1) - dist(E, F2)) / 0.299792458;
+    V.idx.forEach((i, k) => {
+      const dt = measT(i) - measT(S.ref);
+      const dtT = trueT(i) - trueT(S.ref);
+      const errNs = (dt - dtT) * 1000;
       const el = document.createElement('div');
       el.className = 'card';
-      el.innerHTML = '<div class="hd"><span class="dot" style="background: ' + p.col + ';"></span>&Delta;t sites ' + (p.a + 1) + '&ndash;' + (p.b + 1) + '</div>'
-        + '<div class="big">' + (us >= 0 ? '+' : '') + us.toFixed(2) + ' &micro;s</div>'
-        + '<div class="ft">arrives at site ' + (us >= 0 ? p.b + 1 : p.a + 1) + ' first</div>';
+      el.innerHTML = '<div class="hd"><span class="sw dot" style="background: var('
+        + PAIRCOL[k % PAIRCOL.length] + ');"></span>&Delta;t, sites ' + (S.ref + 1) + '&ndash;' + (i + 1) + '</div>'
+        + '<div class="big">' + sgnFix(dt, 3) + ' &micro;s</div>'
+        + '<div class="ft">true ' + sgnFix(dtT, 3)
+        + ' &micro;s &middot; off by ' + sgnFix(errNs, 1) + ' ns</div>';
       box.appendChild(el);
     });
+
+    $('cFix').textContent = V.fix.ok
+      ? numFix(V.fix.x, 3) + ', ' + numFix(V.fix.y, 3) + ' km' : '—';
+    $('cErr').textContent = V.errM === null ? '—' : fmtErr(V.errM);
+    $('cErr').style.color = V.errM === null ? 'var(--text-warning)'
+      : (V.errM < 50 ? 'var(--text-good)' : V.errM < 300 ? 'var(--text-warning)' : 'var(--series-2)');
+    $('cErrF').textContent = V.errM === null ? 'no fix from this geometry'
+      : V.offMap ? 'the fix ran off the map — a real system rejects this'
+        : 'true position is ' + S.ex.toFixed(2) + ', ' + S.ey.toFixed(2) + ' km';
+
+    if (V.pdop === null) {
+      $('cDop').textContent = '—';
+      $('cDopF').textContent = 'sites and emitter nearly in a line';
+    } else if (V.pdop > 999) {
+      $('cDop').textContent = '> 999';
+      $('cDopF').textContent = 'geometry is close to useless here';
+    } else {
+      $('cDop').textContent = V.pdop.toFixed(2);
+      $('cDopF').textContent = 'expect about ' + (V.pdop * C * S.sig).toFixed(0)
+        + ' m rms at ' + S.sig.toFixed(0) + ' ns';
+    }
+
+    if (V.resM === null) {
+      $('cRes').textContent = '—';
+      $('cResF').textContent = 'no fix from this geometry';
+    } else if (S.n <= 3) {
+      $('cRes').textContent = '0.0 m';
+      $('cResF').textContent = 'three sites, two curves, nothing left over';
+    } else {
+      $('cRes').textContent = V.resM.toFixed(1) + ' m';
+      $('cResF').textContent = (S.n - 3) + ' spare measurement' + (S.n - 3 > 1 ? 's' : '') + ' to check with';
+    }
+
+    $('cC').textContent = C.toFixed(4) + ' m/ns';
+    $('cCF').textContent = '× ' + S.sig.toFixed(0) + ' ns = ' + (C * S.sig).toFixed(1) + ' m per site';
+
+    updateWork();
   }
 
-  ['n3', 'n4', 'n5'].forEach((id, k) => {
-    $(id).addEventListener('click', () => {
-      S.n = k + 3;
-      ['n3', 'n4', 'n5'].forEach(o => $(o).classList.remove('on'));
-      $(id).classList.add('on');
-      updateUI();
-    });
-  });
-  $('map').addEventListener('click', ev => {
-    const r = $('map').getBoundingClientRect();
-    S.ex = (ev.clientX - r.left) / r.width;
-    S.ey = (ev.clientY - r.top) / r.height;
+  function updateWork() {
+    const rows = [];
+    const i0 = V.idx.length ? V.idx[0] : S.ref;
+    const rRef = trueRange(S.ref), r0 = trueRange(i0);
+    rows.push('Ranges from the emitter: site ' + (S.ref + 1) + ' is ' + rRef.toFixed(4)
+      + ' km, site ' + (i0 + 1) + ' is ' + r0.toFixed(4) + ' km.');
+    rows.push('True difference r' + (i0 + 1) + ' − r' + (S.ref + 1) + ' = '
+      + numFix(r0 - rRef, 4) + ' km, which is ' + numFix((r0 - rRef) / C, 4)
+      + ' µs at c = 0.299792458 km/µs.');
+    rows.push('Clock errors drawn for these two sites: ' + numFix((S.z[i0] || 0) * S.sig, 1)
+      + ' ns and ' + numFix((S.z[S.ref] || 0) * S.sig, 1) + ' ns, so the measured difference is '
+      + numFix(measT(i0) - measT(S.ref), 4) + ' µs.');
+    rows.push('That measured difference times c gives ' + numFix(C * (measT(i0) - measT(S.ref)), 4)
+      + ' km, the constant of one hyperbola through the map.');
+    rows.push('Each pair’s difference carries two independent clocks, so its one-sigma range band is √2 × '
+      + C.toFixed(4) + ' × ' + S.sig.toFixed(0) + ' = ' + (Math.SQRT2 * C * S.sig).toFixed(1) + ' m wide.');
+    rows.push('Least squares on ' + V.idx.length + ' difference'
+      + (V.idx.length === 1 ? '' : 's') + ' ran ' + V.fix.iter + ' iteration'
+      + (V.fix.iter === 1 ? '' : 's') + ' and '
+      + (!V.fix.ok ? 'did not produce a usable answer.'
+        : (V.fix.conv ? 'settled' : 'stopped at the iteration limit') + ' at '
+          + numFix(V.fix.x, 4) + ', ' + numFix(V.fix.y, 4) + ' km.'));
+    if (V.pdop !== null) {
+      rows.push('PDOP from this geometry is ' + V.pdop.toFixed(3) + ', so the expected miss is '
+        + V.pdop.toFixed(3) + ' × ' + (C * S.sig).toFixed(1) + ' m = '
+        + (V.pdop * C * S.sig).toFixed(1) + ' m rms.');
+    } else {
+      rows.push('PDOP cannot be formed here: the sites and the emitter are too close to one straight line.');
+    }
+    if (V.errM !== null) {
+      rows.push(V.offMap
+        ? 'This draw missed by ' + fmtErr(V.errM) + '. The curves crossed far outside the map, '
+          + 'so the linear estimate above no longer describes it — this is the failure a real system screens out.'
+        : 'This particular draw missed by ' + fmtErr(V.errM) + ', one sample from that distribution.');
+    }
+    $('work').innerHTML = rows.map(x => '<li>' + x + '</li>').join('');
+  }
+
+  /* ---------- wiring ---------- */
+  function refBtns() {
+    const host = $('refBtns');
+    host.innerHTML = '';
+    for (let i = 0; i < S.n; i++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = String(i + 1);
+      if (i === S.ref) b.className = 'on';
+      b.addEventListener('click', function () { S.ref = i; refBtns(); refresh(); });
+      host.appendChild(b);
+    }
+  }
+
+  function refresh() {
+    recompute();
     updateUI();
+    drawFixPanel();
+    drawSweep();
+    if (!S.run) drawMap();
+  }
+
+  function setSites(n) {
+    S.n = n;
+    S.pos = LAYOUT[n].map(p => p.slice());
+    S.ref = Math.min(S.ref, n - 1);
+    roll();
+    ['n3', 'n4', 'n5'].forEach(id => $(id).classList.remove('on'));
+    $('n' + n).classList.add('on');
+    refBtns();
+    refresh();
+  }
+
+  ['n3', 'n4', 'n5'].forEach((id, k) => $(id).addEventListener('click', () => setSites(k + 3)));
+
+  $('sg').addEventListener('input', () => { S.sig = +$('sg').value; refresh(); });
+  $('ex').addEventListener('input', () => { S.ex = +$('ex').value; refresh(); });
+  $('ey').addEventListener('input', () => { S.ey = +$('ey').value; refresh(); });
+  $('roll').addEventListener('click', () => { S.seed = (S.seed + 1) % 100000; roll(); refresh(); });
+  $('reset').addEventListener('click', () => {
+    S.pos = LAYOUT[S.n].map(p => p.slice());
+    S.ex = EX0; S.ey = EY0;
+    syncEmitterInputs();
+    refresh();
+  });
+  $('tgTrue').addEventListener('click', () => {
+    S.showTrue = !S.showTrue;
+    $('tgTrue').classList.toggle('on', S.showTrue);
+    $('tgTrue').textContent = S.showTrue ? 'Hide' : 'Show';
+    refresh();
+  });
+  $('run').addEventListener('click', () => {
+    S.run = !S.run;
+    $('run').textContent = S.run ? 'Freeze wave' : 'Run wave';
+    /* frozen means fully swept, so every arrival time stays on screen */
+    if (S.run) start(); else { stop(); ringKm = RING_KM; drawMap(); }
   });
 
-  updateUI();
-  function frame() { draw(); requestAnimationFrame(frame); }
-  requestAnimationFrame(frame);
+  function syncEmitterInputs() {
+    $('ex').value = String(S.ex);
+    $('ey').value = String(S.ey);
+    $('exv').textContent = S.ex.toFixed(2) + ' km';
+    $('eyv').textContent = S.ey.toFixed(2) + ' km';
+  }
+
+  /* dragging, on both maps */
+  function attachDrag(id, botExtra, hasInset) {
+    const cel = $(id);
+    let drag = null;
+    const geom = () => {
+      const r = cel.getBoundingClientRect();
+      const m = mapBox(r.width, r.height, 10, botExtra);
+      return { r: r, m: m };
+    };
+    const toKm = (ev, gm) => {
+      const px = ev.clientX - gm.r.left, py = ev.clientY - gm.r.top;
+      return [(px - gm.m.ox) / gm.m.s, KMY - (py - gm.m.oy) / gm.m.s];
+    };
+    const cx = v => clamp(v, 0.2, KMX - 0.2);
+    const cy = v => clamp(v, 0.2, KMY - 0.2);
+    cel.addEventListener('pointerdown', ev => {
+      const gm = geom();
+      const px = ev.clientX - gm.r.left, py = ev.clientY - gm.r.top;
+      if (hasInset) {
+        const iw = clamp(Math.min(gm.r.width * 0.36, gm.m.h * 0.52), 118, 200);
+        const ix = gm.m.ox + gm.m.w - iw - 8, iy = gm.m.oy + gm.m.h - iw - 8;
+        if (px >= ix && px <= ix + iw && py >= iy && py <= iy + iw) return;
+      }
+      let best = -1, bd = 16;
+      for (let i = 0; i < S.n; i++) {
+        const d = Math.hypot(px - (gm.m.ox + sx(i) * gm.m.s),
+          py - (gm.m.oy + (KMY - sy(i)) * gm.m.s));
+        if (d < bd) { bd = d; best = i; }
+      }
+      drag = best >= 0 ? { kind: 'site', i: best } : { kind: 'emitter' };
+      cel.setPointerCapture(ev.pointerId);
+      ev.preventDefault();
+      apply(ev);
+    });
+    const apply = ev => {
+      if (!drag) return;
+      const gm = geom();
+      const k = toKm(ev, gm);
+      if (drag.kind === 'site') S.pos[drag.i] = [cx(k[0]), cy(k[1])];
+      else { S.ex = cx(k[0]); S.ey = cy(k[1]); syncEmitterInputs(); }
+      refresh();
+    };
+    cel.addEventListener('pointermove', ev => { if (drag) apply(ev); });
+    cel.addEventListener('pointerup', () => { drag = null; });
+    cel.addEventListener('pointercancel', () => { drag = null; });
+  }
+
+  /* guided tour */
+  const TOUR = [
+    { sig: 0, n: 3, ex: EX0, ey: EY0,
+      t: 'Step 1 — perfect clocks. Two curves, one crossing, and the fix lands exactly on the emitter.' },
+    { sig: 50, n: 3, ex: EX0, ey: EY0,
+      t: 'Step 2 — 50 ns of clock error. Each curve thickens into a band and the fix slips a few tens of metres. Use the zoom inset.' },
+    { sig: 500, n: 3, ex: EX0, ey: EY0,
+      t: 'Step 3 — half a microsecond. The bands are hundreds of metres wide, exactly as the 0.3 m per ns slope in section 3 predicts.' },
+    { sig: 500, n: 5, ex: EX0, ey: EY0,
+      t: 'Step 4 — five sites. Four curves no longer meet at a point, least squares splits the difference, and the residual finally rises above zero.' },
+    { sig: 100, n: 5, ex: 9.5, ey: 0.6,
+      t: 'Step 5 — the emitter outside the ring of sites. PDOP jumps from about 1 to about 6, so the same clocks are expected to miss six times further; the orange line in section 3 swings up with it. Any single draw can still be lucky — press new measurement a few times.' }
+  ];
+  TOUR.forEach((st, k) => {
+    $('t' + (k + 1)).addEventListener('click', () => {
+      S.pos = LAYOUT[st.n].map(p => p.slice());
+      S.n = st.n; S.ref = 0; S.sig = st.sig; S.ex = st.ex; S.ey = st.ey;
+      $('sg').value = String(st.sig);
+      ['n3', 'n4', 'n5'].forEach(id => $(id).classList.remove('on'));
+      $('n' + st.n).classList.add('on');
+      syncEmitterInputs();
+      roll();
+      refBtns();
+      $('narr').textContent = st.t;
+      refresh();
+    });
+  });
+
+  /* animation */
+  let rafId = 0, last = 0;
+  function frame(ts) {
+    const dt = Math.min(ts - last, 50);
+    last = ts;
+    ringKm = (ringKm + RING_KM * dt / RING_MS) % (RING_KM + 2.2);
+    drawMap();
+    rafId = requestAnimationFrame(frame);
+  }
+  function start() { if (!rafId) { last = performance.now(); rafId = requestAnimationFrame(frame); } }
+  function stop() { if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } }
+
+  window.addEventListener('resize', () => { drawFixPanel(); drawSweep(); if (!S.run) drawMap(); });
+
+  attachDrag('cv1', 118, false);
+  attachDrag('cv2', 0, true);
+  refBtns();
+  roll();
+  syncEmitterInputs();
+  if (!S.run) { ringKm = RING_KM; $('run').textContent = 'Run wave'; }
+  refresh();
+  drawMap();
+  if (S.run) start();
 })();
 </script>
 </body>

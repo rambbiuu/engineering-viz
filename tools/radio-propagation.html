@@ -3,327 +3,1161 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HF, VHF and how radio waves travel</title>
+<title>Radio propagation across the whole spectrum</title>
 <style>
 :root {
-  --bg: #fbfaf7;
-  --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
-  --text-warning: #854F0B;
-  --border: #e2e0d8;
-  --border-strong: #b9b7ae;
-  --surface-1: #f1efe8;
-  --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --series-1: #378ADD; --series-2: #D85A30; --series-3: #BA7517; --series-4: #7F77DD;
+  --series-5: #1D9E75; --series-6: #D4537E; --series-7: #A2142F;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19;
-    --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
-    --text-warning: #FAC775;
-    --border: #34342f;
-    --border-strong: #56554e;
-    --surface-1: #262624;
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --series-1: #6BB0F0; --series-2: #FF8C42; --series-3: #E0A63C; --series-4: #A79EF0;
+    --series-5: #45C79A; --series-6: #F0789F; --series-7: #FF6B6B;
   }
 }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  line-height: 1.5;
-}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 820px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
 .sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 6px 14px;
-  cursor: pointer;
-}
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 11px; cursor: pointer; font-size: 13px; }
 button:hover { background: var(--surface-1); }
-button.on { border-color: #378ADD; color: #378ADD; }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
-.badge {
-  display: inline-block;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 2px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  min-width: 46px;
-  text-align: center;
-}
-.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 1.5rem; }
+button.on { border-color: var(--series-1); color: var(--series-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 0.7rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 92px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 4px 26px; margin-bottom: 0.9rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 108px; }
+.ctl input[type=range] { flex: 1; min-width: 90px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
+.sec { margin: 1.9rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin-bottom: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; margin-top: 1.5rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 18px; font-weight: 500; margin-top: 4px; }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px; color: var(--text-secondary); margin-top: 1rem; }
+.note b { color: var(--text-primary); font-weight: 500; }
 canvas { width: 100%; display: block; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.85rem; margin-bottom: 1rem; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.7rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; }
+ol.work li { margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+dl.glossary { font-size: 13px; margin-top: 0.5rem; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 0; color: var(--text-secondary); }
+.tour { font-size: 13px; color: var(--text-secondary); margin: 0.4rem 0 1.2rem; min-height: 2.6em; }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>HF, VHF and how radio waves travel</h1>
-<p class="sub">Below 30 MHz the sky is a mirror: the ionosphere &mdash; layers of charged air 60&ndash;400 km up &mdash; bends radio waves back to Earth, letting HF cross oceans with no infrastructure. Above 30 MHz the mirror turns to glass and waves fly straight through, so VHF and up live within line of sight. Slide the frequency across the boundary and watch the sky change its mind.</p>
+<h1>Radio propagation across the whole spectrum</h1>
+<p class="sub">A radio wave leaving an antenna has several different ways of reaching the far end, and which one wins is decided almost entirely by the wavelength. The same transmitter power reaches a submarine on the other side of the planet at 20 kHz and struggles across a car park at 60 GHz. This tool computes each mechanism from its published formula &mdash; free-space spreading, ground reflection, diffraction over the earth&rsquo;s bulge, scattering off turbulent air, absorption by oxygen and water, and refraction from the ionosphere &mdash; so you can watch the winner change as you sweep the frequency.</p>
+<p class="sub" style="margin-top: -1.4rem;">If decibels and link budgets are new, start with <a href="link-budget.html">link budget</a>. If clearance and Fresnel zones are the puzzle, see <a href="fresnel-clearance.html">Fresnel clearance</a>.</p>
 
-<div class="row" style="margin-bottom: 1.25rem;">
-  <label class="lbl" for="fq" style="min-width: 78px;">Frequency</label>
-  <input type="range" id="fq" min="0" max="1" step="0.002" value="0.62" style="flex: 1;">
-  <span id="fqv" style="font-size: 14px; font-weight: 500; min-width: 76px; text-align: right; font-variant-numeric: tabular-nums;">&mdash;</span>
-  <span class="badge" id="band">&mdash;</span>
-  <button id="dn">Day</button>
+<p class="note" style="margin-bottom: 1.4rem;"><b>An everyday analogy.</b> Sound behaves the same way. A deep bass note travels round a corner and through a wall from a neighbour&rsquo;s party, while the singer&rsquo;s consonants do not: the long wave bends around obstacles and the short one is stopped by them. Radio is that effect stretched over eight decades of wavelength, from waves tens of kilometres long down to waves a millimetre long.</p>
+
+<div class="grid2">
+  <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0" max="1" step="0.000001" value="0.684640"><span class="v" id="fqv">&mdash;</span></div>
+  <div class="ctl"><label for="ds">Path length</label><input type="range" id="ds" min="0.1" max="500" step="0.1" value="20"><span class="v" id="dsv">&mdash;</span></div>
+  <div class="ctl"><label for="h1">Tx mast height</label><input type="range" id="h1" min="1" max="300" step="1" value="30"><span class="v" id="h1v">&mdash;</span></div>
+  <div class="ctl"><label for="h2">Rx mast height</label><input type="range" id="h2" min="1" max="100" step="1" value="10"><span class="v" id="h2v">&mdash;</span></div>
+  <div class="ctl"><label for="rn">Rain rate</label><input type="range" id="rn" min="0" max="150" step="1" value="0"><span class="v" id="rnv">&mdash;</span></div>
+</div>
+<div class="row">
+  <span class="lbl">Jump to band</span>
+  <button id="bd0">VLF</button><button id="bd1">LF</button><button id="bd2">MF</button><button id="bd3">HF</button>
+  <button id="bd4">VHF</button><button id="bd5">UHF</button><button id="bd6">SHF</button><button id="bd7">EHF</button>
 </div>
 
-<canvas id="cv" style="height: 430px;"></canvas>
+<details>
+  <summary>More controls &mdash; earth curvature, rain polarisation, ionosphere, dish gain, noise environment</summary>
+  <div class="row">
+    <span class="lbl">k factor</span>
+    <button id="k0">0.5 sub-refractive</button><button id="k1">0.667</button><button id="k2">1 true earth</button><button id="k3">1.333 median</button>
+  </div>
+  <div class="row">
+    <span class="lbl">Rain polarisation</span>
+    <button id="pH">Horizontal</button><button id="pV">Vertical</button>
+  </div>
+  <div class="row">
+    <span class="lbl">Noise site</span>
+    <button id="e0">City</button><button id="e1">Residential</button><button id="e2">Rural</button><button id="e3">Quiet rural</button><button id="e4">Galactic</button>
+  </div>
+  <div class="grid2" style="margin-bottom: 0;">
+    <div class="ctl"><label for="fo">foF2</label><input type="range" id="fo" min="3" max="12" step="0.1" value="8"><span class="v" id="fov">&mdash;</span></div>
+    <div class="ctl"><label for="gn">Antenna gain</label><input type="range" id="gn" min="20" max="50" step="1" value="35"><span class="v" id="gnv">&mdash;</span></div>
+  </div>
+</details>
+
+<div class="row">
+  <span class="lbl">Guided tour</span>
+  <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button><button id="t4">4</button><button id="t5">5</button>
+  <button id="t0">reset</button>
+</div>
+<p class="tour" id="tourtext">Press step 1 to start. Each step moves the controls for you and says what changed.</p>
+
+<p class="sec"><b>1 &middot; The band ladder, as physical scenes</b> <span>&mdash; where you are in the spectrum, and the picture that goes with it</span></p>
+<canvas id="c1" style="height: 500px;"></canvas>
+<ul class="legend-note">
+  <li>The strip along the top is the whole spectrum on a logarithmic scale, split into the eight named bands. The vertical line is the frequency you have selected, and the number beside it is the wavelength &lambda; = c/f.</li>
+  <li>The four pictures below are the four ways a wave gets from one place to another. The one drawn in full colour is the mechanism that belongs to your band; the others are dimmed.</li>
+  <li>Only the line-of-sight picture is drawn against a real distance axis in km. The other three are schematic, and say so, because a 4 500 km ionospheric hop and a 300 m millimetre-wave hop cannot share one scale.</li>
+</ul>
 
 <div class="cards">
-  <div class="card">
-    <div class="hd">Band</div>
-    <div class="big" id="cBand">&mdash;</div>
-    <div class="ft" id="cUse">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd" id="cRngHd">Coverage</div>
-    <div class="big" id="cRng">&mdash;</div>
-    <div class="ft" id="cRngN">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">What the sky is doing</div>
-    <div class="big" id="cSky" style="font-size: 14px; font-weight: 400; color: var(--text-secondary);">&mdash;</div>
-  </div>
+  <div class="card"><div class="hd">Wavelength &lambda;</div><div class="big" id="kLam">&mdash;</div><div class="ft">&lambda; = c/f, c = 2.99792458&times;10<sup>8</sup> m/s</div></div>
+  <div class="card"><div class="hd">Free-space loss</div><div class="big" id="kFsl">&mdash;</div><div class="ft" id="kFslN">&mdash;</div></div>
+  <div class="card"><div class="hd">Atmospheric loss on this path</div><div class="big" id="kAtm">&mdash;</div><div class="ft" id="kAtmN">&mdash;</div></div>
+  <div class="card"><div class="hd">Radio horizon</div><div class="big" id="kHor">&mdash;</div><div class="ft" id="kHorN">&mdash;</div></div>
+  <div class="card"><div class="hd">Two-ray breakpoint</div><div class="big" id="kBrk">&mdash;</div><div class="ft" id="kBrkN">&mdash;</div></div>
+  <div class="card"><div class="hd">Maximum usable frequency</div><div class="big" id="kMuf">&mdash;</div><div class="ft" id="kMufN">&mdash;</div></div>
+  <div class="card"><div class="hd">External noise F<sub>a</sub></div><div class="big" id="kFa">&mdash;</div><div class="ft" id="kFaN">&mdash;</div></div>
+  <div class="card"><div class="hd">Dominant mechanism</div><div class="big" id="kDom" style="font-size: 16px;">&mdash;</div><div class="ft" id="kDomN">&mdash;</div></div>
 </div>
 
-<p class="sub" style="margin-top: 2rem;">Things to try: park an MF frequency (1 MHz, AM radio) and flip day to night &mdash; the absorbing D layer evaporates and suddenly the sky wave bounces, which is why distant AM stations appear after sunset. Walk HF upward until the rays start punching through: steep rays escape first, shallow ones hold on longest, and past the maximum usable frequency the sky goes silent. Then jump to VHF and note the only thing left is the line-of-sight ray &mdash; FM, aircraft, and your 2&ndash;18 GHz geolocation work all live in this straight-line world. Heights are real kilometres; the physics is simplified (flat Earth, single-layer secant law) but the behaviour boundaries are honest.</p>
+<p class="sec"><b>2 &middot; Free-space loss, and why it depends on frequency at all</b> <span>&mdash; empty space absorbs nothing; the frequency term comes from the receiving antenna</span></p>
+<div class="row" style="margin-top: 0.6rem;">
+  <span class="lbl">Both ends use</span>
+  <button id="a0">Isotropic antennas</button><button id="a1">Fixed 1 m dishes</button>
+</div>
+<canvas id="c2" style="height: 290px;"></canvas>
+<ul class="legend-note">
+  <li>The blue curve is the loss between two <b>isotropic</b> antennas (equal radiation in every direction). It rises 20 dB per decade of frequency, and every decibel of that rise comes from the receiving aperture A<sub>e</sub> = &lambda;<sup>2</sup>/4&pi; shrinking, not from anything absorbing the wave.</li>
+  <li>The green curve keeps the same 1 m dish at both ends. A fixed physical aperture has gain G = 4&pi;A<sub>e</sub>/&lambda;<sup>2</sup>, which grows as f<sup>2</sup> at each end, so the net loss now <b>falls</b> 20 dB per decade. Same physics, opposite slope. That is the whole answer to &ldquo;does high frequency travel worse?&rdquo;</li>
+  <li>The shaded band on the left is where your path is shorter than ten wavelengths. That is the near field, and the free-space formula does not apply there.</li>
+</ul>
+
+<p class="sec"><b>3 &middot; What the atmosphere charges, 1 to 300 GHz</b> <span>&mdash; oxygen and water vapour resonances, and rain, in dB per kilometre</span></p>
+<canvas id="c3" style="height: 330px;"></canvas>
+<ul class="legend-note">
+  <li>The dark red curve is gaseous absorption from dry air and water vapour at sea level. It is not a smooth rise: there are <b>walls</b> at 60 GHz (14.7 dB/km, a merged band of 37 oxygen lines) and 183 GHz (28.3 dB/km, a water line), and <b>windows</b> at 94 GHz (0.40) and 140 GHz (0.92) where the sky reopens.</li>
+  <li>The orange curve is rain, &gamma;<sub>R</sub> = kR<sup>&alpha;</sup>. Turn the rain rate up. Note that it <b>saturates</b> above about 100 GHz and even falls slightly &mdash; the drops are already large compared with the wavelength.</li>
+  <li>The dashed orange curve is the other polarisation. Vertical always beats horizontal in rain because falling drops are flattened, and the gap is widest between 10 and 35 GHz.</li>
+</ul>
+
+<p class="sec"><b>4 &middot; Two rays, one ground: the breakpoint</b> <span>&mdash; direct ray plus ground-reflected ray, and why path loss changes slope</span></p>
+<canvas id="c4" style="height: 320px;"></canvas>
+<ul class="legend-note">
+  <li>The blue curve is the exact two-ray result: the received field is 2|sin(2&pi;h<sub>1</sub>h<sub>2</sub>/&lambda;d)| times the free-space field, because the ground reflection arrives with a half-turn of phase built in.</li>
+  <li>Close in, the two rays alternately reinforce and cancel &mdash; that is the run of peaks and deep nulls. Past the <b>breakpoint</b> d<sub>b</sub> = 4h<sub>1</sub>h<sub>2</sub>/&lambda; the two rays are almost exactly out of phase and the received power collapses onto the d<sup>&minus;4</sup> line: doubling the distance now costs 12 dB, not 6.</li>
+  <li>Raise the Tx mast and watch the breakpoint move right. Height buys you the d<sup>&minus;2</sup> region, which is the real reason cell masts are tall.</li>
+</ul>
+
+<p class="sec"><b>5 &middot; Beyond the horizon</b> <span>&mdash; diffraction over the earth&rsquo;s bulge, then scattering off turbulent air</span></p>
+<canvas id="c5" style="height: 330px;"></canvas>
+<ul class="legend-note">
+  <li>The blue dashed line is free-space loss, the loss you would have if the earth were not in the way. Everything above it is what the earth costs you.</li>
+  <li>The amber curve is spherical-earth diffraction, computed from ITU-R P.526-15 &sect;3.2. It leaves the free-space line smoothly while the path still has clearance, and then climbs steeply once the bulge blocks the ray. There is no cliff at the horizon: the transition is gradual, which is why coverage fades rather than stopping.</li>
+  <li>The pink curve is troposcatter (ITU-R P.617-5): a faint fraction of the energy scattered forward by turbulence 10 km up. It is enormously lossy but it climbs slowly, so past some distance it beats diffraction and becomes the only thing left. That crossing is marked.</li>
+</ul>
+
+<p class="sec"><b>6 &middot; Sky wave and the noise you are shouting over</b> <span>&mdash; the ionosphere returns the signal only below the MUF, and HF is never quiet</span></p>
+<canvas id="c6" style="height: 280px;"></canvas>
+<ul class="legend-note">
+  <li>The purple curve is the maximum usable frequency for a single F2 hop: MUF = foF2 &times; sec&theta;<sub>i</sub>, where &theta;<sub>i</sub> is the angle at which the ray strikes the layer. Below the curve the ray comes back down; above it the ray goes through and is lost to space.</li>
+  <li>The grey curve is the same thing worked out on a <b>flat</b> earth. It over-predicts badly at long range &mdash; 5.10 against 3.28 for the obliquity factor at 3 000 km &mdash; which is why the spherical form is the one to use.</li>
+</ul>
+<canvas id="c7" style="height: 260px;"></canvas>
+<ul class="legend-note">
+  <li>Below about 30 MHz the noise arriving at the antenna from outside &mdash; lightning, machinery, the galaxy &mdash; is 30 to 60 dB above what the receiver itself makes. A better receiver buys you nothing there; a quieter site buys you 25 dB.</li>
+  <li>Above roughly 300 MHz the curves have fallen to nothing and the receiver&rsquo;s own noise figure takes over. That crossover is why microwave engineers talk about low-noise amplifiers and HF operators talk about location.</li>
+</ul>
+
+<p class="sec"><b>The arithmetic behind the cards, with your numbers in it</b></p>
+<ol class="work" id="work"></ol>
+
+<p class="sec"><b>Glossary</b></p>
+<dl class="glossary">
+  <dt>Decibel (dB)</dt><dd>A ratio on a logarithmic scale: 10&times; more power is 10 dB, 100&times; is 20 dB. Losses add up in dB instead of multiplying.</dd>
+  <dt>Isotropic antenna</dt><dd>An imaginary antenna that radiates equally in every direction. It is the reference every real antenna gain is quoted against, hence dBi.</dd>
+  <dt>Effective aperture A<sub>e</sub></dt><dd>The area of the incoming wavefront an antenna actually collects, in m<sup>2</sup>. For an isotropic antenna it is &lambda;<sup>2</sup>/4&pi;, so it shrinks as the frequency rises.</dd>
+  <dt>Free-space loss</dt><dd>The fall in power between two isotropic antennas in empty space, purely from the wave spreading out over a bigger and bigger sphere.</dd>
+  <dt>k factor</dt><dd>The number the earth&rsquo;s radius is multiplied by to account for the atmosphere bending the ray downwards. The usual median is 4/3; it swings from about 1/2 to infinity with the weather.</dd>
+  <dt>Radio horizon</dt><dd>How far a ray can go before the earth&rsquo;s curve gets in the way, &radic;(2kaH) with the effective radius ka.</dd>
+  <dt>Diffraction</dt><dd>The bending of a wave around an obstacle, including the earth itself. It fills the shadow behind the obstacle, but at a price in dB.</dd>
+  <dt>Troposcatter</dt><dd>Using turbulent patches of air about 10 km up as a very poor mirror. It works far past the horizon and costs 200 dB or more.</dd>
+  <dt>Breakpoint d<sub>b</sub></dt><dd>The distance where the direct and ground-reflected rays stop taking turns reinforcing each other and settle into cancellation. Beyond it, path loss steepens from d<sup>&minus;2</sup> to d<sup>&minus;4</sup>.</dd>
+  <dt>foF2</dt><dd>The critical frequency of the F2 layer: the highest frequency the ionosphere returns when the wave is fired straight up. It is measured, not predicted, and swings with time of day and the solar cycle.</dd>
+  <dt>MUF</dt><dd>Maximum usable frequency: the highest frequency the ionosphere returns for a given hop length. Higher than foF2 because a glancing ray is turned more easily than a vertical one.</dd>
+  <dt>F<sub>a</sub></dt><dd>External noise figure: how many dB the noise arriving from outside the antenna sits above the thermal floor kT<sub>0</sub>b.</dd>
+  <dt>Polarisation</dt><dd>The direction the electric field points. Rain drops are flattened as they fall, so they intercept a horizontal field more effectively than a vertical one.</dd>
+</dl>
+
+<p class="sub" style="margin-top: 2rem;">Three things in here are worth taking away. First, &ldquo;high frequencies do not travel as far&rdquo; is only true if you hold the antenna size fixed in wavelengths &mdash; switch section 2 to fixed dishes and the slope reverses, which is exactly why satellite links keep climbing in frequency. Second, the atmosphere is not a gentle taper but a landscape of walls and windows, so the choice between 60 and 94 GHz is a factor of thirty in dB per kilometre. Third, beyond the horizon nothing stops abruptly: diffraction hands over to troposcatter, and the handover point moves with frequency, antenna height and the weather&rsquo;s k factor.</p>
+<p class="sub">Where this is simplified, it says so on the panel. The four scenes in section 1 are schematic except for the line-of-sight one. The gaseous absorption curve is a logarithmic interpolation through anchor points computed from the full ITU-R P.676-13 line-by-line model at 1013.25 hPa, 15 &deg;C and 7.5 g/m<sup>3</sup>, not the line-by-line sum itself. Diffraction assumes a smooth earth with no terrain and average ground; troposcatter assumes smooth-earth horizon angles and the median 50 % of time. The ionosphere is one F2 layer at a 300 km virtual height. Surface-wave range has no closed-form model in ITU-R P.368, so this tool does not print one. Next, try <a href="fresnel-clearance.html">Fresnel clearance</a> to see what a single hill does to one of these paths.</p>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const S = { u: 0.62, day: true };
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const cvv = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const C0 = 2.99792458e8, A_E0 = 6371;
+  const FLO = 3e3, FHI = 3e11;
 
-  const fMHz = () => 0.1 * Math.pow(3000, S.u);
-  const foF2 = () => S.day ? 9 : 5;
-  const fLayer = () => S.day ? 300 : 350;
-  const ELEV = [15, 35, 60, 80];
+  const S = { u: 0.684640, d: 20, h1: 30, h2: 10, rain: 0, k: 1.333, vert: false, foF2: 8, gain: 35, dish: false, env: 'rural' };
 
-  function bandOf(f) {
-    if (f < 0.3) return ['LF', 'long wave — maritime beacons, time signals'];
-    if (f < 3) return ['MF', 'medium wave — AM broadcast'];
-    if (f < 30) return ['HF', 'shortwave — global broadcast, amateurs, OTH radar'];
-    return ['VHF', 'FM radio, aircraft, TV — and the road to your 2–18 GHz'];
+  const fHz = () => FLO * Math.pow(FHI / FLO, S.u);
+  const uOf = f => L10(f / FLO) / L10(FHI / FLO);
+  const lamM = () => C0 / fHz();
+  const fGHz = () => fHz() / 1e9;
+  const fMHz = () => fHz() / 1e6;
+
+  const BANDS = [
+    { k: 'VLF', lo: 3e3, hi: 3e4, mid: 2e4, use: 'submarine communications, navigation' },
+    { k: 'LF', lo: 3e4, hi: 3e5, mid: 1.5e5, use: 'time signals, maritime beacons' },
+    { k: 'MF', lo: 3e5, hi: 3e6, mid: 1e6, use: 'AM broadcast, maritime distress' },
+    { k: 'HF', lo: 3e6, hi: 3e7, mid: 1.4e7, use: 'shortwave, amateur, over-the-horizon radar' },
+    { k: 'VHF', lo: 3e7, hi: 3e8, mid: 1e8, use: 'FM radio, air traffic, marine VHF' },
+    { k: 'UHF', lo: 3e8, hi: 3e9, mid: 9e8, use: 'mobile networks, Wi-Fi, GPS, TV' },
+    { k: 'SHF', lo: 3e9, hi: 3e10, mid: 1e10, use: 'satellite, microwave backhaul, radar' },
+    { k: 'EHF', lo: 3e10, hi: 3e11, mid: 6e10, use: '5G millimetre wave, automotive radar' }
+  ];
+  const bandIx = () => { const f = fHz(); for (let i = 0; i < BANDS.length; i++) if (f < BANDS[i].hi) return i; return 7; };
+
+  // ---- free space ----------------------------------------------------------
+  const fsl = (g, d) => 92.4478 + 20 * L10(Math.max(g, 1e-12)) + 20 * L10(Math.max(d, 1e-9));
+
+  // ---- gaseous attenuation: log-log interpolation through P.676-13 anchors --
+  const GAS = [
+    [1, 0.0054], [5, 0.0086], [10, 0.0140], [12, 0.0180], [20, 0.1088],
+    [22.235, 0.1933], [30, 0.0929], [35, 0.1003], [40, 0.1294], [50, 0.3820],
+    [57, 10.1168], [60, 14.6557], [61, 15.0421], [70, 0.5062], [77, 0.3441],
+    [94, 0.4044], [100, 0.4540], [118.75, 1.9436], [140, 0.9155],
+    [183.31, 28.2599], [200, 2.8643], [300, 5.2031]
+  ];
+  function gasGamma(g) {
+    if (!(g > 0) || g <= GAS[0][0]) return GAS[0][1];
+    const n = GAS.length;
+    if (g >= GAS[n - 1][0]) return GAS[n - 1][1];
+    let i = 0;
+    while (i < n - 2 && GAS[i + 1][0] < g) i++;
+    const x0 = L10(GAS[i][0]), x1 = L10(GAS[i + 1][0]);
+    const y0 = L10(GAS[i][1]), y1 = L10(GAS[i + 1][1]);
+    return Math.pow(10, y0 + (L10(g) - x0) / (x1 - x0) * (y1 - y0));
   }
 
-  function groundRange(f) {
-    return Math.min(1500, Math.max(0, 400 / Math.pow(f, 1.2)));
+  // ---- rain: P.838-3 Table 5, gamma_R = k R^alpha --------------------------
+  const RAIN = [
+    [1, 0.0000259, 0.9691, 0.0000308, 0.8592],
+    [10, 0.01217, 1.2571, 0.01129, 1.2156],
+    [22, 0.1155, 1.0329, 0.1170, 0.9700],
+    [35, 0.3374, 0.9047, 0.3224, 0.8761],
+    [60, 0.8606, 0.7656, 0.8515, 0.7486],
+    [77, 1.1320, 0.7177, 1.1276, 0.7073],
+    [100, 1.3671, 0.6815, 1.3680, 0.6765],
+    [200, 1.6378, 0.6382, 1.6443, 0.6343]
+  ];
+  function rainCoef(g, vert) {
+    const ki = vert ? 3 : 1, ai = vert ? 4 : 2, n = RAIN.length;
+    if (!(g > 0) || g <= RAIN[0][0]) return [RAIN[0][ki], RAIN[0][ai]];
+    if (g >= RAIN[n - 1][0]) return [RAIN[n - 1][ki], RAIN[n - 1][ai]];
+    let i = 0;
+    while (i < n - 2 && RAIN[i + 1][0] < g) i++;
+    const x0 = L10(RAIN[i][0]), x1 = L10(RAIN[i + 1][0]);
+    const t = (L10(g) - x0) / (x1 - x0);
+    return [Math.pow(10, L10(RAIN[i][ki]) + t * (L10(RAIN[i + 1][ki]) - L10(RAIN[i][ki]))),
+      RAIN[i][ai] + t * (RAIN[i + 1][ai] - RAIN[i][ai])];
+  }
+  function rainGamma(g, R, vert) {
+    if (!(R > 0)) return 0;
+    const ka = rainCoef(g, vert);
+    return ka[0] * Math.pow(R, ka[1]);
   }
 
-  function hopKm(elevDeg) {
-    return 2 * fLayer() / Math.tan(elevDeg * Math.PI / 180);
+  // ---- geometry ------------------------------------------------------------
+  const horizonKm = (hM, k) => Math.sqrt(2 * A_E0 * k * Math.max(hM, 0) / 1000);
+  const dLos = () => horizonKm(S.h1, S.k) + horizonKm(S.h2, S.k);
+  const breakKm = () => 4 * S.h1 * S.h2 / lamM() / 1000;
+
+  // ---- two ray -------------------------------------------------------------
+  function twoRayDb(dKm) {
+    const arg = 2 * Math.PI * S.h1 * S.h2 / (lamM() * Math.max(dKm, 1e-9) * 1000);
+    return 20 * L10(Math.max(Math.abs(2 * Math.sin(arg)), 1e-6));
+  }
+  const planeEarthLoss = dKm => 40 * L10(Math.max(dKm, 1e-9) * 1000) - 20 * L10(S.h1) - 20 * L10(S.h2);
+
+  // ---- P.526-15 spherical-earth diffraction --------------------------------
+  function kSurf(fM, aeKm) {
+    const eps = 15, sig = 0.005;
+    return 0.36 * Math.pow(Math.max(aeKm * fM, 1e-9), -1 / 3) *
+      Math.pow(Math.pow(eps - 1, 2) + Math.pow(18000 * sig / Math.max(fM, 1e-9), 2), -0.25);
+  }
+  function dftDb(fM, aeKm, dKm, h1, h2) {
+    const X = 2.188 * Math.pow(fM, 1 / 3) * Math.pow(aeKm, -2 / 3) * dKm;
+    const Yc = 9.575e-3 * Math.pow(fM, 2 / 3) * Math.pow(aeKm, -1 / 3);
+    const floor = 2 + 20 * L10(Math.max(kSurf(fM, aeKm), 1e-12));
+    const F = X >= 1.6 ? 11 + 10 * L10(X) - 17.6 * X
+      : -20 * L10(Math.max(X, 1e-12)) - 5.6488 * Math.pow(Math.max(X, 0), 1.425);
+    const G = h => {
+      const B = Yc * Math.max(h, 0);
+      const g = B > 2 ? 17.6 * Math.sqrt(B - 1.1) - 5 * L10(B - 1.1) - 8
+        : 20 * L10(Math.max(B + 0.1 * B * B * B, 1e-12));
+      return Math.max(g, floor);
+    };
+    return -(F + G(h1) + G(h2));
+  }
+  function sphDiffDb(dKm) {
+    const fM = fMHz();
+    if (!(fM >= 10)) return 0;
+    const aeKm = A_E0 * S.k, ae = aeKm * 1000, d = Math.max(dKm, 1e-6) * 1000;
+    const lam = lamM(), h1 = S.h1, h2 = S.h2;
+    const los = Math.sqrt(2 * ae) * (Math.sqrt(h1) + Math.sqrt(h2));
+    if (d >= los) return Math.max(dftDb(fM, aeKm, dKm, h1, h2), 0);
+    const c = (h1 - h2) / (h1 + h2);
+    const m = d * d / (4 * ae * (h1 + h2));
+    if (!(m > 0)) return 0;
+    let ac = 1.5 * c * Math.sqrt(3 * m / Math.pow(m + 1, 3));
+    ac = Math.min(1, Math.max(-1, ac));
+    const b = 2 * Math.sqrt((m + 1) / (3 * m)) * Math.cos(Math.PI / 3 + Math.acos(ac) / 3);
+    const d1 = d * (1 + b) / 2, d2 = d - d1;
+    if (!(d1 > 0) || !(d2 > 0)) return 0;
+    const hc = ((h1 - d1 * d1 / (2 * ae)) * d2 + (h2 - d2 * d2 / (2 * ae)) * d1) / d;
+    const hreq = 0.552 * Math.sqrt(d1 * d2 * lam / d);
+    if (!(hreq > 0) || hc > hreq) return 0;
+    const aem = 0.5 * Math.pow(d / (Math.sqrt(h1) + Math.sqrt(h2)), 2);
+    const Ah = dftDb(fM, aem / 1000, dKm, h1, h2);
+    if (!(Ah > 0)) return 0;
+    const A = (1 - hc / hreq) * Ah;
+    return A > 0 ? A : 0;
   }
 
-  function rayReturns(f, elevDeg) {
-    return f < foF2() / Math.sin(elevDeg * Math.PI / 180);
+  // ---- P.617-5 troposcatter ------------------------------------------------
+  function troposDb(dKm) {
+    const F = 0.18 * 350 * Math.exp(0) - 0.23 * (-40);
+    const th = Math.max(dKm, 1e-6) * 1e3 / (S.k * 6370);
+    const Lc = 0.07 * Math.exp(0.055 * (2 * S.gain));
+    return F + 22 * L10(Math.max(fMHz(), 1e-6)) + 35 * L10(Math.max(th, 1e-9)) + 17 * L10(Math.max(dKm, 1e-6)) + Lc;
   }
 
-  function dAbsorbed(f) {
-    return S.day && f >= 0.3 && f < 4;
+  // ---- ionosphere and noise ------------------------------------------------
+  const H0 = 300;
+  function secSph(Dkm) {
+    const g = Math.max(Dkm, 0) / (2 * A_E0), r = A_E0 / (A_E0 + H0);
+    const den = 1 - r * Math.cos(g);
+    if (!(den > 1e-12)) return 1;
+    const t = r * Math.sin(g) / den;
+    return Math.sqrt(1 + t * t);
+  }
+  const secFlat = Dkm => Math.sqrt(Math.pow(Math.max(Dkm, 0) / (2 * H0), 2) + 1);
+  const NOISE = {
+    city: [76.8, 27.7, 'City'], residential: [72.5, 27.7, 'Residential'], rural: [67.2, 27.7, 'Rural'],
+    quiet: [53.6, 28.6, 'Quiet rural'], galactic: [52.0, 23.0, 'Galactic']
+  };
+  const famDb = (env, fM) => NOISE[env][0] - NOISE[env][1] * L10(Math.max(fM, 1e-6));
+
+  // ---- aperture ------------------------------------------------------------
+  const DISH_D = 1, DISH_ETA = 0.6;
+  const dishAe = () => DISH_ETA * Math.PI * DISH_D * DISH_D / 4;
+  const isoAe = () => lamM() * lamM() / (4 * Math.PI);
+  const dishGainDb = g => 10 * L10(4 * Math.PI * dishAe() / Math.pow(C0 / (g * 1e9), 2));
+  const netDishLoss = (g, d) => fsl(g, d) - 2 * dishGainDb(g);
+
+  // ---- formatting ----------------------------------------------------------
+  function fmtF(f) {
+    if (f < 1e6) return (f / 1e3).toFixed(f < 1e5 ? 2 : 1) + ' kHz';
+    if (f < 1e9) return (f / 1e6).toFixed(f < 1e8 ? 2 : 1) + ' MHz';
+    return (f / 1e9).toFixed(f < 1e11 ? 2 : 1) + ' GHz';
+  }
+  function fmtLam(m) {
+    if (m >= 1000) return (m / 1000).toFixed(2) + ' km';
+    if (m >= 1) return m.toFixed(2) + ' m';
+    if (m >= 0.01) return (m * 100).toFixed(2) + ' cm';
+    return (m * 1000).toFixed(2) + ' mm';
   }
 
+  // ---- canvas helpers ------------------------------------------------------
   function fit(c) {
-    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
-    return [r.width, r.height];
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [Math.max(r.width, 1), Math.max(r.height, 1)];
+  }
+  function axes(g, l, r, t, b, w, h) {
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(l, t); g.lineTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
+  }
+  function dashLine(g, x0, y0, x1, y1, col, dash, wid) {
+    g.strokeStyle = col; g.lineWidth = wid || 1; g.setLineDash(dash);
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.setLineDash([]);
+  }
+  function tag(g, x, y, text, col, align, base) {
+    g.fillStyle = col; g.font = fnt(10.5); g.textAlign = align || 'left'; g.textBaseline = base || 'bottom';
+    g.fillText(text, x, y);
   }
 
-  function draw(time) {
-    const c = $('cv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+  // ===================== 1 : band ladder + scenes ==========================
+  function draw1() {
+    const c = $('c1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border-strong');
-    const f = fMHz();
-    const KMX = 3000, KMY = 470;
-    const gl = 46, gb = h - 40;
-    const X = km => gl + km / KMX * (w - gl - 10);
-    const Y = km => gb - km / KMY * (gb - 14);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border'), bds = cvv('--border-strong');
+    const ink = cvv('--text-primary');
+    const X = f => 4 + uOf(f) * (w - 8);
 
-    const layers = S.day
-      ? [['D', 60, 90], ['E', 100, 140], ['F1', 170, 220], ['F2', 260, 340]]
-      : [['E', 100, 140], ['F', 260, 400]];
-    layers.forEach(L => {
-      g.fillStyle = '#7F77DD';
-      g.globalAlpha = L[0] === 'D' ? 0.22 : 0.13;
-      g.fillRect(gl, Y(L[2]), w - gl - 10, Y(L[1]) - Y(L[2]));
-      g.globalAlpha = 1;
-      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
-      g.fillText(L[0] + ' layer', 4, Y((L[1] + L[2]) / 2));
+    // spectrum strip
+    const sy = 26, sh = 26;
+    BANDS.forEach((B, i) => {
+      const x0 = X(B.lo), x1 = X(B.hi);
+      g.fillStyle = i % 2 ? cvv('--surface-1') : cvv('--bg');
+      g.fillRect(x0, sy, x1 - x0, sh);
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.strokeRect(x0, sy, x1 - x0, sh);
+      g.fillStyle = i === bandIx() ? cvv('--series-1') : mut;
+      g.font = fnt(i === bandIx() ? 12 : 11); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(B.k, (x0 + x1) / 2, sy + sh / 2);
     });
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText(S.day ? 'daytime ionosphere' : 'night ionosphere (D gone, F merged and higher)', gl + 4, Y(430));
-
-    g.strokeStyle = bd; g.lineWidth = 1.5;
-    g.beginPath(); g.moveTo(gl - 20, gb); g.lineTo(w, gb); g.stroke();
-    g.fillStyle = sub; g.font = fnt(11);
-    [0, 1000, 2000, 3000].forEach(km => {
-      g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(km + ' km', Math.min(X(km), w - 24), gb + 8);
+    g.font = fnt(9.5); g.fillStyle = mut; g.textBaseline = 'top';
+    [[3e3, '3 kHz'], [3e5, '300 kHz'], [3e7, '30 MHz'], [3e9, '3 GHz'], [3e11, '300 GHz']].forEach(t => {
+      g.textAlign = t[0] === 3e3 ? 'left' : t[0] === 3e11 ? 'right' : 'center';
+      g.fillText(t[1], X(t[0]), sy + sh + 4);
     });
+    const mx = X(fHz());
+    dashLine(g, mx, sy - 12, mx, sy + sh + 2, cvv('--series-2'), [], 2);
+    tag(g, Math.min(Math.max(mx, 60), w - 8), sy - 14, fmtF(fHz()) + '  λ = ' + fmtLam(lamM()),
+      cvv('--series-2'), mx > w / 2 ? 'right' : 'left', 'bottom');
 
-    g.strokeStyle = ink; g.lineWidth = 2;
-    g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(0), gb - 16); g.stroke();
-    g.fillStyle = ink; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('tx', X(0) + 5, gb - 14);
+    // four scenes
+    const top = sy + sh + 22, cw = (w - 10) / 2, ch = (h - top - 6) / 2;
+    const act = bandIx() <= 2 ? 0 : bandIx() === 3 ? 1 : bandIx() <= 6 ? 2 : 3;
+    const cells = [[0, 0], [1, 0], [0, 1], [1, 1]];
+    const titles = ['Surface wave hugging the earth', 'One F2 ionospheric hop',
+      'Two masts in line of sight', 'A short millimetre-wave hop'];
+    const bands = ['VLF · LF · MF', 'HF', 'VHF · UHF · SHF', 'EHF'];
 
-    const dash = (time * 0.02) % 24;
+    for (let i = 0; i < 4; i++) {
+      const x0 = 2 + cells[i][0] * (cw + 6), y0 = top + cells[i][1] * (ch + 4);
+      const on = i === act;
+      g.save();
+      g.beginPath(); g.rect(x0, y0, cw, ch); g.clip();
+      g.globalAlpha = on ? 1 : 0.5;
+      g.strokeStyle = on ? bds : bd; g.lineWidth = on ? 1.2 : 0.5;
+      g.strokeRect(x0 + 0.5, y0 + 0.5, cw - 1, ch - 1);
+      g.fillStyle = on ? ink : mut; g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(titles[i], x0 + 8, y0 + 6);
+      g.fillStyle = mut; g.font = fnt(9.5);
+      g.fillText(bands[i], x0 + 8, y0 + 20);
+      const px = x0 + 10, py = y0 + 34, pw = cw - 20, ph = ch - 44;
+      if (i === 0) scene0(g, px, py, pw, ph, sub, mut);
+      if (i === 1) scene1(g, px, py, pw, ph, sub, mut);
+      if (i === 2) scene2(g, px, py, pw, ph, sub, mut);
+      if (i === 3) scene3(g, px, py, pw, ph, sub, mut);
+      g.restore();
+    }
+  }
+  const clamp01 = v => Math.min(Math.max(v, 0), 1);
+  function groundCurve(g, x, y0, w, sag, col) {
+    g.strokeStyle = col; g.lineWidth = 1.6;
+    g.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40;
+      const yy = y0 - sag * (1 - 4 * Math.pow(t - 0.5, 2));
+      if (i === 0) g.moveTo(x + t * w, yy); else g.lineTo(x + t * w, yy);
+    }
+    g.stroke();
+  }
+  function scene0(g, x, y, w, h, sub, mut) {
+    const gy = y + h * 0.74, sag = Math.min(16, h * 0.13);
+    const gnd = t => gy - sag * (1 - 4 * Math.pow(clamp01(t) - 0.5, 2));
+    groundCurve(g, x, gy, w, sag, cvv('--series-5'));
+    const mh = h * 0.34;
+    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 2;
+    g.beginPath(); g.moveTo(x + 10, gnd(10 / w)); g.lineTo(x + 10, gnd(10 / w) - mh); g.stroke();
+    g.strokeStyle = cvv('--series-5'); g.lineWidth = 1.4;
+    g.beginPath();
+    for (let i = 0; i <= 120; i++) {
+      const t = i / 120, xx = x + 10 + t * (w - 20);
+      const amp = h * 0.11 * Math.exp(-2.4 * t);
+      const yy = gnd((10 + t * (w - 20)) / w) - h * 0.07 - amp * Math.sin(t * 17);
+      if (i === 0) g.moveTo(xx, yy); else g.lineTo(xx, yy);
+    }
+    g.stroke();
+    tag(g, x + 10, gnd(10 / w) - mh - 4, 'transmitter', mut, 'left', 'bottom');
+    tag(g, x + w / 2, gy + 16, 'the wave follows the curve and fades with distance', mut, 'center', 'top');
+    tag(g, x + w / 2, y + h - 1, 'schematic · LF ground wave stable to about 1 500 km', sub, 'center', 'bottom');
+  }
+  function scene1(g, x, y, w, h, sub, mut) {
+    const gy = y + h * 0.82, sag = Math.min(12, h * 0.09);
+    const gnd = t => gy - sag * (1 - 4 * Math.pow(clamp01(t) - 0.5, 2));
+    groundCurve(g, x, gy, w, sag, cvv('--series-5'));
+    const ly = y + h * 0.16, lh = Math.max(10, h * 0.09);
+    g.fillStyle = cvv('--series-4'); g.globalAlpha *= 0.18;
+    g.fillRect(x, ly, w, lh); g.globalAlpha /= 0.18;
+    tag(g, x + 2, ly - 3, 'F2 layer at ' + H0 + ' km — refracted, not mirrored', cvv('--series-4'), 'left', 'bottom');
+    g.strokeStyle = cvv('--series-4'); g.lineWidth = 2;
+    g.beginPath();
+    for (let i = 0; i <= 80; i++) {
+      const t = i / 80, xx = x + 8 + t * (w - 16), tt = (8 + t * (w - 16)) / w;
+      const yy = gnd(tt) - (gnd(0.5) - ly - lh * 0.5) * Math.sin(t * Math.PI);
+      if (i === 0) g.moveTo(xx, yy); else g.lineTo(xx, yy);
+    }
+    g.stroke();
+    tag(g, x + w / 2, y + h - 1,
+      'schematic · a 2 000 km hop needs ' + (S.foF2 * secSph(2000)).toFixed(1) + ' MHz or less', sub, 'center', 'bottom');
+  }
+  function scene2(g, x, y, w, h, sub, mut) {
+    const span = Math.max(dLos() * 1.3, 1), axisH = 32;
+    const gy = y + h - axisH, sag = Math.min(24, (h - axisH) * 0.22);
+    const px = d => x + clamp01(d / span) * w;
+    const gnd = d => gy - sag * (1 - 4 * Math.pow(clamp01(d / span) - 0.5, 2));
+    const hmax = Math.max(S.h1, S.h2, 1) * 1.45;
+    const top = y + 16;
+    const py = (d, hm) => gnd(d) - Math.min(hm / hmax, 1) * (gnd(d) - top);
+    groundCurve(g, x, gy, w, sag, cvv('--series-5'));
+    const dp = Math.min(S.d, span);
+    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 2;
+    g.beginPath(); g.moveTo(px(0) + 1, gnd(0)); g.lineTo(px(0) + 1, py(0, S.h1)); g.stroke();
+    g.beginPath(); g.moveTo(px(dp), gnd(dp)); g.lineTo(px(dp), py(dp, S.h2)); g.stroke();
+    dashLine(g, px(0) + 1, py(0, S.h1), px(dp), py(dp, S.h2), cvv('--series-1'), [], 1.8);
+    dashLine(g, px(0) + 1, py(0, S.h1), px(dp / 2), gnd(dp / 2), cvv('--series-3'), [4, 3], 1.2);
+    dashLine(g, px(dp / 2), gnd(dp / 2), px(dp), py(dp, S.h2), cvv('--series-3'), [4, 3], 1.2);
+    tag(g, px(0) + 5, py(0, S.h1) - 3, 'h₁ ' + S.h1.toFixed(0) + ' m', mut, 'left', 'bottom');
+    tag(g, px(dp) - 4, py(dp, S.h2) - 3, 'h₂ ' + S.h2.toFixed(0) + ' m', mut, 'right', 'bottom');
+    const hx = px(dLos());
+    dashLine(g, hx, y + 4, hx, gnd(dLos()), cvv('--series-2'), [5, 4], 1.3);
+    tag(g, hx + (hx > x + w * 0.6 ? -4 : 4), y + 13, 'horizon ' + dLos().toFixed(1) + ' km',
+      cvv('--series-2'), hx > x + w * 0.6 ? 'right' : 'left', 'bottom');
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(x, gy + 3); g.lineTo(x + w, gy + 3); g.stroke();
+    g.font = fnt(9.5); g.fillStyle = mut; g.textBaseline = 'top';
+    for (let i = 0; i <= 4; i++) {
+      const d = span * i / 4;
+      g.beginPath(); g.moveTo(px(d), gy + 3); g.lineTo(px(d), gy + 6); g.stroke();
+      g.textAlign = i === 0 ? 'left' : i === 4 ? 'right' : 'center';
+      g.fillText(d.toFixed(d < 10 ? 1 : 0), px(d), gy + 8);
+    }
+    tag(g, x + w / 2, y + h - 1, 'to scale in km · vertical scale exaggerated', sub, 'center', 'bottom');
+  }
+  function scene3(g, x, y, w, h, sub, mut) {
+    const gy = y + h * 0.80, ph = h * 0.36;
+    g.strokeStyle = cvv('--series-5'); g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(x, gy); g.lineTo(x + w, gy); g.stroke();
+    if (S.rain > 0) {
+      g.strokeStyle = cvv('--series-2'); g.lineWidth = 1; g.globalAlpha *= 0.65;
+      for (let i = 0; i < 34; i++) {
+        const rx = x + 12 + (i * 41) % Math.max(w - 24, 1);
+        const ry = y + 4 + (i * 29) % Math.max(gy - y - 8, 1);
+        g.beginPath(); g.moveTo(rx, ry); g.lineTo(rx - 2, ry + 7); g.stroke();
+      }
+      g.globalAlpha /= 0.65;
+    }
+    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 2;
+    g.beginPath(); g.moveTo(x + 16, gy); g.lineTo(x + 16, gy - ph); g.stroke();
+    g.beginPath(); g.moveTo(x + w - 16, gy); g.lineTo(x + w - 16, gy - ph); g.stroke();
+    dashLine(g, x + 16, gy - ph, x + w - 16, gy - ph, cvv('--series-1'), [], 2);
+    const low = fGHz() < 1;
+    const gg = low ? gasGamma(1) : gasGamma(fGHz());
+    const rr = low ? 0 : rainGamma(fGHz(), S.rain, S.vert);
+    tag(g, x + w / 2, gy - ph - 5, ((gg + rr) * 0.3).toFixed(3) + ' dB of air and rain over 300 m',
+      cvv('--series-7'), 'center', 'bottom');
+    tag(g, x + w / 2, y + h - 1, 'schematic · a 300 m hop · ' + (gg + rr).toFixed(3) + ' dB/km'
+      + (low ? ', the 1 GHz upper bound' : ' here'), sub, 'center', 'bottom');
+  }
 
-    const gr = groundRange(f);
-    if (gr > 20) {
-      g.strokeStyle = '#1D9E75'; g.lineWidth = 3; g.globalAlpha = 0.85;
-      g.setLineDash([10, 7]); g.lineDashOffset = -dash;
-      g.beginPath(); g.moveTo(X(0), gb - 3); g.lineTo(X(Math.min(gr, KMX)), gb - 3); g.stroke();
-      g.setLineDash([]); g.globalAlpha = 1;
-      g.fillStyle = '#1D9E75'; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('ground wave', X(20), gb - 8);
+  // ===================== 2 : free-space loss vs frequency ==================
+  function draw2() {
+    const c = $('c2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 54, r = 16, t = 16, b = 40;
+    const X = f => l + uOf(f) * (w - l - r);
+    const isoAt = f => fsl(f / 1e9, S.d);
+    const dishAt = f => netDishLoss(f / 1e9, S.d);
+    let lo = 1e9, hi = -1e9;
+    for (let i = 0; i <= 40; i++) {
+      const f = FLO * Math.pow(FHI / FLO, i / 40);
+      lo = Math.min(lo, isoAt(f), f >= C0 / DISH_D ? dishAt(f) : 1e9);
+      hi = Math.max(hi, isoAt(f), f >= C0 / DISH_D ? dishAt(f) : -1e9);
+    }
+    lo = Math.floor((lo - 8) / 20) * 20; hi = Math.ceil((hi + 8) / 20) * 20;
+    const Y = v => t + (hi - v) / Math.max(hi - lo, 1) * (h - t - b);
+
+    g.font = fnt(10.5);
+    for (let v = lo; v <= hi; v += 20) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    [3e3, 3e5, 3e7, 3e9, 3e11].forEach((f, i) => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      g.fillStyle = mut; g.textBaseline = 'top';
+      g.textAlign = i === 0 ? 'left' : i === 4 ? 'right' : 'center';
+      g.fillText(['3 kHz', '300 kHz', '30 MHz', '3 GHz', '300 GHz'][i], X(f), h - b + 6);
+    });
+    tag(g, 4, t - 4, 'path loss, dB', sub, 'left', 'bottom');
+    tag(g, w - r, h - 6, 'frequency', mut, 'right', 'bottom');
+
+    // near-field shading
+    const fNear = 10 * C0 / (S.d * 1000);
+    if (fNear > FLO) {
+      const xe = Math.min(X(Math.min(fNear, FHI)), w - r);
+      g.fillStyle = cvv('--text-muted'); g.globalAlpha = 0.12;
+      g.fillRect(l, t, Math.max(xe - l, 0), h - t - b); g.globalAlpha = 1;
+      if (xe - l > 60) tag(g, (l + xe) / 2, t + 14, 'nearer than 10λ', mut, 'center', 'top');
     }
 
-    let firstLanding = null;
-    if (f < 30) {
-      ELEV.forEach(e => {
-        const er = e * Math.PI / 180;
-        if (dAbsorbed(f)) {
-          const dx = 75 / Math.tan(er);
-          g.strokeStyle = '#D85A30'; g.lineWidth = 1.6; g.globalAlpha = 0.8;
-          g.setLineDash([7, 5]); g.lineDashOffset = -dash;
-          g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(dx), Y(75)); g.stroke();
-          g.setLineDash([]); g.globalAlpha = 1;
-          g.fillStyle = '#D85A30'; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
-          g.fillText('✕', X(dx), Y(80));
-        } else if (rayReturns(f, e)) {
-          const hop = hopKm(e);
-          g.strokeStyle = '#378ADD'; g.lineWidth = 1.8;
-          g.setLineDash([9, 6]); g.lineDashOffset = -dash;
-          for (let k = 0; k < 3; k++) {
-            const x0 = k * hop, x1 = (k + 0.5) * hop, x2 = (k + 1) * hop;
-            if (x0 > KMX) break;
-            g.beginPath();
-            g.moveTo(X(x0), gb);
-            g.quadraticCurveTo(X(x1), Y(fLayer() * 1.25), X(x2), gb);
-            g.stroke();
-            if (firstLanding === null || x2 < firstLanding) {
-              if (k === 0) firstLanding = firstLanding === null ? x2 : Math.min(firstLanding, x2);
-            }
-          }
-          g.setLineDash([]);
-        } else {
-          const er2 = Math.tan(er);
-          const topKm = KMY;
-          const dx = topKm / er2;
-          g.strokeStyle = sub; g.lineWidth = 1.4; g.globalAlpha = 0.45;
-          g.setLineDash([7, 5]); g.lineDashOffset = -dash;
-          g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(Math.min(dx, KMX)), Y(Math.min(dx, KMX) * er2)); g.stroke();
-          g.setLineDash([]); g.globalAlpha = 1;
-        }
-      });
-      if (!dAbsorbed(f) && ELEV.some(e => !rayReturns(f, e))) {
-        g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
-        g.fillText('grey rays escape to space', w - 12, 14);
+    axes(g, l, r, t, b, w, h);
+    const curve = (fn, col, wid, fmin) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.beginPath();
+      let started = false;
+      for (let px = l; px <= w - r; px++) {
+        const f = FLO * Math.pow(FHI / FLO, (px - l) / (w - l - r));
+        if (f < fmin) { started = false; continue; }
+        const y = Y(fn(f));
+        if (!isFinite(y)) { started = false; continue; }
+        if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
+      }
+      g.stroke();
+    };
+    curve(isoAt, cvv('--series-1'), S.dish ? 1.2 : 2.4, FLO);
+    curve(dishAt, cvv('--series-5'), S.dish ? 2.4 : 1.2, C0 / DISH_D);
+    tag(g, X(1e7), Y(isoAt(1e7)) - 6, 'isotropic ends', cvv('--series-1'), 'left', 'bottom');
+    tag(g, X(1e10), Y(dishAt(1e10)) + 4, '1 m dishes both ends', cvv('--series-5'), 'right', 'top');
+
+    const f0 = fHz();
+    dashLine(g, X(f0), t, X(f0), h - b, mut, [4, 4], 1);
+    const yv = S.dish && f0 >= C0 / DISH_D ? dishAt(f0) : isoAt(f0);
+    g.fillStyle = cvv('--series-2');
+    g.beginPath(); g.arc(X(f0), Y(yv), 4.5, 0, 7); g.fill();
+    tag(g, Math.min(X(f0) + 6, w - r - 4), Y(yv) - 6, yv.toFixed(1) + ' dB',
+      cvv('--series-2'), X(f0) > w * 0.7 ? 'right' : 'left', 'bottom');
+    tag(g, l, h - 6,
+      'Aₑ isotropic = ' + isoAe().toExponential(2) + ' m²   ·   1 m dish Aₑ = ' + dishAe().toFixed(3) + ' m²',
+      sub, 'left', 'bottom');
+  }
+
+  // ===================== 3 : atmosphere ====================================
+  function draw3() {
+    const c = $('c3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 56, r = 14, t = 18, b = 40;
+    const f0 = 1, f1 = 300, vlo = -3, vhi = 2;
+    const X = f => l + (L10(f) - L10(f0)) / (L10(f1) - L10(f0)) * (w - l - r);
+    const Y = v => t + (vhi - Math.min(Math.max(L10(Math.max(v, 1e-6)), vlo), vhi)) / (vhi - vlo) * (h - t - b);
+
+    g.font = fnt(10.5);
+    [0.001, 0.01, 0.1, 1, 10, 100].forEach(v => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v < 1 ? v.toFixed(3) : v.toFixed(0), l - 6, Y(v));
+    });
+    [1, 3, 10, 30, 100, 300].forEach(f => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(f + '', X(f), h - b + 6);
+    });
+    tag(g, 4, t - 4, 'dB per km', sub, 'left', 'bottom');
+    tag(g, w - r, h - 6, 'frequency, GHz', mut, 'right', 'bottom');
+    axes(g, l, r, t, b, w, h);
+
+    [[60, 'O₂ wall'], [183.31, 'H₂O wall']].forEach(m => {
+      dashLine(g, X(m[0]), t, X(m[0]), h - b, cvv('--series-7'), [3, 3], 1);
+      tag(g, X(m[0]) - 3, t + 2, m[1], cvv('--series-7'), 'right', 'top');
+    });
+    [[94, 'window'], [140, 'window']].forEach(m => {
+      dashLine(g, X(m[0]), Y(gasGamma(m[0])), X(m[0]), h - b, cvv('--series-5'), [2, 4], 1);
+      tag(g, X(m[0]), h - b - 4, m[1], cvv('--series-5'), 'center', 'bottom');
+    });
+
+    const curve = (fn, col, wid, dash) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.setLineDash(dash || []);
+      g.beginPath();
+      for (let px = l; px <= w - r; px++) {
+        const f = Math.pow(10, L10(f0) + (px - l) / (w - l - r) * (L10(f1) - L10(f0)));
+        const y = Y(fn(f));
+        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    };
+    curve(gasGamma, cvv('--series-7'), 2.2);
+    tag(g, X(30), Y(gasGamma(30)) + 4, 'gases', cvv('--series-7'), 'center', 'top');
+    if (S.rain > 0) {
+      curve(f => rainGamma(f, S.rain, S.vert), cvv('--series-2'), 2.2);
+      curve(f => rainGamma(f, S.rain, !S.vert), cvv('--series-2'), 1, [5, 4]);
+      tag(g, X(6), Y(rainGamma(6, S.rain, S.vert)) - 5,
+        'rain ' + S.rain.toFixed(0) + ' mm/h, ' + (S.vert ? 'vertical' : 'horizontal'), cvv('--series-2'), 'left', 'bottom');
+    } else {
+      tag(g, l + 8, t + 16, 'rain rate is zero — raise it to draw the rain curves', mut, 'left', 'top');
+    }
+
+    const fg = fGHz();
+    if (fg >= f0 && fg <= f1) {
+      const tot = gasGamma(fg) + rainGamma(fg, S.rain, S.vert);
+      dashLine(g, X(fg), t, X(fg), h - b, mut, [4, 4], 1);
+      g.fillStyle = cvv('--series-2');
+      g.beginPath(); g.arc(X(fg), Y(tot), 4.5, 0, 7); g.fill();
+      tag(g, X(fg) + (X(fg) > w * 0.7 ? -6 : 6), Y(tot) - 7, tot.toFixed(3) + ' dB/km',
+        cvv('--series-2'), X(fg) > w * 0.7 ? 'right' : 'left', 'bottom');
+    } else {
+      tag(g, l + 8, h - b - 8, 'you are at ' + fmtF(fHz()) + ', below this chart — gases and rain cost under 0.006 dB/km there',
+        mut, 'left', 'bottom');
+    }
+  }
+
+  // ===================== 4 : two ray =======================================
+  function draw4() {
+    const c = $('c4'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 58, r = 14, t = 18, b = 40;
+    if (fMHz() < 30) {
+      tag(g, w / 2, h / 2, 'Below about 30 MHz both antennas sit electrically on the surface.', sub, 'center', 'bottom');
+      tag(g, w / 2, h / 2 + 16, 'The direct and ground-reflected rays cancel and only the surface wave arrives,', sub, 'center', 'bottom');
+      tag(g, w / 2, h / 2 + 32, 'so the two-ray model is not used here. Raise the frequency above 30 MHz.', sub, 'center', 'bottom');
+      return;
+    }
+    const dlo = Math.max(0.01, 10 * lamM() / 1000), dhi = 500;
+    const X = d => l + (L10(d) - L10(dlo)) / (L10(dhi) - L10(dlo)) * (w - l - r);
+    const P = d => -(fsl(fGHz(), d) - twoRayDb(d));
+    const Pfs = d => -fsl(fGHz(), d);
+    const Ppe = d => -planeEarthLoss(d);
+    let hi = Pfs(dlo) + 10;
+    let lo = Math.min(Ppe(dhi), Pfs(dhi)) - 15;
+    hi = Math.ceil(hi / 20) * 20; lo = Math.floor(lo / 20) * 20;
+    const Y = v => t + (hi - Math.min(Math.max(v, lo), hi)) / Math.max(hi - lo, 1) * (h - t - b);
+
+    g.font = fnt(10.5);
+    for (let v = lo; v <= hi; v += 20) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    [0.01, 0.1, 1, 10, 100, 500].forEach(d => {
+      if (d < dlo || d > dhi) return;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(d), t); g.lineTo(X(d), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(d < 1 ? d.toFixed(2) : d.toFixed(0), X(d), h - b + 6);
+    });
+    tag(g, 4, t - 4, 'received power relative to transmitted, dB', sub, 'left', 'bottom');
+    tag(g, w - r, h - 6, 'distance, km', mut, 'right', 'bottom');
+    axes(g, l, r, t, b, w, h);
+
+    const line = (fn, col, wid, dash) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.setLineDash(dash || []);
+      g.beginPath();
+      for (let px = l; px <= w - r; px++) {
+        const d = Math.pow(10, L10(dlo) + (px - l) / (w - l - r) * (L10(dhi) - L10(dlo)));
+        const y = Y(fn(d));
+        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    };
+    line(Pfs, cvv('--series-3'), 1.2, [6, 4]);
+    line(Ppe, cvv('--series-5'), 1.2, [6, 4]);
+
+    // exact two-ray, with envelope shading where the fringes are finer than a pixel
+    const dOf = px => Math.pow(10, L10(dlo) + (px - l) / (w - l - r) * (L10(dhi) - L10(dlo)));
+    const phase = d => 2 * Math.PI * S.h1 * S.h2 / (lamM() * d * 1000);
+    let aliasedTo = l - 1;
+    for (let px = l; px < w - r; px++) {
+      if (Math.abs(phase(dOf(px)) - phase(dOf(px + 1))) > 0.8) aliasedTo = px + 1;
+    }
+    if (aliasedTo > l) {
+      g.fillStyle = cvv('--series-1'); g.globalAlpha = 0.16;
+      g.beginPath();
+      for (let px = l; px <= aliasedTo; px++) g.lineTo(px, Y(Pfs(dOf(px)) + 6.02));
+      g.lineTo(aliasedTo, h - b); g.lineTo(l, h - b); g.closePath(); g.fill();
+      g.globalAlpha = 1;
+      g.font = fnt(10.5);
+      const msg = 'fringes finer than one pixel — envelope shaded';
+      if (aliasedTo - l > g.measureText(msg).width + 8)
+        tag(g, (l + aliasedTo) / 2, t + 30, msg, cvv('--series-1'), 'center', 'top');
+      else if (aliasedTo - l > 60)
+        tag(g, (l + aliasedTo) / 2, t + 30, 'envelope only', cvv('--series-1'), 'center', 'top');
+    }
+    g.strokeStyle = cvv('--series-1'); g.lineWidth = 1.8;
+    g.beginPath();
+    let st = false;
+    for (let px = Math.max(aliasedTo, l); px <= w - r; px++) {
+      const y = Y(P(dOf(px)));
+      if (!st) { g.moveTo(px, y); st = true; } else g.lineTo(px, y);
+    }
+    g.stroke();
+
+    const db = breakKm();
+    if (db >= dlo && db <= dhi) {
+      dashLine(g, X(db), t, X(db), h - b, cvv('--series-2'), [5, 4], 1.4);
+      tag(g, Math.min(X(db) + 5, w - r - 4), t + 4, 'breakpoint ' + fmtLam(db * 1000),
+        cvv('--series-2'), X(db) > w * 0.7 ? 'right' : 'left', 'top');
+    } else {
+      tag(g, l + 6, t + 4, 'breakpoint ' + fmtLam(db * 1000) + ' is off this chart',
+        cvv('--series-2'), 'left', 'top');
+    }
+    const dl = dLos();
+    if (dl >= dlo && dl <= dhi) {
+      dashLine(g, X(dl), t, X(dl), h - b, mut, [2, 4], 1);
+      tag(g, X(dl) - 4, h - b - 4, 'horizon — model ends', mut, 'right', 'bottom');
+    }
+    tag(g, X(dhi) - 4, Y(Pfs(dhi)) - 5, 'free space, d⁻²', cvv('--series-3'), 'right', 'bottom');
+    tag(g, X(dhi) - 4, Y(Ppe(dhi)) + 5, 'plane earth, d⁻⁴', cvv('--series-5'), 'right', 'top');
+    if (S.d >= dlo && S.d <= dhi) {
+      g.fillStyle = cvv('--text-primary');
+      g.beginPath(); g.arc(X(S.d), Y(P(S.d)), 4, 0, 7); g.fill();
+    }
+  }
+
+  // ===================== 5 : beyond the horizon ============================
+  function draw5() {
+    const c = $('c5'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 58, r = 14, t = 18, b = 40;
+    const dlo = 1, dhi = 500;
+    const X = d => l + (L10(d) - L10(dlo)) / (L10(dhi) - L10(dlo)) * (w - l - r);
+    const gasR = (fGHz() >= 1 ? gasGamma(fGHz()) + rainGamma(fGHz(), S.rain, S.vert) : gasGamma(1));
+    const Lfs = d => fsl(fGHz(), d) + gasR * d;
+    const Ldif = d => Lfs(d) + sphDiffDb(d);
+    const Lts = d => troposDb(d);
+    const lo = Math.floor((Lfs(dlo) - 10) / 25) * 25;
+    const hi = Math.ceil(Math.min(Math.max(Lfs(dhi), Lts(dhi)) + 20, lo + 500) / 25) * 25;
+    const Y = v => t + (Math.min(Math.max(v, lo), hi) - lo) / Math.max(hi - lo, 1) * (h - t - b);
+
+    g.font = fnt(10.5);
+    for (let v = lo; v <= hi; v += 25) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    [1, 3, 10, 30, 100, 300, 500].forEach(d => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(d), t); g.lineTo(X(d), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(d + '', X(d), h - b + 6);
+    });
+    tag(g, 4, t - 4, 'basic transmission loss, dB — further down is more loss', sub, 'left', 'bottom');
+    tag(g, w - r, h - 6, 'distance, km', mut, 'right', 'bottom');
+    axes(g, l, r, t, b, w, h);
+
+    const line = (fn, col, wid, dash, dFrom) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.setLineDash(dash || []);
+      g.beginPath();
+      let started = false;
+      for (let px = l; px <= w - r; px++) {
+        const d = Math.pow(10, L10(dlo) + (px - l) / (w - l - r) * (L10(dhi) - L10(dlo)));
+        if (dFrom && d < dFrom) { started = false; continue; }
+        const v = fn(d);
+        if (!(v >= lo && v <= hi)) { started = false; continue; }
+        const y = Y(v);
+        if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    };
+    const dl0 = Math.max(dLos(), dlo);
+    line(Lfs, cvv('--series-1'), 1.4, [6, 4]);
+    tag(g, X(300), Y(Lfs(300)) - 5, 'free space + gases', cvv('--series-1'), 'right', 'bottom');
+    line(Lts, cvv('--series-6'), 2, [], dl0);
+    tag(g, X(dhi) - 4, Y(Lts(dhi)) + 4, 'troposcatter', cvv('--series-6'), 'right', 'top');
+    if (fMHz() >= 10) {
+      line(Ldif, cvv('--series-3'), 2.2);
+      let cross = 0;
+      for (let px = l; px <= w - r; px++) {
+        const d = Math.pow(10, L10(dlo) + (px - l) / (w - l - r) * (L10(dhi) - L10(dlo)));
+        if (Ldif(d) > Lts(d)) { cross = d; break; }
+      }
+      tag(g, X(60), Y(Ldif(60)) - 5, 'diffraction', cvv('--series-3'), 'center', 'bottom');
+      if (cross > 0) {
+        dashLine(g, X(cross), t, X(cross), h - b, cvv('--series-6'), [3, 4], 1);
+        tag(g, Math.min(X(cross) + 5, w - r - 4), h - b - 20,
+          'troposcatter takes over at ' + cross.toFixed(0) + ' km', cvv('--series-6'),
+          X(cross) > w * 0.65 ? 'right' : 'left', 'bottom');
       }
     } else {
-      const dLos = 45;
-      g.strokeStyle = '#378ADD'; g.lineWidth = 2.2;
-      g.setLineDash([9, 6]); g.lineDashOffset = -dash;
-      g.beginPath(); g.moveTo(X(0), gb - 4); g.lineTo(X(dLos), gb - 1); g.stroke();
-      g.setLineDash([]);
-      g.fillStyle = '#378ADD'; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('line of sight to the radio horizon (~45 km from a tall mast)', X(60), gb - 8);
-      ELEV.forEach(e => {
-        const er2 = Math.tan(e * Math.PI / 180);
-        const dx = KMY / er2;
-        g.strokeStyle = sub; g.lineWidth = 1.4; g.globalAlpha = 0.45;
-        g.setLineDash([7, 5]); g.lineDashOffset = -dash;
-        g.beginPath(); g.moveTo(X(0), gb); g.lineTo(X(Math.min(dx, KMX)), Y(Math.min(dx, KMX) * er2)); g.stroke();
-        g.setLineDash([]); g.globalAlpha = 1;
-      });
-      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
-      g.fillText('everything punches through the ionosphere', w - 12, 14);
+      tag(g, l + 8, t + 14, 'below 10 MHz the surface wave carries the signal, not diffraction — P.526 §3.2 starts at 10 MHz',
+        mut, 'left', 'top');
     }
+    const dl = dLos();
+    if (dl >= dlo && dl <= dhi) {
+      dashLine(g, X(dl), t, X(dl), h - b, cvv('--series-2'), [5, 4], 1.4);
+      tag(g, Math.min(X(dl) + 5, w - r - 4), t + 4, 'horizon ' + dl.toFixed(1) + ' km',
+        cvv('--series-2'), X(dl) > w * 0.7 ? 'right' : 'left', 'top');
+    }
+    if (S.d >= dlo && S.d <= dhi) {
+      const v = fMHz() >= 10 ? Math.min(Ldif(S.d), Lts(S.d)) : Lts(S.d);
+      g.fillStyle = cvv('--text-primary');
+      g.beginPath(); g.arc(X(S.d), Y(v), 4, 0, 7); g.fill();
+    }
+  }
 
-    if (f < 30 && !dAbsorbed(f) && firstLanding !== null && firstLanding > gr + 60) {
-      g.fillStyle = cvv('--text-warning') || sub; g.globalAlpha = 0.18;
-      g.fillRect(X(gr), gb - 6, X(Math.min(firstLanding, KMX)) - X(gr), 6);
-      g.globalAlpha = 1;
-      g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('skip zone — hears nothing', X((gr + Math.min(firstLanding, KMX)) / 2), gb - 26);
+  // ===================== 6 : MUF ===========================================
+  function draw6() {
+    const c = $('c6'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 52, r = 16, t = 18, b = 40, Dmax = 5000;
+    const X = d => l + Math.min(Math.max(d / Dmax, 0), 1) * (w - l - r);
+    const vmax = Math.max(12, Math.ceil(S.foF2 * secFlat(Dmax) / 10) * 10);
+    const Y = v => t + (vmax - Math.min(Math.max(v, 0), vmax)) / vmax * (h - t - b);
+
+    g.font = fnt(10.5);
+    for (let v = 0; v <= vmax; v += vmax > 40 ? 10 : 5) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
     }
+    for (let d = 0; d <= Dmax; d += 1000) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(d), t); g.lineTo(X(d), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(d.toFixed(0), X(d), h - b + 6);
+    }
+    tag(g, 4, t - 4, 'MUF, MHz', sub, 'left', 'bottom');
+    tag(g, w - r, h - 6, 'ground range of one hop, km', mut, 'right', 'bottom');
+    axes(g, l, r, t, b, w, h);
+
+    const line = (fn, col, wid, dash) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.setLineDash(dash || []);
+      g.beginPath();
+      for (let px = l; px <= w - r; px++) {
+        const d = (px - l) / (w - l - r) * Dmax;
+        const y = Y(fn(d));
+        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    };
+    line(d => S.foF2 * secFlat(d), mut, 1.2, [6, 4]);
+    line(d => S.foF2 * secSph(d), cvv('--series-4'), 2.4);
+    tag(g, X(3600), Y(S.foF2 * secFlat(3600)) - 5, 'flat earth, over-predicts', mut, 'center', 'bottom');
+    tag(g, X(3200), Y(S.foF2 * secSph(3200)) + 5, 'spherical earth', cvv('--series-4'), 'center', 'top');
+
+    const dmaxHop = 2 * Math.sqrt(2 * 8497 * H0);
+    if (dmaxHop <= Dmax) {
+      dashLine(g, X(dmaxHop), t, X(dmaxHop), h - b, cvv('--series-5'), [4, 4], 1.2);
+      tag(g, X(dmaxHop) - 5, t + 4, 'longest single hop ' + dmaxHop.toFixed(0) + ' km', cvv('--series-5'), 'right', 'top');
+    }
+    const fM = fMHz();
+    if (fM >= 1 && fM <= vmax) {
+      dashLine(g, l, Y(fM), w - r, Y(fM), cvv('--series-2'), [5, 4], 1.4);
+      tag(g, w - r - 4, Y(fM) - 4, 'you are at ' + fM.toFixed(2) + ' MHz — below the purple curve the ray returns',
+        cvv('--series-2'), 'right', 'bottom');
+    } else {
+      tag(g, l + 6, t + 14, 'at ' + fmtF(fHz()) + ' the ionosphere does not return the wave at any hop length',
+        mut, 'left', 'top');
+    }
+    g.fillStyle = cvv('--text-primary');
+    g.beginPath(); g.arc(X(S.d), Y(S.foF2 * secSph(S.d)), 4, 0, 7); g.fill();
+    tag(g, X(S.d) + 6, Y(S.foF2 * secSph(S.d)) + 6, 'your ' + S.d.toFixed(1) + ' km path',
+      cvv('--text-primary'), 'left', 'top');
+  }
+
+  // ===================== 7 : external noise ================================
+  function draw7() {
+    const c = $('c7'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const l = 52, r = 92, t = 18, b = 40, f0 = 0.3, f1 = 250;
+    const X = f => l + (L10(f) - L10(f0)) / (L10(f1) - L10(f0)) * (w - l - r);
+    const vlo = -20, vhi = 100;
+    const Y = v => t + (vhi - Math.min(Math.max(v, vlo), vhi)) / (vhi - vlo) * (h - t - b);
+
+    g.font = fnt(10.5);
+    for (let v = vlo; v <= vhi; v += 20) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v.toFixed(0), l - 6, Y(v));
+    }
+    [0.3, 1, 3, 10, 30, 100, 250].forEach(f => {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(f + '', X(f), h - b + 6);
+    });
+    tag(g, 4, t - 4, 'Fₐ, dB above kT₀b', sub, 'left', 'bottom');
+    tag(g, w - r, h - 6, 'frequency, MHz', mut, 'right', 'bottom');
+    axes(g, l, r, t, b, w, h);
+
+    const keys = ['city', 'residential', 'rural', 'quiet', 'galactic'];
+    const cols = ['--series-7', '--series-2', '--series-3', '--series-5', '--series-4'];
+    const lab = keys.map((kk, i) => ({ k: kk, c: cvv(cols[i]), y: Y(famDb(kk, f1)) }))
+      .sort((a, b) => a.y - b.y);
+    for (let i = 1; i < lab.length; i++) if (lab[i].y - lab[i - 1].y < 13) lab[i].y = lab[i - 1].y + 13;
+    keys.forEach((kk, i) => {
+      const col = cvv(cols[i]), on = kk === S.env;
+      g.strokeStyle = col; g.lineWidth = on ? 2.4 : 1.1;
+      g.globalAlpha = on ? 1 : 0.55;
+      g.beginPath();
+      for (let px = l; px <= w - r; px++) {
+        const f = Math.pow(10, L10(f0) + (px - l) / (w - l - r) * (L10(f1) - L10(f0)));
+        const y = Y(famDb(kk, f));
+        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke();
+      g.globalAlpha = 1;
+    });
+    lab.forEach(L => tag(g, w - r + 5, L.y, NOISE[L.k][2], L.c, 'left', 'middle'));
+    const fM = fMHz();
+    if (fM >= f0 && fM <= f1) {
+      dashLine(g, X(fM), t, X(fM), h - b, mut, [4, 4], 1);
+      const v = famDb(S.env, fM);
+      g.fillStyle = cvv('--text-primary');
+      g.beginPath(); g.arc(X(fM), Y(v), 4.5, 0, 7); g.fill();
+      tag(g, X(fM) + (X(fM) > w * 0.6 ? -6 : 6), Y(v) - 6, v.toFixed(1) + ' dB',
+        cvv('--text-primary'), X(fM) > w * 0.6 ? 'right' : 'left', 'bottom');
+    } else {
+      tag(g, l + 6, t + 14, 'at ' + fmtF(fHz()) + ' you are outside the 0.3 to 250 MHz range of P.372 Table 1',
+        mut, 'left', 'top');
+    }
+  }
+
+  // ===================== verdict, cards, working ===========================
+  function atmosGamma() {
+    const g = fGHz();
+    if (g < 1) return { gas: gasGamma(1), rain: 0, clamped: true };
+    return { gas: gasGamma(g), rain: rainGamma(g, S.rain, S.vert), clamped: false };
+  }
+  function verdict() {
+    const fM = fMHz(), dl = dLos(), a = atmosGamma(), aPath = (a.gas + a.rain) * S.d;
+    const muf = S.foF2 * secSph(S.d);
+    if (fM < 3) return { n: 'Surface wave', t: 'below 3 MHz both antennas are electrically at the surface; ITU-R P.368 gives no closed form, so no range is printed' };
+    if (fM <= 30 && fM <= muf) return { n: 'Sky wave', t: 'MUF for a ' + S.d.toFixed(0) + ' km hop is ' + muf.toFixed(1) + ' MHz, above your ' + fM.toFixed(2) + ' MHz, so the F2 layer returns the ray' };
+    if (aPath > 20) return { n: 'Atmospheric absorption', t: 'gases and rain alone take ' + aPath.toFixed(0) + ' dB over ' + S.d.toFixed(1) + ' km, more than everything else combined' };
+    if (S.d <= dl) {
+      const db = breakKm();
+      return S.d < db
+        ? { n: 'Line of sight, lobing', t: 'inside the ' + fmtLam(db * 1000) + ' breakpoint, so the direct and reflected rays still interfere; free-space loss ' + fsl(fGHz(), S.d).toFixed(1) + ' dB' }
+        : { n: 'Two-ray, d⁻⁴', t: 'past the ' + fmtLam(db * 1000) + ' breakpoint and inside the ' + dl.toFixed(1) + ' km horizon; ground reflection cancels the direct ray' };
+    }
+    const Ld = fsl(fGHz(), S.d) + a.gas * S.d + a.rain * S.d + sphDiffDb(S.d), Lt = troposDb(S.d);
+    if (fM >= 10 && Ld <= Lt) return { n: 'Diffraction', t: 'beyond the ' + dl.toFixed(1) + ' km horizon; diffraction gives ' + Ld.toFixed(0) + ' dB against troposcatter ' + Lt.toFixed(0) + ' dB' };
+    return { n: 'Troposcatter', t: 'beyond the horizon and past the crossing; troposcatter ' + Lt.toFixed(0) + ' dB beats diffraction ' + (fM >= 10 ? Ld.toFixed(0) + ' dB' : 'which is not modelled below 10 MHz') };
   }
 
   function updateUI() {
-    const f = fMHz();
-    $('fqv').textContent = f < 1 ? (f * 1000).toFixed(0) + ' kHz' : f.toFixed(1) + ' MHz';
-    const b = bandOf(f);
-    $('band').textContent = b[0];
-    $('cBand').textContent = b[0] + (S.day ? ' · day' : ' · night');
-    $('cUse').textContent = b[1];
+    $('fqv').textContent = fmtF(fHz());
+    $('dsv').textContent = S.d.toFixed(1) + ' km';
+    $('h1v').textContent = S.h1.toFixed(0) + ' m';
+    $('h2v').textContent = S.h2.toFixed(0) + ' m';
+    $('rnv').textContent = S.rain.toFixed(0) + ' mm/h';
+    $('fov').textContent = S.foF2.toFixed(1) + ' MHz';
+    $('gnv').textContent = S.gain.toFixed(0) + ' dBi';
+    for (let i = 0; i < 8; i++) $('bd' + i).classList.toggle('on', i === bandIx());
+    [0.5, 0.667, 1, 1.333].forEach((v, i) => $('k' + i).classList.toggle('on', Math.abs(S.k - v) < 1e-6));
+    $('pH').classList.toggle('on', !S.vert); $('pV').classList.toggle('on', S.vert);
+    $('a0').classList.toggle('on', !S.dish); $('a1').classList.toggle('on', S.dish);
+    ['city', 'residential', 'rural', 'quiet', 'galactic'].forEach((kk, i) => $('e' + i).classList.toggle('on', S.env === kk));
 
-    const gr = groundRange(f);
-    let landings = [];
-    if (f < 30 && !dAbsorbed(f)) {
-      ELEV.forEach(e => { if (rayReturns(f, e)) landings.push(hopKm(e)); });
-    }
-    const nearest = landings.length ? Math.min.apply(null, landings) : null;
+    const a = atmosGamma(), aPath = (a.gas + a.rain) * S.d, dl = dLos(), db = breakKm();
+    const muf = S.foF2 * secSph(S.d), fM = fMHz();
+    const dLam = S.d * 1000 / lamM();
+    $('kLam').textContent = fmtLam(lamM());
+    $('kFsl').textContent = dLam >= 10 ? fsl(fGHz(), S.d).toFixed(1) + ' dB' : 'near field';
+    $('kFslN').textContent = dLam >= 10
+      ? '92.4478 + 20log f(GHz) + 20log d(km), at ' + fmtF(fHz()) + ' over ' + S.d.toFixed(1) + ' km'
+      : 'the path is only ' + dLam.toFixed(dLam < 1 ? 3 : 1) + ' wavelengths long; the free-space formula needs at least ten';
+    $('kAtm').textContent = aPath.toFixed(aPath < 10 ? 2 : aPath < 1000 ? 1 : 0) + ' dB';
+    $('kAtmN').textContent = a.clamped
+      ? 'upper bound: the P.676 anchors start at 1 GHz, where absorption is 0.0054 dB/km'
+      : 'gases ' + a.gas.toFixed(3) + ' + rain ' + a.rain.toFixed(3) + ' dB/km, over ' + S.d.toFixed(1) + ' km';
+    $('kHor').textContent = dl.toFixed(1) + ' km';
+    $('kHorN').textContent = '√(2kaH) for each end, k = ' + S.k.toFixed(3) + ', a = 6371 km';
+    $('kBrk').textContent = fmtLam(db * 1000);
+    $('kBrkN').textContent = 'd_b = 4h₁h₂/λ; ' + (S.d < db ? 'you are inside it, so lobing' : 'you are past it, so d⁻⁴');
+    $('kMuf').textContent = muf.toFixed(2) + ' MHz';
+    $('kMufN').textContent = 'foF2 ' + S.foF2.toFixed(1) + ' MHz × secθ ' + secSph(S.d).toFixed(3)
+      + ' for a ' + S.d.toFixed(1) + ' km hop; flat earth would say ' + secFlat(S.d).toFixed(3);
+    const inFa = fM >= 0.3 && fM <= 250;
+    $('kFa').textContent = inFa ? famDb(S.env, fM).toFixed(1) + ' dB' : 'out of range';
+    $('kFaN').textContent = inFa
+      ? NOISE[S.env][2] + ': ' + NOISE[S.env][0].toFixed(1) + ' − ' + NOISE[S.env][1].toFixed(1) + ' log f(MHz), above kT₀b'
+      : 'P.372 Table 1 covers 0.3 to 250 MHz; you are at ' + fmtF(fHz());
+    const vd = verdict();
+    $('kDom').textContent = vd.n;
+    $('kDomN').textContent = vd.t;
 
-    if (f >= 30) {
-      $('cRngHd').textContent = 'Radio horizon';
-      $('cRng').textContent = '~45 km';
-      $('cRngN').textContent = 'd ≈ 4.12(√h₁ + √h₂) km — height buys distance, frequency does not';
-      $('cSky').textContent = 'transparent — the wave is too fast for the ionosphere to bend back';
-    } else if (dAbsorbed(f)) {
-      $('cRngHd').textContent = 'Coverage';
-      $('cRng').textContent = '~' + gr.toFixed(0) + ' km ground wave';
-      $('cRngN').textContent = 'sky wave absorbed by the D layer in daylight';
-      $('cSky').textContent = 'the D layer is eating every upward ray — wait for sunset';
-    } else if (nearest === null) {
-      $('cRngHd').textContent = 'Coverage';
-      $('cRng').textContent = gr > 20 ? '~' + gr.toFixed(0) + ' km ground wave' : 'almost nothing';
-      $('cRngN').textContent = 'above the maximum usable frequency — all sky rays escape';
-      $('cSky').textContent = 'silent: even the shallowest ray punches through the F layer';
-    } else if (nearest < gr + 60) {
-      $('cRngHd').textContent = 'Coverage';
-      $('cRng').textContent = 'continuous';
-      $('cRngN').textContent = 'steep rays return overhead (NVIS) — no skip zone at this frequency';
-      $('cSky').textContent = 'mirror even straight up: f is below the critical frequency (' + foF2() + ' MHz here)';
-    } else {
-      $('cRngHd').textContent = 'First hop lands at';
-      $('cRng').textContent = '~' + nearest.toFixed(0) + ' km';
-      $('cRngN').textContent = 'skip zone from ~' + gr.toFixed(0) + ' to ~' + nearest.toFixed(0) + ' km hears nothing';
-      $('cSky').textContent = 'mirror for shallow rays, glass for steep ones — hops can chain for thousands of km';
-    }
+    const e = Math.abs(2 * Math.sin(2 * Math.PI * S.h1 * S.h2 / (lamM() * S.d * 1000)));
+    const rows = [
+      'λ = c/f = 2.99792458×10⁸ / ' + fHz().toExponential(3) + ' Hz = <b>' + fmtLam(lamM()) + '</b>',
+      'Free-space loss = 92.4478 + 20·log₁₀(' + fGHz().toExponential(3) + ') + 20·log₁₀(' + S.d.toFixed(1) + ') = <b>' + fsl(fGHz(), S.d).toFixed(2) + ' dB</b>',
+      'Horizon = √(2·' + S.k.toFixed(3) + '·6371·' + S.h1.toFixed(0) + '/1000) + √(2·' + S.k.toFixed(3) + '·6371·' + S.h2.toFixed(0) + '/1000) = ' + horizonKm(S.h1, S.k).toFixed(2) + ' + ' + horizonKm(S.h2, S.k).toFixed(2) + ' = <b>' + dl.toFixed(2) + ' km</b>',
+      'Breakpoint = 4·' + S.h1.toFixed(0) + '·' + S.h2.toFixed(0) + '/' + lamM().toPrecision(4) + ' m = <b>' + (db * 1000).toPrecision(4) + ' m</b>',
+      'Two-ray factor = 2|sin(2π·' + S.h1.toFixed(0) + '·' + S.h2.toFixed(0) + '/(' + lamM().toPrecision(4) + '·' + (S.d * 1000).toFixed(0) + '))| = ' + e.toFixed(4) + ' = <b>' + (20 * L10(Math.max(e, 1e-6))).toFixed(2) + ' dB</b> on free space',
+      'Gases + rain = (' + a.gas.toFixed(4) + ' + ' + a.rain.toFixed(4) + ') dB/km × ' + S.d.toFixed(1) + ' km = <b>' + aPath.toFixed(2) + ' dB</b>',
+      'MUF = ' + S.foF2.toFixed(1) + ' × secθᵢ, tanθᵢ = r·sinγ/(1 − r·cosγ) with γ = ' + (S.d / (2 * A_E0)).toFixed(5) + ' rad, r = ' + (A_E0 / (A_E0 + H0)).toFixed(5) + ' → <b>' + muf.toFixed(2) + ' MHz</b>'
+    ];
+    $('work').innerHTML = rows.map(r => '<li>' + r + '</li>').join('');
   }
 
-  $('fq').addEventListener('input', () => { S.u = +$('fq').value; updateUI(); });
-  $('dn').addEventListener('click', () => {
-    S.day = !S.day;
-    $('dn').textContent = S.day ? 'Day' : 'Night';
-    updateUI();
+  function drawAll() { draw1(); draw2(); draw3(); draw4(); draw5(); draw6(); draw7(); }
+  function refresh() { updateUI(); drawAll(); }
+
+  // ---- controls ------------------------------------------------------------
+  const readAll = () => {
+    S.u = +$('fq').value; S.d = +$('ds').value; S.h1 = +$('h1').value; S.h2 = +$('h2').value;
+    S.rain = +$('rn').value; S.foF2 = +$('fo').value; S.gain = +$('gn').value;
+  };
+  ['fq', 'ds', 'h1', 'h2', 'rn', 'fo', 'gn'].forEach(id =>
+    $(id).addEventListener('input', () => { readAll(); refresh(); }));
+  BANDS.forEach((B, i) => $('bd' + i).addEventListener('click', () => {
+    S.u = uOf(B.mid); $('fq').value = S.u; refresh();
+  }));
+  [0.5, 0.667, 1, 1.333].forEach((v, i) => $('k' + i).addEventListener('click', () => { S.k = v; refresh(); }));
+  $('pH').addEventListener('click', () => { S.vert = false; refresh(); });
+  $('pV').addEventListener('click', () => { S.vert = true; refresh(); });
+  $('a0').addEventListener('click', () => { S.dish = false; refresh(); });
+  $('a1').addEventListener('click', () => { S.dish = true; refresh(); });
+  ['city', 'residential', 'rural', 'quiet', 'galactic'].forEach((kk, i) =>
+    $('e' + i).addEventListener('click', () => { S.env = kk; refresh(); }));
+
+  // ---- guided tour ---------------------------------------------------------
+  const TOUR = [
+    { s: { u: uOf(9e8), d: 20, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 1 — a mobile-network link: 900 MHz, 20 km, masts 30 m and 10 m. You are past the two-ray breakpoint and just inside the radio horizon, so path loss is already following d⁻⁴ rather than free space.' },
+    { s: { u: uOf(5e6), d: 20, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'city' },
+      t: 'Step 2 — down to 5 MHz. The ionosphere now returns the wave, section 6 shows the MUF curve above your frequency for hops of thousands of km, and the noise panel shows city noise 50 dB above the thermal floor. A better receiver would change nothing here.' },
+    { s: { u: uOf(2.8e10), d: 20, h1: 30, h2: 10, rain: 50, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 3 — 28 GHz with 50 mm/h of rain. Rain alone now costs several dB per kilometre, so the 20 km path is gone. Switch the polarisation to vertical in the extra controls and watch the rain curve drop.' },
+    { s: { u: uOf(6e10), d: 2, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 4 — 60 GHz, no rain, 2 km. Oxygen alone takes about 14.7 dB every kilometre. Slide the frequency to 94 GHz and the same air charges 0.40 dB/km: a window sits right next to a wall.' },
+    { s: { u: uOf(9e8), d: 300, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 5 — back to 900 MHz but out to 300 km, far beyond the 35 km horizon. Diffraction has run away to hundreds of dB and troposcatter, which climbs far more slowly, is now the only mechanism left. Section 5 marks where they cross.' }
+  ];
+  function applyTour(i) {
+    const T = TOUR[i];
+    Object.keys(T.s).forEach(kk => { S[kk] = T.s[kk]; });
+    $('fq').value = S.u; $('ds').value = S.d; $('h1').value = S.h1; $('h2').value = S.h2; $('rn').value = S.rain;
+    $('tourtext').textContent = T.t;
+    refresh();
+  }
+  ['t1', 't2', 't3', 't4', 't5'].forEach((id, i) => $(id).addEventListener('click', () => applyTour(i)));
+  $('t0').addEventListener('click', () => {
+    S.u = 0.684640; S.d = 20; S.h1 = 30; S.h2 = 10; S.rain = 0; S.k = 1.333; S.vert = false;
+    S.foF2 = 8; S.gain = 35; S.dish = false; S.env = 'rural';
+    $('fq').value = S.u; $('ds').value = 20; $('h1').value = 30; $('h2').value = 10; $('rn').value = 0;
+    $('fo').value = 8; $('gn').value = 35;
+    $('tourtext').textContent = 'Back to the starting point: 900 MHz, 20 km, masts of 30 m and 10 m, no rain, median 4/3 earth.';
+    refresh();
   });
 
-  updateUI();
-  function frame(ts) { draw(ts); requestAnimationFrame(frame); }
-  requestAnimationFrame(frame);
+  readAll();
+  refresh();
+  let rt = 0;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', drawAll);
 })();
 </script>
 </body>

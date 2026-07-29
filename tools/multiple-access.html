@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FDMA, TDMA, CDMA and OFDMA</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --plot-bg: #ffffff; --grid: #e4e8ec; --axis: #3c4650;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e;
+    --surface-1: #262624; --accent: #6BB0F0;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --plot-bg: #201f1d; --grid: #34342f; --axis: #9aa5b1;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; font-size: 13px; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible, summary:focus-visible, .jt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.75rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
+.ctl input[type=range] { flex: 1; min-width: 80px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 76px; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0.5rem 0 0.75rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; background: var(--plot-bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin-bottom: 2px; }
+.legend-note b { color: var(--text-primary); font-weight: 500; }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px;
+  color: var(--text-secondary); margin: 1.25rem 0; }
+.note b { color: var(--text-primary); font-weight: 500; }
+.tour { font-size: 13px; color: var(--text-secondary); margin-top: 8px; min-height: 2.6em; }
+.warn { font-size: 13px; color: var(--text-warning); margin: 8px 0 0; min-height: 1.2em; }
+details { margin: 0.75rem 0 1rem; font-size: 13px; }
+summary { cursor: pointer; color: var(--text-secondary); }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; }
+ol.work li { margin-bottom: 3px; }
+ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+.glossary { font-size: 13px; margin-top: 0.5rem; }
+.glossary dt { font-weight: 500; margin-top: 7px; }
+.glossary dd { margin: 0; color: var(--text-secondary); }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; vertical-align: -1px; }
+.jt { border-bottom: 1px dotted var(--text-muted); cursor: help; }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>FDMA, TDMA, CDMA and OFDMA</h1>
+<p class="sub">Four ways for many phones to share one block of spectrum: split it by frequency, by time, by code, or by tiles of both. Every split costs overhead, and here that cost is drawn to scale.</p>
+<p class="sub" style="margin-bottom: 1rem;">New to this? Start with <a href="cellular-reuse.html">cellular reuse</a>, then <a href="ofdm-subcarriers.html">OFDM subcarriers</a>.</p>
+
+<div class="note"><b>An everyday picture.</b> One room, many conversations. FDMA gives each pair its own soundproof booth. TDMA lets one pair speak at a time and rotates. CDMA has everyone talk at once in a different language. OFDMA hands out short turns on a mixing desk, moment by moment.</div>
+
+<p class="sec"><b>Guided tour</b> <span>&mdash; each step moves the controls and says what changed</span></p>
+<div class="row">
+  <button id="t1">1 &middot; own stripe</button>
+  <button id="t2">2 &middot; take turns</button>
+  <button id="t3">3 &middot; frame too short</button>
+  <button id="t4">4 &middot; all at once</button>
+  <button id="t5">5 &middot; scattered tiles</button>
+</div>
+<p class="tour" id="tourTxt">Press step 1 to start with frequency-division multiple access.</p>
+
+<div class="row">
+  <span class="lbl">Scheme</span>
+  <button id="sF" class="on">FDMA</button><button id="sT">TDMA</button><button id="sC">CDMA</button><button id="sO">OFDMA</button>
+</div>
+
+<div class="grid2">
+  <div class="ctl"><label for="us">Users on screen</label><input type="range" id="us" min="2" max="12" step="1" value="6"><span class="v" id="usv">6</span></div>
+  <div class="ctl"><label for="bt">Total bandwidth B<sub>total</sub></label><input type="range" id="bt" min="1" max="100" step="1" value="25"><span class="v" id="btv">25 MHz</span></div>
+  <div class="ctl"><label for="bc">Channel bandwidth B<sub>c</sub></label><input type="range" id="bc" min="25" max="200" step="5" value="200"><span class="v" id="bcv">200 kHz</span></div>
+  <div class="ctl"><label for="bg">Guard band B<sub>guard</sub></label><input type="range" id="bg" min="0" max="50" step="1" value="10"><span class="v" id="bgv">10 kHz</span></div>
+  <div class="ctl"><label for="tf">Frame length T<sub>f</sub></label><input type="range" id="tf" min="1" max="20" step="0.005" value="4.615"><span class="v" id="tfv">4.615 ms</span></div>
+  <div class="ctl"><label for="tg">Guard time T<sub>g</sub></label><input type="range" id="tg" min="0" max="100" step="1" value="30"><span class="v" id="tgv">30 &micro;s</span></div>
+</div>
+
+<div class="row">
+  <span class="lbl">Modulation</span>
+  <button id="m1">BPSK</button><button id="m2" class="on">QPSK</button><button id="m4">16-QAM</button><button id="m6">64-QAM</button><button id="m8">256-QAM</button>
+</div>
+<div class="row">
+  <span class="lbl">Duplex</span>
+  <button id="dF" class="on">FDD</button><button id="dT">TDD</button>
+  <span class="lbl" style="margin-left: 12px;">Traffic</span>
+  <button id="play">Play</button>
+</div>
+<p class="warn" id="warn"></p>
+
+<details>
+  <summary>More controls</summary>
+  <div class="grid2" style="margin-top: 0.6rem;">
+    <div class="ctl"><label for="rc">Code rate R<sub>code</sub></label><input type="range" id="rc" min="0.5" max="1" step="0.0625" value="0.75"><span class="v" id="rcv">0.75</span></div>
+    <div class="ctl"><label for="ov">Slot overhead</label><input type="range" id="ov" min="0" max="200" step="1" value="118"><span class="v" id="ovv">118 &micro;s</span></div>
+    <div class="ctl"><label for="df">Subcarrier spacing &Delta;f</label><input type="range" id="df" min="15" max="60" step="15" value="15"><span class="v" id="dfv">15 kHz</span></div>
+    <div class="ctl"><label for="eb">CDMA (E<sub>b</sub>/N<sub>0</sub>)<sub>req</sub></label><input type="range" id="eb" min="3" max="12" step="0.5" value="7"><span class="v" id="ebv">7.0 dB</span></div>
+    <div class="ctl"><label for="fo">Other-cell factor f</label><input type="range" id="fo" min="0" max="1.5" step="0.05" value="0.6"><span class="v" id="fov">0.60</span></div>
+    <div class="ctl"><label for="va">Voice activity v</label><input type="range" id="va" min="0.2" max="1" step="0.05" value="0.4"><span class="v" id="vav">0.40</span></div>
+    <div class="ctl"><label for="dl">TDD downlink share</label><input type="range" id="dl" min="0.1" max="0.9" step="0.05" value="0.5"><span class="v" id="dlv">50 %</span></div>
+    <div class="ctl"><label for="cr">Cell radius d</label><input type="range" id="cr" min="0.1" max="20" step="0.1" value="4.5"><span class="v" id="crv">4.5 km</span></div>
+  </div>
+  <p style="color: var(--text-secondary); margin: 0.4rem 0 0;">Slot overhead is the training sequence and tail bits carried in every TDMA burst; 118 &micro;s reproduces GSM. The resource block is fixed at 12 subcarriers by 7 symbols and the cyclic prefix at 7.03 % of the useful symbol, both LTE values.</p>
+</details>
+
+<p class="sec"><b>1 &middot; At the cell site</b> <span>&mdash; what each handset actually holds</span></p>
+<canvas id="cSite" style="height: 330px;"></canvas>
+<ul class="legend-note" id="legSite"></ul>
+
+<p class="sec"><b>2 &middot; The resource plane</b> <span>&mdash; time across, frequency up, code into the page</span></p>
+<canvas id="cGrid" style="height: 372px;"></canvas>
+<ul class="legend-note" id="legGrid"></ul>
+
+<p class="sec"><b>3 &middot; Duplexing is a separate axis</b> <span>&mdash; how the return direction is carved out</span></p>
+<canvas id="cDup" style="height: 214px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> &mdash; downlink, base station to handset.</li>
+  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> &mdash; uplink, handset to base station.</li>
+  <li>FDD splits the band in two and both run non-stop. TDD keeps the whole band and splits the clock.</li>
+  <li>TDD needs a guard period T<sub>g</sub> &ge; 2d/c so a far handset's burst has cleared before the next one starts.</li>
+</ul>
+
+<p class="sec"><b>4 &middot; Where the spectrum goes</b> <span>&mdash; all four schemes at the current settings</span></p>
+<canvas id="cEff" style="height: 258px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-5)"></span> <b>green</b> &mdash; payload the users receive.</li>
+  <li><span class="sw" style="background: var(--border-strong)"></span> <b>grey</b> &mdash; overhead, named under each bar.</li>
+  <li>CDMA pays no guard tax; it pays an interference tax instead.</li>
+  <li>bit/s/Hz is the number that actually compares them.</li>
+</ul>
+
+<div class="cards">
+  <div class="card"><div class="hd">Channels available</div><div class="big" id="cCh">&mdash;</div><div class="ft" id="cChn">&mdash;</div></div>
+  <div class="card"><div class="hd">Simultaneous calls</div><div class="big" id="cCa">&mdash;</div><div class="ft">two one-way channels per call</div></div>
+  <div class="card"><div class="hd">Efficiency</div><div class="big" id="cEf">&mdash;</div><div class="ft" id="cEfn">&mdash;</div></div>
+  <div class="card"><div class="hd">Overhead</div><div class="big" id="cOv">&mdash;</div><div class="ft" id="cOvn">&mdash;</div></div>
+  <div class="card"><div class="hd">Per-user rate</div><div class="big" id="cRu">&mdash;</div><div class="ft" id="cRun">&mdash;</div></div>
+  <div class="card"><div class="hd" id="cXh">&mdash;</div><div class="big" id="cX">&mdash;</div><div class="ft" id="cXn">&mdash;</div></div>
+</div>
+
+<details>
+  <summary>Worked example &mdash; the arithmetic on screen right now</summary>
+  <ol class="work" id="work"></ol>
+</details>
+
+<p class="sub" style="margin-top: 1.5rem;">Move the guard-band slider and watch FDMA lose spectrum it never gets back; move the frame length down and watch TDMA lose time the same way. CDMA has neither loss and still finishes last on bit/s/Hz, because its overhead is the spreading itself &mdash; which is exactly what buys it a reuse factor of one. OFDMA is the only scheme whose per-user rate rises when other users go quiet.</p>
+
+<details>
+  <summary>Where this model is simplified</summary>
+  <p>Six places. B<sub>total</sub> is treated as covering both link directions, so every channel count is halved to get calls; a real CDMA pole capacity is quoted per direction, which makes the call figure here conservative by about a factor of two. Rappaport's N = (B<sub>total</sub> &minus; 2B<sub>guard</sub>)/B<sub>c</sub> charges one guard band at each edge of the allocation, so the separation drawn between adjacent stripes is counted inside B<sub>c</sub>, not added to it. Symbol rate is taken as equal to bandwidth, the ideal Nyquist limit with no roll-off, so every rate here is an upper bound. OFDMA is given no extra edge guard beyond B<sub>guard</sub>, whereas real LTE keeps about 10 % of the band clear for the emission mask. Pilot overhead is fixed at 4 resource elements in 84, the single-antenna-port LTE figure. And these are all single-cell numbers: FDMA and TDMA must divide their spectral efficiency by the cluster size, typically 7, while CDMA reuses every cell &mdash; see <a href="cellular-reuse.html">cellular reuse</a> for what that costs.</p>
+</details>
+
+<p class="sec"><b>Glossary</b></p>
+<dl class="glossary">
+  <dt>Multiple access</dt><dd>The rule that decides which user may use which part of the shared radio resource, and when.</dd>
+  <dt>FDMA</dt><dd>Frequency-division multiple access. Each user gets one frequency channel and keeps it for the whole call.</dd>
+  <dt>TDMA</dt><dd>Time-division multiple access. Users share a wider carrier by taking one time slot each per frame.</dd>
+  <dt>CDMA</dt><dd>Code-division multiple access. Every user transmits over the whole band all the time, separated only by a spreading code.</dd>
+  <dt>OFDMA</dt><dd>Orthogonal frequency-division multiple access. The band is a fine grid of subcarrier-by-symbol tiles and a scheduler hands them out.</dd>
+  <dt>Guard band</dt><dd>Unused spectrum left between channels so imperfect filters do not spill into the neighbour. Measured in kilohertz.</dd>
+  <dt>Guard time</dt><dd>Dead time at the end of a burst so a late-arriving signal does not overlap the next slot. Measured in microseconds.</dd>
+  <dt>Frame</dt><dd>The repeating time structure of a TDMA carrier. GSM's frame is 4.615 ms long and holds eight slots.</dd>
+  <dt>Slot</dt><dd>One user's turn inside a frame. One slot per frame on one carrier is one TDMA channel.</dd>
+  <dt>Burst rate</dt><dd>The instantaneous bit rate a TDMA handset must transmit at during its slot, higher than its average rate by the number of slots.</dd>
+  <dt>Spreading code</dt><dd>A fast pseudo-random sequence multiplied onto the data. Each user has a different one, and only the matching receiver can undo it.</dd>
+  <dt>Chip</dt><dd>One symbol of the spreading code. Chips are much shorter than data bits, which is what widens the signal.</dd>
+  <dt>Processing gain G<sub>p</sub></dt><dd>How much wider the spread signal is than the data: W/R, equivalently T<sub>b</sub>/T<sub>c</sub>. It is the factor by which the receiver lifts the wanted signal out of the interference.</dd>
+  <dt>Pole capacity</dt><dd>The user count at which a CDMA cell's required transmit power goes to infinity. A real system loads to perhaps half of it.</dd>
+  <dt>Voice activity factor v</dt><dd>The fraction of a call during which someone is actually speaking, about 0.4. Silent handsets stop transmitting, so the cell holds more of them.</dd>
+  <dt>Other-cell factor f</dt><dd>Interference arriving from neighbouring cells, as a fraction of the interference from inside this cell. About 0.6.</dd>
+  <dt>Near-far problem</dt><dd>A close handset drowns a distant one because both use the same band. CDMA only works with fast transmit power control.</dd>
+  <dt>Subcarrier</dt><dd>One of the many narrow tones an OFDMA signal is built from. Spacing &Delta;f = 1/T<sub>u</sub>.</dd>
+  <dt>Resource block</dt><dd>The smallest lump a scheduler can hand out: 12 subcarriers by 7 symbols in LTE.</dd>
+  <dt>Cyclic prefix</dt><dd>A copy of a symbol's tail pasted on its front so echoes do not smear into the next symbol. Pure overhead.</dd>
+  <dt>FDD</dt><dd>Frequency-division duplex. Uplink and downlink sit on two different frequencies and both run continuously.</dd>
+  <dt>TDD</dt><dd>Time-division duplex. One frequency, alternating between the two directions, with a guard period at the turnaround.</dd>
+  <dt>Code rate R<sub>code</sub></dt><dd>The fraction of transmitted bits that are payload rather than error-correction parity.</dd>
+  <dt>Spectral efficiency</dt><dd>Bits per second delivered per hertz of spectrum. The one number that compares the four schemes fairly.</dd>
+</dl>
+
+<p class="sub" style="margin-top: 1.5rem;">Next: <a href="cellular-reuse.html">cellular reuse and interference</a> shows what happens when every cell wants the same spectrum.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const L2 = Math.log2 || (x => Math.log(x) / Math.LN2);
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const CLIGHT = 299792458;
+  const NSC = 12, NSYM = 7, CPFRAC = 0.0703, PILOT = 4 / 84;
+  const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  const S = {
+    scheme: 'fdma', users: 6, btot: 25, bch: 200, bg: 10, tf: 4.615, tg: 30,
+    mod: 4, duplex: 'fdd', rcode: 0.75, ov: 118, df: 15,
+    eb: 7, fo: 0.6, va: 0.4, dl: 0.5, cr: 4.5, play: false
+  };
+  let phase = 0, last = 0;
+
+  /* ---------- colour helpers: every colour comes from a CSS token ---------- */
+  function hex2rgb(h) {
+    h = (h || '').trim();
+    if (h.charAt(0) === '#') h = h.slice(1);
+    if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+    if (h.length !== 6) return null;
+    const n = parseInt(h, 16);
+    if (!isFinite(n)) return null;
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function hx(v) { const s = clamp(Math.round(v), 0, 255).toString(16); return s.length < 2 ? '0' + s : s; }
+  function mixHex(a, b, t) {
+    const A = hex2rgb(a), B = hex2rgb(b);
+    if (!A || !B) return a;
+    return '#' + hx(A[0] + (B[0] - A[0]) * t) + hx(A[1] + (B[1] - A[1]) * t) + hx(A[2] + (B[2] - A[2]) * t);
+  }
+  function rgba(h, al) {
+    const A = hex2rgb(h);
+    if (!A) return h;
+    return 'rgba(' + A[0] + ',' + A[1] + ',' + A[2] + ',' + clamp(al, 0, 1) + ')';
+  }
+  function uc(i) {
+    const base = cvv('--series-' + ((i % 7) + 1)) || '#0072bd';
+    return i < 7 ? base : mixHex(base, cvv('--plot-bg') || '#ffffff', 0.44);
+  }
+  function relLum(h) {
+    const A = hex2rgb(h);
+    if (!A) return 1;
+    const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(A[0]) + 0.7152 * f(A[1]) + 0.0722 * f(A[2]);
+  }
+  /* Text drawn on top of a user colour. The MATLAB palette is fixed, and no single ink clears
+     4.5:1 on all seven fills in both themes, so pick the better ink for this fill and lay a halo
+     of its opposite behind the glyphs. The glyph then contrasts against the halo, not the fill. */
+  function onFill(g, txt, x, y, col, alpha) {
+    const bg = cvv('--plot-bg') || '#ffffff', fg = cvv('--text-primary') || '#000000';
+    const eff = mixHex(col, bg, 1 - clamp(alpha === undefined ? 1 : alpha, 0, 1));
+    const le = relLum(eff);
+    const cr = h => { const l = relLum(h); return (Math.max(le, l) + 0.05) / (Math.min(le, l) + 0.05); };
+    const ink = cr(bg) >= cr(fg) ? bg : fg;
+    g.save();
+    g.lineWidth = 2.6; g.lineJoin = 'round'; g.miterLimit = 2;
+    g.strokeStyle = ink === bg ? fg : bg;
+    g.globalAlpha = 0.8;
+    g.strokeText(txt, x, y);
+    g.globalAlpha = 1;
+    g.fillStyle = ink;
+    g.fillText(txt, x, y);
+    g.restore();
+  }
+
+  function mkRng(seed) {
+    let s = (seed >>> 0) || 1;
+    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  }
+  function rbAssign(nRb, nUsers, seed) {
+    const idx = [], own = new Array(nRb), rng = mkRng(seed);
+    for (let i = 0; i < nRb; i++) idx.push(i);
+    for (let i = nRb - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1)), t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+    }
+    for (let k = 0; k < nRb; k++) own[idx[k]] = k % Math.max(nUsers, 1);
+    return own;
+  }
+
+  /* ---------------------------- the physics ---------------------------- */
+  function calc() {
+    const M = {};
+    const bTot = S.btot * 1e6, bCh = S.bch * 1e3, bG = S.bg * 1e3;
+    const usable = Math.max(bTot - 2 * bG, 0);
+    const bits = L2(S.mod);
+    M.bits = bits; M.bTot = bTot; M.bCh = bCh; M.usable = usable;
+
+    /* FDMA — Rappaport: N = (B_total - 2 B_guard) / B_c */
+    M.nFdma = Math.max(0, Math.floor(usable / Math.max(bCh, 1)));
+    M.etaFdma = bTot > 0 ? clamp(M.nFdma * bCh / bTot, 0, 1) : 0;
+    M.rChan = bCh * bits * S.rcode;
+
+    /* TDMA — N slots per frame on each of C carriers */
+    M.carriers = M.nFdma;
+    M.nSlots = S.users;
+    M.nTdma = M.carriers * M.nSlots;
+    const tf = S.tf * 1e-3, tg = S.tg * 1e-6, tov = S.ov * 1e-6;
+    M.tOver = M.nSlots * tov; M.tGuard = M.nSlots * tg;
+    M.etaFrame = tf > 0 ? clamp((tf - M.tGuard - M.tOver) / tf, 0, 1) : 0;
+    M.frameFits = (M.tGuard + M.tOver) < tf;
+    M.etaTdma = M.etaFrame * M.etaFdma;
+    M.rBurst = M.rChan;
+    M.rSlot = M.nSlots > 0 ? M.rChan * M.etaFrame / M.nSlots : 0;
+
+    /* CDMA — Gp = W/R, pole capacity */
+    M.W = bTot;
+    M.rData = M.rChan;
+    M.gpRaw = M.rData > 0 ? M.W / M.rData : 1;
+    M.spreadOk = M.gpRaw >= 1;
+    M.gp = Math.max(M.gpRaw, 1);
+    M.gpdb = 10 * L10(M.gp);
+    const ebn = Math.pow(10, S.eb / 10);
+    M.pole = 1 + (M.gp / ebn) * (1 / (1 + S.fo)) * (1 / Math.max(S.va, 0.05));
+    M.nCdma = Math.max(1, Math.floor(M.pole));
+    /* Average delivered payload. A user transmits only the fraction v of the time, and that
+       same v is the multiplexing gain inside the pole formula, so the two cancel: the
+       throughput is set by the average interference, not by the nominal user count.
+       At (Eb/N0)_req = 6 dB with f = 0 this returns 0.25 bit/s/Hz, the published IS-95 figure. */
+    M.thr = M.rData * S.va + M.W / (ebn * (1 + S.fo));
+    const rawCap = M.W * bits * S.rcode;
+    M.etaCdma = rawCap > 0 ? clamp(M.thr / rawCap, 0, 1) : 0;
+
+    /* OFDMA — df = 1/T_u, resource block N_sc x N_sym */
+    const df = S.df * 1e3;
+    M.df = df; M.tu = 1 / df; M.tcp = M.tu * CPFRAC; M.tsym = M.tu + M.tcp;
+    M.nUsed = Math.max(1, Math.floor(usable / df));
+    M.etaFreqO = bTot > 0 ? clamp(M.nUsed * df / bTot, 0, 1) : 0;
+    M.etaCp = M.tu / M.tsym;
+    M.etaPilot = 1 - PILOT;
+    M.etaOfdma = clamp(M.etaFreqO * M.etaCp * M.etaPilot, 0, 1);
+    M.rbFreq = Math.max(1, Math.floor(M.nUsed / NSC));
+    M.slotsFrame = Math.max(1, Math.floor(tf / (NSYM * M.tsym)));
+    M.nOfdma = M.rbFreq * M.slotsFrame;
+    M.rbPer = M.rbFreq / Math.max(S.users, 1);
+    M.rRb = NSC * bits * S.rcode * M.etaPilot / M.tsym;
+    M.rOfdma = M.rbPer * M.rRb;
+
+    /* selection */
+    if (S.scheme === 'fdma') { M.nch = M.nFdma; M.eta = M.etaFdma; M.rUser = M.rChan; }
+    else if (S.scheme === 'tdma') { M.nch = M.nTdma; M.eta = M.etaTdma; M.rUser = M.rSlot; }
+    else if (S.scheme === 'cdma') { M.nch = M.nCdma; M.eta = M.etaCdma; M.rUser = M.rData; }
+    else { M.nch = M.nOfdma; M.eta = M.etaOfdma; M.rUser = M.rOfdma; }
+    M.calls = Math.floor(M.nch / 2);
+
+    M.tddDuty = tf > 0 ? clamp(1 - tg / tf, 0, 1) : 0;
+    M.dupF = S.duplex === 'fdd' ? 1 : 2 * S.dl * M.tddDuty;
+    M.rDl = Math.max(0, M.rUser * M.dupF);
+
+    M.seff = M.eta * bits * S.rcode;
+    M.dMax = CLIGHT * tg / 2 / 1000;
+    M.tReq = 2 * S.cr * 1000 / CLIGHT * 1e6;
+    M.blocked = S.scheme === 'fdma' ? Math.max(0, S.users - M.nFdma)
+      : (S.scheme === 'cdma' ? Math.max(0, S.users - M.nCdma) : 0);
+    return M;
+  }
+
+  const SEFF = M => ({ fdma: M.etaFdma, tdma: M.etaTdma, cdma: M.etaCdma, ofdma: M.etaOfdma });
+
+  /* ------------------------------ canvas ------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [Math.max(r.width, 1), Math.max(r.height, 1)];
+  }
+  function leader(g, x0, y0, x1, y1, txt, col, align) {
+    /* keep the label inside the canvas: flip the anchor, then clamp, so no text runs off the edge */
+    const cw = g.canvas.width / (window.devicePixelRatio || 1);
+    const tw = g.measureText(txt).width;
+    let a = align === 'right' ? 'right' : 'left', tx = x1;
+    if (a === 'left' && tx + 4 + tw > cw - 2) { a = 'right'; tx = Math.min(tx, cw - 2); }
+    if (a === 'right' && tx - 4 - tw < 2) { a = 'left'; tx = 2; }
+    if (a === 'left' && tx + 4 + tw > cw - 2) tx = Math.max(cw - 2 - tw - 4, 2);
+    g.strokeStyle = col; g.lineWidth = 1; g.globalAlpha = 0.75;
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(tx, y1); g.stroke();
+    g.globalAlpha = 1;
+    g.fillStyle = col; g.textBaseline = 'middle'; g.textAlign = a;
+    g.fillText(txt, tx + (a === 'right' ? -4 : 4), y1);
+  }
+  function hatch(g, x, y, w, h, col) {
+    if (w <= 0 || h <= 0) return;
+    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+    g.strokeStyle = col; g.lineWidth = 1; g.globalAlpha = 0.5;
+    for (let k = -h; k < w + h; k += 6) {
+      g.beginPath(); g.moveTo(x + k, y + h); g.lineTo(x + k + h, y); g.stroke();
+    }
+    g.globalAlpha = 1; g.restore();
+  }
+
+  /* --------------------- 1: base station and handsets --------------------- */
+  function drawSite(M) {
+    const c = $('cSite'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const ax = cvv('--axis'), warnc = cvv('--text-warning');
+    const sc = w < 520 ? 0.86 : 1;
+    const K = S.users;
+    const bsW = Math.round(112 * sc), icoX = bsW + 26 * sc;
+    const chipX = icoX + Math.round(66 * sc), chipR = w - 10;
+    const top = 30, bot = 10;
+    const rowH = (h - top - bot) / K;
+
+    g.font = fnt(11 * sc); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('handset', icoX, 8);
+    g.fillText('what it holds', chipX, 8);
+
+    /* mast */
+    const mx = bsW / 2, gy = h - 34, my = top + 14;
+    g.strokeStyle = ax; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(mx - 15, gy); g.lineTo(mx - 4, my); g.moveTo(mx + 15, gy); g.lineTo(mx + 4, my); g.stroke();
+    g.lineWidth = 0.8;
+    for (let k = 0; k <= 7; k++) {
+      const t0 = k / 7, t1 = (k + 1) / 7;
+      const xa = mx - 15 + 11 * t0, xb = mx + 15 - 11 * t1;
+      const ya = gy + (my - gy) * t0, yb = gy + (my - gy) * t1;
+      g.beginPath(); g.moveTo(xa, ya); g.lineTo(xb, yb); g.stroke();
+      g.beginPath(); g.moveTo(mx - 15 + 11 * t1, yb); g.lineTo(mx + 15 - 11 * t0, ya); g.stroke();
+    }
+    g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(4, gy); g.lineTo(bsW - 4, gy); g.stroke();
+    g.fillStyle = cvv('--series-1');
+    [-1, 0, 1].forEach(d => { g.fillRect(mx + d * 9 - 2.5, my - 12, 5, 14); });
+    g.fillStyle = sub; g.font = fnt(10.5 * sc); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('sector antennas', mx, my - 26);
+    g.fillText('base station', mx, gy + 5);
+    g.fillStyle = mut;
+    g.fillText(S.btot.toFixed(0) + ' MHz total', mx, gy + 17);
+
+    const seed = Math.floor(phase / 1.2);
+    const nRbDraw = 12;
+    const own = rbAssign(nRbDraw, K, 1337 + seed);
+    const slotNow = Math.floor(phase / 0.45) % Math.max(K, 1);
+
+    for (let u = 0; u < K; u++) {
+      const cy = top + rowH * (u + 0.5);
+      const blocked = u >= (S.scheme === 'fdma' ? M.nFdma : (S.scheme === 'cdma' ? M.nCdma : K));
+      const col = blocked ? mut : uc(u);
+      /* link line */
+      g.strokeStyle = blocked ? mut : rgba(col, 0.55); g.lineWidth = 1;
+      g.setLineDash(blocked ? [3, 3] : []);
+      g.beginPath(); g.moveTo(mx + 6, my + 4); g.lineTo(icoX - 5, cy); g.stroke();
+      g.setLineDash([]);
+      /* handset */
+      const hh = Math.min(rowH - 4, 24), hwid = hh * 0.56;
+      g.fillStyle = rgba(col, blocked ? 0.25 : 0.9);
+      g.beginPath();
+      const rx = icoX, ry = cy - hh / 2, rr = 3;
+      g.moveTo(rx + rr, ry); g.lineTo(rx + hwid - rr, ry); g.quadraticCurveTo(rx + hwid, ry, rx + hwid, ry + rr);
+      g.lineTo(rx + hwid, ry + hh - rr); g.quadraticCurveTo(rx + hwid, ry + hh, rx + hwid - rr, ry + hh);
+      g.lineTo(rx + rr, ry + hh); g.quadraticCurveTo(rx, ry + hh, rx, ry + hh - rr);
+      g.lineTo(rx, ry + rr); g.quadraticCurveTo(rx, ry, rx + rr, ry); g.closePath(); g.fill();
+      g.fillStyle = cvv('--plot-bg');
+      g.fillRect(rx + 2, ry + 3, Math.max(hwid - 4, 1), Math.max(hh - 8, 1));
+      g.fillStyle = blocked ? warnc : sub; g.font = fnt(10.5 * sc);
+      g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(blocked ? 'blocked' : ('user ' + (u + 1)), rx + hwid + 5, cy);
+
+      /* resource chip */
+      const cw = Math.max(chipR - chipX, 30), ch = Math.min(rowH - 8, 18), cy0 = cy - ch / 2;
+      g.strokeStyle = bd; g.lineWidth = 1;
+      g.strokeRect(chipX, cy0, cw, ch);
+      if (blocked) { hatch(g, chipX, cy0, cw, ch, mut); continue; }
+      if (S.scheme === 'fdma') {
+        g.fillStyle = rgba(col, 0.85); g.fillRect(chipX + 1, cy0 + 1, cw - 2, ch - 2);
+        if (S.play) {
+          g.fillStyle = cvv('--plot-bg'); g.globalAlpha = 0.55;
+          for (let p = 0; p < 4; p++) {
+            const px = chipX + ((phase * 42 + p * cw / 4) % cw);
+            g.fillRect(px, cy0 + 2, 3, ch - 4);
+          }
+          g.globalAlpha = 1;
+        }
+      } else if (S.scheme === 'tdma') {
+        const sw = cw / K;
+        for (let s = 0; s < K; s++) {
+          const on = (s === u);
+          g.fillStyle = on ? rgba(col, (S.play && s === slotNow) ? 1 : 0.8) : rgba(mut, 0.14);
+          g.fillRect(chipX + s * sw + 1, cy0 + 1, Math.max(sw - 2, 1), ch - 2);
+        }
+      } else if (S.scheme === 'cdma') {
+        g.fillStyle = rgba(col, 0.3); g.fillRect(chipX + 1, cy0 + 1, cw - 2, ch - 2);
+        g.strokeStyle = col; g.lineWidth = 1.2; g.beginPath();
+        const rng = mkRng(97 + u * 13), nchip = 26;
+        let sgn = 1, started = false;
+        for (let k = 0; k < nchip; k++) {
+          if (rng() > 0.5) sgn = -sgn;
+          const x0 = chipX + 1 + (k / nchip) * (cw - 2) - (S.play ? (phase * 30) % ((cw - 2) / nchip) : 0);
+          const x1 = x0 + (cw - 2) / nchip;
+          const yv = cy + sgn * (ch / 2 - 4);
+          if (!started) { g.moveTo(Math.max(x0, chipX + 1), yv); started = true; }
+          else g.lineTo(Math.max(x0, chipX + 1), yv);
+          g.lineTo(Math.min(x1, chipX + cw - 1), yv);
+        }
+        g.stroke();
+      } else {
+        const cols = 14, rows = 3, tw = (cw - 2) / cols, th = (ch - 2) / rows;
+        for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
+          const rb = (b * 4 + Math.floor(a / 4)) % nRbDraw;
+          const mine = own[rb] === u;
+          g.fillStyle = mine ? rgba(col, 0.88) : rgba(mut, 0.1);
+          g.fillRect(chipX + 1 + a * tw, cy0 + 1 + b * th, Math.max(tw - 0.6, 0.6), Math.max(th - 0.6, 0.6));
+        }
+      }
+    }
+  }
+
+  /* --------------------------- 2: resource plane --------------------------- */
+  function drawGrid(M) {
+    const c = $('cGrid'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    if (S.scheme === 'fdma') gridFdma(g, w, h, M);
+    else if (S.scheme === 'tdma') gridTdma(g, w, h, M);
+    else if (S.scheme === 'cdma') gridCdma(g, w, h, M);
+    else gridOfdma(g, w, h, M);
+  }
+
+  function chipText(g, txt, x, y, col, sc) {
+    const w = g.measureText(txt).width, hh = 14 * sc;
+    g.save();
+    g.globalAlpha = 0.88; g.fillStyle = cvv('--plot-bg');
+    g.fillRect(x - 3, y - hh / 2, w + 6, hh);
+    g.globalAlpha = 1; g.fillStyle = col;
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText(txt, x, y);
+    g.restore();
+  }
+  function axes(g, w, h, xlab, ylab, sc, topPad) {
+    const ax = cvv('--axis'), sub = cvv('--text-secondary');
+    const L = Math.round(58 * sc), R = 10, T = topPad || 26, B = Math.round(38 * sc);
+    g.strokeStyle = ax; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(L, T); g.lineTo(L, h - B); g.lineTo(w - R, h - B); g.stroke();
+    g.fillStyle = sub; g.font = fnt(11 * sc);
+    g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText(xlab, (L + w - R) / 2, h - 6);
+    g.save(); g.translate(12, (T + h - B) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(ylab, 0, 0); g.restore();
+    return { L: L, R: w - R, T: T, B: h - B };
+  }
+
+  function gridFdma(g, w, h, M) {
+    const sc = w < 520 ? 0.86 : 1;
+    const p = axes(g, w, h, 'time (continuous, never divided)', 'frequency offset, kHz', sc);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const drawn = Math.min(S.users, M.nFdma);
+    const more = Math.max(M.nFdma - drawn, 0);
+    const plotH = p.B - p.T, plotW = p.R - p.L;
+    const brk = more > 0 ? plotH * 0.18 : 0;
+    const mainH = plotH - brk;
+    const spanK = S.bg + drawn * S.bch;
+    const kscale = spanK > 0 ? mainH / spanK : 0;
+    const Y = kHz => p.B - kHz * kscale;
+
+    g.font = fnt(10 * sc); g.textAlign = 'right'; g.textBaseline = 'middle';
+    /* edge guard band */
+    const gh = S.bg * kscale;
+    if (gh > 0.5) {
+      hatch(g, p.L, Y(S.bg), plotW, gh, mut);
+      g.strokeStyle = bd; g.lineWidth = 0.5; g.strokeRect(p.L, Y(S.bg), plotW, gh);
+    }
+    g.fillStyle = sub; g.fillText('0', p.L - 5, p.B);
+
+    for (let i = 0; i < drawn; i++) {
+      const f0 = S.bg + i * S.bch, f1 = f0 + S.bch;
+      const y1 = Y(f1), y0 = Y(f0), hh = Math.max(y0 - y1 - 2, 1);
+      const col = uc(i);
+      g.fillStyle = rgba(col, 0.85);
+      g.fillRect(p.L, y1 + 1, plotW, hh);
+      if (S.play) {
+        g.fillStyle = cvv('--plot-bg'); g.globalAlpha = 0.5;
+        for (let q = 0; q < 6; q++) {
+          const px = p.L + ((phase * 70 + q * plotW / 6 + i * 17) % plotW);
+          g.fillRect(px, y1 + 2, 4, Math.max(hh - 2, 1));
+        }
+        g.globalAlpha = 1;
+      }
+      g.font = fnt(Math.min(10, Math.max(hh - 4, 6)) * sc);
+      g.textAlign = 'left'; g.textBaseline = 'middle';
+      if (hh > 9) onFill(g, 'user ' + (i + 1) + '  ·  ' + S.bch.toFixed(0) + ' kHz, all the time', p.L + 6, (y0 + y1) / 2, col, 0.85);
+      g.fillStyle = sub; g.font = fnt(10 * sc); g.textAlign = 'right';
+      if (hh > 11 || i === drawn - 1) g.fillText(f1.toFixed(0), p.L - 5, y1);
+    }
+    if (more > 0) {
+      const by = p.T, bh = brk;
+      hatch(g, p.L, by, plotW, bh, mut);
+      g.strokeStyle = bd; g.lineWidth = 0.5; g.strokeRect(p.L, by, plotW, bh);
+      g.fillStyle = sub; g.font = fnt(10.5 * sc); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(more.toFixed(0) + ' more channels of ' + S.bch.toFixed(0) + ' kHz, up to ' + S.btot.toFixed(0) + ' MHz', (p.L + p.R) / 2, by + bh / 2);
+      g.strokeStyle = cvv('--axis'); g.lineWidth = 1.2;
+      g.beginPath();
+      for (let k = 0; k <= 6; k++) {
+        const xx = p.L - 10 + k * 4, yy = by + bh + (k % 2 ? 4 : -4);
+        if (k === 0) g.moveTo(xx, yy); else g.lineTo(xx, yy);
+      }
+      g.stroke();
+    }
+    /* time arrow */
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(p.R - 16, p.B + 12); g.lineTo(p.R, p.B + 12);
+    g.lineTo(p.R - 5, p.B + 9); g.moveTo(p.R, p.B + 12); g.lineTo(p.R - 5, p.B + 15); g.stroke();
+
+    g.font = fnt(10.5 * sc);
+    if (drawn > 0) {
+      const yTop = Y(S.bg + drawn * S.bch);
+      leader(g, p.L + plotW * 0.78, yTop + 4, p.R, p.T - 10, 'stripes run the whole time axis', cvv('--text-warning'), 'right');
+    }
+    if (S.bg > 0 && gh > 2) leader(g, p.L + 30, Y(S.bg / 2), p.L + 110, p.B - 8, 'guard band ' + S.bg.toFixed(0) + ' kHz at each band edge', cvv('--text-warning'), 'left');
+  }
+
+  function gridTdma(g, w, h, M) {
+    const sc = w < 520 ? 0.86 : 1;
+    const p = axes(g, w, h, 'time, ms (two frames shown)', 'frequency offset, kHz', sc, 46);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const plotH = p.B - p.T, plotW = p.R - p.L;
+    const N = S.users;
+    const spanK = 3 * S.bg + 2 * S.bch;
+    const ks = spanK > 0 ? plotH / spanK : 0;
+    const Y = kHz => p.B - kHz * ks;
+    const frameW = plotW / 2;
+    const slotW = frameW / Math.max(N, 1);
+    const gFrac = clamp(S.tg / 1000 / Math.max(S.tf / Math.max(N, 1), 1e-6), 0, 1);
+    const oFrac = clamp(S.ov / 1000 / Math.max(S.tf / Math.max(N, 1), 1e-6), 0, 1 - gFrac);
+
+    for (let car = 0; car < 2; car++) {
+      const f0 = S.bg + car * (S.bch + S.bg), f1 = f0 + S.bch;
+      const yTop = Y(f1), yBot = Y(f0), ch = Math.max(yBot - yTop, 2);
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.strokeRect(p.L, yTop, plotW, ch);
+      g.fillStyle = sub; g.font = fnt(10 * sc); g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(f1.toFixed(0), p.L - 5, yTop);
+      if (car === 0) g.fillText(f0.toFixed(0), p.L - 5, yBot);
+      for (let fr = 0; fr < 2; fr++) for (let s = 0; s < N; s++) {
+        const x0 = p.L + fr * frameW + s * slotW;
+        const payW = Math.max(slotW * (1 - gFrac - oFrac), 0);
+        const ovW = Math.max(slotW * oFrac, 0);
+        const col = car === 0 ? uc(s) : mut;
+        const active = S.play && (Math.floor(phase / 0.32) % (2 * N)) === (fr * N + s);
+        g.fillStyle = rgba(col, car === 0 ? (active ? 1 : 0.82) : 0.16);
+        g.fillRect(x0, yTop + 1, Math.max(payW - 0.5, 0.5), ch - 2);
+        if (ovW > 0.4) hatch(g, x0 + payW, yTop + 1, ovW, ch - 2, car === 0 ? cvv('--axis') : mut);
+        g.strokeStyle = bd; g.lineWidth = 0.4;
+        g.beginPath(); g.moveTo(x0, yTop); g.lineTo(x0, yTop + ch); g.stroke();
+        if (car === 0 && slotW > 15 && ch > 14) {
+          g.font = fnt(9.5 * sc);
+          g.textAlign = 'center'; g.textBaseline = 'middle';
+          onFill(g, String(s + 1), x0 + payW / 2, yTop + ch / 2, col, 0.82);
+        }
+      }
+      g.font = fnt(10 * sc);
+      chipText(g, car === 0 ? ('carrier 1  ·  ' + N.toFixed(0) + ' slots per frame')
+        : ('carrier 2  ·  another ' + N.toFixed(0) + ' users, × ' + M.carriers.toFixed(0) + ' carriers'),
+        p.L + 4, yTop + 10 * sc, car === 0 ? sub : mut, sc);
+    }
+    /* frame boundaries */
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1.4; g.setLineDash([4, 3]);
+    [0, 1, 2].forEach(k => {
+      const x = p.L + k * frameW;
+      g.beginPath(); g.moveTo(x, p.T); g.lineTo(x, p.B); g.stroke();
+    });
+    g.setLineDash([]);
+    g.fillStyle = sub; g.font = fnt(10 * sc); g.textBaseline = 'top';
+    ['0', S.tf.toFixed(3), (2 * S.tf).toFixed(3)].forEach((t, k) => {
+      g.textAlign = k === 0 ? 'left' : (k === 2 ? 'right' : 'center');
+      g.fillText(t, p.L + k * frameW, p.B + 5);
+    });
+    g.textAlign = 'center';
+    g.fillText('frame k', p.L + frameW / 2, p.T - 14);
+    g.fillText('frame k+1', p.L + frameW * 1.5, p.T - 14);
+    g.fillStyle = M.frameFits ? sub : cvv('--text-warning');
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('frame efficiency ' + (M.etaFrame * 100).toFixed(1) + ' %', p.R, 8);
+
+    g.font = fnt(10.5 * sc);
+    const yC1 = Y(S.bg + S.bch);
+    leader(g, p.L + frameW + slotW * 0.5, yC1 + 5, p.L + frameW + slotW * 1.1, yC1 - 13, 'the same colour returns once per frame', cvv('--text-warning'), 'left');
+    if (oFrac + gFrac > 0.01) {
+      const xg = p.L + slotW * (1 - gFrac / 2);
+      leader(g, xg, Y(S.bg + S.bch), p.L + slotW * 1.4, p.B - 9,
+        'guard time ' + S.tg.toFixed(0) + ' µs + overhead ' + S.ov.toFixed(0) + ' µs per slot', cvv('--text-warning'), 'left');
+    }
+  }
+
+  function gridCdma(g, w, h, M) {
+    const sc = w < 520 ? 0.86 : 1;
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), ax = cvv('--axis');
+    const K = S.users;
+    const L = Math.round(56 * sc), T = 34, R = w - 12, B = h - Math.round(40 * sc);
+    g.font = fnt(9.5 * sc);
+    const gutter = g.measureText('over capacity').width + 8;
+    const dx = Math.min(Math.round(90 * sc), (R - L) * 0.28) / Math.max(K, 1);
+    const dy = -Math.min(Math.round(66 * sc), (B - T) * 0.3) / Math.max(K, 1);
+    const rw = Math.max((R - L) - dx * K - 6 - gutter, 40), rh = (B - T) + dy * K - 6;
+    const ox = L, oy = B - 6;
+
+    /* code axis */
+    g.strokeStyle = ax; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(ox, oy); g.lineTo(ox + dx * K + 14, oy + dy * K - 10); g.stroke();
+    g.beginPath(); g.moveTo(ox, oy); g.lineTo(ox, oy - rh); g.moveTo(ox, oy); g.lineTo(ox + rw, oy); g.stroke();
+
+    for (let u = K - 1; u >= 0; u--) {
+      const sx = ox + dx * u, sy = oy + dy * u;
+      const col = uc(u);
+      const over = u >= M.nCdma;
+      g.beginPath();
+      g.moveTo(sx, sy); g.lineTo(sx + rw, sy); g.lineTo(sx + rw, sy - rh); g.lineTo(sx, sy - rh); g.closePath();
+      g.fillStyle = rgba(over ? mut : col, over ? 0.10 : 0.26); g.fill();
+      g.strokeStyle = rgba(over ? mut : col, over ? 0.45 : 0.95); g.lineWidth = 1.2; g.stroke();
+      g.fillStyle = over ? cvv('--text-warning') : col; g.font = fnt(9.5 * sc);
+      g.textAlign = 'left'; g.textBaseline = 'middle';
+      const lbl = over ? 'over capacity' : ('code ' + (u + 1));
+      if (sx + rw + 4 + g.measureText(lbl).width < w - 2) g.fillText(lbl, sx + rw + 4, sy - rh / 2);
+      if (u === 0) {
+        /* chip sequence on the front sheet */
+        g.strokeStyle = col; g.lineWidth = 1.2;
+        const rng = mkRng(4242), nchip = 46, amp = Math.min(rh * 0.3, 26);
+        const off = S.play ? (phase * 60) % (rw / nchip) : 0;
+        g.save(); g.beginPath(); g.rect(sx, sy - rh, rw, rh); g.clip();
+        g.beginPath();
+        let sg = 1;
+        for (let k = 0; k <= nchip; k++) {
+          if (rng() > 0.5) sg = -sg;
+          const x0 = sx + (k / nchip) * rw - off, x1 = x0 + rw / nchip;
+          const yv = sy - rh / 2 + sg * amp / 2;
+          if (k === 0) g.moveTo(x0, yv); else g.lineTo(x0, yv);
+          g.lineTo(x1, yv);
+        }
+        g.stroke(); g.restore();
+      }
+    }
+    g.fillStyle = sub; g.font = fnt(11 * sc);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('time → (continuous)', ox + rw / 2, oy + 10);
+    g.save(); g.translate(14, oy - rh / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('frequency — whole ' + S.btot.toFixed(0) + ' MHz band', 0, 0); g.restore();
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillStyle = sub;
+    g.fillText('code axis', ox + dx * K + 16, oy + dy * K - 12);
+    g.font = fnt(10.5 * sc);
+    leader(g, ox + rw * 0.55, oy - rh * 0.55, ox + rw * 0.3, T + 2,
+      'every user fills the whole band, all the time', cvv('--text-warning'), 'left');
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillStyle = M.spreadOk ? sub : cvv('--text-warning');
+    g.fillText('Gₚ = W/R = ' + M.gp.toFixed(1) + ' = ' + M.gpdb.toFixed(2) + ' dB', w - 12, 6);
+    g.fillStyle = sub;
+    g.fillText('pole capacity ' + M.pole.toFixed(1) + ' users', w - 12, 20);
+  }
+
+  function gridOfdma(g, w, h, M) {
+    const sc = w < 520 ? 0.86 : 1;
+    const p = axes(g, w, h, 'time, ms (subcarrier × symbol tiles)', 'frequency offset, kHz', sc);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const plotW = p.R - p.L, plotH = p.B - p.T;
+    const rbCols = 4, rbRows = 3;
+    const nSym = rbCols * NSYM, nSub = rbRows * NSC;
+    const tw = plotW / nSym, th = plotH / nSub;
+    const seed = Math.floor(phase / 1.2);
+    const own = rbAssign(rbCols * rbRows, S.users, 1337 + seed);
+    const cpF = clamp(M.tcp / M.tsym, 0, 0.5);
+
+    for (let s = 0; s < nSym; s++) for (let k = 0; k < nSub; k++) {
+      const rb = Math.floor(k / NSC) * rbCols + Math.floor(s / NSYM);
+      const u = own[rb];
+      const x = p.L + s * tw, y = p.B - (k + 1) * th;
+      const cpW = tw * cpF;
+      g.fillStyle = rgba(uc(u), 0.86);
+      g.fillRect(x + cpW, y + 0.4, Math.max(tw - cpW - 0.5, 0.5), Math.max(th - 0.8, 0.5));
+      g.fillStyle = rgba(mut, 0.30);
+      g.fillRect(x, y + 0.4, Math.max(cpW, 0.8), Math.max(th - 0.8, 0.5));
+      if ((k % NSC) === 0 && (s % 3) === 1) {
+        g.fillStyle = cvv('--plot-bg');
+        g.fillRect(x + cpW + Math.max(tw - cpW, 1) / 2 - 1, y + th / 2 - 1, 2, 2);
+      }
+    }
+    /* slot boundaries */
+    g.strokeStyle = cvv('--axis'); g.lineWidth = 1; g.setLineDash([4, 3]);
+    for (let r = 0; r <= rbCols; r++) {
+      const x = p.L + r * NSYM * tw;
+      g.beginPath(); g.moveTo(x, p.T); g.lineTo(x, p.B); g.stroke();
+    }
+    g.setLineDash([]);
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (let r = 1; r < rbRows; r++) {
+      const y = p.B - r * NSC * th;
+      g.beginPath(); g.moveTo(p.L, y); g.lineTo(p.R, y); g.stroke();
+    }
+    g.fillStyle = sub; g.font = fnt(10 * sc);
+    g.textBaseline = 'top';
+    for (let r = 0; r <= rbCols; r++) {
+      g.textAlign = r === 0 ? 'left' : (r === rbCols ? 'right' : 'center');
+      g.fillText((r * NSYM * M.tsym * 1e3).toFixed(2), p.L + r * NSYM * tw, p.B + 5);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let r = 0; r <= rbRows; r++) {
+      g.fillText((r * NSC * S.df).toFixed(0), p.L - 5, p.B - r * NSC * th);
+    }
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('resource block ' + NSC + ' subcarriers × ' + NSYM + ' symbols  ·  Δf = 1/Tᵤ = ' + S.df.toFixed(0) + ' kHz', p.L + 2, p.T - 4);
+    g.font = fnt(10.5 * sc);
+    leader(g, p.L + plotW * 0.30, p.B - plotH * 0.62, p.L + plotW * 0.40, p.T + 14,
+      'one user’s tiles need not touch', cvv('--text-warning'), 'left');
+    leader(g, p.L + tw * 0.5, p.B - 4, p.L + plotW * 0.62, p.B - 12,
+      'cyclic prefix, ' + (cpF * 100).toFixed(1) + ' % of every symbol', cvv('--text-warning'), 'left');
+  }
+
+  /* ------------------------------ 3: duplex ------------------------------ */
+  function drawDup(M) {
+    const c = $('cDup'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const dlC = cvv('--series-1'), ulC = cvv('--series-2'), warnc = cvv('--text-warning');
+    const sc = w < 520 ? 0.86 : 1;
+    const half = w / 2, pad = 12, top = 30, bot = 46;
+    const bw = half - pad * 2, bh = h - top - bot;
+
+    for (let side = 0; side < 2; side++) {
+      const x0 = side * half + pad, on = (side === 0) === (S.duplex === 'fdd');
+      const al = on ? 1 : 0.32;
+      g.globalAlpha = al;
+      g.fillStyle = on ? cvv('--text-primary') : mut; g.font = fnt(12 * sc);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(side === 0 ? 'FDD — split the band' : 'TDD — split the clock', x0, 8);
+      g.strokeStyle = bd; g.lineWidth = 1; g.strokeRect(x0, top, bw, bh);
+      if (side === 0) {
+        const gap = Math.max(bh * 0.06, 3);
+        const bandH = (bh - gap) / 2;
+        g.fillStyle = rgba(ulC, 0.8); g.fillRect(x0 + 1, top + bh - bandH, bw - 2, bandH - 1);
+        g.fillStyle = rgba(dlC, 0.8); g.fillRect(x0 + 1, top + 1, bw - 2, bandH - 1);
+        hatch(g, x0 + 1, top + bandH, bw - 2, gap, mut);
+        g.font = fnt(10.5 * sc);
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        onFill(g, 'downlink  ' + (S.btot / 2).toFixed(1) + ' MHz', x0 + bw / 2, top + bandH / 2, dlC, 0.8);
+        onFill(g, 'uplink  ' + (S.btot / 2).toFixed(1) + ' MHz', x0 + bw / 2, top + bh - bandH / 2, ulC, 0.8);
+        g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
+        const xa = x0 + bw * 0.82;
+        g.beginPath(); g.moveTo(xa, top + bandH / 2); g.lineTo(xa, top + bh - bandH / 2); g.stroke();
+        g.fillStyle = sub; g.font = fnt(10 * sc);
+        g.textAlign = 'left'; g.textBaseline = 'top';
+        g.fillText('both run non-stop; a duplexer separates them', x0, top + bh + 6);
+        g.fillText('duplex spacing ' + (S.btot / 2).toFixed(1) + ' MHz, centre to centre', x0, top + bh + 20);
+      } else {
+        const gpF = clamp((S.tg * 1e-3) / Math.max(S.tf, 1e-6), 0, 0.5);
+        const gpW = Math.max(bw * gpF, 2);
+        const usable = bw - 2 * gpW;
+        const dW = usable * S.dl, uW = usable * (1 - S.dl);
+        g.fillStyle = rgba(dlC, 0.8); g.fillRect(x0 + 1, top + 1, Math.max(dW - 1, 1), bh - 2);
+        hatch(g, x0 + dW, top + 1, gpW, bh - 2, warnc);
+        g.fillStyle = rgba(ulC, 0.8); g.fillRect(x0 + dW + gpW, top + 1, Math.max(uW - 1, 1), bh - 2);
+        hatch(g, x0 + dW + gpW + uW, top + 1, gpW, bh - 2, warnc);
+        g.font = fnt(10.5 * sc);
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        if (dW > 44) onFill(g, 'down ' + (S.dl * 100).toFixed(0) + ' %', x0 + dW / 2, top + bh / 2, dlC, 0.8);
+        if (uW > 44) onFill(g, 'up ' + ((1 - S.dl) * 100).toFixed(0) + ' %', x0 + dW + gpW + uW / 2, top + bh / 2, ulC, 0.8);
+        g.fillStyle = sub; g.font = fnt(10 * sc);
+        g.textAlign = 'left'; g.textBaseline = 'top';
+        g.fillText('one band of ' + S.btot.toFixed(0) + ' MHz, frame ' + S.tf.toFixed(3) + ' ms', x0, top + bh + 6);
+        g.fillStyle = M.tReq <= S.tg ? cvv('--text-good') : warnc;
+        g.fillText('guard period ' + S.tg.toFixed(0) + ' µs ≥ 2d/c ⇒ d ≤ ' + M.dMax.toFixed(2) + ' km', x0, top + bh + 20);
+        g.fillStyle = M.tReq <= S.tg ? sub : warnc; g.font = fnt(9.5 * sc);
+        g.fillText('d = ' + S.cr.toFixed(1) + ' km requires ' + M.tReq.toFixed(1) + ' µs', x0, top + bh + 33);
+      }
+      g.globalAlpha = 1;
+    }
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(half, 6); g.lineTo(half, h - 6); g.stroke();
+  }
+
+  /* ---------------------------- 4: efficiency ---------------------------- */
+  function drawEff(M) {
+    const c = $('cEff'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    const good = cvv('--series-5'), over = cvv('--border-strong'), acc = cvv('--accent');
+    const sc = w < 520 ? 0.84 : 1;
+    const rows = [
+      { k: 'fdma', n: 'FDMA', e: M.etaFdma, why: 'guard band at each edge' },
+      { k: 'tdma', n: 'TDMA', e: M.etaTdma, why: 'guard time + training + guard band' },
+      { k: 'cdma', n: 'CDMA', e: M.etaCdma, why: 'spreading and mutual interference' },
+      { k: 'ofdma', n: 'OFDMA', e: M.etaOfdma, why: 'cyclic prefix + pilots' }
+    ];
+    const L = Math.round(60 * sc), R = w - Math.round(56 * sc), T = 24, B = h - 12;
+    const rowH = (B - T) / rows.length;
+    const barH = Math.min(rowH * 0.40, 22);
+    g.font = fnt(11 * sc);
+    g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('payload share of the whole time × bandwidth plane', L, 6);
+    rows.forEach((r, i) => {
+      const y = T + rowH * i + rowH * 0.30;
+      const bw = Math.max(R - L, 10);
+      const e = clamp(isFinite(r.e) ? r.e : 0, 0, 1);
+      const cur = r.k === S.scheme;
+      g.fillStyle = rgba(over, 0.55); g.fillRect(L, y, bw, barH);
+      g.fillStyle = rgba(good, cur ? 0.95 : 0.55); g.fillRect(L, y, bw * e, barH);
+      g.strokeStyle = cur ? acc : bd; g.lineWidth = cur ? 1.6 : 0.6;
+      g.strokeRect(L, y, bw, barH);
+      g.fillStyle = cur ? cvv('--text-primary') : sub; g.font = fnt(12 * sc);
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(r.n, L - 8, y + barH / 2);
+      g.textAlign = 'left'; g.font = fnt(11.5 * sc);
+      g.fillText((e * 100).toFixed(1) + ' %', R + 6, y + barH / 2);
+      g.fillStyle = mut; g.font = fnt(10 * sc);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      const seff = e * M.bits * S.rcode;
+      g.fillText(seff.toFixed(2) + ' bit/s/Hz  ·  overhead: ' + r.why, L, y + barH + 3);
+    });
+  }
+
+  /* ------------------------------ readouts ------------------------------ */
+  function fmtRate(bps) {
+    if (!isFinite(bps) || bps < 0) return '0.0 kbit/s';
+    if (bps >= 1e6) return (bps / 1e6).toFixed(2) + ' Mbit/s';
+    return (bps / 1e3).toFixed(1) + ' kbit/s';
+  }
+  function fmtInt(v) { return isFinite(v) ? Math.max(0, Math.floor(v)).toFixed(0) : '0'; }
+  /* symbol_subscript -> proper subscript, for the strings that go out as HTML */
+  const sb = s => s.replace(/([A-Za-zη])_([A-Za-z0-9]+)/g, '$1<sub>$2</sub>');
+
+  function updateUI() {
+    const M = calc();
+    $('usv').textContent = S.users.toFixed(0);
+    $('btv').textContent = S.btot.toFixed(0) + ' MHz';
+    $('bcv').textContent = S.bch.toFixed(0) + ' kHz';
+    $('bgv').textContent = S.bg.toFixed(0) + ' kHz';
+    $('tfv').textContent = S.tf.toFixed(3) + ' ms';
+    $('tgv').textContent = S.tg.toFixed(0) + ' µs';
+    $('rcv').textContent = S.rcode.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+    $('ovv').textContent = S.ov.toFixed(0) + ' µs';
+    $('dfv').textContent = S.df.toFixed(0) + ' kHz';
+    $('ebv').textContent = S.eb.toFixed(1) + ' dB';
+    $('fov').textContent = S.fo.toFixed(2);
+    $('vav').textContent = S.va.toFixed(2);
+    $('dlv').textContent = (S.dl * 100).toFixed(0) + ' %';
+    $('crv').textContent = S.cr.toFixed(1) + ' km';
+
+    $('cCh').textContent = fmtInt(M.nch);
+    $('cCa').textContent = fmtInt(M.calls);
+    $('cEf').textContent = (M.eta * 100).toFixed(1) + ' %';
+    $('cOv').textContent = ((1 - M.eta) * 100).toFixed(1) + ' %';
+    $('cRu').textContent = fmtRate(M.rDl);
+
+    const chn = {
+      fdma: 'N = (B_total − 2B_guard)/B_c',
+      tdma: 'N slots × ' + fmtInt(M.carriers) + ' carriers',
+      cdma: 'code channels, floor of pole capacity',
+      ofdma: fmtInt(M.rbFreq) + ' blocks × ' + fmtInt(M.slotsFrame) + ' slots per frame'
+    };
+    const efn = {
+      fdma: 'N·B_c / B_total',
+      tdma: 'frame × carrier packing',
+      cdma: 'average delivered over raw bit/s/Hz',
+      ofdma: 'band × cyclic prefix × pilots'
+    };
+    const ovn = {
+      fdma: 'guard band, ' + (2 * S.bg / 1000).toFixed(3) + ' MHz total',
+      tdma: 'guard time, training, guard band',
+      cdma: 'spreading and mutual interference',
+      ofdma: 'cyclic prefix and pilot tiles'
+    };
+    const run = {
+      fdma: 'one ' + S.bch.toFixed(0) + ' kHz channel, downlink',
+      tdma: 'one slot per frame, downlink',
+      cdma: 'one code, downlink',
+      ofdma: M.rbPer.toFixed(1) + ' resource blocks, downlink'
+    };
+    $('cChn').innerHTML = sb(chn[S.scheme]);
+    $('cEfn').innerHTML = sb(efn[S.scheme]);
+    $('cOvn').innerHTML = sb(ovn[S.scheme]);
+    $('cRun').innerHTML = sb(run[S.scheme] + (S.duplex === 'tdd' ? ', TDD share applied' : ''));
+
+    if (S.scheme === 'cdma') {
+      $('cXh').textContent = 'Processing gain';
+      $('cX').textContent = M.gpdb.toFixed(2) + ' dB';
+      $('cXn').innerHTML = 'G<sub>p</sub> = W/R = ' + M.gp.toFixed(1);
+    } else if (S.scheme === 'tdma') {
+      $('cXh').textContent = 'Burst rate';
+      $('cX').textContent = fmtRate(M.rBurst);
+      $('cXn').innerHTML = sb('R_burst = N·R_user/η');
+    } else if (S.scheme === 'fdma') {
+      $('cXh').textContent = 'Spectrum used';
+      $('cX').textContent = (M.nFdma * M.bCh / 1e6).toFixed(2) + ' MHz';
+      $('cXn').textContent = 'of ' + S.btot.toFixed(0) + ' MHz allocated';
+    } else {
+      $('cXh').textContent = 'Subcarrier spacing';
+      $('cX').textContent = S.df.toFixed(0) + ' kHz';
+      $('cXn').innerHTML = '&Delta;f = 1/T<sub>u</sub>, T<sub>u</sub> = ' + (M.tu * 1e6).toFixed(2) + ' µs';
+    }
+
+    /* warnings */
+    let wtxt = '';
+    if (S.scheme === 'tdma' && !M.frameFits) {
+      wtxt = 'The frame cannot hold ' + S.users.toFixed(0) + ' slots: guard time and overhead already need '
+        + ((M.tGuard + M.tOver) * 1e3).toFixed(3) + ' ms of a ' + S.tf.toFixed(3) + ' ms frame.';
+    } else if (S.scheme === 'cdma' && !M.spreadOk) {
+      wtxt = 'Processing gain has fallen below 0 dB: the data rate ' + fmtRate(M.rData)
+        + ' no longer fits inside ' + S.btot.toFixed(0) + ' MHz of spreading. Lower the modulation order or widen the band.';
+    } else if (S.scheme === 'cdma' && M.pole < 2) {
+      wtxt = 'Pole capacity is ' + M.pole.toFixed(2) + ' users, so this cell cannot carry a single two-way call.';
+    } else if (M.blocked > 0) {
+      wtxt = M.blocked.toFixed(0) + ' of the ' + S.users.toFixed(0) + ' handsets are blocked: only '
+        + fmtInt(S.scheme === 'fdma' ? M.nFdma : M.nCdma) + ' channels exist at these settings.';
+    } else if (S.duplex === 'tdd' && M.tReq > S.tg) {
+      wtxt = 'A ' + S.cr.toFixed(1) + ' km cell needs a guard period of ' + M.tReq.toFixed(1)
+        + ' µs, more than the ' + S.tg.toFixed(0) + ' µs set; bursts from the cell edge would overlap.';
+    }
+    $('warn').textContent = wtxt;
+
+    /* legends */
+    const swatch = col => '<span class="sw" style="background: ' + col + '"></span> ';
+    const siteLeg = {
+      fdma: [swatch(uc(0)) + '<b>colour</b> &mdash; one frequency, held for the whole call.',
+        'Every bar is full width: the channel is never released.'],
+      tdma: [swatch(uc(0)) + '<b>lit block</b> &mdash; this user’s slot in the frame.',
+        'The rest of the frame belongs to the other users.'],
+      cdma: [swatch(uc(0)) + '<b>full block</b> &mdash; the whole band, all the time.',
+        'The square wave is the spreading code that keeps users apart.'],
+      ofdma: [swatch(uc(0)) + '<b>scattered tiles</b> &mdash; whatever the scheduler gave.',
+        'The pattern changes every frame; press play to watch it move.']
+    };
+    $('legSite').innerHTML = siteLeg[S.scheme].map(t => '<li>' + t + '</li>').join('');
+
+    const gridLeg = {
+      fdma: ['<b>Horizontal stripes</b> &mdash; one channel per user, continuous.',
+        '<b>Hatched strip</b> &mdash; guard band, spectrum nobody uses.',
+        'FDD gives each call two channels, so calls = N/2.'],
+      tdma: ['<b>Vertical chops</b> &mdash; N slots inside every frame.',
+        '<b>Hatched sliver</b> &mdash; guard time plus training and tail bits.',
+        'A handset transmits in bursts at N times its own rate.'],
+      cdma: ['<b>Stacked sheets</b> &mdash; one per code, all overlapping in time and frequency.',
+        '<b>Depth</b> &mdash; the code axis; there is no flat grid here.',
+        'Capacity ends at the pole, not at a channel count.'],
+      ofdma: ['<b>Tiles</b> &mdash; one subcarrier for one symbol.',
+        '<b>Grey sliver</b> &mdash; the cyclic prefix on every symbol.',
+        'A user’s blocks are irregular and need not touch.']
+    };
+    $('legGrid').innerHTML = gridLeg[S.scheme].map(t => '<li>' + t + '</li>').join('');
+
+    /* worked example */
+    const bitsTxt = M.bits.toFixed(0);
+    let rowsW = [];
+    if (S.scheme === 'fdma') {
+      rowsW = [
+        'Usable band = B_total − 2B_guard = ' + S.btot.toFixed(0) + ' MHz − 2×' + S.bg.toFixed(0) + ' kHz = <b>' + (M.usable / 1e6).toFixed(3) + ' MHz</b>',
+        'N = usable / B_c = ' + (M.usable / 1e3).toFixed(0) + ' kHz / ' + S.bch.toFixed(0) + ' kHz = <b>' + fmtInt(M.nFdma) + ' channels</b>',
+        'η = N·B_c / B_total = ' + fmtInt(M.nFdma) + '×' + S.bch.toFixed(0) + ' / ' + (S.btot * 1000).toFixed(0) + ' = <b>' + (M.etaFdma * 100).toFixed(2) + ' %</b>',
+        'One channel carries B_c·log₂M·R_code = ' + S.bch.toFixed(0) + ' kHz × ' + bitsTxt + ' × ' + S.rcode.toFixed(3) + ' = <b>' + fmtRate(M.rChan) + '</b>',
+        'Simultaneous calls = N/2 = <b>' + fmtInt(M.calls) + '</b> (each call needs one channel each way)'
+      ];
+    } else if (S.scheme === 'tdma') {
+      rowsW = [
+        'Carriers C = (B_total − 2B_guard)/B_c = <b>' + fmtInt(M.carriers) + '</b>, each ' + S.bch.toFixed(0) + ' kHz wide',
+        'Channels = N×C = ' + S.users.toFixed(0) + '×' + fmtInt(M.carriers) + ' = <b>' + fmtInt(M.nTdma) + '</b>',
+        'η_frame = (T_f − N·T_g − T_ov)/T_f = (' + (S.tf * 1e3).toFixed(0) + ' − ' + (M.tGuard * 1e6).toFixed(0) + ' − ' + (M.tOver * 1e6).toFixed(0) + ') / ' + (S.tf * 1e3).toFixed(0) + ' µs = <b>' + (M.etaFrame * 100).toFixed(2) + ' %</b>',
+        'Carrier gross rate = B_c·log₂M·R_code = <b>' + fmtRate(M.rBurst) + '</b>',
+        'R_user = gross × η_frame / N = <b>' + fmtRate(M.rSlot) + '</b>, so R_burst = N·R_user/η = <b>' + fmtRate(M.rBurst) + '</b>',
+        'Payload share of the plane = η_frame × C·B_c/B_total = <b>' + (M.etaTdma * 100).toFixed(2) + ' %</b>'
+      ];
+    } else if (S.scheme === 'cdma') {
+      rowsW = [
+        'Data rate R = B_c·log₂M·R_code = <b>' + fmtRate(M.rData) + '</b>, spread over W = ' + S.btot.toFixed(0) + ' MHz',
+        'Gₚ = W/R = T_b/T_c = ' + (M.W / 1e6).toFixed(0) + ' MHz / ' + (M.rData / 1e3).toFixed(1) + ' kbit/s = <b>' + M.gp.toFixed(2) + '</b>',
+        'Gₚ(dB) = 10·log₁₀(W/R) = <b>' + M.gpdb.toFixed(2) + ' dB</b>',
+        'N = 1 + Gₚ/(E_b/N₀) × 1/(1+f) × 1/v = 1 + ' + M.gp.toFixed(1) + '/' + Math.pow(10, S.eb / 10).toFixed(2) + ' × 1/' + (1 + S.fo).toFixed(2) + ' × 1/' + S.va.toFixed(2) + ' = <b>' + M.pole.toFixed(2) + ' users</b>',
+        'Delivered = N·R·v/W = <b>' + (M.thr / M.W).toFixed(3) + ' bit/s/Hz</b> against a raw ' + (M.bits * S.rcode).toFixed(2) + ' bit/s/Hz (v cancels: the limit is average interference)'
+      ];
+    } else {
+      rowsW = [
+        'Δf = 1/Tᵤ ⇒ Tᵤ = 1/' + S.df.toFixed(0) + ' kHz = <b>' + (M.tu * 1e6).toFixed(2) + ' µs</b>, T_sym = Tᵤ + T_cp = <b>' + (M.tsym * 1e6).toFixed(2) + ' µs</b>',
+        'Usable subcarriers = (B_total − 2B_guard)/Δf = <b>' + fmtInt(M.nUsed) + '</b>, giving <b>' + fmtInt(M.rbFreq) + '</b> blocks of ' + NSC + ' across the band',
+        'η = band ' + (M.etaFreqO * 100).toFixed(1) + ' % × prefix ' + (M.etaCp * 100).toFixed(1) + ' % × pilots ' + (M.etaPilot * 100).toFixed(1) + ' % = <b>' + (M.etaOfdma * 100).toFixed(2) + ' %</b>',
+        'One block gives N_sc·log₂M·R_code/T_sym = ' + NSC + '×' + bitsTxt + '×' + S.rcode.toFixed(3) + ' / ' + (M.tsym * 1e6).toFixed(2) + ' µs = <b>' + fmtRate(M.rRb) + '</b>',
+        'With ' + S.users.toFixed(0) + ' users sharing ' + fmtInt(M.rbFreq) + ' blocks, each holds <b>' + M.rbPer.toFixed(1) + '</b> on average ⇒ <b>' + fmtRate(M.rOfdma) + '</b>'
+      ];
+    }
+    rowsW.push('Duplex: ' + (S.duplex === 'fdd'
+      ? 'FDD, two half-bands ' + (S.btot / 2).toFixed(1) + ' MHz apart, downlink runs non-stop'
+      : 'TDD, downlink share ' + (S.dl * 100).toFixed(0) + ' % less a ' + S.tg.toFixed(0) + ' µs guard period ⇒ rate × <b>' + M.dupF.toFixed(3) + '</b>'));
+    $('work').innerHTML = rowsW.map(t => '<li>' + sb(t) + '</li>').join('');
+    return M;
+  }
+
+  /* ------------------------------- controls ------------------------------- */
+  const sliders = [
+    ['us', 'users'], ['bt', 'btot'], ['bc', 'bch'], ['bg', 'bg'], ['tf', 'tf'], ['tg', 'tg'],
+    ['rc', 'rcode'], ['ov', 'ov'], ['df', 'df'], ['eb', 'eb'], ['fo', 'fo'], ['va', 'va'],
+    ['dl', 'dl'], ['cr', 'cr']
+  ];
+  sliders.forEach(pair => {
+    $(pair[0]).addEventListener('input', function () { S[pair[1]] = +this.value; updateUI(); });
+  });
+
+  const schemeBtns = { sF: 'fdma', sT: 'tdma', sC: 'cdma', sO: 'ofdma' };
+  Object.keys(schemeBtns).forEach(id => $(id).addEventListener('click', () => setScheme(schemeBtns[id])));
+  function setScheme(k) {
+    S.scheme = k;
+    Object.keys(schemeBtns).forEach(id => $(id).classList.toggle('on', schemeBtns[id] === k));
+    updateUI();
+  }
+  const modBtns = { m1: 2, m2: 4, m4: 16, m6: 64, m8: 256 };
+  Object.keys(modBtns).forEach(id => $(id).addEventListener('click', () => setMod(modBtns[id])));
+  function setMod(m) {
+    S.mod = m;
+    Object.keys(modBtns).forEach(id => $(id).classList.toggle('on', modBtns[id] === m));
+    updateUI();
+  }
+  $('dF').addEventListener('click', () => setDup('fdd'));
+  $('dT').addEventListener('click', () => setDup('tdd'));
+  function setDup(d) {
+    S.duplex = d;
+    $('dF').classList.toggle('on', d === 'fdd');
+    $('dT').classList.toggle('on', d === 'tdd');
+    updateUI();
+  }
+  if (reduce) {
+    $('play').disabled = true;
+    $('play').title = 'Motion is held still because your system asks for reduced motion.';
+    $('play').style.opacity = '0.5';
+    $('play').style.cursor = 'default';
+  }
+  $('play').addEventListener('click', function () {
+    if (reduce) return;
+    S.play = !S.play;
+    this.textContent = S.play ? 'Pause' : 'Play';
+    this.classList.toggle('on', S.play);
+  });
+
+  function setSlider(id, key, v) { $(id).value = v; S[key] = +$(id).value; }
+  const tours = {
+    t1: function () {
+      setScheme('fdma'); setSlider('us', 'users', 6); setSlider('bc', 'bch', 200);
+      setSlider('bg', 'bg', 10); setSlider('bt', 'btot', 25); setDup('fdd');
+      return 'Every user holds one frequency stripe for the whole call.';
+    },
+    t2: function () {
+      setScheme('tdma'); setSlider('tf', 'tf', 4.615); setSlider('tg', 'tg', 30); setSlider('ov', 'ov', 118);
+      return 'Same six users, one carrier: each now gets one slot per frame.';
+    },
+    t3: function () {
+      setScheme('tdma'); setSlider('tf', 'tf', 1.5); setSlider('tg', 'tg', 80); setSlider('us', 'users', 10);
+      return 'Guard time and training now eat most of a short frame.';
+    },
+    t4: function () {
+      setScheme('cdma'); setSlider('us', 'users', 8); setSlider('tf', 'tf', 4.615);
+      setSlider('tg', 'tg', 30); setSlider('bt', 'btot', 25);
+      return 'No stripes, no slots: everyone at once, told apart by code.';
+    },
+    t5: function () {
+      setScheme('ofdma'); setSlider('us', 'users', 6); setSlider('bt', 'btot', 25); setDup('tdd');
+      return 'Tiles scattered by a scheduler, reshuffled every frame.';
+    }
+  };
+  Object.keys(tours).forEach(id => $(id).addEventListener('click', function () {
+    $('tourTxt').textContent = tours[id]();
+    updateUI();
+  }));
+
+  /* ------------------------------- run loop ------------------------------- */
+  let cache = updateUI();
+  function frame(ts) {
+    if (!last) last = ts;
+    const dt = Math.min(ts - last, 50);
+    last = ts;
+    if (S.play && !reduce) { phase += dt / 1000; if (phase > 1e6) phase = 0; }
+    cache = calc();
+    drawSite(cache); drawGrid(cache); drawDup(cache); drawEff(cache);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

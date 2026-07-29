@@ -3,213 +3,941 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AoA triangulation</title>
+<title>Angle-of-arrival triangulation</title>
 <style>
 :root {
-  --bg: #fbfaf7;
-  --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
-  --text-warning: #854F0B;
-  --border: #e2e0d8;
-  --border-strong: #b9b7ae;
-  --surface-1: #f1efe8;
-  --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD; --bad: #B23B1E; --plot-bg: #ffffff; --grid: #e6e3da;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #b3860f; --series-4: #7e2f8e;
+  --series-5: #55801f; --series-6: #2f93b8; --series-7: #a2142f; --series-8: #6b6a63;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19;
-    --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
-    --text-warning: #FAC775;
-    --border: #34342f;
-    --border-strong: #56554e;
-    --surface-1: #262624;
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e;
+    --surface-1: #262624; --accent: #6FB3F2; --bad: #EE8A6E; --plot-bg: #201f1d; --grid: #34342f;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b; --series-8: #b4b2a9;
   }
 }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  line-height: 1.5;
-}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 800px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+h2 { font-size: 16px; font-weight: 500; margin: 2.25rem 0 6px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+.pre { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
 input, button { font: inherit; color: inherit; }
-button {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 6px 14px;
-  cursor: pointer;
-}
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; font-size: 13px; }
 button:hover { background: var(--surface-1); }
-button.on { border-color: #378ADD; color: #378ADD; }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1.1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
+.ctl input[type=range] { flex: 1; min-width: 90px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.85rem; margin-bottom: 1.1rem; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 0; list-style: none; }
+.legend-note li { margin: 3px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-canvas { width: 100%; display: block; cursor: crosshair; border: 0.5px solid var(--border); border-radius: var(--radius); }
+.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem;
+  font-size: 13px; color: var(--text-secondary); margin-top: 1rem; }
+.note b { color: var(--text-primary); font-weight: 500; }
+canvas { width: 100%; display: block; touch-action: none; }
+#cvMap { cursor: crosshair; height: auto; aspect-ratio: 15 / 8.9; max-height: 460px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 0.5px solid var(--border); }
+th { color: var(--text-secondary); font-weight: 500; }
+th:first-child, td:first-child { text-align: left; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; }
+ol.work li { margin: 3px 0; font-variant-numeric: tabular-nums; }
+dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
 </style>
 </head>
 <body>
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>AoA triangulation</h1>
-<p class="sub">One receiver site &mdash; like your 4-antenna interferometer &mdash; gives a direction, not a position: the emitter is somewhere along that bearing line. Two sites give two lines, and lines cross at one place. Add more sites and the lines rarely agree perfectly, so the answer becomes a best fit rather than a single crossing.</p>
+<h1>Angle-of-arrival triangulation</h1>
+<p class="sub">One site measures a direction, not a position. Cross several directions and you get a position &mdash; this tool draws one noisy measurement, its least-squares fix, and the error ellipse around it.</p>
+<p class="pre">If measuring a bearing from phase is new, start with <a href="phase-interferometry.html">Phase interferometry</a>. Next: <a href="tdoa.html">Time difference of arrival</a>, which solves the same problem with clocks instead of angles.</p>
+
+<p class="note" style="margin-top:0"><b>Everyday version.</b> Three people stand apart in a field and each points at a distant church tower. Nobody points exactly right, so the three arms do not meet at a point &mdash; they enclose a small triangle. The fix is the best guess inside that triangle, and the triangle is the error.</p>
 
 <div class="row">
-  <span class="lbl">Receiver sites</span>
-  <button id="n2" class="on">2</button>
-  <button id="n3">3</button>
+  <span class="lbl">Guided tour</span>
+  <button id="tr0">1 &middot; two sites</button>
+  <button id="tr1">2 &middot; add a third</button>
+  <button id="tr2">3 &middot; all five</button>
+  <button id="tr3">4 &middot; coarse bearings</button>
+  <button id="tr4">5 &middot; push it further out</button>
+  <button id="trR">reset</button>
+</div>
+<p class="note" id="tourNote"><b>Start here.</b> Press the tour buttons in order; each moves the controls and says in one line what changed. Drag any mast, or drag the emitter, to change the geometry yourself.</p>
+
+<div class="row" style="margin-top:1.25rem">
+  <span class="lbl">Sites used</span>
+  <button id="n2">2</button>
+  <button id="n3" class="on">3</button>
   <button id="n4">4</button>
   <button id="n5">5</button>
+  <button id="roll" style="margin-left:10px">New measurement</button>
+  <button id="tru" class="on">True position shown</button>
+  <button id="rst">Reset layout</button>
 </div>
-<div class="row" style="margin-bottom: 1.25rem;">
-  <label class="lbl" for="be" style="min-width: 176px;">Bearing accuracy of each site</label>
-  <input type="range" id="be" min="0.5" max="10" step="0.5" value="2" style="flex: 1;">
-  <span id="bev" style="font-size: 14px; font-weight: 500; min-width: 56px; text-align: right; font-variant-numeric: tabular-nums;">&plusmn;2.0&deg;</span>
+<div class="grid2">
+  <div class="ctl"><label for="sg">Bearing accuracy</label><input type="range" id="sg" min="0.2" max="10" step="0.1" value="2"><span class="v" id="sgv">2.0&deg; rms</span></div>
 </div>
 
-<p class="sub" style="margin: 0 0 6px; font-size: 13px;">Click anywhere on the map to move the emitter. Map is 10 &times; 6 km.</p>
-<canvas id="map" style="height: 420px;"></canvas>
+<p class="sec"><b>1 &middot; The map</b> <span>&mdash; measured bearings from each mast with their one-sigma wedges</span></p>
+<canvas id="cvMap"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-1)"></span><span class="sw" style="background: var(--series-2)"></span><span class="sw" style="background: var(--series-3)"></span>measured bearing and its wedge</li>
+  <li><span class="sw" style="background: var(--series-7)"></span>true emitter, drag it</li>
+  <li><span class="sw" style="background: var(--text-primary)"></span>least-squares fix</li>
+  <li><span class="sw" style="background: var(--series-4)"></span>zoom box for section 2</li>
+</ul>
 
-<div class="cards" id="cards"></div>
+<p class="sec"><b>2 &middot; Inside the crossing region</b> <span>&mdash; the fix, its error ellipse, the CEP circle and the truth</span></p>
+<canvas id="cvIn" style="height: 340px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-4)"></span><abbr title="The one-sigma contour of the fix covariance. About 39 % of fixes land inside it.">one-sigma error ellipse</abbr></li>
+  <li><span class="sw" style="background: var(--text-warning)"></span>CEP circle, half the time inside</li>
+  <li><span class="sw" style="background: var(--text-primary)"></span>fix, where the lines fit best</li>
+</ul>
 
-<p class="sub" style="margin-top: 2rem;">Play with the geometry: with the emitter far away, even &plusmn;2&deg; wedges overlap in a huge diamond &mdash; angle error grows into position error with distance. Two sites whose bearings cross at a shallow angle give a badly stretched fix; crossing near 90&deg; is ideal. Adding a third, fourth, or fifth site shrinks the overlap region fast, which is why real networks favour many cheap sites over one perfect one.</p>
+<div class="cards">
+  <div class="card"><div class="hd">Fix position</div><div class="big" id="cFix" style="font-size:17px">&mdash;</div><div class="ft">km east, km north on the map</div></div>
+  <div class="card"><div class="hd">Error against truth</div><div class="big" id="cErr">&mdash;</div><div class="ft" id="cErrF">distance from the fix to the emitter</div></div>
+  <div class="card"><div class="hd"><abbr title="Circular error probable: the radius of the circle that contains half of all fixes.">CEP</abbr></div><div class="big" id="cCep">&mdash;</div><div class="ft">0.59(&sigma;<sub>maj</sub> + &sigma;<sub>min</sub>), the 50 % circle</div></div>
+  <div class="card"><div class="hd"><abbr title="Geometric dilution of precision: how much the site layout alone multiplies measurement error into position error.">GDOP</abbr></div><div class="big" id="cGdop">&mdash;</div><div class="ft" id="cGdopF">geometry factor; 1.41 is an ideal pair</div></div>
+  <div class="card"><div class="hd"><abbr title="The angle left over between each measured bearing and the bearing from that site to the fitted position.">Residual</abbr></div><div class="big" id="cRes">&mdash;</div><div class="ft" id="cResF">rms bearing miss at the fix</div></div>
+  <div class="card"><div class="hd">Sites used</div><div class="big" id="cN">&mdash;</div><div class="ft" id="cNF">of 5 masts on the map</div></div>
+</div>
+
+<p class="sec"><b>3 &middot; CEP against number of sites</b> <span>&mdash; what each extra mast buys, same geometry, same noise</span></p>
+<canvas id="cvBar" style="height: 260px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-4)"></span>CEP with the first k masts</li>
+  <li><span class="sw" style="background: var(--accent)"></span>the count you are using now</li>
+</ul>
+
+<p class="sec"><b>4 &middot; Angle error becomes distance error</b> <span>&mdash; cross-range miss grows in a straight line with range</span></p>
+<canvas id="cvRng" style="height: 260px;"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background: var(--series-2)"></span>full wedge width, 2R&middot;tan&sigma;</li>
+  <li><span class="sw" style="background: var(--series-1)"></span>one-sigma cross-range, R&middot;tan&sigma;</li>
+  <li><span class="sw" style="background: var(--series-7)"></span>the emitter's effective range now</li>
+</ul>
+
+<details id="tblbox">
+  <summary>Each site's measurement, in numbers</summary>
+  <table id="tbl"></table>
+  <p class="legend-note" style="margin-top:8px">Bearings run clockwise from north, 000&deg; to 360&deg;. Offset is the error this realisation drew for that site; residual is how far the fitted position still sits off that measured line, in degrees.</p>
+</details>
+
+<h2>The arithmetic, with the current numbers substituted in</h2>
+<ol class="work" id="work"></ol>
+
+<h2>What the controls are teaching</h2>
+<p class="sub">Two sites are a trap. Two lines in a plane always cross somewhere, so the residual is exactly zero and the fit looks perfect, yet the crossing sits wherever the two errors happened to push it and nothing on the screen warns you. The third bearing is the first one that can disagree, which is why it is the first one that gives you a residual to check the other two against. After that each mast buys less: the ellipse shrinks roughly as one over the square root of the number of sites, while moving one mast to fix a shallow crossing angle can halve it in a single drag.</p>
+<p class="sub">Watch what geometry does on its own. Drag two masts close together and their bearings become nearly parallel; the ellipse stretches along the line of sight until the fix is useless in range while still being sharp in cross-range, and the GDOP card climbs to say so. Push the emitter to the top of the map and every wedge widens in proportion, because an angle error is a distance error multiplied by range &mdash; that is the straight line in section 4, and it is the reason a network of cheap nearby sites beats one very accurate distant one.</p>
+<p class="sub">Four honest limits. The bearing errors here are independent, zero-mean and Gaussian, which real direction finding is not &mdash; multipath puts a bias on a bearing, and a bias does not average away with more sites. The ellipse is a linearised covariance, exact only while the angle errors are small enough that the bearing lines are locally straight in the fit; at 10&deg; rms it is indicative rather than precise. CEP = 0.59(&sigma;<sub>maj</sub> + &sigma;<sub>min</sub>) is the standard approximation, good to about one per cent while &sigma;<sub>min</sub>/&sigma;<sub>maj</sub> stays above 0.25 and optimistic below that. And the fit treats each bearing as a full line rather than a ray, so residuals are reported modulo 180&deg;; where the geometry collapses &mdash; a crossing angle under about five degrees, or a fix landing on a site &mdash; the tool reports no fix instead of a confident number it cannot support.</p>
+
+<h2>Glossary</h2>
+<dl class="glossary">
+  <dt>Angle of arrival</dt><dd>The direction a signal came from, as measured at one receiving site. It fixes a line, not a point.</dd>
+  <dt>Bearing</dt><dd>That direction expressed as an angle clockwise from north, 000&deg; to 360&deg;.</dd>
+  <dt>Triangulation</dt><dd>Finding a position by crossing bearing lines from two or more known sites.</dd>
+  <dt>Realisation</dt><dd>One actual set of measurements drawn from the error distribution. Press "New measurement" for another.</dd>
+  <dt>Least-squares fix</dt><dd>The position that minimises the summed squared miss against every measured bearing line at once.</dd>
+  <dt>Normal equations</dt><dd>The small linear system M&thinsp;x = b whose solution is that minimum. Here M is 2 by 2, so it inverts by hand.</dd>
+  <dt>Covariance matrix</dt><dd>M&#8315;&sup1;. Its diagonal holds the variances in east and north, its off-diagonal the tilt.</dd>
+  <dt>Error ellipse</dt><dd>The one-sigma contour of that covariance. About 39 % of fixes land inside a 2-D one-sigma ellipse.</dd>
+  <dt>CEP</dt><dd>Circular error probable: the radius of the circle containing half the fixes, here 0.59(&sigma;<sub>maj</sub> + &sigma;<sub>min</sub>).</dd>
+  <dt>GDOP</dt><dd>Geometric dilution of precision. How much the site layout alone multiplies measurement error into position error.</dd>
+  <dt>Residual</dt><dd>What is left over after the fit: the angle between each measured bearing and the bearing from that site to the fitted position, taken modulo 180&deg; because the fit uses lines rather than rays.</dd>
+  <dt>Cross-range error</dt><dd>The sideways miss a bearing error causes at range R, about R&middot;tan&sigma;.</dd>
+  <dt>Baseline</dt><dd>The separation between two sites. A longer baseline gives a wider crossing angle and a rounder ellipse.</dd>
+</dl>
 
 <script>
 (function () {
-  const $ = id => document.getElementById(id);
-  const S = { ex: 0.55, ey: 0.3, err: 2, n: 2 };
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const KMX = 10, KMY = 6;
-  const COLS = ['#378ADD', '#1D9E75', '#D85A30', '#7F77DD', '#D4537E'];
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var MD = '—', DEG = '°', SG = 'σ';
+  var D2R = Math.PI / 180;
+  var KMX = 15, KMY = 8, NMAX = 5;
+  var SCOL = ['--series-1', '--series-2', '--series-3', '--series-5', '--series-6'];
 
-  const LAYOUT = {
-    2: [[0.16, 0.86], [0.84, 0.86]],
-    3: [[0.12, 0.86], [0.5, 0.9], [0.88, 0.86]],
-    4: [[0.1, 0.86], [0.37, 0.9], [0.63, 0.9], [0.9, 0.86]],
-    5: [[0.08, 0.84], [0.29, 0.9], [0.5, 0.86], [0.71, 0.9], [0.92, 0.84]]
+  var MINRC = Math.pow(Math.sin(5 * D2R), 2);
+  var whyNoFix = 'cross';
+  var WHY = {
+    cross: ['The bearings cross at less than about five degrees.', 'Drag a mast sideways to open the crossing angle.'],
+    onsite: ['The fix has landed on top of a receiving site.', 'A bearing carries no information about a target at zero range.']
   };
-  const sites = () => LAYOUT[S.n].map((p, i) => ({ x: p[0], y: p[1], col: COLS[i] }));
 
-  function bearing(st) {
-    return Math.atan2((S.ex - st.x) * KMX, (st.y - S.ey) * KMY) * 180 / Math.PI;
+  var DEF = { sx: [1.6, 7.0, 13.2, 3.4, 12.4], sy: [1.0, 0.8, 1.2, 4.6, 5.0], ex: 7.5, ey: 5.8 };
+  var S = {
+    n: 3, sig: 2, truth: true,
+    sx: DEF.sx.slice(), sy: DEF.sy.slice(), ex: DEF.ex, ey: DEF.ey,
+    z: []
+  };
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function makeZ(seed) {
+    var rnd = mulberry32(seed), out = [], i;
+    for (i = 0; i < NMAX; i++) {
+      var u1 = Math.max(rnd(), 1e-12), u2 = rnd();
+      var v = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      out.push(isFinite(v) ? v : 0);
+    }
+    return out;
+  }
+  S.z = makeZ(20260729);
+
+  function sigRad() { return Math.max(S.sig, 0.01) * D2R; }
+  function wrap90(a) {
+    if (!isFinite(a)) return 0;
+    a = a % Math.PI;
+    if (a > Math.PI / 2) a -= Math.PI;
+    if (a <= -Math.PI / 2) a += Math.PI;
+    return a;
+  }
+  function brgTo(fromX, fromY, toX, toY) { return Math.atan2(toX - fromX, toY - fromY); }
+  function trueBrg(i) { return brgTo(S.sx[i], S.sy[i], S.ex, S.ey); }
+  function measBrg(i) { return trueBrg(i) + S.z[i] * sigRad(); }
+
+  function normal(m, w, N) {
+    var a = 0, b = 0, c = 0, d = 0, e = 0, i;
+    for (i = 0; i < N; i++) {
+      var nx = Math.cos(m[i]), ny = -Math.sin(m[i]);
+      var k = nx * S.sx[i] + ny * S.sy[i];
+      a += w[i] * nx * nx; b += w[i] * nx * ny; c += w[i] * ny * ny;
+      d += w[i] * nx * k; e += w[i] * ny * k;
+    }
+    var det = a * c - b * b, trh = 0.5 * (a + c);
+    if (!isFinite(det) || !isFinite(trh) || trh <= 0) return null;
+    if (det < 1e-12 * trh * trh) return null;
+    var x = (c * d - b * e) / det, y = (a * e - b * d) / det;
+    if (!isFinite(x) || !isFinite(y)) return null;
+    return { a: a, b: b, c: c, d: d, e: e, det: det, x: x, y: y };
+  }
+
+  function fixFor(N) {
+    N = Math.max(2, Math.min(Math.round(N), NMAX));
+    var i, it, m = [], w = [];
+    for (i = 0; i < N; i++) { m.push(measBrg(i)); w.push(1); }
+
+    var a0 = 0, b0 = 0, c0 = 0;
+    for (i = 0; i < N; i++) {
+      var qx = Math.cos(m[i]), qy = -Math.sin(m[i]);
+      a0 += qx * qx; b0 += qx * qy; c0 += qy * qy;
+    }
+    var tr0 = 0.5 * (a0 + c0), det0 = a0 * c0 - b0 * b0;
+    if (!isFinite(det0) || !(tr0 > 0) || det0 / (tr0 * tr0) < MINRC) { whyNoFix = 'cross'; return null; }
+
+    var sol = normal(m, w, N);
+    if (!sol) { whyNoFix = 'cross'; return null; }
+    for (it = 0; it < 4; it++) {
+      for (i = 0; i < N; i++) {
+        var R = Math.max(Math.hypot(sol.x - S.sx[i], sol.y - S.sy[i]), 0.05);
+        var sg = R * sigRad();
+        w[i] = 1 / (sg * sg);
+      }
+      var s2 = normal(m, w, N);
+      if (!s2) { whyNoFix = 'cross'; return null; }
+      sol = s2;
+    }
+    for (i = 0; i < N; i++) {
+      if (Math.hypot(sol.x - S.sx[i], sol.y - S.sy[i]) < 0.15) { whyNoFix = 'onsite'; return null; }
+    }
+    var det = sol.det;
+    var Cxx = sol.c / det, Cxy = -sol.b / det, Cyy = sol.a / det;
+    var tr = Cxx + Cyy;
+    if (!isFinite(tr) || tr <= 0) return null;
+    var rad = Math.sqrt(Math.max(0.25 * (Cxx - Cyy) * (Cxx - Cyy) + Cxy * Cxy, 0));
+    var l1 = Math.max(tr / 2 + rad, 0), l2 = Math.max(tr / 2 - rad, 0);
+    var smaj = Math.sqrt(l1), smin = Math.sqrt(l2);
+    var phi = 0.5 * Math.atan2(2 * Cxy, Cxx - Cyy);
+    var cep = 0.59 * (smaj + smin);
+    var sumInv = 0, res = [], rng = [], ss = 0;
+    for (i = 0; i < N; i++) {
+      var Ri = Math.max(Math.hypot(sol.x - S.sx[i], sol.y - S.sy[i]), 0.02);
+      rng.push(Ri);
+      sumInv += 1 / (Ri * Ri);
+      var e2 = wrap90(m[i] - brgTo(S.sx[i], S.sy[i], sol.x, sol.y)) / D2R;
+      res.push(e2); ss += e2 * e2;
+    }
+    var Reff = Math.sqrt(N / Math.max(sumInv, 1e-12));
+    var gdop = Math.sqrt(tr) / (sigRad() * Math.max(Reff, 1e-9));
+    var rms = Math.sqrt(ss / Math.max(N - 2, 1));
+    var err = Math.hypot(sol.x - S.ex, sol.y - S.ey);
+    if (!isFinite(smaj) || !isFinite(cep) || !isFinite(gdop)) return null;
+    return {
+      N: N, m: m, x: sol.x, y: sol.y, M: sol,
+      Cxx: Cxx, Cxy: Cxy, Cyy: Cyy, smaj: smaj, smin: smin, phi: phi,
+      cep: cep, gdop: gdop, res: res, rng: rng, rms: rms, err: err, Reff: Reff
+    };
+  }
+
+  function fBrg(rad) {
+    if (!isFinite(rad)) return MD;
+    var d = (rad / D2R) % 360;
+    if (d < 0) d += 360;
+    var s = d.toFixed(1);
+    while (s.indexOf('.') < 3) s = '0' + s;
+    return s + DEG;
+  }
+  function fLen(km) {
+    if (!isFinite(km)) return MD;
+    var m = km * 1000;
+    if (Math.abs(m) < 10000) return m.toFixed(0) + ' m';
+    return km.toFixed(2) + ' km';
+  }
+  function fLenShort(km) {
+    if (!isFinite(km)) return MD;
+    var m = km * 1000;
+    if (Math.abs(m) < 1000) return m.toFixed(0) + ' m';
+    return km.toFixed(2) + ' km';
   }
 
   function fit(c) {
-    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * d), H = Math.round(r.height * d);
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
     return [r.width, r.height];
   }
+  function plotBase(g, l, t, w2, h2) {
+    g.fillStyle = cvv('--plot-bg'); g.fillRect(l, t, w2, h2);
+    g.strokeStyle = cvv('--border'); g.lineWidth = 1; g.strokeRect(l + 0.5, t + 0.5, w2 - 1, h2 - 1);
+  }
+  function niceStep(span) {
+    var raw = Math.max(span, 1e-9) / 4;
+    var p = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+    var m = raw / p;
+    var s = m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10;
+    return s * p;
+  }
 
-  function draw() {
-    const c = $('map'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+  var mapG = null;
+
+  function mapGeom(w, h) {
+    var ml = 26, mr = 8, mt = 8, mb = 30;
+    var sc = Math.min((w - ml - mr) / KMX, (h - mt - mb) / KMY);
+    if (!isFinite(sc) || sc <= 0) return null;
+    var ox = ml + (w - ml - mr - KMX * sc) / 2;
+    var oy = mt + (h - mt - mb - KMY * sc) / 2;
+    return {
+      sc: sc, ox: ox, oy: oy,
+      X: function (kx) { return ox + kx * sc; },
+      Y: function (ky) { return oy + (KMY - ky) * sc; },
+      invX: function (px) { return (px - ox) / sc; },
+      invY: function (py) { return KMY - (py - oy) / sc; }
+    };
+  }
+
+  function drawMast(g, px, py, col, faint) {
+    var H = 20, W = 6.5;
+    g.save();
+    g.globalAlpha = faint ? 0.38 : 1;
+    g.strokeStyle = col; g.lineWidth = 1.5; g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(px - W, py); g.lineTo(px, py - H); g.lineTo(px + W, py); g.stroke();
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(px - W * 0.68, py - H * 0.32); g.lineTo(px + W * 0.68, py - H * 0.32);
+    g.moveTo(px - W * 0.34, py - H * 0.66); g.lineTo(px + W * 0.34, py - H * 0.66);
+    g.stroke();
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(px, py - H); g.lineTo(px, py - H - 9);
+    g.moveTo(px - 5.5, py - H - 9); g.lineTo(px + 5.5, py - H - 9);
+    g.moveTo(px - 4.4, py - H - 2); g.lineTo(px + 4.4, py - H - 7.5);
+    g.moveTo(px - 4.4, py - H - 7.5); g.lineTo(px + 4.4, py - H - 2);
+    g.stroke();
+    g.fillStyle = col;
+    g.beginPath(); g.arc(px, py, 2.7, 0, 7); g.fill();
+    g.restore();
+  }
+
+  function ellipsePts(cx, cy, smaj, smin, phi, k, steps) {
+    var pts = [], i;
+    var ex = Math.cos(phi), ey = Math.sin(phi);
+    for (i = 0; i <= steps; i++) {
+      var t = i / steps * 2 * Math.PI;
+      var a = k * smaj * Math.cos(t), b = k * smin * Math.sin(t);
+      pts.push([cx + a * ex - b * ey, cy + a * ey + b * ex]);
+    }
+    return pts;
+  }
+
+  function zoomSpan(F) {
+    if (!F) return 1;
+    var s = Math.max(6 * F.smaj, 4 * F.cep, 3 * F.err, 0.06);
+    return Math.max(0.06, Math.min(s, 40));
+  }
+
+  function drawMap(F, why) {
+    var c = $('cvMap'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const ST = sites();
+    var G = mapGeom(w, h);
+    mapG = G;
+    if (!G) return;
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
+    var l = G.X(0), t = G.Y(KMY), pw = KMX * G.sc, ph = KMY * G.sc;
+    plotBase(g, l, t, pw, ph);
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let i = 1; i < KMX; i++) {
-      g.beginPath(); g.moveTo(w * i / KMX, 0); g.lineTo(w * i / KMX, h); g.stroke();
-    }
-    for (let i = 1; i < KMY; i++) {
-      g.beginPath(); g.moveTo(0, h * i / KMY); g.lineTo(w, h * i / KMY); g.stroke();
-    }
+    var i, k;
+    g.strokeStyle = grd; g.lineWidth = 0.5;
+    for (k = 1; k < KMX; k++) { g.beginPath(); g.moveTo(G.X(k), t); g.lineTo(G.X(k), t + ph); g.stroke(); }
+    for (k = 1; k < KMY; k++) { g.beginPath(); g.moveTo(l, G.Y(k)); g.lineTo(l + pw, G.Y(k)); g.stroke(); }
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+    for (k = 0; k <= KMX; k += 5) g.fillText(k.toFixed(0), G.X(k), t + ph + 4);
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (k = 0; k <= KMY; k += 4) g.fillText(k.toFixed(0), l - 4, G.Y(k));
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('km east', l + pw / 2, t + ph + 17);
+    g.save(); g.translate(Math.max(l - 22, 8), t + ph / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText('km north', 0, 0); g.restore();
 
-    ST.forEach(st => {
-      const sx = st.x * w, sy = st.y * h;
-      const b = bearing(st) * Math.PI / 180;
-      const e = S.err * Math.PI / 180;
-      const L = 40;
-      const proj = a => {
-        const kx = st.x * KMX + Math.sin(a) * L;
-        const ky = st.y * KMY - Math.cos(a) * L;
-        return [kx / KMX * w, ky / KMY * h];
-      };
-      const p1 = proj(b - e), p2 = proj(b + e), pc = proj(b);
+    g.save();
+    g.beginPath(); g.rect(l + 1, t + 1, pw - 2, ph - 2); g.clip();
 
-      g.fillStyle = st.col; g.globalAlpha = 0.11;
-      g.beginPath(); g.moveTo(sx, sy); g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]);
+    var L = 60;
+    for (i = 0; i < S.n; i++) {
+      var th = measBrg(i), sg = sigRad(), col = cvv(SCOL[i]);
+      var px = S.sx[i], py = S.sy[i];
+      var p1x = px + Math.sin(th - sg) * L, p1y = py + Math.cos(th - sg) * L;
+      var p2x = px + Math.sin(th + sg) * L, p2y = py + Math.cos(th + sg) * L;
+      g.fillStyle = col; g.globalAlpha = 0.14;
+      g.beginPath();
+      g.moveTo(G.X(px), G.Y(py)); g.lineTo(G.X(p1x), G.Y(p1y)); g.lineTo(G.X(p2x), G.Y(p2y));
       g.closePath(); g.fill();
       g.globalAlpha = 1;
+      g.strokeStyle = col; g.lineWidth = 1.3;
+      g.beginPath();
+      g.moveTo(G.X(px), G.Y(py));
+      g.lineTo(G.X(px + Math.sin(th) * L), G.Y(py + Math.cos(th) * L));
+      g.stroke();
+    }
 
-      g.strokeStyle = st.col; g.lineWidth = 1.2; g.setLineDash([6, 5]);
-      g.beginPath(); g.moveTo(sx, sy); g.lineTo(pc[0], pc[1]); g.stroke();
+    if (F) {
+      var sp = zoomSpan(F) / 2;
+      g.strokeStyle = cvv('--series-4'); g.lineWidth = 1; g.setLineDash([4, 3]);
+      var bx = G.X(F.x - sp), by = G.Y(F.y + sp), bw = 2 * sp * G.sc;
+      g.strokeRect(bx, by, bw, bw);
       g.setLineDash([]);
-    });
+      if (bw > 26) {
+        g.fillStyle = cvv('--series-4'); g.font = fnt(9.5);
+        g.textAlign = 'left'; g.textBaseline = 'top';
+        g.fillText('section 2 zoom', bx, by + bw + 2);
+      }
+    }
+    g.restore();
 
-    ST.forEach((st, i) => {
-      const sx = st.x * w, sy = st.y * h;
-      g.fillStyle = st.col;
-      g.beginPath(); g.arc(sx, sy, 7, 0, 7); g.fill();
-      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('site ' + (i + 1), sx, sy + 12);
-    });
+    for (i = NMAX - 1; i >= 0; i--) {
+      var active = i < S.n;
+      drawMast(g, G.X(S.sx[i]), G.Y(S.sy[i]), active ? cvv(SCOL[i]) : cvv('--text-muted'), !active);
+      g.save();
+      g.globalAlpha = active ? 1 : 0.5;
+      g.fillStyle = active ? cvv(SCOL[i]) : cvv('--text-muted');
+      g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText('site ' + (i + 1), G.X(S.sx[i]), G.Y(S.sy[i]) + 5);
+      if (active) {
+        g.font = fnt(9.5);
+        g.fillText(fBrg(measBrg(i)), G.X(S.sx[i]), G.Y(S.sy[i]) + 17);
+      } else {
+        g.font = fnt(9.5); g.fillText('not used', G.X(S.sx[i]), G.Y(S.sy[i]) + 17);
+      }
+      g.restore();
+    }
 
-    const ex = S.ex * w, ey = S.ey * h;
-    g.fillStyle = '#D4537E';
-    g.beginPath(); g.arc(ex, ey, 6.5, 0, 7); g.fill();
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('emitter', ex, ey - 11);
+    g.save();
+    g.beginPath(); g.rect(l + 1, t + 1, pw - 2, ph - 2); g.clip();
+    if (S.truth) {
+      var ex = G.X(S.ex), ey = G.Y(S.ey);
+      g.fillStyle = cvv('--series-7');
+      g.beginPath(); g.arc(ex, ey, 5.5, 0, 7); g.fill();
+      g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText('true emitter', ex, ey - 8);
+    }
+    if (F) {
+      var fx = G.X(F.x), fy = G.Y(F.y);
+      g.strokeStyle = cvv('--text-primary'); g.lineWidth = 1.8;
+      g.beginPath();
+      g.moveTo(fx - 7, fy); g.lineTo(fx + 7, fy);
+      g.moveTo(fx, fy - 7); g.lineTo(fx, fy + 7);
+      g.stroke();
+      g.fillStyle = cvv('--text-primary'); g.font = fnt(10.5);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(' fix', fx + 6, fy + 4);
+    }
+    g.restore();
 
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('where every wedge overlaps = where the emitter can be', 10, 8);
+    var nx = l + pw - 18, ny = t + 20;
+    g.strokeStyle = sub; g.lineWidth = 1.3;
+    g.beginPath(); g.moveTo(nx, ny + 12); g.lineTo(nx, ny - 10); g.stroke();
+    g.beginPath(); g.moveTo(nx, ny - 14); g.lineTo(nx - 4, ny - 5); g.lineTo(nx + 4, ny - 5);
+    g.closePath(); g.fillStyle = sub; g.fill();
+    g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('N', nx, ny + 13);
+
+    var sbx = l + 10, sby = t + 24, sbl = G.sc * 2;
+    g.strokeStyle = sub; g.lineWidth = 1.4;
+    g.beginPath();
+    g.moveTo(sbx, sby); g.lineTo(sbx + sbl, sby);
+    g.moveTo(sbx, sby - 4); g.lineTo(sbx, sby + 4);
+    g.moveTo(sbx + sbl, sby - 4); g.lineTo(sbx + sbl, sby + 4);
+    g.stroke();
+    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('2 km', sbx + sbl / 2, sby - 5);
+
+    if (!F) {
+      g.fillStyle = cvv('--bad'); g.font = fnt(11);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText('No fix. ' + (WHY[why] || WHY.cross)[0], l + 8, t + 8);
+    }
   }
 
-  function updateUI() {
-    $('bev').innerHTML = '&plusmn;' + S.err.toFixed(1) + '&deg;';
-    const ST = sites();
-    const box = $('cards');
-    box.innerHTML = '';
-    ST.forEach((st, i) => {
-      const b = bearing(st);
-      const rangeKm = Math.hypot((S.ex - st.x) * KMX, (st.y - S.ey) * KMY);
-      const cross = 2 * rangeKm * Math.tan(S.err * Math.PI / 180) * 1000;
-      const el = document.createElement('div');
-      el.className = 'card';
-      el.innerHTML = '<div class="hd"><span class="dot" style="background: ' + st.col + ';"></span>Site ' + (i + 1) + ' bearing</div>'
-        + '<div class="big" style="color: ' + st.col + ';">' + (b >= 0 ? '+' : '') + b.toFixed(1) + '&deg;</div>'
-        + '<div class="ft">' + rangeKm.toFixed(1) + ' km away &middot; wedge is ' + cross.toFixed(0) + ' m wide there</div>';
-      box.appendChild(el);
-    });
+  function drawInset(F, why) {
+    var c = $('cvIn'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
+    var l = 58, r = 16, t = 14, b = 40, pw = w - l - r, ph = h - t - b;
+    if (pw < 80 || ph < 60) return;
+    plotBase(g, l, t, pw, ph);
+    if (!F) {
+      var msg = WHY[why] || WHY.cross;
+      g.fillStyle = cvv('--bad'); g.font = fnt(12);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('No usable fix. ' + msg[0], l + pw / 2, t + ph / 2 - 8);
+      g.fillStyle = mut; g.font = fnt(11);
+      g.fillText(msg[1], l + pw / 2, t + ph / 2 + 12);
+      return;
+    }
+    var span = zoomSpan(F);
+    var sc = Math.min(pw, ph) / span;
+    var cx = l + pw / 2, cy = t + ph / 2;
+    var X = function (kx) { return cx + (kx - F.x) * sc; };
+    var Y = function (ky) { return cy - (ky - F.y) * sc; };
+
+    var step = niceStep(span * 0.9);
+    var nTick = Math.ceil(span / 2 / step) + 1, i, k;
+    g.strokeStyle = grd; g.lineWidth = 0.5; g.font = fnt(10); g.fillStyle = mut;
+    for (k = -nTick; k <= nTick; k++) {
+      var vx = X(F.x + k * step), vy = Y(F.y + k * step);
+      if (vx > l && vx < l + pw) {
+        g.beginPath(); g.moveTo(vx, t); g.lineTo(vx, t + ph); g.stroke();
+        g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillText(fLenShort(k * step), vx, t + ph + 5);
+      }
+      if (vy > t && vy < t + ph) {
+        g.beginPath(); g.moveTo(l, vy); g.lineTo(l + pw, vy); g.stroke();
+        g.textAlign = 'right'; g.textBaseline = 'middle';
+        g.fillText(fLenShort(k * step), l - 5, vy);
+      }
+    }
+    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('east of the fix', l + pw / 2, h - 14);
+    g.save(); g.translate(12, t + ph / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('north of the fix', 0, 0); g.restore();
+
+    g.save();
+    g.beginPath(); g.rect(l + 1, t + 1, pw - 2, ph - 2); g.clip();
+
+    for (i = 0; i < F.N; i++) {
+      var th = F.m[i], ux = Math.sin(th), uy = Math.cos(th);
+      var t0 = (F.x - S.sx[i]) * ux + (F.y - S.sy[i]) * uy;
+      var ta = t0 - span, tb = t0 + span;
+      g.strokeStyle = cvv(SCOL[i]); g.lineWidth = 1.6;
+      g.beginPath();
+      g.moveTo(X(S.sx[i] + ux * ta), Y(S.sy[i] + uy * ta));
+      g.lineTo(X(S.sx[i] + ux * tb), Y(S.sy[i] + uy * tb));
+      g.stroke();
+    }
+
+    var pts = ellipsePts(F.x, F.y, F.smaj, F.smin, F.phi, 1, 96);
+    g.fillStyle = cvv('--series-4'); g.globalAlpha = 0.16;
+    g.beginPath();
+    for (i = 0; i < pts.length; i++) {
+      if (i === 0) g.moveTo(X(pts[i][0]), Y(pts[i][1])); else g.lineTo(X(pts[i][0]), Y(pts[i][1]));
+    }
+    g.closePath(); g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = cvv('--series-4'); g.lineWidth = 1.8;
+    g.beginPath();
+    for (i = 0; i < pts.length; i++) {
+      if (i === 0) g.moveTo(X(pts[i][0]), Y(pts[i][1])); else g.lineTo(X(pts[i][0]), Y(pts[i][1]));
+    }
+    g.closePath(); g.stroke();
+
+    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.4; g.setLineDash([5, 4]);
+    g.beginPath(); g.arc(X(F.x), Y(F.y), Math.max(F.cep * sc, 1), 0, 7); g.stroke();
+    g.setLineDash([]);
+
+    if (S.truth) {
+      g.strokeStyle = cvv('--series-7'); g.lineWidth = 1.2; g.setLineDash([3, 3]);
+      g.beginPath(); g.moveTo(X(F.x), Y(F.y)); g.lineTo(X(S.ex), Y(S.ey)); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cvv('--series-7');
+      g.beginPath(); g.arc(X(S.ex), Y(S.ey), 5, 0, 7); g.fill();
+      g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText('true emitter', X(S.ex), Y(S.ey) - 7);
+      var mx = (X(F.x) + X(S.ex)) / 2, my = (Y(F.y) + Y(S.ey)) / 2;
+      g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(' ' + fLen(F.err), mx, my);
+    }
+
+    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(X(F.x) - 8, Y(F.y)); g.lineTo(X(F.x) + 8, Y(F.y));
+    g.moveTo(X(F.x), Y(F.y) - 8); g.lineTo(X(F.x), Y(F.y) + 8);
+    g.stroke();
+    g.restore();
+
+    g.fillStyle = cvv('--series-4'); g.font = fnt(10.5);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('1' + SG + ' ellipse ' + fLen(F.smaj) + ' by ' + fLen(F.smin), l + 6, t + 5);
+    g.fillStyle = cvv('--text-warning');
+    g.fillText('CEP ' + fLen(F.cep), l + 6, t + 19);
+    g.fillStyle = sub;
+    g.textAlign = 'right';
+    g.fillText('view ' + fLenShort(span) + ' across', l + pw - 6, t + 5);
   }
 
-  ['n2', 'n3', 'n4', 'n5'].forEach((id, k) => {
-    $(id).addEventListener('click', () => {
-      S.n = k + 2;
-      ['n2', 'n3', 'n4', 'n5'].forEach(o => $(o).classList.remove('on'));
-      $(id).classList.add('on');
-      updateUI();
-    });
+  function drawBars(F) {
+    var c = $('cvBar'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
+    var l = 62, r = 16, t = 16, b = 44, pw = w - l - r, ph = h - t - b;
+    if (pw < 80 || ph < 60) return;
+    plotBase(g, l, t, pw, ph);
+
+    var vals = [], k, best = 0, any = false;
+    for (k = 2; k <= NMAX; k++) {
+      var Fk = fixFor(k);
+      var v = Fk ? Fk.cep * 1000 : null;
+      if (v !== null && isFinite(v)) { any = true; if (v > best) best = v; }
+      vals.push(v);
+    }
+    if (!any || best <= 0) {
+      g.fillStyle = cvv('--bad'); g.font = fnt(12);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('No usable fix for any site count with this geometry.', l + pw / 2, t + ph / 2);
+      return;
+    }
+    var hi = best * 1.22;
+    var Y = function (v) { return t + ph - Math.max(Math.min(v, hi), 0) / hi * ph; };
+
+    var st = niceStep(hi);
+    g.font = fnt(10.5);
+    for (var v0 = 0; v0 <= hi + 1e-9; v0 += st) {
+      g.strokeStyle = grd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v0)); g.lineTo(l + pw, Y(v0)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v0 >= 1000 ? (v0 / 1000).toFixed(1) + ' km' : v0.toFixed(0), l - 5, Y(v0));
+    }
+    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('number of sites used', l + pw / 2, h - 14);
+    g.save(); g.translate(12, t + ph / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('CEP, metres', 0, 0); g.restore();
+
+    var nb = vals.length, bw = pw / nb;
+    for (k = 0; k < nb; k++) {
+      var cx = l + bw * (k + 0.5), bwid = Math.min(bw * 0.5, 62);
+      var cur = (k + 2) === S.n;
+      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText((k + 2).toFixed(0), cx, t + ph + 5);
+      if (vals[k] === null) {
+        g.fillStyle = cvv('--bad'); g.font = fnt(10); g.textBaseline = 'bottom';
+        g.fillText('no fix', cx, t + ph - 6);
+        continue;
+      }
+      var y = Y(vals[k]);
+      g.fillStyle = cvv(cur ? '--accent' : '--series-4');
+      g.globalAlpha = cur ? 0.85 : 0.45;
+      g.fillRect(cx - bwid / 2, y, bwid, t + ph - y);
+      g.globalAlpha = 1;
+      g.strokeStyle = cvv(cur ? '--accent' : '--series-4'); g.lineWidth = 1.4;
+      g.strokeRect(cx - bwid / 2 + 0.5, y + 0.5, bwid - 1, Math.max(t + ph - y - 1, 1));
+      g.fillStyle = cvv(cur ? '--accent' : '--text-secondary');
+      g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText(vals[k] >= 10000 ? (vals[k] / 1000).toFixed(1) + ' km' : vals[k].toFixed(0) + ' m',
+        cx, Math.max(y - 4, t + 11));
+    }
+    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('bearing accuracy ' + S.sig.toFixed(1) + DEG + ' rms, sites added in map order', l + 6, t + 5);
+  }
+
+  function drawRange(F) {
+    var c = $('cvRng'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
+    var l = 62, r = 16, t = 16, b = 44, pw = w - l - r, ph = h - t - b;
+    if (pw < 80 || ph < 60) return;
+    plotBase(g, l, t, pw, ph);
+
+    var Rnow0 = (F && isFinite(F.Reff)) ? F.Reff : 0;
+    var Rmax = Math.max(12, Math.ceil(Rnow0 * 1.15 / 2) * 2), tn = Math.tan(sigRad());
+    var top = Math.max(2 * Rmax * tn * 1000 * 1.15, 1);
+    var X = function (R) { return l + Math.max(Math.min(R, Rmax), 0) / Rmax * pw; };
+    var Y = function (m) { return t + ph - Math.max(Math.min(m, top), 0) / top * ph; };
+
+    var st = niceStep(top), k;
+    g.font = fnt(10.5);
+    for (var v0 = 0; v0 <= top + 1e-9; v0 += st) {
+      g.strokeStyle = grd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v0)); g.lineTo(l + pw, Y(v0)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v0 >= 1000 ? (v0 / 1000).toFixed(1) + ' km' : v0.toFixed(0), l - 5, Y(v0));
+    }
+    for (k = 0; k <= Rmax; k += 2) {
+      g.strokeStyle = grd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(k), t); g.lineTo(X(k), t + ph); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(k.toFixed(0), X(k), t + ph + 5);
+    }
+    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('range from the site, km', l + pw / 2, h - 14);
+    g.save(); g.translate(12, t + ph / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('cross-range error, metres', 0, 0); g.restore();
+
+    g.strokeStyle = cvv('--series-2'); g.lineWidth = 2;
+    g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(Rmax), Y(2 * Rmax * tn * 1000)); g.stroke();
+    g.strokeStyle = cvv('--series-1'); g.lineWidth = 1.8; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(Rmax), Y(Rmax * tn * 1000)); g.stroke();
+    g.setLineDash([]);
+
+    g.font = fnt(10.5); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillStyle = cvv('--series-2');
+    g.fillText('2R tan' + SG + ' = ' + (2 * Rmax * tn * 1000).toFixed(0) + ' m ',
+      l + pw - 4, Math.max(Y(2 * Rmax * tn * 1000) - 3, t + 12));
+    g.fillStyle = cvv('--series-1');
+    g.fillText('R tan' + SG + ' = ' + (Rmax * tn * 1000).toFixed(0) + ' m ',
+      l + pw - 4, Math.max(Y(Rmax * tn * 1000) - 3, t + 26));
+
+    var Rnow = Rnow0;
+    if (Rnow > 0 && Rnow <= Rmax) {
+      var yv = 2 * Rnow * tn * 1000;
+      g.strokeStyle = cvv('--series-7'); g.lineWidth = 1; g.setLineDash([3, 3]);
+      g.beginPath(); g.moveTo(X(Rnow), t + ph); g.lineTo(X(Rnow), Y(yv)); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cvv('--series-7');
+      g.beginPath(); g.arc(X(Rnow), Y(yv), 4.5, 0, 7); g.fill();
+      g.font = fnt(10.5);
+      g.textAlign = X(Rnow) > l + pw * 0.6 ? 'right' : 'left';
+      g.textBaseline = 'bottom';
+      g.fillText(' R = ' + Rnow.toFixed(2) + ' km, wedge ' + yv.toFixed(0) + ' m ',
+        X(Rnow), Math.max(Y(yv) - 6, t + 40));
+    }
+    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('at ' + S.sig.toFixed(1) + DEG + ' rms; both lines pass through the origin', l + 6, t + 5);
+  }
+
+  function updateUI(F, why) {
+    $('sgv').textContent = S.sig.toFixed(1) + DEG + ' rms';
+    $('cN').textContent = S.n.toFixed(0);
+    $('cNF').textContent = 'of ' + NMAX.toFixed(0) + ' masts on the map';
+
+    if (!F) {
+      var msg = WHY[why] || WHY.cross;
+      $('cFix').textContent = MD;
+      $('cErr').textContent = MD;
+      $('cErrF').textContent = 'no usable fix in this geometry';
+      $('cCep').textContent = MD;
+      $('cGdop').textContent = MD;
+      $('cGdopF').textContent = why === 'onsite' ? 'the fix sits on a receiving site' : 'the crossing angle is too shallow';
+      $('cRes').textContent = MD;
+      $('cResF').textContent = 'nothing to fit against';
+      $('tbl').innerHTML = '';
+      $('work').innerHTML = '<li>' + msg[0] + ' ' + msg[1]
+        + ' The tool refuses a fix here rather than printing a confident number the geometry cannot support.</li>';
+      return;
+    }
+
+    $('cFix').textContent = F.x.toFixed(3) + ', ' + F.y.toFixed(3);
+    if (S.truth) {
+      $('cErr').textContent = F.err.toFixed(3) + ' km';
+      $('cErrF').textContent = 'that is ' + (F.err * 1000).toFixed(0) + ' m from the emitter';
+    } else {
+      $('cErr').textContent = MD;
+      $('cErrF').textContent = 'true position hidden, as in real life';
+    }
+    $('cCep').textContent = fLen(F.cep);
+    $('cGdop').textContent = F.gdop.toFixed(2);
+    $('cGdopF').textContent = 'position ' + SG + ' = GDOP × R × ' + SG + 'θ';
+    $('cRes').textContent = F.rms.toFixed(3) + DEG;
+    $('cResF').textContent = F.N <= 2 ? 'two sites always fit exactly, so zero'
+      : 'rms bearing miss, ' + (F.N - 2).toFixed(0) + (F.N === 3 ? ' degree' : ' degrees') + ' of freedom';
+
+    var rows = '<tr><th>Site</th><th>Range km</th><th>True</th><th>Measured</th><th>Offset</th><th>Residual</th></tr>';
+    for (var i = 0; i < F.N; i++) {
+      var off = S.z[i] * S.sig;
+      rows += '<tr><td><span class="sw" style="background: var(' + SCOL[i] + ')"></span>site ' + (i + 1) + '</td>'
+        + '<td>' + F.rng[i].toFixed(2) + '</td>'
+        + '<td>' + (S.truth ? fBrg(trueBrg(i)) : MD) + '</td>'
+        + '<td>' + fBrg(F.m[i]) + '</td>'
+        + '<td>' + (off >= 0 ? '+' : '−') + Math.abs(off).toFixed(2) + DEG + '</td>'
+        + '<td>' + (F.res[i] >= 0 ? '+' : '−') + Math.abs(F.res[i]).toFixed(3) + DEG + '</td></tr>';
+    }
+    $('tbl').innerHTML = rows;
+
+    var M = F.M, sr = sigRad();
+    var steps = [];
+    steps.push('Each site turns its measured bearing θ into a line through its own position pᵢ. The unit normal to that line is '
+      + 'n = (cos θ, −sin θ), so the perpendicular miss of a point x from site i’s line is nᵢ·x − nᵢ·pᵢ.');
+    steps.push('A bearing error of ' + S.sig.toFixed(1) + DEG + ' = ' + sr.toFixed(5) + ' rad becomes a perpendicular error of R·' + SG
+      + 'θ metres at range R, so line i is weighted by 1/(Rᵢ' + SG + 'θ)² — which makes the fit minimise the squared angle errors.');
+    steps.push('Normal matrix M = Σ wᵢ nᵢnᵢᵀ = [[' + M.a.toFixed(2) + ', ' + M.b.toFixed(2)
+      + '], [' + M.b.toFixed(2) + ', ' + M.c.toFixed(2) + ']] km⁻², det M = ' + M.det.toPrecision(4) + ' km⁻⁴.');
+    steps.push('Fix = M⁻¹b = (' + F.x.toFixed(4) + ', ' + F.y.toFixed(4) + ') km east and north.');
+    steps.push('Covariance C = M⁻¹ = [[' + F.Cxx.toPrecision(4) + ', ' + F.Cxy.toPrecision(4)
+      + '], [' + F.Cxy.toPrecision(4) + ', ' + F.Cyy.toPrecision(4) + ']] km².');
+    steps.push('Eigenvalues of C give ' + SG + '_maj = ' + fLen(F.smaj) + ' and ' + SG + '_min = ' + fLen(F.smin)
+      + ', with the major axis ' + (F.phi / D2R).toFixed(1) + DEG + ' from east.');
+    steps.push('CEP = 0.59(' + SG + '_maj + ' + SG + '_min) = 0.59 × ('
+      + (F.smaj * 1000).toFixed(0) + ' + ' + (F.smin * 1000).toFixed(0) + ') = ' + fLen(F.cep) + '.');
+    steps.push('Effective range R_eff = √(N / Σ 1/Rᵢ²) = ' + F.Reff.toFixed(3)
+      + ' km, so GDOP = √(trace C) / (' + SG + 'θ · R_eff) = ' + F.gdop.toFixed(3) + '.');
+    steps.push('Residuals at the fix: ' + F.res.map(function (e) {
+      return (e < 0 ? '−' : '+') + Math.abs(e).toFixed(3) + DEG;
+    }).join(', ')
+      + ' → rms ' + F.rms.toFixed(3) + DEG + (F.N <= 2 ? ' (two lines always meet, so this is zero by construction).' : '.'));
+    if (S.truth) {
+      steps.push('The truth is at (' + S.ex.toFixed(3) + ', ' + S.ey.toFixed(3) + ') km, so this realisation missed by '
+        + fLen(F.err) + ' — about ' + (F.cep > 1e-9 ? (F.err / F.cep).toFixed(2) : MD) + ' CEP.');
+    }
+    $('work').innerHTML = steps.map(function (s) { return '<li>' + s + '</li>'; }).join('');
+  }
+
+  function drawAll() {
+    var F = fixFor(S.n), why = whyNoFix;
+    drawMap(F, why); drawInset(F, why); drawBars(F); drawRange(F);
+    updateUI(F, why);
+  }
+
+  var nb = ['n2', 'n3', 'n4', 'n5'];
+  function setN(n) {
+    S.n = n;
+    for (var i = 0; i < nb.length; i++) $(nb[i]).classList.toggle('on', i + 2 === n);
+  }
+  nb.forEach(function (id, k) {
+    $(id).addEventListener('click', function () { setN(k + 2); drawAll(); });
   });
-  $('be').addEventListener('input', () => { S.err = +$('be').value; updateUI(); });
-  $('map').addEventListener('click', ev => {
-    const r = $('map').getBoundingClientRect();
-    S.ex = (ev.clientX - r.left) / r.width;
-    S.ey = Math.min((ev.clientY - r.top) / r.height, 0.78);
-    updateUI();
+  $('sg').addEventListener('input', function () { S.sig = +$('sg').value; drawAll(); });
+  $('roll').addEventListener('click', function () {
+    S.z = makeZ(Math.floor(Math.random() * 2147483647) + 1);
+    drawAll();
+  });
+  $('tru').addEventListener('click', function () {
+    S.truth = !S.truth;
+    $('tru').classList.toggle('on', S.truth);
+    $('tru').textContent = S.truth ? 'True position shown' : 'True position hidden';
+    drawAll();
+  });
+  function resetLayout() {
+    S.sx = DEF.sx.slice(); S.sy = DEF.sy.slice();
+    S.ex = DEF.ex; S.ey = DEF.ey;
+  }
+  $('rst').addEventListener('click', function () { resetLayout(); drawAll(); });
+
+  var cel = $('cvMap'), drag = null;
+  function relPx(ev) {
+    var r = cel.getBoundingClientRect();
+    return [ev.clientX - r.left, ev.clientY - r.top];
+  }
+  cel.addEventListener('pointerdown', function (ev) {
+    if (!mapG) return;
+    var p = relPx(ev), best = null, bd = 22 * 22, i;
+    for (i = 0; i < NMAX; i++) {
+      var dx = mapG.X(S.sx[i]) - p[0], dy = mapG.Y(S.sy[i]) - p[1];
+      var d2 = dx * dx + dy * dy;
+      if (d2 < bd) { bd = d2; best = { kind: 'site', i: i }; }
+    }
+    var edx = mapG.X(S.ex) - p[0], edy = mapG.Y(S.ey) - p[1];
+    if (edx * edx + edy * edy < bd) best = { kind: 'emitter' };
+    drag = best || { kind: 'emitter' };
+    cel.setPointerCapture(ev.pointerId);
+    moveTo(p);
+    ev.preventDefault();
+  });
+  function moveTo(p) {
+    if (!drag || !mapG) return;
+    var kx = Math.max(0.2, Math.min(KMX - 0.2, mapG.invX(p[0])));
+    var ky = Math.max(0.2, Math.min(KMY - 0.2, mapG.invY(p[1])));
+    if (drag.kind === 'site') { S.sx[drag.i] = kx; S.sy[drag.i] = ky; }
+    else { S.ex = kx; S.ey = ky; }
+    drawAll();
+  }
+  cel.addEventListener('pointermove', function (ev) { if (drag) { moveTo(relPx(ev)); ev.preventDefault(); } });
+  cel.addEventListener('pointerup', function () { drag = null; });
+  cel.addEventListener('pointercancel', function () { drag = null; });
+
+  var TOUR = [
+    { n: 2, sig: 2, layout: true,
+      s: '<b>Step 1 &mdash; two sites.</b> Two lines always cross exactly, so the residual is zero and the fix still misses.' },
+    { n: 3, sig: 2, layout: true,
+      s: '<b>Step 2 &mdash; add a third.</b> The third line misses the crossing, so the residual is finally a real number.' },
+    { n: 5, sig: 2, layout: true,
+      s: '<b>Step 3 &mdash; all five.</b> More bearings, smaller ellipse; watch the bars in section 3 fall.' },
+    { n: 5, sig: 10, layout: true,
+      s: '<b>Step 4 &mdash; coarse bearings.</b> Five times the angle error inflates the ellipse by the same factor.' },
+    { n: 3, sig: 2, layout: true, ex: 7.5, ey: 7.5,
+      s: '<b>Step 5 &mdash; push it further out.</b> Same angles, longer range, so the miss grows in proportion.' }
+  ];
+  function applyTour(k) {
+    var st = TOUR[k];
+    if (st.layout) resetLayout();
+    if (typeof st.ex === 'number') { S.ex = st.ex; S.ey = st.ey; }
+    setN(st.n);
+    S.sig = st.sig; $('sg').value = st.sig;
+    $('tourNote').innerHTML = st.s;
+    drawAll();
+  }
+  for (var z = 0; z < TOUR.length; z++) {
+    (function (k) { $('tr' + k).addEventListener('click', function () { applyTour(k); }); })(z);
+  }
+  $('trR').addEventListener('click', function () {
+    resetLayout(); setN(3); S.sig = 2; $('sg').value = 2;
+    S.z = makeZ(20260729);
+    $('tourNote').innerHTML = '<b>Back to the default layout.</b> Three masts along the bottom of a 15 by 8 km map, 2.0' + DEG
+      + ' rms bearing accuracy, and the emitter up-field. Drag any mast, or drag the emitter.';
+    drawAll();
   });
 
-  updateUI();
-  function frame() { draw(); requestAnimationFrame(frame); }
-  requestAnimationFrame(frame);
+  window.addEventListener('resize', drawAll);
+  setN(3);
+  drawAll();
 })();
 </script>
 </body>

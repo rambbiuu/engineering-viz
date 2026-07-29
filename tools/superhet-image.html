@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The superheterodyne receiver and its image</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --c-accent: #378ADD; --c-wanted: #1D9E75; --c-image: #D85A30; --c-amber: #BA7517; --c-violet: #7F77DD;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --c-accent: #6BB0F0; --c-wanted: #3FC79A; --c-image: #FF8C5A; --c-amber: #E0A03A; --c-violet: #A49BF5;
+  }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+h2 { font-size: 17px; font-weight: 500; margin: 2.5rem 0 6px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+.note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
+button:hover:enabled { background: var(--surface-1); }
+button.on { border-color: var(--c-accent); color: var(--c-accent); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 124px; }
+.ctl input[type=range] { flex: 1; min-width: 80px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 78px; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem; }
+.lbl { font-size: 13px; color: var(--text-secondary); }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+canvas { width: 100%; display: block; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin: 3px 0; }
+.tour { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 8px; }
+.tour button { font-size: 13px; padding: 5px 11px; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1.5rem; min-height: 3em; }
+.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.5rem 0 0; }
+.work li { margin: 4px 0; }
+.work b { color: var(--text-primary); font-weight: 500; }
+details { border-top: 1px solid var(--border); padding-top: 0.75rem; margin-bottom: 1.25rem; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; margin-bottom: 0.75rem; }
+.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+.glossary dt { font-weight: 500; margin-top: 9px; }
+.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>The superheterodyne receiver and its image</h1>
+<p class="sub">Nearly every radio built since 1920 slides the signal it wants down to one fixed frequency &mdash; the intermediate frequency, or IF &mdash; before doing any real work on it, because sharp filters and quiet amplifiers are far cheaper to build at one frequency than across a whole band. The device that does the sliding is a mixer, and a mixer can only measure the <i>size</i> of a frequency gap, never its direction. So a second, unwanted frequency slides down onto exactly the same IF and becomes inseparable from the wanted one. That frequency is the image, and stopping it before the mixer is the entire job of the filter at the front of the radio.</p>
+
+<p class="note">Everyday analogy: two people stand 3 m either side of you and shout. If all you can measure is that a voice came from 3 m away, you cannot say which one spoke &mdash; and once both voices reach your ears together, no amount of listening harder will separate them. You have to turn one of them away before they arrive. That is what the front-end filter does.</p>
+
+<p class="note">If decibels and dBm are unfamiliar, start with <a href="link-budget.html">link budget</a>, which builds them up from scratch. Everything below is in MHz for frequency and dBm for power.</p>
+
+<div class="tour">
+  <span class="lbl">Guided tour</span>
+  <button id="s1" type="button">1 &middot; FM radio</button>
+  <button id="s2" type="button">2 &middot; drop the IF</button>
+  <button id="s3" type="button">3 &middot; raise the IF</button>
+  <button id="s4" type="button">4 &middot; image below zero</button>
+  <button id="s5" type="button">5 &middot; overload</button>
+  <button id="s0" type="button">reset</button>
+</div>
+<p class="tour-note" id="tnote">Press the numbered buttons in order. Each one moves the controls for you and says what changed.</p>
+
+<div class="grid2">
+  <div class="ctl"><label for="fr">Wanted signal f<sub>RF</sub></label><input type="range" id="fr" min="80" max="1000" step="0.1" value="160.7"><span class="v" id="frv">160.7 MHz</span></div>
+  <div class="ctl"><label for="fi">Intermediate freq. IF</label><input type="range" id="fi" min="0.455" max="70" step="0.005" value="10.7"><span class="v" id="fiv">10.700 MHz</span></div>
+  <div class="ctl"><label for="bwf">Front-end filter width</label><input type="range" id="bwf" min="1" max="60" step="0.5" value="12"><span class="v" id="bwfv">12.0 MHz</span></div>
+  <div class="ctl"><label for="int">Nearby signal level</label><input type="range" id="int" min="-60" max="0" step="1" value="-30"><span class="v" id="intv">&minus;30 dBm</span></div>
+</div>
+<div class="row">
+  <span class="lbl">Common IF choices</span>
+  <button id="p455" type="button">0.455 MHz</button>
+  <button id="p107" type="button" class="on">10.7 MHz</button>
+  <button id="p70" type="button">70 MHz</button>
+</div>
+<div class="row">
+  <span class="lbl">Local oscillator</span>
+  <button id="btnHi" type="button" class="on">High side &mdash; f<sub>LO</sub> = f<sub>RF</sub> + IF</button>
+  <button id="btnLo" type="button">Low side &mdash; f<sub>LO</sub> = f<sub>RF</sub> &minus; IF</button>
+</div>
+
+<details id="adv">
+  <summary>Front-end detail &mdash; how sharp the filter is, and how hard the mixer can be pushed</summary>
+  <div class="grid2">
+    <div class="ctl"><label for="ord">Filter order</label><input type="range" id="ord" min="2" max="5" step="1" value="3"><span class="v" id="ordv">3 poles</span></div>
+    <div class="ctl"><label for="oip">Mixer OIP3</label><input type="range" id="oip" min="-10" max="40" step="1" value="15"><span class="v" id="oipv">+15 dBm</span></div>
+  </div>
+  <p class="note" style="margin-bottom:0;">Order is how many resonators the front-end filter contains. Each extra one steepens the skirt by 20 dB per decade of offset and costs money, size and insertion loss. OIP3 is the output third-order intercept point: the imaginary output level at which the mixer's third-order distortion would equal the wanted signal. Higher means a more linear, hungrier mixer.</p>
+</details>
+
+<p class="sec"><b>1 &middot; The receiver, block by block</b> <span>&mdash; what the hardware is, and what the signal looks like at three points along the chain</span></p>
+<canvas id="cvChain" style="height: 250px;"></canvas>
+<ul class="legend-note">
+  <li>The green line is the wanted signal. The orange line is a strong neighbour sitting on the image frequency.</li>
+  <li>The three small pictures are spectra &mdash; a plot of how much power sits at each frequency. Height is power in dB, so a shorter line means a weaker signal.</li>
+  <li>Between the first and second picture the front-end filter has knocked the orange line down. Between the second and third the mixer has moved both of them onto the same IF, where they overlap exactly.</li>
+  <li>The local oscillator (LO) is the receiver's own internal tone. Tuning the radio means moving the LO, not the filters.</li>
+</ul>
+
+<p class="sec"><b>2 &middot; What arrives at the antenna</b> <span>&mdash; the wanted signal, the image 2 &times; IF away, and how far the front-end filter pushes the image down</span></p>
+<canvas id="cvRF" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li>The blue curve is the front-end filter response, drawn as the level a neighbour of the chosen strength would still have after passing through it. It is flat at the top across the filter's passband and falls away either side.</li>
+  <li>The faint orange line is the image signal as it arrives at the antenna; the solid orange line is what is left of it after the filter. The vertical gap between them, marked on the plot, is the image rejection.</li>
+  <li>The green line is the wanted signal, held at a fixed &minus;70 dBm so the comparison stays honest while you move the sliders.</li>
+  <li>The bar along the bottom measures 2 &times; IF, the gap between wanted and image. Raise the IF and the image walks further out into the filter's skirt.</li>
+</ul>
+
+<p class="sec"><b>3 &middot; What comes out of the mixer</b> <span>&mdash; both signals now sit on the same intermediate frequency and no later filter can tell them apart</span></p>
+<canvas id="cvIF" style="height: 230px;"></canvas>
+<ul class="legend-note">
+  <li>Both lines are drawn at the same frequency, the IF. They are nudged a few pixels apart only so you can see both; in reality they lie exactly on top of one another.</li>
+  <li>The number between them is the margin the receiver has left: how far below the wanted signal the image landed. Positive is good.</li>
+  <li>Nothing after the mixer can improve this number. Whatever margin the front-end filter bought, the rest of the radio inherits.</li>
+</ul>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Local oscillator</div>
+    <div class="big" id="cLO">&mdash;</div>
+    <div class="ft" id="cLOn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Image frequency</div>
+    <div class="big" id="cIM">&mdash;</div>
+    <div class="ft" id="cIMn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Image rejection</div>
+    <div class="big" id="cRJ">&mdash;</div>
+    <div class="ft" id="cRJn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">IM3 product level</div>
+    <div class="big" id="cIM3">&mdash;</div>
+    <div class="ft" id="cIM3n">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Spurious-free window</div>
+    <div class="big" id="cSF">&mdash;</div>
+    <div class="ft" id="cSFn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Single conversion</div>
+    <div class="big" id="cVD">&mdash;</div>
+    <div class="ft" id="cVDn">&mdash;</div>
+  </div>
+</div>
+
+<h2>Worked example, following the controls above</h2>
+<ol class="work" id="work"></ol>
+
+<h2>When two strong signals make a third</h2>
+<p class="note">The image is a frequency problem, and a filter fixes it. Intermodulation is a <i>level</i> problem, and no filter can fix it. Push a mixer or an amplifier hard enough and it stops being linear: two tones going in produce sums and differences at every combination n&middot;f&#8321; &plusmn; m&middot;f&#8322;, and the order of each product is n + m. Even orders land near DC or near twice the carrier and filter out easily. The odd orders do not: third order, 2f&#8321;&minus;f&#8322; and 2f&#8322;&minus;f&#8321;, falls one channel spacing outside the pair, inside the very passband you were protecting. The law that matters is that the third-order product rises 3 dB for every 1 dB the drive rises, so the clear space between wanted signal and rubbish closes at 2 dB per dB. Drag the nearby-signal slider and watch the two lines converge.</p>
+
+<p class="sec"><b>4 &middot; The 3:1 slope and the intercept</b> <span>&mdash; fundamental at slope 1, third order at slope 3, extrapolated to the point where they would meet</span></p>
+<canvas id="cvIP" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li>Green is the wanted output: 1 dB in, 1 dB out. Orange is the third-order product: 1 dB in, 3 dB out. Amber dashed is fifth order, at slope 5.</li>
+  <li>The circle where green and orange cross is OIP3, the output third-order intercept point. No real device reaches it &mdash; it is a straight-line extrapolation, which is exactly why it is useful as a single number.</li>
+  <li>The vertical line is the drive level you have set. The bracket beside it is the spurious-free window: how far the third-order product sits below the wanted signal right now.</li>
+  <li>The shaded band on the right is where a real device compresses, roughly 10 dB below OIP3. Past that line the straight lines stop being true and the tool is only extrapolating.</li>
+</ul>
+
+<p class="sub" style="margin-top: 2rem;">Three trades live in these sliders. Raising the IF pushes the image further out into the filter's skirt and buys rejection almost for free &mdash; but it also makes the IF filter's fractional bandwidth smaller for the same channel, so selectivity gets harder; that is why 10.7 MHz suits an FM broadcast band 20 MHz wide, and why the same choice is hopeless at 2.4 GHz. Narrowing the front-end filter or adding poles buys rejection too, but a tracking filter that narrow has to stay tuned to the signal as you turn the dial, which is mechanically expensive. And when the f<sub>RF</sub>/IF ratio climbs past roughly 10 to 20, no single conversion works at all: the answer is two of them, a high first IF to kill the image and a low second IF to do the selecting. Simplifications to be aware of: the front-end response is an ideal Butterworth with no insertion loss and no stopband floor beyond a stated 100 dB cap, the mixer is treated as having 0 dB conversion gain so its input and output intercepts coincide, the fifth-order intercept is assumed to sit 5 dB below OIP3 because no general relation exists, and the wanted signal is pinned at &minus;70 dBm.</p>
+
+<p class="note">Next: <a href="modulation.html">modulation</a> shows what the signal sitting at that intermediate frequency actually carries.</p>
+
+<h2>Glossary</h2>
+<dl class="glossary">
+  <dt>Superheterodyne (superhet)</dt><dd>A receiver that shifts every incoming channel to one fixed frequency before filtering and detecting it, instead of building a tunable filter for each channel.</dd>
+  <dt>Mixer</dt><dd>A deliberately non-linear device fed with the incoming signal and the local oscillator. Its output contains the sum and difference of their frequencies.</dd>
+  <dt>Local oscillator (LO)</dt><dd>The tone the receiver generates itself. Tuning the radio means changing f<sub>LO</sub>.</dd>
+  <dt>Intermediate frequency (IF)</dt><dd>The fixed frequency everything is shifted to: f<sub>IF</sub> = |f<sub>RF</sub> &minus; f<sub>LO</sub>|. Common values are 0.455, 10.7 and 70 MHz.</dd>
+  <dt>Image frequency</dt><dd>The second input frequency that produces the same IF, sitting 2 &times; IF away from the wanted signal on the other side of the LO.</dd>
+  <dt>High-side / low-side injection</dt><dd>Whether the LO is placed above the wanted signal (image above) or below it (image below).</dd>
+  <dt>Image rejection</dt><dd>The extra attenuation the front end applies at the image frequency compared with the wanted frequency, in dB. 60 dB means an equally strong image arrives 60 dB weaker.</dd>
+  <dt>Preselector / front-end filter</dt><dd>The bandpass filter between antenna and mixer. The only place the image can be removed.</dd>
+  <dt>Butterworth order</dt><dd>How many poles the filter has. |H(f)|&sup2; = 1/(1 + off<sup>2N</sup>): flat in the passband, and 20N dB steeper per decade of offset.</dd>
+  <dt>dB and dBm</dt><dd>dB is a ratio on a logarithmic scale: 10 dB is ten times the power, 3 dB is roughly double. dBm is an absolute power referred to one milliwatt, so 0 dBm = 1 mW and &minus;70 dBm = 0.1 pW.</dd>
+  <dt>Intermodulation (IM)</dt><dd>New frequencies created when two or more signals pass through something non-linear together.</dd>
+  <dt>Third-order product (IM3)</dt><dd>The pair 2f&#8321;&minus;f&#8322; and 2f&#8322;&minus;f&#8321;. It lands next to the original tones and rises 3 dB per 1 dB of drive.</dd>
+  <dt>OIP3</dt><dd>Output third-order intercept point, in dBm: the extrapolated output level where the fundamental and third-order lines cross.</dd>
+  <dt>Spurious-free window</dt><dd>How far the third-order product sits below the wanted output, in dB. Equal to 2 &times; (OIP3 &minus; drive level).</dd>
+  <dt>1 dB compression point</dt><dd>The output level at which real gain has sagged 1 dB below the straight line. A rule of thumb puts it about 10 dB below OIP3.</dd>
+</dl>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  var clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
+  var fx = function (v, n) { return isFinite(v) ? v.toFixed(n) : '—'; };
+  var sgn = function (v, n) { return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(n); };
+  var mn = function (v, n) { return (v < 0 ? '−' : '') + Math.abs(v).toFixed(n); };
+
+  var P_WANTED = -70;      // dBm, fixed level of the wanted signal
+  var REJ_CAP = 100;       // dB, stated stopband floor of a real front end
+  var OIP5_OFFSET = 5;     // dB, stated assumption: OIP5 sits this far below OIP3
+
+  var S = { frf: 160.7, fif: 10.7, bw: 12, ord: 3, hi: true, lev: -30, oip3: 15 };
+
+  var flo = function () { return S.hi ? S.frf + S.fif : S.frf - S.fif; };
+  var fimg = function () { return S.hi ? S.frf + 2 * S.fif : S.frf - 2 * S.fif; };
+  var hasImage = function () { return fimg() > 0; };
+  var lowSideValid = function () { return S.frf - 2 * S.fif > 0; };
+
+  // Front-end selectivity: Butterworth of order N, centred on f_RF, width bw.
+  // Normalised offset uses the standard lowpass-to-bandpass transform, which is
+  // exactly +/-1 at the passband edges:  off = (f/f0 - f0/f) * (f0/BW).
+  function offset(f) {
+    var f0 = Math.max(S.frf, 1e-6), fq = Math.max(f, 1e-6), b = Math.max(S.bw, 1e-6);
+    return (fq / f0 - f0 / fq) * (f0 / b);
+  }
+  function atten(f) {
+    var o = Math.abs(offset(f));
+    if (!isFinite(o)) return REJ_CAP;
+    var p = Math.pow(Math.min(o, 1e6), 2 * S.ord);
+    var a = 10 * L10(1 + p);
+    return isFinite(a) ? Math.max(a, 0) : REJ_CAP;
+  }
+  var rejRaw = function () { return hasImage() ? atten(fimg()) : 0; };
+  var rejDisp = function () { return Math.min(rejRaw(), REJ_CAP); };
+
+  // Intermodulation, output referred with the stage gain taken as 0 dB.
+  var oip5 = function () { return S.oip3 - OIP5_OFFSET; };
+  var im3 = function () { return 3 * S.lev - 2 * S.oip3; };
+  var im5 = function () { return 5 * S.lev - 4 * oip5(); };
+  var sfWindow = function () { return 2 * (S.oip3 - S.lev); };
+  var p1db = function () { return S.oip3 - 10; };
+  var ratio = function () { return S.frf / Math.max(S.fif, 1e-6); };
+
+  function fit(c) {
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+
+  function niceStep(span, n) {
+    var raw = Math.max(span, 1e-9) / Math.max(n, 1);
+    var mag = Math.pow(10, Math.floor(L10(raw)));
+    var cand = [1, 2, 2.5, 5, 10];
+    for (var i = 0; i < cand.length; i++) if (cand[i] * mag >= raw * 0.999) return cand[i] * mag;
+    return 10 * mag;
+  }
+  function decimals(step) { return step >= 1 ? 0 : (step >= 0.1 ? 1 : (step >= 0.01 ? 2 : 3)); }
+
+  function arrow(g, x0, y0, x1, y1, col) {
+    g.strokeStyle = col; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    var a = Math.atan2(y1 - y0, x1 - x0);
+    g.fillStyle = col; g.beginPath();
+    g.moveTo(x1, y1);
+    g.lineTo(x1 - 6 * Math.cos(a - 0.4), y1 - 6 * Math.sin(a - 0.4));
+    g.lineTo(x1 - 6 * Math.cos(a + 0.4), y1 - 6 * Math.sin(a + 0.4));
+    g.closePath(); g.fill();
+  }
+
+  // ---------- section 1: block diagram ----------
+  function drawChain() {
+    var c = $('cvChain'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    var bd = cvv('--border-strong'), acc = cvv('--c-accent'), gw = cvv('--c-wanted'), img = cvv('--c-image');
+
+    var wireY = Math.round(h * 0.56);
+    var boxH = 34, bt = wireY - boxH / 2;
+    var bwid = Math.max(Math.min(w * 0.155, 118), 74);
+    var xAnt = Math.max(w * 0.045, 16), xF1 = w * 0.245, xMx = w * 0.505, xF2 = w * 0.745, xEnd = w - 6;
+    var mr = 15;
+
+    g.strokeStyle = bd; g.lineWidth = 1.4;
+    g.beginPath();
+    g.moveTo(xAnt, wireY); g.lineTo(xF1 - bwid / 2, wireY);
+    g.moveTo(xF1 + bwid / 2, wireY); g.lineTo(xMx - mr, wireY);
+    g.moveTo(xMx + mr, wireY); g.lineTo(xF2 - bwid / 2, wireY);
+    g.stroke();
+    arrow(g, xF2 + bwid / 2, wireY, xEnd - 2, wireY, bd);
+
+    // antenna
+    g.strokeStyle = ink; g.lineWidth = 1.6;
+    g.beginPath();
+    g.moveTo(xAnt, wireY); g.lineTo(xAnt, wireY - 30);
+    g.moveTo(xAnt, wireY - 30); g.lineTo(xAnt - 11, wireY - 42);
+    g.moveTo(xAnt, wireY - 30); g.lineTo(xAnt + 11, wireY - 42);
+    g.stroke();
+
+    function box(cx, label, sub2) {
+      g.strokeStyle = bd; g.lineWidth = 1.2; g.fillStyle = cvv('--surface-1');
+      g.beginPath(); g.rect(cx - bwid / 2, bt, bwid, boxH); g.fill(); g.stroke();
+      g.fillStyle = ink; g.font = fnt(11.5); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(label, cx, wireY - 6);
+      g.fillStyle = sub; g.font = fnt(10.5);
+      g.fillText(sub2, cx, wireY + 8);
+    }
+    box(xF1, 'RF filter', S.bw.toFixed(1) + ' MHz wide');
+    box(xF2, 'IF filter', 'at ' + S.fif.toFixed(3) + ' MHz');
+
+    // mixer
+    g.strokeStyle = ink; g.lineWidth = 1.4; g.fillStyle = cvv('--bg');
+    g.beginPath(); g.arc(xMx, wireY, mr, 0, 6.2832); g.fill(); g.stroke();
+    g.beginPath();
+    g.moveTo(xMx - 7, wireY - 7); g.lineTo(xMx + 7, wireY + 7);
+    g.moveTo(xMx + 7, wireY - 7); g.lineTo(xMx - 7, wireY + 7);
+    g.stroke();
+    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('mixer', xMx, wireY + mr + 4);
+
+    // local oscillator
+    var loT = wireY + 44, loH = 30;
+    g.strokeStyle = bd; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(xMx, loT); g.lineTo(xMx, wireY + mr); g.stroke();
+    g.fillStyle = cvv('--surface-1');
+    g.beginPath(); g.rect(xMx - bwid / 2, loT, bwid, loH); g.fill(); g.stroke();
+    g.fillStyle = acc; g.font = fnt(11.5); g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('LO ' + flo().toFixed(2) + ' MHz', xMx, loT + loH / 2);
+    g.fillStyle = mut; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'middle';
+    if (xMx + bwid / 2 + 8 < w - 4) g.fillText(S.hi ? 'high side' : 'low side', xMx + bwid / 2 + 8, loT + loH / 2);
+
+    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('to demodulator', xEnd, wireY - 6);
+
+    // three inset spectra
+    var base = bt - 16, top = Math.max(base - 58, 30);
+    var lo0, hi0;
+    if (hasImage()) { lo0 = Math.min(S.frf, fimg()); hi0 = Math.max(S.frf, fimg()); }
+    else { lo0 = S.frf; hi0 = S.frf; }
+    var pad = Math.max((hi0 - lo0) * 0.4, S.bw * 0.7, 1);
+    var a0 = lo0 - pad, a1 = hi0 + pad;
+    if (!(a1 > a0)) { a0 = S.frf - 1; a1 = S.frf + 1; }
+
+    var levImgIn = S.lev, levImgOut = S.lev - rejDisp();
+    var ref = Math.max(P_WANTED, S.lev);
+    var frac = function (lv) { return clamp(1 - (ref - lv) / 60, 0.03, 1); };
+
+    var iw = Math.min(w * 0.205, 165);
+    function spec(cx, title, freqs, xa0, xa1, note) {
+      var x0 = cx - iw / 2, x1 = cx + iw / 2;
+      g.strokeStyle = cvv('--border'); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, base); g.lineTo(x1, base); g.stroke();
+      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(title, cx, top - 16);
+      for (var i = 0; i < freqs.length; i++) {
+        var s2 = freqs[i];
+        var xr = xa1 > xa0 ? clamp((s2.f - xa0) / (xa1 - xa0), 0, 1) : 0.5;
+        var x = x0 + xr * iw + (s2.dx || 0);
+        var y = base - s2.fr * (base - top) * 0.78;
+        g.strokeStyle = s2.col; g.lineWidth = 2.4;
+        if (s2.dash) { g.setLineDash([3, 3]); g.lineWidth = 1.6; }
+        g.beginPath(); g.moveTo(x, base); g.lineTo(x, y); g.stroke();
+        g.setLineDash([]);
+        if (s2.lab) {
+          g.fillStyle = s2.col; g.font = fnt(10); g.textBaseline = 'bottom';
+          g.textAlign = s2.align || (xr > 0.75 ? 'right' : (xr < 0.25 ? 'left' : 'center'));
+          g.fillText(s2.lab, clamp(x + (s2.lox || 0), x0 - 10, x1 + 10), y - 3);
+        }
+      }
+      if (note) {
+        g.fillStyle = mut; g.font = fnt(9.5); g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillText(note, cx, base + 3);
+      }
+    }
+
+    var tapA = [{ f: S.frf, fr: frac(P_WANTED), col: gw, lab: 'wanted' }];
+    var tapB = [{ f: S.frf, fr: frac(P_WANTED), col: gw, lab: 'wanted' }];
+    if (hasImage()) {
+      tapA.push({ f: fimg(), fr: frac(levImgIn), col: img, lab: 'image' });
+      tapB.push({ f: fimg(), fr: frac(levImgIn), col: img, dash: true });
+      tapB.push({ f: fimg(), fr: frac(levImgOut), col: img, lab: 'image' });
+    }
+    var tapC = [{ f: 0, fr: frac(P_WANTED), col: gw, lab: 'wanted', dx: -3, align: 'right', lox: -5 }];
+    if (hasImage()) tapC.push({ f: 0, fr: frac(levImgOut), col: img, lab: 'image', dx: 4, align: 'left', lox: 5 });
+
+    spec(w * 0.145, 'at the antenna', tapA, a0, a1, 'RF, MHz');
+    spec(w * 0.375, 'after the RF filter', tapB, a0, a1, 'RF, MHz');
+    spec(w * 0.625, 'after the mixer', tapC, -1, 1, 'IF ' + S.fif.toFixed(3) + ' MHz');
+
+    if (!hasImage()) {
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
+      g.fillText('no image exists in this setting', w - 4, 4);
+    }
+  }
+
+  // ---------- section 2: RF spectrum ----------
+  function drawRF() {
+    var c = $('cvRF'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bdl = cvv('--border');
+    var acc = cvv('--c-accent'), gw = cvv('--c-wanted'), img = cvv('--c-image');
+    var l = 50, r = 12, t = 24, b = 40;
+    var pw = w - l - r, ph = h - t - b;
+    if (pw < 40 || ph < 40) return;
+
+    var pts = [S.frf, flo()];
+    if (hasImage()) pts.push(fimg());
+    var lo0 = Math.min.apply(null, pts), hi0 = Math.max.apply(null, pts);
+    var pad = Math.max((hi0 - lo0) * 0.25, S.bw * 1.1, 2);
+    var f0 = Math.max(0, lo0 - pad), f1 = hi0 + pad;
+    if (!(f1 > f0)) { f0 = 0; f1 = Math.max(S.frf * 2, 1); }
+
+    var top = Math.max(S.lev, P_WANTED) + 12;
+    var bot = Math.min(P_WANTED, S.lev - Math.min(rejDisp(), 70)) - 12;
+    if (top - bot < 30) bot = top - 30;
+    if (top - bot > 150) bot = top - 150;
+
+    var X = function (f) { return l + (f - f0) / (f1 - f0) * pw; };
+    var Y = function (v) { return t + (top - v) / (top - bot) * ph; };
+
+    // grid
+    g.font = fnt(11);
+    var ys = niceStep(top - bot, 5);
+    for (var v = Math.ceil(bot / ys) * ys; v <= top + 1e-9; v += ys) {
+      g.strokeStyle = bdl; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(mn(v, 0), l - 6, Y(v));
+    }
+    var xs = niceStep(f1 - f0, 6), xd = decimals(xs);
+    for (var f = Math.ceil(f0 / xs) * xs; f <= f1 + 1e-9; f += xs) {
+      g.strokeStyle = bdl; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(f.toFixed(xd), X(f), h - b + 6);
+    }
+    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('dBm', 4, 2);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('frequency at the antenna, MHz', w - r, h - 4);
+
+    g.save();
+    g.beginPath(); g.rect(l, t, pw, ph); g.clip();
+
+    // filter response, drawn as the level a neighbour of S.lev keeps after the filter
+    g.strokeStyle = acc; g.lineWidth = 1.8;
+    g.beginPath();
+    for (var px = 0; px <= pw; px++) {
+      var ff = f0 + px / pw * (f1 - f0);
+      var yy = Y(clamp(S.lev - atten(ff), bot - 20, top + 20));
+      if (px === 0) g.moveTo(l + px, yy); else g.lineTo(l + px, yy);
+    }
+    g.stroke();
+    g.globalAlpha = 0.09; g.fillStyle = acc;
+    g.lineTo(w - r, Y(bot - 20)); g.lineTo(l, Y(bot - 20)); g.closePath(); g.fill();
+    g.globalAlpha = 1;
+
+    function spike(f, lv, col, dash, lab, align) {
+      var x = X(f), y = Y(clamp(lv, bot, top));
+      g.strokeStyle = col; g.lineWidth = dash ? 1.6 : 2.8;
+      if (dash) g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(x, Y(bot)); g.lineTo(x, y); g.stroke();
+      g.setLineDash([]);
+      if (lab) {
+        g.fillStyle = col; g.font = fnt(11);
+        g.textAlign = align || (x > l + pw * 0.8 ? 'right' : (x < l + pw * 0.2 ? 'left' : 'center'));
+        g.textBaseline = 'bottom';
+        g.fillText(lab, x + (align === 'right' ? -5 : (align === 'left' ? 5 : 0)), y - 4);
+      }
+      return { x: x, y: y };
+    }
+
+    // LO marker
+    var xlo = X(flo());
+    g.strokeStyle = cvv('--c-violet'); g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(xlo, t); g.lineTo(xlo, Y(bot)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = cvv('--c-violet'); g.font = fnt(11);
+    g.textAlign = xlo > l + pw * 0.8 ? 'right' : 'left'; g.textBaseline = 'top';
+    g.fillText('LO ' + flo().toFixed(2), xlo + (xlo > l + pw * 0.8 ? -4 : 4), t + 2);
+
+    spike(S.frf, P_WANTED, gw, false, 'wanted ' + S.frf.toFixed(1));
+
+    if (hasImage()) {
+      var pIn = spike(fimg(), S.lev, img, true, null);
+      var pOut = spike(fimg(), S.lev - rejDisp(), img, false, 'image ' + fimg().toFixed(1), 'right');
+      // rejection bracket
+      var bx = pIn.x + 12;
+      if (bx > l + pw - 60) bx = pIn.x - 12;
+      g.strokeStyle = img; g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(bx, pIn.y); g.lineTo(bx, pOut.y);
+      g.moveTo(bx - 4, pIn.y); g.lineTo(bx + 4, pIn.y);
+      g.moveTo(bx - 4, pOut.y); g.lineTo(bx + 4, pOut.y);
+      g.stroke();
+      g.fillStyle = img; g.font = fnt(11);
+      g.textAlign = bx > pIn.x ? 'left' : 'right'; g.textBaseline = 'middle';
+      var rtxt = rejRaw() > REJ_CAP ? '> ' + REJ_CAP.toFixed(0) + ' dB' : rejDisp().toFixed(1) + ' dB';
+      g.fillText('rejection ' + rtxt, bx + (bx > pIn.x ? 6 : -6), (pIn.y + pOut.y) / 2);
+
+      // 2 x IF measuring bar
+      var yb = Y(bot) - 12;
+      var xa = X(S.frf), xbb = X(fimg());
+      g.strokeStyle = sub; g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(xa, yb); g.lineTo(xbb, yb);
+      g.moveTo(xa, yb - 4); g.lineTo(xa, yb + 4);
+      g.moveTo(xbb, yb - 4); g.lineTo(xbb, yb + 4);
+      g.stroke();
+      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText('2 × IF = ' + (2 * S.fif).toFixed(3) + ' MHz', (xa + xbb) / 2, yb - 5);
+    }
+    g.restore();
+
+    if (!hasImage()) {
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(11.5);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText('no image: 2 × IF = ' + (2 * S.fif).toFixed(3) + ' MHz is more than f_RF = ' + S.frf.toFixed(1) + ' MHz', l + 6, t + 20);
+    }
+  }
+
+  // ---------- section 3: IF spectrum ----------
+  function drawIF() {
+    var c = $('cvIF'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), bdl = cvv('--border');
+    var gw = cvv('--c-wanted'), img = cvv('--c-image');
+    var l = 50, r = 12, t = 34, b = 40;
+    var pw = w - l - r, ph = h - t - b;
+    if (pw < 40 || ph < 40) return;
+
+    var span = Math.max(S.fif * 0.5, 0.4);
+    var f0 = Math.max(0, S.fif - span), f1 = S.fif + span;
+    if (!(f1 > f0)) { f0 = 0; f1 = 1; }
+
+    var levImg = S.lev - rejDisp();
+    var top = Math.max(P_WANTED, levImg) + 14;
+    var bot = Math.min(P_WANTED, levImg) - 20;
+    if (top - bot < 40) bot = top - 40;
+    if (top - bot > 150) bot = top - 150;
+
+    var X = function (f) { return l + (f - f0) / (f1 - f0) * pw; };
+    var Y = function (v) { return t + (top - v) / (top - bot) * ph; };
+
+    g.font = fnt(11);
+    var ys = niceStep(top - bot, 5);
+    for (var v = Math.ceil(bot / ys) * ys; v <= top + 1e-9; v += ys) {
+      g.strokeStyle = bdl; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(mn(v, 0), l - 6, Y(v));
+    }
+    var xs = niceStep(f1 - f0, 6), xd = decimals(xs);
+    for (var f = Math.ceil(f0 / xs) * xs; f <= f1 + 1e-9; f += xs) {
+      g.strokeStyle = bdl; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(f.toFixed(xd), X(f), h - b + 6);
+    }
+    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('dBm', 4, 22);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('frequency after the mixer, MHz', w - r, h - 4);
+
+    g.save();
+    g.beginPath(); g.rect(l, t - 14, pw, ph + 14); g.clip();
+    var x = X(S.fif);
+    g.strokeStyle = gw; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(x - 3, Y(bot)); g.lineTo(x - 3, Y(P_WANTED)); g.stroke();
+    g.fillStyle = gw; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('wanted ' + mn(P_WANTED, 0) + ' dBm', x - 8, Y(P_WANTED) - 4);
+
+    if (hasImage()) {
+      g.strokeStyle = img; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(x + 3, Y(bot)); g.lineTo(x + 3, Y(clamp(levImg, bot, top))); g.stroke();
+      g.fillStyle = img; g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText('image ' + mn(levImg, 1) + ' dBm', x + 8, Y(clamp(levImg, bot, top)) - 4);
+
+      var ci = P_WANTED - levImg;
+      var yA = Y(P_WANTED), yB = Y(clamp(levImg, bot, top));
+      var bx = x + Math.min(pw * 0.3, 120);
+      g.strokeStyle = sub; g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(bx, yA); g.lineTo(bx, yB);
+      g.moveTo(bx - 4, yA); g.lineTo(bx + 4, yA);
+      g.moveTo(bx - 4, yB); g.lineTo(bx + 4, yB);
+      g.stroke();
+      g.fillStyle = ci >= 0 ? sub : cvv('--text-warning');
+      g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(mn(ci, 1) + ' dB', bx + 6, (yA + yB) / 2);
+    }
+    g.restore();
+
+    g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    if (!hasImage()) {
+      g.fillStyle = cvv('--text-good');
+      g.fillText('only the wanted signal converts — there is no image frequency above 0 Hz', l, 6);
+    } else if (P_WANTED - (S.lev - rejDisp()) < 10) {
+      g.fillStyle = cvv('--text-warning');
+      g.fillText('the image is within 10 dB of the wanted signal — from here on they cannot be separated', l, 6);
+    } else {
+      g.fillStyle = cvv('--text-good');
+      g.fillText('the image lands far enough below the wanted signal to ignore', l, 6);
+    }
+  }
+
+  // ---------- section 4: intercept plot ----------
+  function drawIP() {
+    var c = $('cvIP'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bdl = cvv('--border');
+    var gw = cvv('--c-wanted'), img = cvv('--c-image'), am = cvv('--c-amber');
+    var l = 52, r = 14, t = 16, b = 42;
+    var pw = w - l - r, ph = h - t - b;
+    if (pw < 40 || ph < 40) return;
+
+    var hiv = S.oip3 + 12, lov = hiv - 130;
+    var X = function (p) { return l + (p - lov) / (hiv - lov) * pw; };
+    var Y = function (p) { return t + (hiv - p) / (hiv - lov) * ph; };
+
+    g.font = fnt(11);
+    var st = niceStep(hiv - lov, 6);
+    for (var v = Math.ceil(lov / st) * st; v <= hiv + 1e-9; v += st) {
+      g.strokeStyle = bdl; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.beginPath(); g.moveTo(X(v), t); g.lineTo(X(v), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(mn(v, 0), l - 6, Y(v));
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(mn(v, 0), X(v), h - b + 6);
+    }
+    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('output, dBm', 4, 2);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('drive level per tone, dBm', w - r, h - 4);
+
+    g.save();
+    g.beginPath(); g.rect(l, t, pw, ph); g.clip();
+
+    // compression region
+    var xc = X(p1db());
+    if (xc < l + pw) {
+      g.fillStyle = cvv('--text-warning'); g.globalAlpha = 0.10;
+      g.fillRect(Math.max(xc, l), t, Math.min(l + pw, w - r) - Math.max(xc, l), ph);
+      g.globalAlpha = 1;
+      g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(xc, t); g.lineTo(xc, h - b); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(10.5);
+      g.textAlign = 'right'; g.textBaseline = 'top';
+      g.fillText('1 dB compression ≈ OIP3 − 10', Math.min(xc - 5, w - r - 4), t + 4);
+    }
+
+    function line(fn, col, dash, lw) {
+      g.strokeStyle = col; g.lineWidth = lw || 2;
+      if (dash) g.setLineDash([6, 4]);
+      g.beginPath();
+      g.moveTo(X(lov), Y(fn(lov)));
+      g.lineTo(X(hiv), Y(fn(hiv)));
+      g.stroke();
+      g.setLineDash([]);
+    }
+    line(function (p) { return p; }, gw, false, 2.2);
+    line(function (p) { return 3 * p - 2 * S.oip3; }, img, false, 2.2);
+    line(function (p) { return 5 * p - 4 * oip5(); }, am, true, 1.6);
+
+    // intercept marker
+    g.fillStyle = img;
+    g.beginPath(); g.arc(X(S.oip3), Y(S.oip3), 5, 0, 6.2832); g.fill();
+    g.strokeStyle = cvv('--bg'); g.lineWidth = 1.5; g.stroke();
+
+    // current operating point
+    var xd = X(S.lev);
+    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([3, 3]);
+    g.beginPath(); g.moveTo(xd, t); g.lineTo(xd, h - b); g.stroke();
+    g.setLineDash([]);
+    var yF = Y(S.lev), yI = Y(im3());
+    g.fillStyle = gw; g.beginPath(); g.arc(xd, yF, 4, 0, 6.2832); g.fill();
+    if (im3() > lov) { g.fillStyle = img; g.beginPath(); g.arc(xd, yI, 4, 0, 6.2832); g.fill(); }
+
+    var bx = xd + 14;
+    if (bx > l + pw - 90) bx = xd - 14;
+    var yIc = clamp(yI, t, h - b);
+    g.strokeStyle = sub; g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(bx, yF); g.lineTo(bx, yIc);
+    g.moveTo(bx - 4, yF); g.lineTo(bx + 4, yF);
+    g.moveTo(bx - 4, yIc); g.lineTo(bx + 4, yIc);
+    g.stroke();
+    g.fillStyle = sub; g.font = fnt(11);
+    g.textAlign = bx > xd ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(sfWindow().toFixed(0) + ' dB', bx + (bx > xd ? 6 : -6), (yF + yIc) / 2);
+    g.restore();
+
+    // line labels, each placed on its own line at a chosen height
+    g.font = fnt(11); g.textBaseline = 'bottom';
+    function tag(txt, py, px, col, align) {
+      g.fillStyle = col; g.textAlign = align;
+      var x = clamp(X(px), l + 6, l + pw - 6);
+      var y = clamp(Y(py) - 6, t + 12, h - b - 4);
+      g.fillText(txt, x, y);
+    }
+    var pF = lov + (hiv - lov) * 0.30;
+    tag('fundamental, slope 1', pF, pF, gw, 'left');
+    var pI = lov + (hiv - lov) * 0.62;
+    tag('IM3, slope 3', pI, (pI + 2 * S.oip3) / 3, img, 'right');
+    var pV = lov + (hiv - lov) * 0.42;
+    tag('IM5, slope 5', pV, (pV + 4 * oip5()) / 5, am, 'right');
+    g.fillStyle = img; g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('OIP3 ' + sgn(S.oip3, 0) + ' dBm', clamp(X(S.oip3) - 8, l + 80, l + pw), clamp(Y(S.oip3) - 8, t + 12, h - b - 4));
+  }
+
+  function drawAll() { drawChain(); drawRF(); drawIF(); drawIP(); }
+
+  // ---------- worked example ----------
+  function worked() {
+    var lo = flo(), im = fimg(), rows = [];
+    rows.push('The wanted signal is at <b>f<sub>RF</sub> = ' + S.frf.toFixed(1) + ' MHz</b> and the receiver works at <b>IF = ' + S.fif.toFixed(3) + ' MHz</b>.');
+    rows.push((S.hi ? 'High' : 'Low') + '-side injection puts the local oscillator at f<sub>LO</sub> = ' + S.frf.toFixed(1) +
+      (S.hi ? ' + ' : ' − ') + S.fif.toFixed(3) + ' = <b>' + lo.toFixed(3) + ' MHz</b>.');
+    rows.push('The mixer produces |f<sub>RF</sub> − f<sub>LO</sub>| = ' + Math.abs(S.frf - lo).toFixed(3) + ' MHz, which is the IF the rest of the radio expects.');
+    if (im > 0) {
+      rows.push('The other antenna frequency that gives the same difference is f<sub>LO</sub> ' + (S.hi ? '+' : '−') + ' IF = <b>' + im.toFixed(3) +
+        ' MHz</b>. That is the image, sitting 2 &times; IF = ' + (2 * S.fif).toFixed(3) + ' MHz from the wanted signal.');
+      var o = Math.abs(offset(im));
+      rows.push('Normalised filter offset: off = (' + im.toFixed(2) + '/' + S.frf.toFixed(2) + ' − ' + S.frf.toFixed(2) + '/' + im.toFixed(2) +
+        ') × ' + S.frf.toFixed(2) + '/' + S.bw.toFixed(1) + ' = <b>' + o.toFixed(3) + '</b>. It would be 1.000 at the edge of the passband.');
+      var raw = rejRaw();
+      rows.push('A ' + S.ord.toFixed(0) + '-pole Butterworth gives 10 log<sub>10</sub>(1 + ' + o.toFixed(3) + '<sup>' + (2 * S.ord).toFixed(0) + '</sup>) = <b>' +
+        raw.toFixed(1) + ' dB</b>' + (raw > REJ_CAP ? ', shown as more than ' + REJ_CAP.toFixed(0) + ' dB because real front ends leak past the filter long before that.' : ' of image rejection.'));
+      var ciw = P_WANTED - (S.lev - rejDisp());
+      rows.push('So a neighbour of ' + mn(S.lev, 0) + ' dBm on the image frequency reaches the IF at ' + mn(S.lev - rejDisp(), 1) +
+        ' dBm, which is <b>' + Math.abs(ciw).toFixed(1) + ' dB ' + (ciw >= 0 ? 'below' : 'above') + '</b> the ' + mn(P_WANTED, 0) +
+        ' dBm wanted signal' + (ciw >= 0 ? '.' : ' — the interference is winning.'));
+    } else {
+      rows.push('Low side would place the image at ' + S.frf.toFixed(1) + ' − ' + (2 * S.fif).toFixed(3) + ' = ' + mn(im, 3) +
+        ' MHz, below 0 Hz. <b>No image exists</b>: nothing can transmit there, so the front-end filter has no image to remove.');
+    }
+    var par = function (v) { return v < 0 ? '(' + mn(v, 0) + ')' : mn(v, 0); };
+    rows.push('Third-order distortion in the mixer: P<sub>IMD3</sub> = 3 × ' + par(S.lev) + ' − 2 × ' + par(S.oip3) +
+      ' = <b>' + mn(im3(), 0) + ' dBm</b>, leaving a spurious-free window of 2 × (' + mn(S.oip3, 0) + ' − ' + par(S.lev) + ') = <b>' +
+      mn(sfWindow(), 0) + ' dB</b>' + (S.lev > p1db() ? ', though this drive level is already past the 1 dB compression point.' : '.'));
+    $('work').innerHTML = rows.map(function (x) { return '<li>' + x + '</li>'; }).join('');
+  }
+
+  // ---------- readouts and cards ----------
+  function updateUI() {
+    $('frv').textContent = S.frf.toFixed(1) + ' MHz';
+    $('fiv').textContent = S.fif.toFixed(3) + ' MHz';
+    $('bwfv').textContent = S.bw.toFixed(1) + ' MHz';
+    $('intv').textContent = mn(S.lev, 0) + ' dBm';
+    $('ordv').textContent = S.ord.toFixed(0) + ' poles';
+    $('oipv').textContent = sgn(S.oip3, 0) + ' dBm';
+
+    var near = function (a, b) { return Math.abs(a - b) < 1e-6; };
+    $('p455').classList.toggle('on', near(S.fif, 0.455));
+    $('p107').classList.toggle('on', near(S.fif, 10.7));
+    $('p70').classList.toggle('on', near(S.fif, 70));
+    $('btnHi').classList.toggle('on', S.hi);
+    $('btnLo').classList.toggle('on', !S.hi);
+    $('btnLo').disabled = !lowSideValid();
+
+    $('cLO').textContent = flo().toFixed(3) + ' MHz';
+    $('cLOn').innerHTML = S.hi ? 'high side: f<sub>LO</sub> = f<sub>RF</sub> + IF' : 'low side: f<sub>LO</sub> = f<sub>RF</sub> &minus; IF';
+
+    if (hasImage()) {
+      $('cIM').textContent = fimg().toFixed(3) + ' MHz';
+      $('cIM').style.color = '';
+      $('cIMn').textContent = (2 * S.fif).toFixed(3) + ' MHz (2 × IF) ' + (S.hi ? 'above' : 'below') + ' the wanted signal';
+    } else {
+      $('cIM').textContent = 'none';
+      $('cIM').style.color = 'var(--text-good)';
+      $('cIMn').textContent = 'twice the IF exceeds the RF frequency, so the image folds below 0 Hz';
+    }
+
+    if (hasImage()) {
+      var raw = rejRaw(), dsp = rejDisp();
+      $('cRJ').textContent = raw > REJ_CAP ? '> ' + REJ_CAP.toFixed(0) + ' dB' : dsp.toFixed(1) + ' dB';
+      $('cRJ').style.color = dsp >= 60 ? 'var(--text-good)' : (dsp >= 30 ? '' : 'var(--text-warning)');
+      $('cRJn').textContent = S.ord.toFixed(0) + '-pole Butterworth, ' + S.bw.toFixed(1) + ' MHz wide' +
+        (raw > REJ_CAP ? '; formula gives ' + raw.toFixed(0) + ' dB, capped at the stopband floor' : '');
+    } else {
+      $('cRJ').textContent = '—';
+      $('cRJ').style.color = '';
+      $('cRJn').textContent = 'not applicable: there is no image to reject';
+    }
+
+    var over = S.lev > p1db();
+    $('cIM3').textContent = mn(im3(), 1) + ' dBm';
+    $('cIM3').style.color = im3() > P_WANTED ? 'var(--text-warning)' : '';
+    $('cIM3n').innerHTML = over
+      ? 'above the 1 dB compression point, so this is extrapolation, not a level a real mixer reaches'
+      : 'P<sub>IMD3</sub> = 3 P<sub>out</sub> &minus; 2 OIP3; rises 3 dB per dB of drive';
+
+    var sf = sfWindow();
+    $('cSF').textContent = mn(sf, 0) + ' dB';
+    $('cSF').style.color = over || sf < 30 ? 'var(--text-warning)' : (sf >= 60 ? 'var(--text-good)' : '');
+    $('cSFn').textContent = over
+      ? 'past the 1 dB compression point near ' + mn(p1db(), 0) + ' dBm — straight-line extrapolation only'
+      : '2 × (OIP3 − drive); closes 2 dB for each dB of drive';
+
+    var rt = ratio();
+    var verdict = rt <= 10 ? 'comfortable' : (rt <= 20 ? 'at the limit' : 'needs two conversions');
+    $('cVD').textContent = verdict;
+    $('cVD').style.color = rt <= 10 ? 'var(--text-good)' : (rt <= 20 ? '' : 'var(--text-warning)');
+    $('cVD').style.fontSize = '18px';
+    $('cVDn').innerHTML = 'f<sub>RF</sub> / IF = ' + rt.toFixed(1) + '; the rule of thumb keeps it under 10 to 20';
+
+    worked();
+  }
+
+  function refresh() { updateUI(); drawAll(); }
+
+  function readSliders() {
+    S.frf = +$('fr').value; S.fif = +$('fi').value; S.bw = +$('bwf').value;
+    S.lev = +$('int').value; S.ord = +$('ord').value; S.oip3 = +$('oip').value;
+  }
+  function writeSliders() {
+    $('fr').value = S.frf; $('fi').value = S.fif; $('bwf').value = S.bw;
+    $('int').value = S.lev; $('ord').value = S.ord; $('oip').value = S.oip3;
+  }
+
+  ['fr', 'fi', 'bwf', 'int', 'ord', 'oip'].forEach(function (id) {
+    $(id).addEventListener('input', function () { readSliders(); refresh(); });
+  });
+  [['p455', 0.455], ['p107', 10.7], ['p70', 70]].forEach(function (p) {
+    $(p[0]).addEventListener('click', function () { S.fif = p[1]; writeSliders(); refresh(); });
+  });
+  $('btnHi').addEventListener('click', function () { S.hi = true; refresh(); });
+  $('btnLo').addEventListener('click', function () { if (lowSideValid()) { S.hi = false; refresh(); } });
+
+  var TOUR = [
+    { id: 's1', set: { frf: 98, fif: 10.7, bw: 12, ord: 3, hi: true, lev: -30, oip3: 15 }, adv: false,
+      txt: 'Step 1 — FM broadcast at 98 MHz on the standard 10.7 MHz IF. The image lands at 119.4 MHz, which is outside the 88 to 108 MHz FM band, so no FM station can ever be another one’s image. That is exactly why 10.7 MHz was chosen.' },
+    { id: 's2', set: { frf: 98, fif: 0.455, bw: 12, ord: 3, hi: true, lev: -30, oip3: 15 }, adv: false,
+      txt: 'Step 2 — same station, but on the old 455 kHz IF. The image has moved to only 0.91 MHz away, deep inside the filter’s passband, and the rejection collapses to almost nothing. The f_RF/IF ratio card has gone red.' },
+    { id: 's3', set: { frf: 1000, fif: 70, bw: 12, ord: 3, hi: true, lev: -30, oip3: 15 }, adv: false,
+      txt: 'Step 3 — a 1 GHz link on a 70 MHz IF. The image is now 140 MHz out, far down the filter skirt, and the rejection is enormous. High IF buys image rejection; the price is paid later, by the IF filter that must now be very narrow in fractional terms.' },
+    { id: 's4', set: { frf: 80, fif: 70, bw: 12, ord: 3, hi: false, lev: -30, oip3: 15 }, adv: false,
+      txt: 'Step 4 — low-side injection at 80 MHz with a 70 MHz IF. The image would be at 80 − 140 = −60 MHz, which does not exist. The card says so, the spike is gone, and the low-side button is now greyed out.' },
+    { id: 's5', set: { frf: 160.7, fif: 10.7, bw: 12, ord: 3, hi: true, lev: -5, oip3: 5 }, adv: true,
+      txt: 'Step 5 — back to VHF, but with a strong neighbour at −5 dBm and a modest mixer. The third-order product has climbed to −25 dBm and the spurious-free window has closed to 20 dB. Drag the nearby-signal slider one step and watch the window shut twice as fast as the drive rises.' },
+    { id: 's0', set: { frf: 160.7, fif: 10.7, bw: 12, ord: 3, hi: true, lev: -30, oip3: 15 }, adv: false,
+      txt: 'Back to the starting point: a VHF signal at 160.7 MHz on a 10.7 MHz IF, with a 12 MHz-wide 3-pole front-end filter.' }
+  ];
+  TOUR.forEach(function (st) {
+    $(st.id).addEventListener('click', function () {
+      for (var k in st.set) if (Object.prototype.hasOwnProperty.call(st.set, k)) S[k] = st.set[k];
+      if (st.adv) $('adv').open = true;
+      writeSliders();
+      $('tnote').textContent = st.txt;
+      refresh();
+    });
+  });
+
+  window.addEventListener('resize', drawAll);
+  readSliders();
+  refresh();
+
+  window.__superhet = {
+    state: S, flo: flo, fimg: fimg, hasImage: hasImage,
+    atten: atten, rejRaw: rejRaw, rejDisp: rejDisp,
+    im3: im3, im5: im5, sfWindow: sfWindow, p1db: p1db, ratio: ratio, offset: offset
+  };
+})();
+</script>
+</body>
+</html>

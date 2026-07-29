@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AM, DSBSC, SSB and the cost of the carrier</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD;
+  --s1: #378ADD; --s2: #D85A30; --s3: #1D9E75; --s4: #7F77DD; --s5: #D4537E;
+  --on-fill: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --accent: #6FB4EE;
+    --s1: #6FB4EE; --s2: #F0855A; --s3: #45BE93; --s4: #A29BEC; --s5: #E7799F;
+    --on-fill: #1b1b19;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 820px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+.prereq { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; font-size: 13px; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type=range]:disabled { opacity: 0.4; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 74px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1.1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
+.ctl input[type=range] { flex: 1; min-width: 90px; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
+.sec { margin: 1.9rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 1.1rem; }
+.legend-note li { margin: 2px 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.tour { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 0 0 0.5rem; }
+.tourtxt { font-size: 13px; color: var(--text-secondary); min-height: 2.6em; margin: 0 0 1.2rem; }
+.worked { font-size: 13px; color: var(--text-secondary); margin: 0.4rem 0 0; padding-left: 1.3rem; font-variant-numeric: tabular-nums; }
+.worked li { margin: 3px 0; }
+details { margin: 1.2rem 0; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.9rem; }
+summary { font-size: 13.5px; cursor: pointer; color: var(--text-secondary); }
+details[open] summary { margin-bottom: 0.7rem; }
+.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+.glossary dt { font-weight: 500; margin-top: 8px; }
+.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+.warn { color: var(--text-warning); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>AM, DSBSC, SSB and the cost of the carrier</h1>
+<p class="sub">A radio transmitter has a fixed number of watts to spend. In ordinary amplitude modulation most of those watts go into the carrier &mdash; a bare tone at the transmit frequency that carries no information at all &mdash; and only what is left over carries the message. This tool puts the four analogue schemes side by side in time and in frequency, and keeps a running account of where the power went. The answer for full AM is uncomfortable: at best one watt in three does useful work.</p>
+<p class="prereq">If waveforms and spectra are new, start with the <a href="modulation.html">modulation playground</a> first. Every frequency here is a real number in hertz, and the carrier amplitude is fixed at 1 volt into 1 ohm so the power figures are watts.</p>
+
+<div class="row">
+  <span class="lbl">Scheme</span>
+  <button id="bam" class="on">Full AM</button>
+  <button id="bdsb">DSBSC</button>
+  <button id="bssb">SSB</button>
+  <button id="bqam">QAM</button>
+  <button id="bfdm">FDM</button>
+</div>
+<div class="row">
+  <span class="lbl">Message</span>
+  <button id="mt1" class="on">Single tone</button>
+  <button id="mt2">Two tones</button>
+  <span style="font-size:12px;color:var(--text-muted)">tone at 1.00 kHz; two-tone adds a second at 2.50 kHz</span>
+</div>
+
+<div class="grid2">
+  <div class="ctl"><label for="mi">Modulation index m</label><input type="range" id="mi" min="0" max="1.5" step="0.05" value="0.6"><span class="v" id="miv">0.60</span></div>
+  <div class="ctl"><label for="fc">Carrier frequency</label><input type="range" id="fc" min="5" max="50" step="1" value="20"><span class="v" id="fcv">20.0 kHz</span></div>
+  <div class="ctl"><label for="ph">Detector phase error</label><input type="range" id="ph" min="0" max="90" step="1" value="0"><span class="v" id="phv">0&deg;</span></div>
+  <div class="ctl"><label for="df">Detector freq error</label><input type="range" id="df" min="0" max="200" step="5" value="0"><span class="v" id="dfv">0 Hz</span></div>
+  <div class="ctl"><label for="nc">FDM channels</label><input type="range" id="nc" min="2" max="8" step="1" value="4"><span class="v" id="ncv">4</span></div>
+</div>
+<p id="ctlnote" style="font-size:12.5px;color:var(--text-muted);margin:-0.5rem 0 1.4rem;">&mdash;</p>
+
+<div class="tour">
+  <span class="lbl" style="font-size:13px;color:var(--text-secondary)">Guided tour</span>
+  <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button><button id="t4">4</button><button id="t5">5</button>
+  <button id="t0">reset</button>
+</div>
+<p class="tourtxt" id="tourtxt">Press 1 to start. Each step moves the controls for you and says what changed.</p>
+
+<p class="sec"><b>1 &middot; Where the transmitter power goes</b> <span>&mdash; the same transmitter, split into the part that carries information and the part that does not</span></p>
+<canvas id="cvA" style="height: 210px;"></canvas>
+<ul class="legend-note" id="nA"></ul>
+
+<p class="sec"><b>2 &middot; Message, carrier and the resulting envelope</b> <span>&mdash; three traces on one time axis, 2 milliseconds wide</span></p>
+<canvas id="cvB" style="height: 330px;"></canvas>
+<ul class="legend-note" id="nB"></ul>
+
+<p class="sec"><b>3 &middot; The spectrum, drawn to scale</b> <span>&mdash; every line is a real sinusoid; its height is that sinusoid's amplitude in volts</span></p>
+<canvas id="cvC" style="height: 250px;"></canvas>
+<ul class="legend-note" id="nC"></ul>
+
+<p class="sec"><b>4 &middot; What the detector recovers</b> <span>&mdash; the original message dashed, the detector output solid</span></p>
+<canvas id="cvD" style="height: 220px;"></canvas>
+<ul class="legend-note" id="nD"></ul>
+
+<div class="cards">
+  <div class="card"><div class="hd">Modulation index m</div><div class="big" id="cM">&mdash;</div><div class="ft" id="cMn">&mdash;</div></div>
+  <div class="card"><div class="hd">Total transmitted power</div><div class="big" id="cP">&mdash;</div><div class="ft">A<sub>c</sub> = 1 V into 1 &Omega;</div></div>
+  <div class="card"><div class="hd">Carrier power share</div><div class="big" id="cC">&mdash;</div><div class="ft" id="cCn">&mdash;</div></div>
+  <div class="card"><div class="hd">Sideband power share</div><div class="big" id="cS">&mdash;</div><div class="ft" id="cSn">&mdash;</div></div>
+  <div class="card"><div class="hd">Occupied bandwidth</div><div class="big" id="cB">&mdash;</div><div class="ft" id="cBn">&mdash;</div></div>
+  <div class="card"><div class="hd">Detection loss</div><div class="big" id="cD">&mdash;</div><div class="ft" id="cDn">&mdash;</div></div>
+</div>
+
+<p class="sec"><b>The arithmetic, with the current numbers substituted in</b></p>
+<ol class="worked" id="wk"></ol>
+
+<details>
+  <summary>An everyday analogy, and the envelope detector's time constant</summary>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0 0 0.8rem;">Think of shouting a message across a valley. The carrier is the raw loudness of your voice; the message is the way you shape it. Full AM keeps shouting at full volume even during the silences, because the receiver on the far side finds the message by tracking how loud you are, and it needs a steady reference to compare against. Suppressed-carrier schemes stop shouting during the silences, which saves a great deal of breath, but then the far side has to guess the reference for itself &mdash; and if it guesses the timing wrong, the message comes back wrong.</p>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0;" id="rcnote">&mdash;</p>
+</details>
+
+<p class="sub" style="margin-top: 2rem;">Three trades live in these controls. Full AM buys a receiver that is a diode, a capacitor and a resistor, and pays for it with the carrier: at the legal limit of m = 1 only 33.3 per cent of the transmitter is doing work, and at the more typical m = 0.6 it is 15.3 per cent. Suppressing the carrier recovers all of that, but the receiver now needs a local oscillator locked to the transmitter, and the phase-error slider shows the penalty &mdash; output falls as cos&nbsp;&phi; and vanishes completely at 90 degrees, which is why practical receivers carry a Costas loop or a pilot tone. Single sideband then halves the bandwidth as well, and is remarkably tolerant of phase error because the error only rotates the recovered tone rather than shrinking it; what single sideband cannot tolerate is a frequency error, which shifts every component of the message by the same number of hertz and makes speech sound wrong even when nothing is lost. What is simplified here: the filters are ideal, there is no noise, the message is one or two pure tones so its Hilbert transform is exact, and the FDM guard band is fixed at a quarter of the message bandwidth.</p>
+<p class="sub">Where to go next: <a href="iq-constellation.html">the I/Q constellation</a> takes the quadrature idea into digital modulation, and <a href="superhet-image.html">the superheterodyne receiver</a> shows what the mixer in these detectors does to unwanted frequencies.</p>
+
+<p class="sec"><b>Glossary</b></p>
+<dl class="glossary">
+  <dt>Carrier</dt><dd>The steady high-frequency sinusoid at f<sub>c</sub> that the message is loaded onto. On its own it carries no information.</dd>
+  <dt>Sideband</dt><dd>The band of frequencies either side of the carrier that appears when the message is applied. This is where the information actually lives.</dd>
+  <dt>Modulation index m</dt><dd>The ratio A<sub>m</sub>/A<sub>c</sub> of message amplitude to carrier amplitude. It sets how deeply the carrier is varied.</dd>
+  <dt>Envelope</dt><dd>The slowly varying outline that the peaks of the modulated waveform trace out.</dd>
+  <dt>Envelope detector</dt><dd>A diode, capacitor and resistor that follow the envelope. It needs no local oscillator, which is why AM broadcast receivers are cheap.</dd>
+  <dt>Overmodulation</dt><dd>m greater than 1. The envelope folds through zero, the envelope detector output no longer matches the message, and the spectrum spreads.</dd>
+  <dt>DSBSC</dt><dd>Double-sideband suppressed carrier. The carrier line is removed and only the two sidebands are transmitted.</dd>
+  <dt>Coherent detector</dt><dd>A detector that multiplies the incoming signal by a locally generated copy of the carrier and then low-pass filters. It needs that copy to be at the right frequency and phase.</dd>
+  <dt>Local oscillator</dt><dd>The receiver's own copy of the carrier, used by a coherent detector.</dd>
+  <dt>Phase error &phi;</dt><dd>The angle by which the local oscillator leads or lags the true carrier.</dd>
+  <dt>Hilbert transform</dt><dd>An operation that shifts every frequency component of a signal by minus 90 degrees without changing its amplitude. It turns each cosine into a sine, and is how one sideband is cancelled.</dd>
+  <dt>SSB</dt><dd>Single sideband. One of the two sidebands is removed, halving the bandwidth and the power.</dd>
+  <dt>Quadrature</dt><dd>Two carriers at the same frequency but 90 degrees apart. They do not interfere, so two messages can share one band.</dd>
+  <dt>QAM</dt><dd>Quadrature amplitude modulation. Two DSBSC signals on quadrature carriers.</dd>
+  <dt>Crosstalk</dt><dd>Signal from one channel leaking into another. In QAM a phase error in the local oscillator produces crosstalk proportional to sin&nbsp;&phi;.</dd>
+  <dt>FDM</dt><dd>Frequency division multiplexing. Several messages stacked on different carriers so they occupy different parts of one wide band.</dd>
+  <dt>Guard band</dt><dd>Empty spectrum left between adjacent FDM channels so that a real, non-ideal filter can separate them.</dd>
+  <dt>Bandwidth</dt><dd>The range of positive frequency a signal occupies, in hertz.</dd>
+</dl>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  var TAU = Math.PI * 2;
+
+  var FM = 1000;
+  var AC = 1;
+  var GUARD = 0.25;
+  var TWIN = 2 / FM;
+
+  var S = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4 };
+
+  function comps() {
+    return S.msg === 'tone' ? [{ a: 1, f: FM }] : [{ a: 0.5, f: FM }, { a: 0.5, f: 2.5 * FM }];
+  }
+  function scaled(c, k) {
+    return c.map(function (x) { return { a: x.a, f: x.f * k }; });
+  }
+  function ev(c, t, ph) {
+    var s = 0, p = ph || 0;
+    for (var i = 0; i < c.length; i++) s += c[i].a * Math.cos(TAU * c[i].f * t + p);
+    return s;
+  }
+  function evh(c, t, ph) {
+    var s = 0, p = ph || 0;
+    for (var i = 0; i < c.length; i++) s += c[i].a * Math.sin(TAU * c[i].f * t + p);
+    return s;
+  }
+  function muOf(c) {
+    var s = 0;
+    for (var i = 0; i < c.length; i++) s += c[i].a * c[i].a / 2;
+    return s;
+  }
+  function bwOf(c) {
+    var s = 0;
+    for (var i = 0; i < c.length; i++) if (c[i].f > s) s = c[i].f;
+    return s;
+  }
+  function spacing() { return bwOf(comps()) * (1 + GUARD); }
+
+  function cbb(t) {
+    var c = comps(), m = S.m, i, re, im;
+    if (S.sch === 'am') return [AC * (1 + m * ev(c, t)), 0];
+    if (S.sch === 'dsb') return [AC * m * ev(c, t), 0];
+    if (S.sch === 'ssb') return [AC * m / 2 * ev(c, t), AC * m / 2 * evh(c, t)];
+    if (S.sch === 'qam') {
+      var q = scaled(c, 0.6);
+      return [AC * m * ev(c, t), -AC * m * ev(q, t)];
+    }
+    re = 0; im = 0;
+    var sp = spacing();
+    for (i = 0; i < S.nch; i++) {
+      var ph = i * TAU / S.nch;
+      var ar = AC * m / 2 * ev(c, t, ph), ai = AC * m / 2 * evh(c, t, ph);
+      var d = TAU * (i * sp) * t, cd = Math.cos(d), sd = Math.sin(d);
+      re += ar * cd - ai * sd;
+      im += ar * sd + ai * cd;
+    }
+    return [re, im];
+  }
+  function sig(t) {
+    var b = cbb(t), w = TAU * S.fc * t;
+    return b[0] * Math.cos(w) - b[1] * Math.sin(w);
+  }
+  function envl(t) {
+    var b = cbb(t);
+    return Math.sqrt(b[0] * b[0] + b[1] * b[1]);
+  }
+  function msgTrace(t) { return S.m * ev(comps(), t); }
+  function carTrace(t) { return AC * Math.cos(TAU * S.fc * t); }
+
+  var envMean = 1;
+  function computeEnvMean() {
+    var N = 2048, s = 0, c = comps(), i;
+    for (i = 0; i < N; i++) s += Math.abs(1 + S.m * ev(c, i * TWIN / N));
+    envMean = s / N;
+  }
+
+  function recov(t, arm) {
+    var c = comps(), m = S.m;
+    var psi = TAU * S.df * t + S.phi * Math.PI / 180;
+    if (S.sch === 'am') return AC * (Math.abs(1 + m * ev(c, t)) - envMean);
+    if (S.sch === 'dsb') return m * ev(c, t) * Math.cos(psi);
+    if (S.sch === 'ssb' || S.sch === 'fdm') return m * (ev(c, t) * Math.cos(psi) + evh(c, t) * Math.sin(psi));
+    var q = scaled(c, 0.6);
+    if (arm) return m * (ev(q, t) * Math.cos(psi) + ev(c, t) * Math.sin(psi));
+    return m * (ev(c, t) * Math.cos(psi) - ev(q, t) * Math.sin(psi));
+  }
+  function refTrace(t, arm) {
+    var c = comps();
+    if (arm) return S.m * ev(scaled(c, 0.6), t);
+    return S.m * ev(c, t);
+  }
+
+  function powers() {
+    var mu = muOf(comps()), m = S.m, pc = AC * AC / 2, car = 0, sb = 0;
+    if (S.sch === 'am') { car = pc; sb = pc * m * m * mu; }
+    else if (S.sch === 'dsb') { sb = pc * m * m * mu; }
+    else if (S.sch === 'ssb') { sb = pc * m * m * mu / 2; }
+    else if (S.sch === 'qam') { sb = pc * m * m * mu * 2; }
+    else { sb = S.nch * pc * m * m * mu / 2; }
+    return { car: car, sb: sb, tot: car + sb };
+  }
+
+  function lines() {
+    var c = comps(), m = S.m, out = [], i, k;
+    if (S.sch === 'am') {
+      out.push({ f: S.fc, a: AC, kind: 'car' });
+      for (i = 0; i < c.length; i++) {
+        out.push({ f: S.fc + c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+        out.push({ f: S.fc - c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+      }
+    } else if (S.sch === 'dsb') {
+      for (i = 0; i < c.length; i++) {
+        out.push({ f: S.fc + c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+        out.push({ f: S.fc - c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+      }
+    } else if (S.sch === 'ssb') {
+      for (i = 0; i < c.length; i++) out.push({ f: S.fc + c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+    } else if (S.sch === 'qam') {
+      var q = scaled(c, 0.6);
+      for (i = 0; i < c.length; i++) {
+        out.push({ f: S.fc + c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+        out.push({ f: S.fc - c[i].f, a: AC * m * c[i].a / 2, kind: 'sb' });
+      }
+      for (i = 0; i < q.length; i++) {
+        out.push({ f: S.fc + q[i].f, a: AC * m * q[i].a / 2, kind: 'q' });
+        out.push({ f: S.fc - q[i].f, a: AC * m * q[i].a / 2, kind: 'q' });
+      }
+    } else {
+      var sp = spacing();
+      for (k = 0; k < S.nch; k++) {
+        for (i = 0; i < c.length; i++) {
+          out.push({ f: S.fc + k * sp + c[i].f, a: AC * m * c[i].a / 2, kind: 'ch', ch: k });
+        }
+      }
+    }
+    return out;
+  }
+
+  function band() {
+    var W = bwOf(comps());
+    if (S.sch === 'ssb') return { lo: S.fc, hi: S.fc + W, bw: W };
+    if (S.sch === 'fdm') { var b = S.nch * (W + GUARD * W); return { lo: S.fc, hi: S.fc + b, bw: b }; }
+    return { lo: S.fc - W, hi: S.fc + W, bw: 2 * W };
+  }
+
+  function amLoss() {
+    var c = comps(), m = S.m, i, t;
+    if (m < 0.02) return 0;
+    if (m <= 1) return 0;
+    var N = 4096, sem = 0, smm = 0;
+    for (i = 0; i < N; i++) {
+      t = i * TWIN / N;
+      var mn = ev(c, t);
+      sem += (Math.abs(1 + m * mn) - envMean) * mn;
+      smm += mn * mn;
+    }
+    if (smm < 1e-12) return 0;
+    var al = sem / smm;
+    return -20 * L10(Math.max(al / m, 1e-3));
+  }
+  function detLoss() {
+    if (S.sch === 'am') return amLoss();
+    if (S.sch === 'ssb' || S.sch === 'fdm') return 0;
+    return -20 * L10(Math.max(Math.abs(Math.cos(S.phi * Math.PI / 180)), 1e-3));
+  }
+
+  function fit(c) {
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+  function peakOf(fn) {
+    var N = 1600, p = 0, i;
+    for (i = 0; i <= N; i++) {
+      var v = Math.abs(fn(i / N * TWIN));
+      if (isFinite(v) && v > p) p = v;
+    }
+    return Math.max(p, 1e-3);
+  }
+  function dense(g, l, rr, ymid, sc, fn) {
+    var spp = 8, px, k;
+    g.beginPath();
+    for (px = l; px <= rr; px++) {
+      var lo = Infinity, hi = -Infinity;
+      for (k = 0; k <= spp; k++) {
+        var t = (px - l + k / spp) / (rr - l) * TWIN;
+        var v = fn(t);
+        if (!isFinite(v)) continue;
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+      if (!isFinite(lo) || !isFinite(hi)) continue;
+      var y1 = ymid - hi * sc, y2 = ymid - lo * sc;
+      g.moveTo(px + 0.5, y1);
+      g.lineTo(px + 0.5, Math.max(y2, y1 + 0.8));
+    }
+    g.stroke();
+  }
+  function curve(g, l, rr, ymid, sc, fn, dash) {
+    var N = 600, i;
+    g.setLineDash(dash || []);
+    g.beginPath();
+    for (i = 0; i <= N; i++) {
+      var t = i / N * TWIN, x = l + (i / N) * (rr - l), v = fn(t);
+      if (!isFinite(v)) continue;
+      var y = ymid - v * sc;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+    g.setLineDash([]);
+  }
+  function timeAxis(g, l, rr, yb, sub, bd) {
+    var k;
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    for (k = 0; k <= 4; k++) {
+      var x = l + (rr - l) * k / 4;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(x, 6); g.lineTo(x, yb); g.stroke();
+      g.fillText((TWIN * 1000 * k / 4).toFixed(1), x, yb + 4);
+    }
+    g.textAlign = 'right';
+    g.fillText('time (ms)', rr, yb + 16);
+  }
+
+  function drawA() {
+    var c = $('cvA'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border-strong');
+    var s1 = cvv('--s1'), s2 = cvv('--s2'), txt = cvv('--text-primary');
+    var P = powers();
+    var l = 10, rr = w - 10;
+
+    var by = 22, bh = 40;
+    var boxw = Math.min(120, (rr - l) * 0.2);
+    g.strokeStyle = bd; g.lineWidth = 1.2; g.fillStyle = sub; g.font = fnt(11);
+    g.strokeRect(l, by, boxw, bh);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('transmitter', l + boxw / 2, by + bh / 2);
+
+    var mx = l + boxw + 34;
+    g.beginPath(); g.moveTo(l + boxw, by + bh / 2); g.lineTo(mx, by + bh / 2); g.stroke();
+    g.beginPath(); g.moveTo(mx, by + bh + 6); g.lineTo(mx, by - 10); g.stroke();
+    g.beginPath(); g.moveTo(mx - 9, by + bh + 6); g.lineTo(mx + 9, by + bh + 6); g.stroke();
+    var k;
+    g.strokeStyle = s1; g.lineWidth = 1;
+    for (k = 1; k <= 3; k++) {
+      g.beginPath();
+      g.arc(mx, by - 10, k * 11, -Math.PI * 0.42, Math.PI * 0.42);
+      g.stroke();
+    }
+
+    var rxw = boxw;
+    var rx = rr - rxw;
+    g.strokeStyle = bd; g.lineWidth = 1.2; g.fillStyle = sub;
+    g.strokeRect(rx, by, rxw, bh);
+    var dtx = S.sch === 'am' ? 'envelope detector' : 'coherent detector';
+    g.font = fnt(10.5);
+    g.fillText(dtx.split(' ')[0], rx + rxw / 2, by + bh / 2 - 7);
+    g.fillText(dtx.split(' ')[1], rx + rxw / 2, by + bh / 2 + 7);
+    var mx2 = rx - 34;
+    g.strokeStyle = bd; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(mx2, by + bh / 2); g.lineTo(rx, by + bh / 2); g.stroke();
+    g.beginPath(); g.moveTo(mx2, by + bh + 6); g.lineTo(mx2, by - 10); g.stroke();
+    g.beginPath(); g.moveTo(mx2 - 9, by + bh + 6); g.lineTo(mx2 + 9, by + bh + 6); g.stroke();
+
+    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('radio path', (mx + mx2) / 2, by + bh / 2 - 6);
+
+    var yb = 108, hh = 34;
+    g.fillStyle = txt; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('every watt the transmitter sends: ' + P.tot.toFixed(4) + ' W total', l, yb - 6);
+
+    if (P.tot < 1e-9) {
+      g.strokeStyle = bd; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.strokeRect(l, yb, rr - l, hh);
+      g.setLineDash([]);
+      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('no signal at all — the message amplitude m is zero', (l + rr) / 2, yb + hh / 2);
+    } else {
+      var fcar = P.car / P.tot, fsb = P.sb / P.tot;
+      var wcar = (rr - l) * fcar, wsb = (rr - l) * fsb;
+      g.fillStyle = s2; g.fillRect(l, yb, wcar, hh);
+      g.fillStyle = s1; g.fillRect(l + wcar, yb, wsb, hh);
+      g.strokeStyle = bd; g.lineWidth = 1; g.strokeRect(l, yb, rr - l, hh);
+      var onf = cvv('--on-fill');
+      g.font = fnt(12); g.textBaseline = 'middle';
+      if (wcar > 46) {
+        g.fillStyle = onf; g.textAlign = 'center';
+        g.fillText((fcar * 100).toFixed(1) + '%', l + wcar / 2, yb + hh / 2);
+      }
+      if (wsb > 46) {
+        g.fillStyle = onf; g.textAlign = 'center';
+        g.fillText((fsb * 100).toFixed(1) + '%', l + wcar + wsb / 2, yb + hh / 2);
+      }
+      g.textBaseline = 'top'; g.font = fnt(11.5);
+      if (fcar > 0.001) {
+        g.fillStyle = s2; g.textAlign = 'left';
+        g.fillText('carrier — carries no information (' + P.car.toFixed(4) + ' W)', l, yb + hh + 7);
+      }
+      g.fillStyle = s1;
+      g.textAlign = fcar > 0.001 ? 'right' : 'left';
+      g.fillText('sidebands — this is the message (' + P.sb.toFixed(4) + ' W)', fcar > 0.001 ? rr : l, yb + hh + 7);
+    }
+
+    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('scheme: ' + schemeName() + ', modulation index m = ' + S.m.toFixed(2) + ', carrier at ' + (S.fc / 1000).toFixed(1) + ' kHz', l, yb + hh + 26);
+  }
+
+  function drawB() {
+    var c = $('cvB'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var s1 = cvv('--s1'), s2 = cvv('--s2');
+    var l = 46, rr = w - 12, top = 8, bot = h - 26;
+    var ph = (bot - top) / 3;
+    var mid = [top + ph * 0.5, top + ph * 1.5, top + ph * 2.5];
+
+    timeAxis(g, l, rr, bot, sub, bd);
+    var i;
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (i = 0; i < 3; i++) {
+      g.beginPath(); g.moveTo(l, mid[i]); g.lineTo(rr, mid[i]); g.stroke();
+    }
+
+    var pMsg = Math.max(peakOf(msgTrace), 0.02);
+    var scM = (ph * 0.36) / pMsg;
+    g.strokeStyle = s1; g.lineWidth = 1.6;
+    curve(g, l, rr, mid[0], scM, msgTrace);
+
+    g.strokeStyle = s2; g.lineWidth = 1;
+    dense(g, l, rr, mid[1], ph * 0.36 / AC, carTrace);
+
+    var pSig = peakOf(sig);
+    var scS = (ph * 0.40) / pSig;
+    g.strokeStyle = s1; g.lineWidth = 1;
+    dense(g, l, rr, mid[2], scS, sig);
+    g.strokeStyle = s2; g.lineWidth = 1.7;
+    curve(g, l, rr, mid[2], scS, envl);
+    curve(g, l, rr, mid[2], scS, function (t) { return -envl(t); });
+
+    g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    var lbl0 = S.sch === 'fdm' ? 'message on channel 1 (V)' : 'message m(t), scaled by m (V)';
+    g.fillStyle = s1; g.fillText(lbl0, l + 4, top + 3);
+    g.fillStyle = s2; g.fillText('carrier at ' + (S.fc / 1000).toFixed(1) + ' kHz (V)', l + 4, top + ph + 3);
+    g.fillStyle = s1; g.fillText('modulated signal s(t) (V)', l + 4, top + 2 * ph + 3);
+    g.fillStyle = s2; g.textAlign = 'right'; g.fillText('envelope', rr - 4, top + 2 * ph + 3);
+
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.fillText(pMsg.toFixed(2), l - 5, mid[0] - ph * 0.36);
+    g.fillText('0', l - 5, mid[0]);
+    g.fillText(AC.toFixed(2), l - 5, mid[1] - ph * 0.36);
+    g.fillText('0', l - 5, mid[1]);
+    g.fillText(pSig.toFixed(2), l - 5, mid[2] - ph * 0.40);
+    g.fillText('0', l - 5, mid[2]);
+
+    if (S.sch === 'am' && S.m > 1) {
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText('overmodulated — the envelope folds through zero', (l + rr) / 2, mid[2] + ph * 0.48);
+    }
+  }
+
+  function drawC() {
+    var c = $('cvC'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var s1 = cvv('--s1'), s2 = cvv('--s2'), s3 = cvv('--s3'), s4 = cvv('--s4');
+    var l = 50, rr = w - 14, top = 16, bot = h - 34;
+    var B = band(), ln = lines();
+    var pad = Math.max(B.bw * 0.35, bwOf(comps()) * 0.6);
+    var flo = Math.max(0, B.lo - pad), fhi = B.hi + pad;
+    if (fhi - flo < 1) fhi = flo + 1;
+    var X = function (f) { return l + (f - flo) / (fhi - flo) * (rr - l); };
+    var amax = 1e-3, i;
+    for (i = 0; i < ln.length; i++) if (ln[i].a > amax) amax = ln[i].a;
+    amax = Math.max(amax, 0.05);
+    var Y = function (a) { return bot - (a / (amax * 1.18)) * (bot - top); };
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, bot); g.lineTo(rr, bot); g.stroke();
+    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    var nT = 6, k;
+    for (k = 0; k <= nT; k++) {
+      var f = flo + (fhi - flo) * k / nT, x = X(f);
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(x, top); g.lineTo(x, bot); g.stroke();
+      g.fillStyle = sub;
+      g.fillText((f / 1000).toFixed(1), x, bot + 4);
+    }
+    g.textAlign = 'right'; g.fillText('frequency (kHz)', rr, bot + 17);
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (k = 0; k <= 2; k++) {
+      var av = amax * 1.18 * k / 2;
+      g.fillText(av.toFixed(2), l - 6, Y(av));
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('amplitude (V)', 2, top - 12 > 0 ? top - 12 : 2);
+
+    if (S.sch === 'fdm') {
+      var sp = spacing(), W = bwOf(comps());
+      for (k = 0; k < S.nch; k++) {
+        var x0 = X(S.fc + k * sp), x1 = X(S.fc + k * sp + W);
+        g.fillStyle = k % 2 === 0 ? s1 : s3;
+        g.globalAlpha = 0.10;
+        g.fillRect(x0, top, Math.max(x1 - x0, 1), bot - top);
+        g.globalAlpha = 1;
+      }
+    }
+
+    for (i = 0; i < ln.length; i++) {
+      var col = ln[i].kind === 'car' ? s2 : ln[i].kind === 'q' ? s4 : ln[i].kind === 'ch' ? (ln[i].ch % 2 === 0 ? s1 : s3) : s1;
+      var x = X(ln[i].f);
+      if (x < l - 1 || x > rr + 1) continue;
+      g.strokeStyle = col; g.lineWidth = ln[i].kind === 'car' ? 3 : 2.2;
+      g.beginPath(); g.moveTo(x, bot); g.lineTo(x, Y(ln[i].a)); g.stroke();
+      g.fillStyle = col;
+      g.beginPath(); g.arc(x, Y(ln[i].a), 2.6, 0, 7); g.fill();
+    }
+
+    var yb = top + 6;
+    g.strokeStyle = mut; g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(X(B.lo), yb); g.lineTo(X(B.hi), yb);
+    g.moveTo(X(B.lo), yb - 4); g.lineTo(X(B.lo), yb + 4);
+    g.moveTo(X(B.hi), yb - 4); g.lineTo(X(B.hi), yb + 4);
+    g.stroke();
+    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('occupied bandwidth ' + (B.bw / 1000).toFixed(2) + ' kHz', (X(B.lo) + X(B.hi)) / 2, yb + 5);
+
+    if (S.sch === 'am' && S.m > 0.02) {
+      var cx = X(S.fc);
+      g.fillStyle = s2; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText('carrier', cx, Y(AC) - 6);
+      var sx = X(S.fc + comps()[0].f);
+      g.fillStyle = s1; g.textAlign = 'left';
+      g.fillText('sideband', sx + 4, Y(AC * S.m * comps()[0].a / 2) - 5);
+    }
+    if (S.sch === 'qam') {
+      g.fillStyle = s4; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText('violet lines: the quadrature channel', l + 6, top + 26);
+    }
+    if (S.sch === 'fdm') {
+      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      for (k = 0; k < S.nch; k++) {
+        var xc = X(S.fc + k * spacing() + bwOf(comps()) / 2);
+        if (xc > l && xc < rr) g.fillText('ch ' + (k + 1), xc, bot - 4);
+      }
+    }
+  }
+
+  function drawD() {
+    var c = $('cvD'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var s3 = cvv('--s3'), s4 = cvv('--s4');
+    var l = 46, rr = w - 12, top = 22, bot = h - 26;
+    var mid = (top + bot) / 2;
+
+    timeAxis(g, l, rr, bot, sub, bd);
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, mid); g.lineTo(rr, mid); g.stroke();
+
+    var pk = Math.max(peakOf(function (t) { return recov(t, 0); }),
+                      peakOf(function (t) { return refTrace(t, 0); }), 0.02);
+    if (S.sch === 'qam') pk = Math.max(pk, peakOf(function (t) { return recov(t, 1); }));
+    var sc = (mid - top) * 0.80 / pk;
+
+    g.strokeStyle = mut; g.lineWidth = 1.4;
+    curve(g, l, rr, mid, sc, function (t) { return refTrace(t, 0); }, [5, 4]);
+    g.strokeStyle = s3; g.lineWidth = 1.9;
+    curve(g, l, rr, mid, sc, function (t) { return recov(t, 0); });
+    if (S.sch === 'qam') {
+      g.strokeStyle = s4; g.lineWidth = 1.6;
+      curve(g, l, rr, mid, sc, function (t) { return recov(t, 1); });
+    }
+
+    g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.fillText('original message (dashed)', l + 4, top - 16);
+    g.fillStyle = s3; g.textAlign = 'center';
+    g.fillText(S.sch === 'qam' ? 'recovered I channel' : 'recovered message', (l + rr) / 2, top - 16);
+    if (S.sch === 'qam') {
+      g.fillStyle = s4; g.textAlign = 'right';
+      g.fillText('recovered Q channel', rr - 4, top - 16);
+    }
+    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.fillText(pk.toFixed(2), l - 5, mid - (mid - top) * 0.80);
+    g.fillText('0', l - 5, mid);
+    g.fillText('-' + pk.toFixed(2), l - 5, mid + (mid - top) * 0.80);
+    g.save();
+    g.translate(12, mid); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top'; g.font = fnt(10);
+    g.fillText('recovered (V)', 0, 0);
+    g.restore();
+  }
+
+  function schemeName() {
+    return { am: 'full AM', dsb: 'DSBSC', ssb: 'SSB (upper sideband)', qam: 'QAM', fdm: 'FDM' }[S.sch];
+  }
+
+  function notes() {
+    var W = bwOf(comps()), P = powers(), phi = S.phi;
+    var nA = [], nB = [], nC = [], nD = [];
+
+    nA.push('The bar is the whole transmitter output, split by where the power actually goes.');
+    if (S.sch === 'am') {
+      nA.push('The coral part is the carrier. It is a bare tone at ' + (S.fc / 1000).toFixed(1) + ' kHz and it would still be there if you stopped talking.');
+      nA.push('Raising m moves power from coral to blue, but m cannot pass 1 without breaking the envelope detector.');
+    } else if (S.sch === 'fdm') {
+      nA.push('There is no carrier line at all, so every watt is message. The cost has moved to bandwidth instead.');
+      nA.push('Each of the ' + S.nch + ' channels carries its own message on its own carrier frequency.');
+    } else {
+      nA.push('There is no coral part: the carrier has been suppressed, so all of the power carries information.');
+      nA.push('The receiver now needs its own copy of the carrier, which is what the phase and frequency error sliders disturb.');
+    }
+
+    nB.push('Top trace is the message. Middle trace is the bare carrier. Bottom trace is what is actually transmitted.');
+    nB.push('The coral outline on the bottom trace is the envelope, the shape the peaks trace out.');
+    if (S.sch === 'am') {
+      nB.push(S.m <= 1
+        ? 'The envelope is a faithful copy of the message sitting on a constant offset, so a diode and a capacitor can recover it.'
+        : 'With m above 1 the term 1 + m·m(t) goes negative, the envelope folds back up, and the recovered shape is no longer the message.');
+    } else if (S.sch === 'dsb') {
+      nB.push('The envelope is the absolute value of the message, so it goes to zero and back and the carrier flips phase there. An envelope detector would recover the wrong shape.');
+    } else if (S.sch === 'ssb') {
+      nB.push('For a single tone the envelope is flat, because one sideband on its own is just a single sinusoid at '
+        + ((S.fc + W) / 1000).toFixed(2) + ' kHz. A two-tone message brings the envelope back to life.');
+    } else if (S.sch === 'qam') {
+      nB.push('Two independent messages ride on carriers 90 degrees apart, so the envelope is the length of the vector they form.');
+    } else {
+      nB.push('The bottom trace is all ' + S.nch + ' channels added together. It looks like noise because it is several unrelated signals sharing one wire.');
+    }
+
+    nC.push('Each vertical line is one real sinusoid; the dot height is its amplitude in volts, so the picture is to scale.');
+    if (S.sch === 'am') {
+      nC.push('The tall coral line in the middle is the carrier at 1.000 V. The blue lines beside it are the sidebands, each at m · A_c · a/2 = '
+        + (S.m * comps()[0].a / 2).toFixed(3) + ' V.');
+      nC.push('Even at m = 1 each sideband is only half the carrier height, and power goes as amplitude squared, which is where the 33.3 per cent limit comes from.');
+    } else if (S.sch === 'dsb') {
+      nC.push('The centre line is gone. The two sidebands are mirror images, so half of what is sent is redundant.');
+    } else if (S.sch === 'ssb') {
+      nC.push('Only the upper sideband survives. The bandwidth is W = ' + (W / 1000).toFixed(2) + ' kHz instead of 2W = ' + (2 * W / 1000).toFixed(2) + ' kHz, and the transmitted power is halved as well.');
+    } else if (S.sch === 'qam') {
+      nC.push('Blue lines are the in-phase channel, violet lines the quadrature channel. Both fit inside the same 2W = ' + (2 * W / 1000).toFixed(2) + ' kHz.');
+    } else {
+      nC.push('Each shaded block is one channel of width W = ' + (W / 1000).toFixed(2) + ' kHz, with a guard band of ' + (GUARD * W / 1000).toFixed(2) + ' kHz above it.');
+      nC.push('Total bandwidth is N(W + B_guard) = ' + S.nch + ' × ' + ((W + GUARD * W) / 1000).toFixed(2) + ' = ' + (band().bw / 1000).toFixed(2) + ' kHz.');
+    }
+
+    nD.push('The dashed grey curve is the message that was sent. The green curve is what came out of the detector.');
+    if (S.sch === 'am') {
+      nD.push('An envelope detector is non-coherent: it has no local oscillator, so the phase and frequency error sliders do nothing here.');
+      nD.push(S.m <= 1 ? 'The two curves lie on top of each other, which is the whole appeal of full AM.'
+                       : 'The two curves have parted company. This is what overmodulation sounds like.');
+    } else if (S.sch === 'dsb') {
+      nD.push('The output amplitude scales as cos φ. At φ = ' + phi.toFixed(0) + '° that factor is ' + Math.cos(phi * Math.PI / 180).toFixed(3) + ', and at 90° the output disappears completely.');
+      if (S.df > 0) nD.push('The frequency error adds a beat at cos(2π · ' + S.df.toFixed(0) + ' t), so the recovered message swells and fades ' + S.df.toFixed(0) + ' times a second.');
+    } else if (S.sch === 'ssb' || S.sch === 'fdm') {
+      nD.push('A phase error rotates the recovered tone rather than shrinking it, so the amplitude survives. Compare this with DSBSC at the same phase error.');
+      nD.push(S.df > 0
+        ? 'A frequency error is the real problem: every component of the message has moved down by ' + S.df.toFixed(0) + ' Hz, so a 1.00 kHz tone comes back at ' + ((FM - S.df) / 1000).toFixed(3) + ' kHz.'
+        : 'Drag the frequency error slider to see the defect single sideband cannot survive.');
+    } else {
+      nD.push('Green is the in-phase channel, violet the quadrature channel. With no phase error each one recovers its own message and ignores the other.');
+      nD.push('A phase error lets each channel leak into the other; the crosstalk amplitude scales as sin φ, which at φ = ' + phi.toFixed(0) + '° is ' + Math.sin(phi * Math.PI / 180).toFixed(3) + '.');
+    }
+
+    var put = function (id, arr) {
+      $(id).innerHTML = arr.map(function (x) { return '<li>' + x + '</li>'; }).join('');
+    };
+    put('nA', nA); put('nB', nB); put('nC', nC); put('nD', nD);
+  }
+
+  function updateUI() {
+    computeEnvMean();
+    var c = comps(), mu = muOf(c), W = bwOf(c), P = powers(), B = band(), m = S.m;
+
+    $('miv').textContent = m.toFixed(2);
+    $('fcv').textContent = (S.fc / 1000).toFixed(1) + ' kHz';
+    $('phv').textContent = S.phi.toFixed(0) + '°';
+    $('dfv').textContent = S.df.toFixed(0) + ' Hz';
+    $('ncv').textContent = S.nch.toFixed(0);
+
+    var coh = S.sch !== 'am';
+    $('ph').disabled = !coh;
+    $('df').disabled = !coh;
+    $('nc').disabled = S.sch !== 'fdm';
+    $('ctlnote').textContent = coh
+      ? (S.sch === 'fdm'
+        ? 'The phase and frequency errors apply to the detector for channel 1. The FDM channel count sets how many messages are stacked.'
+        : 'The phase and frequency errors describe how far the receiver local oscillator has drifted from the true carrier.')
+      : 'Full AM uses an envelope detector, which has no local oscillator, so the phase and frequency error sliders are switched off here.';
+
+    $('cM').textContent = m.toFixed(2);
+    $('cMn').textContent = S.sch === 'am'
+      ? (m > 1 ? 'above 1 — overmodulated, the envelope detector fails' : (m === 1 ? 'at the limit for envelope detection' : 'm = A_m / A_c; the limit for envelope detection is 1'))
+      : 'here m scales the message; no carrier to overmodulate';
+    $('cM').style.color = (S.sch === 'am' && m > 1) ? 'var(--text-warning)' : '';
+
+    $('cP').textContent = P.tot.toFixed(4) + ' W';
+
+    var okP = P.tot > 1e-9;
+    var fcar = okP ? P.car / P.tot * 100 : 0;
+    var fsb = okP ? P.sb / P.tot * 100 : 0;
+    $('cC').textContent = fcar.toFixed(1) + ' %';
+    $('cS').textContent = fsb.toFixed(1) + ' %';
+    $('cCn').textContent = okP
+      ? (S.sch === 'am' ? P.car.toFixed(4) + ' W of pure carrier, wasted' : 'carrier fully suppressed')
+      : 'no signal at m = 0';
+    $('cSn').textContent = okP
+      ? (S.sch === 'am' ? 'η = m²〈m²(t)〉 / (1 + m²〈m²(t)〉)' : 'all of the power carries information')
+      : 'no signal at m = 0';
+    $('cS').style.color = okP && fsb >= 50 ? 'var(--text-good)' : '';
+
+    $('cB').textContent = (B.bw / 1000).toFixed(2) + ' kHz';
+    $('cBn').textContent = S.sch === 'ssb' ? 'W, one sideband only'
+      : S.sch === 'fdm' ? 'N(W + B_guard), guard = ' + (GUARD * 100).toFixed(0) + '% of W'
+      : S.sch === 'qam' ? '2W, but carrying two messages'
+      : '2W, both sidebands';
+
+    var dl = detLoss();
+    if (!isFinite(dl)) dl = 60;
+    $('cD').textContent = dl >= 59.99 ? '≥ 60.0 dB' : dl.toFixed(2) + ' dB';
+    var xt = 20 * L10(Math.max(Math.abs(Math.sin(S.phi * Math.PI / 180)), 1e-3));
+    $('cDn').textContent = S.sch === 'am'
+      ? (m > 1 ? 'envelope shape error from overmodulation' : 'envelope detector, non-coherent — no loss')
+      : S.sch === 'dsb' ? '−20 log₁₀|cos φ| at φ = ' + S.phi.toFixed(0) + '°'
+      : S.sch === 'qam' ? 'wanted × cos φ; crosstalk ' + (xt <= -59.99 ? '≤ −60' : '−' + Math.abs(xt).toFixed(1)) + ' dB'
+      : 'phase error rotates, it does not attenuate';
+    $('cD').style.color = dl >= 3 ? 'var(--text-warning)' : '';
+
+    var pc = AC * AC / 2;
+    var wk = [];
+    wk.push('Message mean square 〈m²(t)〉 = ' + mu.toFixed(4) + ' for the ' + (S.msg === 'tone' ? 'single tone' : 'two-tone') + ' message, peak normalised to 1.');
+    wk.push('Unmodulated carrier power P_c = A_c²/2 = 1²/2 = ' + pc.toFixed(4) + ' W.');
+    wk.push('m²〈m²(t)〉 = ' + (m * m).toFixed(4) + ' × ' + mu.toFixed(4) + ' = ' + (m * m * mu).toFixed(4) + '.');
+    if (S.sch === 'am') {
+      wk.push('Total power P_t = P_c(1 + m²〈m²(t)〉) = ' + pc.toFixed(4) + ' × ' + (1 + m * m * mu).toFixed(4) + ' = ' + P.tot.toFixed(4) + ' W.');
+      wk.push('Sideband power = P_t − P_c = ' + P.tot.toFixed(4) + ' − ' + pc.toFixed(4) + ' = ' + P.sb.toFixed(4) + ' W.');
+      if (S.msg === 'tone') {
+        wk.push('Sideband fraction η = m²/(2 + m²) = ' + (m * m).toFixed(4) + ' / ' + (2 + m * m).toFixed(4) + ' = ' + (okP ? (fsb / 100).toFixed(4) : '0.0000') + ', that is ' + fsb.toFixed(1) + ' per cent.');
+      } else {
+        wk.push('Sideband fraction η = ' + P.sb.toFixed(4) + ' / ' + P.tot.toFixed(4) + ' = ' + (okP ? (fsb / 100).toFixed(4) : '0.0000') + ', that is ' + fsb.toFixed(1) + ' per cent. Two tones spread the peak, so η is lower than the single-tone m²/(2 + m²).');
+      }
+    } else {
+      wk.push('No carrier line, so P_t is sidebands only: ' + P.tot.toFixed(4) + ' W, and the sideband fraction is ' + fsb.toFixed(1) + ' per cent.');
+      if (S.sch === 'ssb') wk.push('Removing one sideband halves the DSBSC power: ' + (2 * P.tot).toFixed(4) + ' W becomes ' + P.tot.toFixed(4) + ' W.');
+      if (S.sch === 'qam') wk.push('Two channels, each the size of one DSBSC signal, so the power is doubled while the bandwidth is not.');
+      if (S.sch === 'fdm') wk.push(S.nch + ' single-sideband channels, each ' + (P.tot / Math.max(S.nch, 1)).toFixed(4) + ' W.');
+    }
+    wk.push('Occupied bandwidth = ' + (S.sch === 'ssb' ? 'W' : S.sch === 'fdm' ? 'N(W + B_guard)' : '2W') + ' = ' + (B.bw / 1000).toFixed(2) + ' kHz, with message bandwidth W = ' + (W / 1000).toFixed(2) + ' kHz.');
+    $('wk').innerHTML = wk.map(function (x) { return '<li>' + x + '</li>'; }).join('');
+
+    var rcLo = 1 / S.fc, rcHi = 1 / W;
+    $('rcnote').innerHTML = 'The capacitor in an envelope detector has to be slow enough to ignore the carrier but fast enough to follow the message: 1/f_c ≪ RC ≪ 1/W. At f_c = '
+      + (S.fc / 1000).toFixed(1) + ' kHz and W = ' + (W / 1000).toFixed(2) + ' kHz that is '
+      + (rcLo * 1e6).toFixed(1) + ' µs ≪ RC ≪ ' + (rcHi * 1e6).toFixed(1)
+      + ' µs, so a value near the geometric mean, about ' + (Math.sqrt(rcLo * rcHi) * 1e6).toFixed(1)
+      + ' µs, is a sensible starting point. Too fast and the ripple at f_c comes through; too slow and the capacitor cannot follow the message down and the output clips.';
+
+    ['bam', 'bdsb', 'bssb', 'bqam', 'bfdm'].forEach(function (id, i) {
+      var k = ['am', 'dsb', 'ssb', 'qam', 'fdm'][i];
+      $(id).className = S.sch === k ? 'on' : '';
+    });
+    $('mt1').className = S.msg === 'tone' ? 'on' : '';
+    $('mt2').className = S.msg === 'two' ? 'on' : '';
+
+    notes();
+  }
+
+  function drawAll() { drawA(); drawB(); drawC(); drawD(); }
+  function refresh() { updateUI(); drawAll(); }
+
+  function readInputs() {
+    S.m = +$('mi').value;
+    S.fc = +$('fc').value * 1000;
+    S.phi = +$('ph').value;
+    S.df = +$('df').value;
+    S.nch = +$('nc').value;
+  }
+  ['mi', 'fc', 'ph', 'df', 'nc'].forEach(function (id) {
+    $(id).addEventListener('input', function () { readInputs(); refresh(); });
+  });
+  var setScheme = function (k) { return function () { S.sch = k; refresh(); }; };
+  $('bam').addEventListener('click', setScheme('am'));
+  $('bdsb').addEventListener('click', setScheme('dsb'));
+  $('bssb').addEventListener('click', setScheme('ssb'));
+  $('bqam').addEventListener('click', setScheme('qam'));
+  $('bfdm').addEventListener('click', setScheme('fdm'));
+  $('mt1').addEventListener('click', function () { S.msg = 'tone'; refresh(); });
+  $('mt2').addEventListener('click', function () { S.msg = 'two'; refresh(); });
+
+  function apply(st, txt) {
+    S.sch = st.sch; S.msg = st.msg;
+    $('mi').value = st.m; $('fc').value = st.fc / 1000;
+    $('ph').value = st.phi; $('df').value = st.df; $('nc').value = st.nch;
+    readInputs();
+    refresh();
+    $('tourtxt').textContent = txt;
+  }
+  var base = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4 };
+  function withState(o) {
+    var r = {}, k;
+    for (k in base) if (Object.prototype.hasOwnProperty.call(base, k)) r[k] = base[k];
+    for (k in o) if (Object.prototype.hasOwnProperty.call(o, k)) r[k] = o[k];
+    return r;
+  }
+  $('t1').addEventListener('click', function () {
+    apply(withState({}), 'Step 1 — full AM at m = 0.60. Look at the power bar: 84.7 per cent of the transmitter is coral, a bare tone that carries nothing. Only 15.3 per cent is message.');
+  });
+  $('t2').addEventListener('click', function () {
+    apply(withState({ m: 1 }), 'Step 2 — m pushed to 1.00, the deepest full AM is allowed. The sidebands have grown to 33.3 per cent, and that is the best conventional AM can ever do.');
+  });
+  $('t3').addEventListener('click', function () {
+    apply(withState({ m: 1.3 }), 'Step 3 — m = 1.30 is overmodulation. The envelope in section 2 now folds through zero, and in section 4 the recovered curve has left the dashed original behind.');
+  });
+  $('t4').addEventListener('click', function () {
+    apply(withState({ sch: 'dsb', m: 1, phi: 60 }), 'Step 4 — DSBSC with a 60 degree phase error. The carrier line has vanished from the spectrum and the power bar is entirely blue, but the recovered message has shrunk by cos 60° = 0.500, a 6.02 dB loss.');
+  });
+  $('t5').addEventListener('click', function () {
+    apply(withState({ sch: 'ssb', m: 1, phi: 60, df: 100 }), 'Step 5 — single sideband at the same 60 degree phase error. The amplitude is untouched, because for SSB a phase error rotates rather than attenuates. The 100 Hz frequency error is the defect that does hurt: every tone has moved down by 100 Hz.');
+  });
+  $('t0').addEventListener('click', function () {
+    apply(withState({}), 'Back to the starting state: full AM, m = 0.60, single tone at 1.00 kHz, carrier at 20.0 kHz.');
+  });
+
+  window.addEventListener('resize', drawAll);
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', drawAll);
+  else if (mq.addListener) mq.addListener(drawAll);
+
+  readInputs();
+  refresh();
+})();
+</script>
+</body>
+</html>

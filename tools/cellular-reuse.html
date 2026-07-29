@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency reuse, cluster size and SIR</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD; --pos: #1D9E75; --neg: #D85A30; --mark: #D4537E;
+  --g1: #378ADD; --g2: #1D9E75; --g3: #D85A30; --g4: #7F77DD; --g5: #BA7517; --g6: #D4537E;
+  --g7: #639922; --g8: #A32D2D; --g9: #5DCAA5; --g10: #F0997B; --g11: #85B7EB; --g12: #ED93B1;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --accent: #5AA6EE; --pos: #35B98D; --neg: #EE7A4E; --mark: #E87199;
+    --g1: #5AA6EE; --g2: #35B98D; --g3: #EE7A4E; --g4: #9A93E8; --g5: #D89230; --g6: #E87199;
+    --g7: #85B93D; --g8: #D45C5C; --g9: #7FDCBC; --g10: #F5B097; --g11: #A5CBF2; --g12: #F3AFC7;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1rem; }
+.hint { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.7rem; }
+.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
+.ctl input[type=range] { flex: 1; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
+.tour { border-top: 1px solid var(--border); padding-top: 0.8rem; margin-top: 0.4rem; }
+.narr { font-size: 13px; color: var(--text-secondary); margin: 0.5rem 0 0; min-height: 20px; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.legend-note { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--text-secondary); margin: 6px 0 0; }
+.legend-note i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+@media (prefers-reduced-motion: no-preference) { .card { transition: background-color 0.4s; } }
+.card.flash { background: var(--border); }
+canvas { width: 100%; display: block; }
+.t { border-bottom: 1px dotted var(--border-strong); cursor: help; position: relative; }
+.t::after { content: attr(data-def); position: absolute; left: 0; top: 145%; z-index: 5;
+  width: max-content; max-width: 230px; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.35; color: var(--text-secondary);
+  opacity: 0; pointer-events: none; }
+.t:hover::after, .t:focus::after { opacity: 1; }
+.rad { border-top: 1px solid currentColor; padding: 0 1px; }
+details { border-top: 1px solid var(--border); padding: 0.7rem 0; font-size: 13px; color: var(--text-secondary); }
+details summary { cursor: pointer; color: var(--text-primary); font-size: 14px; }
+details p, details dd { margin: 0.5rem 0; }
+.glossary dt { font-weight: 500; color: var(--text-primary); margin-top: 0.5rem; }
+.glossary dd { margin-left: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 0.5px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Frequency reuse, cluster size and SIR</h1>
+<p class="sub">A network has far fewer channels than users, so it spends the same frequencies again and again in different places. How far apart two cells must sit before they may share a channel is the whole design.</p>
+<p class="hint">New to path loss? Start with <a href="radio-propagation.html">radio propagation</a>.</p>
+
+<div class="row">
+  <span class="lbl">Cluster size N</span>
+  <button id="N1">1</button><button id="N3">3</button><button id="N4">4</button>
+  <button id="N7" class="on">7</button><button id="N9">9</button><button id="N12">12</button>
+</div>
+<div class="row">
+  <span class="lbl">Sectors per cell</span>
+  <button id="s1" class="on">Omni</button><button id="s3">120&deg; &times; 3</button><button id="s6">60&deg; &times; 6</button>
+</div>
+<div class="grid2">
+  <div class="ctl"><label for="pe">Path loss exponent n</label><input type="range" id="pe" min="2" max="5" step="0.1" value="4"><span class="v" id="pev">4.0</span></div>
+  <div class="ctl"><label for="ti">Co-channel tiers</label><input type="range" id="ti" min="1" max="3" step="1" value="2"><span class="v" id="tiv">2</span></div>
+  <div class="ctl"><label for="ch">Channels in system</label><input type="range" id="ch" min="100" max="1200" step="5" value="395"><span class="v" id="chv">395</span></div>
+</div>
+
+<div class="tour row">
+  <span class="lbl">Guided tour</span>
+  <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button><button id="t4">4</button>
+  <p class="narr" id="narr">Step through four states, or move the controls yourself.</p>
+</div>
+
+<p class="sec"><b>1 &middot; The map</b> <span>&mdash; same colour, same channels</span></p>
+<canvas id="map" style="height: 440px;"></canvas>
+<p class="legend-note">
+  <span><i style="background: var(--g1)"></i>co-channel cells &mdash; same frequencies</span>
+  <span><i style="background: var(--mark)"></i>measured reuse distance D</span>
+  <span><i style="background: var(--text-muted)"></i>other colours &mdash; other channel groups</span>
+</p>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">Cluster size N</div>
+    <div class="big" id="cN">&mdash;</div>
+    <div class="ft" id="cNn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Reuse ratio q = D/R</div>
+    <div class="big" id="cQ">&mdash;</div>
+    <div class="ft">&radic;<span class="rad">3N</span>, dimensionless</div>
+  </div>
+  <div class="card">
+    <div class="hd">Reuse distance D</div>
+    <div class="big" id="cD">&mdash;</div>
+    <div class="ft" id="cDn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Co-channel interferers</div>
+    <div class="big" id="cI">&mdash;</div>
+    <div class="ft" id="cIn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">SIR, simplified model</div>
+    <div class="big" id="cS">&mdash;</div>
+    <div class="ft" id="cSn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Channels per cell</div>
+    <div class="big" id="cC">&mdash;</div>
+    <div class="ft" id="cCn">&mdash;</div>
+  </div>
+</div>
+
+<p class="sec"><b>2 &middot; What the mobile hears</b> <span>&mdash; one wanted tower, six shouting from D away</span></p>
+<canvas id="geo" style="height: 380px;"></canvas>
+<p class="legend-note">
+  <span><i style="background: var(--pos)"></i>wanted signal, distance R</span>
+  <span><i style="background: var(--neg)"></i>interferer inside this sector</span>
+  <span><i style="background: var(--text-muted)"></i>interferer the antenna rejects</span>
+  <span>course model rounds these to D&minus;R, D, D+R</span>
+</p>
+
+<p class="sec"><b>3 &middot; The trade-off</b> <span>&mdash; bigger cluster, quieter air, fewer channels</span></p>
+<canvas id="tr" style="height: 290px;"></canvas>
+<p class="legend-note">
+  <span><i style="background: var(--g1)"></i>omni, 6 interferers</span>
+  <span><i style="background: var(--g2)"></i>120&deg; sectors, 2</span>
+  <span><i style="background: var(--g3)"></i>60&deg; sectors, 1</span>
+  <span><i style="background: var(--mark)"></i>where you are now</span>
+</p>
+
+<details>
+  <summary>Worked example &mdash; N = 7, n = 4, omnidirectional</summary>
+  <table id="wex"></table>
+  <p>The three rows differ because they place the six interferers differently: all at D, at the true distances from a mobile on the cell edge, or all at the closest distance D&nbsp;&minus;&nbsp;R. Quote which one you used, always.</p>
+</details>
+
+<details>
+  <summary>Glossary</summary>
+  <dl class="glossary">
+    <dt>Cell radius R</dt><dd>Centre of the cell to a corner of the hexagon, not to an edge. Neighbouring cell centres sit &radic;3&nbsp;R apart.</dd>
+    <dt>Cluster size N</dt><dd>How many cells share out the whole channel list before the pattern repeats. Only N = i&sup2; + ij + j&sup2; works: 1, 3, 4, 7, 9, 12, 13&hellip; never 2, 5, 6.</dd>
+    <dt>Co-channel cells</dt><dd>Cells using the same channels. They interfere with each other and nothing can be done about it except distance or antenna direction.</dd>
+    <dt>Reuse distance D</dt><dd>Centre-to-centre distance to the nearest co-channel cell, D = R&radic;<span class="rad">3N</span>.</dd>
+    <dt>Path loss exponent n</dt><dd>How fast power falls with distance: power &prop; d<sup>&minus;n</sup>. n = 2 in free space, n &asymp; 4 in a town.</dd>
+    <dt>SIR</dt><dd>Signal-to-interference ratio: wanted power divided by the sum of the co-channel powers. Noise is ignored; interference dominates in a dense network.</dd>
+    <dt>Tier</dt><dd>A ring of co-channel cells. Tier 1 holds the six nearest; tier 2 sits further out and is normally ignored.</dd>
+  </dl>
+</details>
+
+<p class="sub" style="margin-top: 1.5rem;">Small N gives every cell a fat slice of the spectrum, but the co-channel cells crowd in and SIR collapses. The escape is sectoring: three directional antennas per site cut the first-tier interferers from six to two, worth about 4.8 dB, which usually buys a step down in N. That gain is not free &mdash; each sector trunks its channels separately, so the traffic a cell carries drops unless N drops too, and every handover count rises. The model here is deterministic path loss with one exponent, ideal sector wedges and first-tier interference only; real planning adds shadowing, terrain and antenna front-to-back ratio on top.</p>
+<p class="hint" style="margin-top: 1rem;">Next: <a href="link-budget.html">link budget</a> &mdash; the same decibels, against noise instead of interference.</p>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const SQ3 = Math.sqrt(3);
+  const D2R = Math.PI / 180;
+  const f = (x, d) => (isFinite(x) ? x : 0).toFixed(d);
+
+  const NLIST = [1, 3, 4, 7, 9, 12];
+  const IJ = { 1: [1, 0], 3: [1, 1], 4: [2, 0], 7: [1, 2], 9: [3, 0], 12: [2, 2] };
+  const S = { N: 7, sec: 1, n: 4, tiers: 2, chan: 395 };
+
+  const mod = (x, m) => ((x % m) + m) % m;
+  const qOf = N => Math.sqrt(3 * N);
+  const norm = (a, b) => SQ3 * Math.sqrt(a * a + a * b + b * b);
+  const dB = x => 10 * L10(Math.max(x, 1e-12));
+
+  // channel-group label: coset of (a,b) in the co-channel lattice spanned by
+  // (i,j) and (-j,i+j). The pair (A,B) has that lattice as its kernel, so it
+  // takes exactly N values. Valid for every N, unlike a single linear form.
+  let LAB = null;
+  function labels(N) {
+    if (LAB && LAB.N === N) return LAB;
+    const i = IJ[N][0], j = IJ[N][1], keys = [];
+    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
+      const k = mod((i + j) * a + j * b, N) + ',' + mod(-j * a + i * b, N);
+      if (keys.indexOf(k) < 0) keys.push(k);
+    }
+    keys.sort();
+    const map = {};
+    keys.forEach((k, idx) => { map[k] = idx; });
+    LAB = { N: N, i: i, j: j, map: map, count: keys.length };
+    return LAB;
+  }
+  function gidx(a, b, N) {
+    const L = labels(N);
+    return L.map[mod((L.i + L.j) * a + L.j * b, N) + ',' + mod(-L.j * a + L.i * b, N)];
+  }
+  function sixCells(N) {
+    const i = IJ[N][0], j = IJ[N][1];
+    return [[i, j], [-j, i + j], [-i - j, i], [-i, -j], [j, -i - j], [i + j, -i]];
+  }
+  // smallest |lattice vector| in co-channel ring k, in units of D
+  function tierScale(k) {
+    let best = Infinity;
+    for (let p = -k; p <= k; p++) for (let l = -k; l <= k; l++) {
+      if (Math.max(Math.abs(p), Math.abs(l), Math.abs(p + l)) !== k) continue;
+      best = Math.min(best, Math.sqrt(p * p + p * l + l * l));
+    }
+    return isFinite(best) ? best : 1;
+  }
+
+  // sector geometry: interferer bearings sit 60 deg apart; a 360/sec wedge
+  // centred as below keeps 6, 2 or 1 of them, which is where i0 comes from.
+  const halfWedge = () => 180 / S.sec;
+  const wedgeCentre = th0 => th0 + (S.sec === 3 ? 30 : 0);
+  const wrap180 = d => { let x = mod(d + 180, 360) - 180; return x; };
+  function seen(th0) {
+    const c = wedgeCentre(th0), h = halfWedge(), out = [];
+    for (let k = 0; k < 6; k++) {
+      const th = th0 + 60 * k;
+      out.push(S.sec === 1 ? true : Math.abs(wrap180(th - c)) < h - 1e-6);
+    }
+    return out;
+  }
+  const i0 = () => seen(0).filter(Boolean).length;
+
+  const sirSimp = (N, n, M) => Math.pow(qOf(N), n) / Math.max(M, 1);
+  function sirPract(N, n) {
+    const q = qOf(N), d = 2 * Math.pow(Math.max(q - 1, 1e-6), -n) + 2 * Math.pow(q, -n) + 2 * Math.pow(q + 1, -n);
+    return d > 0 ? 1 / d : 0;
+  }
+  const sirCons = (N, n) => Math.pow(Math.max(qOf(N) - 1, 1e-6), n) / 6;
+
+  function fit(c) {
+    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [r.width, r.height];
+  }
+  function hexPath(g, x, y, R, pointy) {
+    g.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const ang = D2R * (60 * k + (pointy ? 30 : 0));
+      const px = x + R * Math.cos(ang), py = y - R * Math.sin(ang);
+      if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.closePath();
+  }
+  function mast(g, x, y, s, col) {
+    g.strokeStyle = col; g.lineWidth = 1.2;
+    g.beginPath();
+    g.moveTo(x - s * 0.5, y + s * 0.6); g.lineTo(x, y - s * 0.9);
+    g.lineTo(x + s * 0.5, y + s * 0.6);
+    g.moveTo(x - s * 0.3, y - s * 0.1); g.lineTo(x + s * 0.3, y - s * 0.1);
+    g.moveTo(x, y - s * 0.9); g.lineTo(x, y - s * 1.5);
+    g.stroke();
+  }
+  function chip(g, txt, x, y, col) {
+    g.font = fnt(11);
+    const wpx = g.measureText(txt).width;
+    g.fillStyle = cvv('--bg'); g.globalAlpha = 0.88;
+    g.fillRect(x - wpx / 2 - 3, y - 8, wpx + 6, 16);
+    g.globalAlpha = 1;
+    g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(txt, x, y);
+  }
+  function arrow(g, x0, y0, x1, y1, col) {
+    const ang = Math.atan2(y1 - y0, x1 - x0), A = 0.42;
+    g.strokeStyle = col; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    [[x0, y0, ang], [x1, y1, ang + Math.PI]].forEach(t => {
+      g.beginPath();
+      g.moveTo(t[0], t[1]); g.lineTo(t[0] + 9 * Math.cos(t[2] + A), t[1] + 9 * Math.sin(t[2] + A));
+      g.moveTo(t[0], t[1]); g.lineTo(t[0] + 9 * Math.cos(t[2] - A), t[1] + 9 * Math.sin(t[2] - A));
+      g.stroke();
+    });
+  }
+
+  function drawMap() {
+    const c = $('map'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    const pal = [];
+    for (let k = 1; k <= 12; k++) pal.push(cvv('--g' + k));
+    const N = S.N, q = qOf(N);
+    const extent = q * tierScale(S.tiers) + 1.3;
+    const R = Math.max(Math.min(w, h) / (2 * extent), 4);
+    const cx = w / 2, cy = h / 2;
+    const bMax = Math.ceil(h / (2 * 1.5 * R)) + 2;
+    const aMax = Math.ceil(w / (2 * SQ3 * R)) + bMax + 2;
+    const home = gidx(0, 0, N);
+
+    for (let b = -bMax; b <= bMax; b++) {
+      for (let a = -aMax; a <= aMax; a++) {
+        const x = cx + R * SQ3 * (a + b / 2), y = cy - R * 1.5 * b;
+        if (x < -R || x > w + R || y < -R || y > h + R) continue;
+        const gi = gidx(a, b, N), same = gi === home;
+        hexPath(g, x, y, R, true);
+        g.fillStyle = pal[gi % 12];
+        g.globalAlpha = same ? 0.55 : 0.15;
+        g.fill();
+        g.globalAlpha = 1;
+        g.strokeStyle = cvv('--border-strong'); g.lineWidth = same ? 1.2 : 0.5;
+        g.stroke();
+        if (same && R > 9) mast(g, x, y - R * 0.05, R * 0.34, ink);
+      }
+    }
+
+    // tier rings
+    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([4, 5]);
+    for (let k = 1; k <= S.tiers; k++) {
+      const rad = q * tierScale(k) * R;
+      g.beginPath(); g.arc(cx, cy, rad, 0, 2 * Math.PI); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      if (cy + rad + 14 < h) g.fillText('tier ' + k, cx, cy + rad + 3);
+      g.setLineDash([4, 5]);
+    }
+    g.setLineDash([]);
+
+    // home cell, sector lines, R measure
+    hexPath(g, cx, cy, R, true);
+    g.strokeStyle = ink; g.lineWidth = 1.8; g.stroke();
+    if (S.sec > 1) {
+      const th0 = Math.atan2(1.5 * IJ[N][1], SQ3 * (IJ[N][0] + IJ[N][1] / 2)) / D2R;
+      const c0 = wedgeCentre(th0), half = halfWedge();
+      g.strokeStyle = ink; g.lineWidth = 1;
+      for (let k = 0; k < S.sec; k++) {
+        const ang = (c0 + half + k * 2 * half) * D2R;
+        g.beginPath(); g.moveTo(cx, cy);
+        g.lineTo(cx + R * Math.cos(ang), cy - R * Math.sin(ang));
+        g.stroke();
+      }
+    }
+    const vx = cx + R * Math.cos(D2R * 30), vy = cy - R * Math.sin(D2R * 30);
+    g.strokeStyle = sub; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(vx, vy); g.stroke();
+    if (R > 14) chip(g, 'R', (cx + vx) / 2, (cy + vy) / 2 - 8, sub);
+
+    // measured reuse distance to the nearest co-channel cell
+    const cell = sixCells(N)[0];
+    const tx = cx + R * SQ3 * (cell[0] + cell[1] / 2), ty = cy - R * 1.5 * cell[1];
+    arrow(g, cx, cy, tx, ty, cvv('--mark'));
+    chip(g, 'D = ' + f(q, 2) + ' R', (cx + tx) / 2, (cy + ty) / 2, cvv('--mark'));
+
+    g.fillStyle = ink; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('N = ' + N + ': ' + N + ' channel groups, then the pattern repeats', 8, 8);
+    g.fillStyle = sub;
+    g.fillText('(i, j) = (' + IJ[N][0] + ', ' + IJ[N][1] + ')', 8, 24);
+    g.textAlign = 'right';
+    g.fillText('one hexagon = one base station', w - 8, 8);
+  }
+
+  function drawGeo() {
+    const c = $('geo'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    const q = qOf(S.N), n = S.n;
+    const R = Math.max(Math.min(w / 2 - 78, h / 2 - 26) / (q + 1.15), 6);
+    const cx = w / 2, cy = h / 2;
+    const vis = seen(0), half = halfWedge(), c0 = wedgeCentre(0);
+
+    if (S.sec > 1) {
+      g.fillStyle = cvv('--neg'); g.globalAlpha = 0.08;
+      g.beginPath(); g.moveTo(cx, cy);
+      g.arc(cx, cy, q * R + R, -(c0 + half) * D2R, -(c0 - half) * D2R);
+      g.closePath(); g.fill();
+      g.globalAlpha = 1;
+      g.strokeStyle = cvv('--neg'); g.lineWidth = 1; g.setLineDash([3, 4]);
+      [c0 - half, c0 + half].forEach(a => {
+        g.beginPath(); g.moveTo(cx, cy);
+        g.lineTo(cx + (q * R + R) * Math.cos(a * D2R), cy - (q * R + R) * Math.sin(a * D2R));
+        g.stroke();
+      });
+      g.setLineDash([]);
+    }
+
+    const mx = cx + R, my = cy;
+    for (let k = 0; k < 6; k++) {
+      const th = 60 * k * D2R;
+      const ix = cx + q * R * Math.cos(th), iy = cy - q * R * Math.sin(th);
+      hexPath(g, ix, iy, R, false);
+      g.fillStyle = cvv('--g1'); g.globalAlpha = vis[k] ? 0.35 : 0.12; g.fill(); g.globalAlpha = 1;
+      g.strokeStyle = cvv('--border-strong'); g.lineWidth = 0.6; g.stroke();
+      mast(g, ix, iy, R * 0.3, vis[k] ? cvv('--neg') : mut);
+      const d = Math.hypot(ix - mx, iy - my) / R;
+      g.strokeStyle = vis[k] ? cvv('--neg') : mut;
+      g.lineWidth = vis[k] ? 1.6 : 0.9;
+      g.globalAlpha = vis[k] ? 0.95 : 0.45;
+      if (!vis[k]) g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(mx, my); g.lineTo(ix, iy); g.stroke();
+      g.setLineDash([]); g.globalAlpha = 1;
+      const lx = mx + (ix - mx) * 0.56, ly = my + (iy - my) * 0.56;
+      chip(g, f(d, 2) + ' R', Math.min(Math.max(lx, 30), w - 30), ly, vis[k] ? cvv('--neg') : mut);
+    }
+
+    hexPath(g, cx, cy, R, false);
+    g.fillStyle = cvv('--pos'); g.globalAlpha = 0.16; g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = ink; g.lineWidth = 1.6; g.stroke();
+    mast(g, cx, cy, R * 0.36, ink);
+    g.strokeStyle = cvv('--pos'); g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(mx, my); g.stroke();
+    g.fillStyle = cvv('--pos');
+    g.beginPath(); g.arc(mx, my, 4.5, 0, 2 * Math.PI); g.fill();
+    chip(g, '1.00 R', (cx + mx) / 2, cy - 11, cvv('--pos'));
+    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('mobile at the cell edge', Math.min(mx + 8, w - 130), my + 8);
+
+    let inv = 0, cnt = 0;
+    for (let k = 0; k < 6; k++) {
+      if (!vis[k]) continue;
+      const th = 60 * k * D2R;
+      const d = Math.hypot(q * Math.cos(th) - 1, q * Math.sin(th));
+      inv += Math.pow(Math.max(d, 1e-6), -n); cnt++;
+    }
+    const ex = inv > 0 ? dB(1 / inv) : 0;
+    g.fillStyle = ink; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText(cnt === 1 ? 'SIR from this one distance: ' + f(ex, 1) + ' dB'
+      : 'SIR from these ' + cnt + ' distances: ' + f(ex, 1) + ' dB', 8, 8);
+    g.fillStyle = sub;
+    g.fillText('n = ' + f(n, 1) + ', wanted tower at 1.00 R', 8, 24);
+  }
+
+  function drawTrade() {
+    const c = $('tr'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const NS = [1, 3, 4, 7, 9, 12, 13, 16, 19, 21];
+    const cfg = [[6, '--g1', 'omni'], [2, '--g2', '120' + String.fromCharCode(176)], [1, '--g3', '60' + String.fromCharCode(176)]];
+    const l = 50, r = 52, t = 16, b = 40;
+    const X = i => l + i / (NS.length - 1) * (w - l - r);
+    let lo = 18, hi = 18;
+    NS.forEach(N => cfg.forEach(cf => {
+      const v = dB(sirSimp(N, S.n, cf[0]));
+      lo = Math.min(lo, v); hi = Math.max(hi, v);
+    }));
+    lo = Math.floor((lo - 3) / 5) * 5; hi = Math.ceil((hi + 3) / 5) * 5;
+    if (hi - lo < 10) hi = lo + 10;
+    const step = (hi - lo) > 55 ? 10 : 5;
+    const Y = v => t + (hi - Math.min(Math.max(v, lo), hi)) / (hi - lo) * (h - t - b);
+
+    g.font = fnt(11);
+    for (let v = lo; v <= hi + 0.001; v += step) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(f(v, 0), l - 6, Y(v));
+    }
+    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('SIR (dB)', 4, 2);
+    NS.forEach((N, i) => {
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(String(N), X(i), h - b + 7);
+    });
+    g.fillText('cluster size N (cells per cluster)', l + (w - l - r) / 2, h - 16);
+
+    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(l, Y(18)); g.lineTo(w - r, Y(18)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = cvv('--text-warning'); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('18 dB design target', l + 4, Y(18) - 3);
+
+    cfg.forEach(cf => {
+      const active = i0() === cf[0], col = cvv(cf[1]);
+      g.strokeStyle = col; g.lineWidth = active ? 2.4 : 1.2;
+      g.globalAlpha = active ? 1 : 0.42;
+      g.beginPath();
+      NS.forEach((N, i) => {
+        const y = Y(dB(sirSimp(N, S.n, cf[0])));
+        if (i === 0) g.moveTo(X(i), y); else g.lineTo(X(i), y);
+      });
+      g.stroke();
+      g.globalAlpha = 1;
+      g.fillStyle = col; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(cf[2], w - r + 4, Y(dB(sirSimp(NS[NS.length - 1], S.n, cf[0]))));
+    });
+
+    const idx = NS.indexOf(S.N);
+    if (idx >= 0) {
+      const v = dB(sirSimp(S.N, S.n, i0()));
+      g.fillStyle = cvv('--mark');
+      g.beginPath(); g.arc(X(idx), Y(v), 5, 0, 2 * Math.PI); g.fill();
+      chip(g, f(v, 1) + ' dB', Math.min(X(idx) + 34, w - r - 24), Y(v) - 12, cvv('--mark'));
+    }
+  }
+
+  let pending = false;
+  function draw() {
+    pending = false;
+    drawMap(); drawGeo(); drawTrade();
+  }
+  function schedule() { if (!pending) { pending = true; requestAnimationFrame(draw); } }
+
+  function updateUI() {
+    $('pev').textContent = f(S.n, 1);
+    $('tiv').textContent = String(S.tiers);
+    $('chv').textContent = String(S.chan);
+
+    const N = S.N, q = qOf(N), M = i0(), sd = dB(sirSimp(N, S.n, M));
+    const perCell = Math.floor(S.chan / N), perSec = Math.floor(perCell / S.sec);
+    $('cN').textContent = String(N);
+    $('cNn').textContent = 'N = i' + String.fromCharCode(178) + ' + ij + j' + String.fromCharCode(178)
+      + ' with (i, j) = (' + IJ[N][0] + ', ' + IJ[N][1] + ')';
+    $('cQ').textContent = f(q, 2);
+    $('cD').textContent = f(q, 2) + ' R';
+    $('cDn').textContent = f(Math.sqrt(N), 2) + ' cell-to-cell hops away';
+    $('cI').textContent = String(M);
+    $('cIn').textContent = S.sec === 1 ? 'first tier, all six visible'
+      : 'first tier, ' + S.sec + ' sectors reject the rest';
+    $('cS').textContent = f(sd, 1) + ' dB';
+    $('cS').style.color = sd >= 18 ? 'var(--text-good)' : 'var(--text-warning)';
+    $('cSn').innerHTML = 'q<sup>n</sup> / ' + M + ' &middot; ' + (sd >= 18 ? 'meets' : 'misses') + ' the 18 dB target';
+    $('cC').textContent = String(perCell);
+    $('cCn').textContent = S.sec === 1 ? 'of ' + S.chan + ' channels, split N ways'
+      : perSec + ' per sector, of ' + S.chan + ' total';
+
+    const wq = qOf(7), rows = [
+      ['q = ' + String.fromCharCode(8730) + '(3' + String.fromCharCode(215) + '7)', f(wq, 4), ''],
+      ['Simplified, six at D', f(dB(sirSimp(7, 4, 6)), 2), 'dB'],
+      ['Practical, D&minus;R / D / D+R', f(dB(sirPract(7, 4)), 2), 'dB'],
+      ['Conservative, six at D&minus;R', f(dB(sirCons(7, 4)), 2), 'dB'],
+      ['Channels per cell, 395 total', String(Math.floor(395 / 7)), 'ch']
+    ];
+    $('wex').innerHTML = rows.map(rw => '<tr><td>' + rw[0] + '</td><td>' + rw[1]
+      + '</td><td style="color:var(--text-muted);width:34px">' + rw[2] + '</td></tr>').join('');
+    schedule();
+  }
+
+  function setN(N) {
+    S.N = N;
+    NLIST.forEach(o => $('N' + o).classList.toggle('on', o === N));
+  }
+  function setSec(k) {
+    S.sec = k;
+    [1, 3, 6].forEach(o => $('s' + o).classList.toggle('on', o === k));
+  }
+  NLIST.forEach(N => $('N' + N).addEventListener('click', () => { setN(N); updateUI(); }));
+  [1, 3, 6].forEach(k => $('s' + k).addEventListener('click', () => { setSec(k); updateUI(); }));
+  $('pe').addEventListener('input', () => { S.n = +$('pe').value; updateUI(); });
+  $('ti').addEventListener('input', () => { S.tiers = +$('ti').value; updateUI(); });
+  $('ch').addEventListener('input', () => { S.chan = +$('ch').value; updateUI(); });
+
+  const TOUR = [
+    { N: 1, sec: 1, n: 4, ti: 2, ch: 395, say: 'N = 1: every cell reuses everything, so co-channel cells touch.' },
+    { N: 7, sec: 1, n: 4, ti: 2, ch: 395, say: 'N = 7 pushes the same channel 4.58 cell radii away.' },
+    { N: 7, sec: 1, n: 2, ti: 2, ch: 395, say: 'Free space, n = 2: interference fades as slowly as the wanted signal.' },
+    { N: 4, sec: 3, n: 4, ti: 2, ch: 395, say: 'Three sectors see two interferers, so N = 4 now clears 18 dB.' }
+  ];
+  TOUR.forEach((st, k) => $('t' + (k + 1)).addEventListener('click', () => {
+    setN(st.N); setSec(st.sec);
+    S.n = st.n; S.tiers = st.ti; S.chan = st.ch;
+    $('pe').value = String(st.n); $('ti').value = String(st.ti); $('ch').value = String(st.ch);
+    $('narr').textContent = st.say;
+    [1, 2, 3, 4].forEach(o => $('t' + o).classList.toggle('on', o === k + 1));
+    updateUI();
+    const cards = document.querySelectorAll('.card');
+    for (let idx = 0; idx < cards.length; idx++) cards[idx].classList.add('flash');
+    setTimeout(() => {
+      for (let idx = 0; idx < cards.length; idx++) cards[idx].classList.remove('flash');
+    }, 260);
+  }));
+
+  window.addEventListener('resize', schedule);
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', schedule);
+  }
+
+  // self-check: geometry and SIR against the verified course tables
+  window.__selfTest = function () {
+    const out = { grid: [], sir: [] };
+    NLIST.forEach(N => {
+      const hit = {};
+      let cnt = 0, bad = 0;
+      for (let a = -20; a <= 20; a++) for (let b = -20; b <= 20; b++) {
+        const gi = gidx(a, b, N);
+        if (gi === undefined) { bad++; continue; }
+        if (!hit[gi]) { hit[gi] = 1; cnt++; }
+      }
+      const six = sixCells(N);
+      const home = gidx(0, 0, N);
+      out.grid.push({
+        N: N,
+        distinct: cnt,
+        expect: N,
+        unlabelled: bad,
+        cochannelSame: six.every(cl => gidx(cl[0], cl[1], N) === home),
+        quadForm: six.every(cl => cl[0] * cl[0] + cl[0] * cl[1] + cl[1] * cl[1] === N),
+        dist: +norm(six[0][0], six[0][1]).toFixed(6),
+        sqrt3N: +qOf(N).toFixed(6)
+      });
+    });
+    [[7, 4, 6, 18.66], [7, 3, 6, 12.05], [1, 3, 6, -0.62], [7, 3.5, 2, 20.13],
+     [12, 4, 1, 31.13], [4, 4, 2, 18.57], [9, 3, 6, 13.69]].forEach(t => {
+      out.sir.push({ N: t[0], n: t[1], M: t[2], got: +dB(sirSimp(t[0], t[1], t[2])).toFixed(2), want: t[3] });
+    });
+    out.pract = { N7n3: +dB(sirPract(7, 3)).toFixed(2), want: 11.20 };
+    out.cons = { N7n3: +dB(sirCons(7, 3)).toFixed(2), want: 8.84 };
+    out.i0 = { omni: (S.sec = 1, i0()), s3: (S.sec = 3, i0()), s6: (S.sec = 6, i0()) };
+    S.sec = 1;
+    setSec(1); updateUI();
+    return out;
+  };
+
+  setN(S.N); setSec(S.sec); updateUI();
+})();
+</script>
+</body>
+</html>

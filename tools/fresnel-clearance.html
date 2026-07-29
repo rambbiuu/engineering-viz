@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresnel zones, earth bulge and path clearance</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --text-warning: #854F0B; --text-good: #3B6D11; --text-bad: #9E2A1B;
+  --border: #e2e0d8; --border-strong: #b9b7ae;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #378ADD; --accent-2: #D85A30; --accent-3: #1D9E75; --accent-4: #D4537E;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --text-warning: #FAC775; --text-good: #C0DD97; --text-bad: #FF9E8F;
+    --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --accent: #5FA8E8; --accent-2: #E8794B; --accent-3: #3FBF95; --accent-4: #E5799F;
+  }
+}
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+.tip { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--accent); color: var(--accent); }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 122px; }
+.ctl input[type=range] { flex: 1; }
+.ctl .v { font-size: 13px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.lbl { font-size: 13px; color: var(--text-secondary); min-width: 122px; }
+.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.15rem; }
+.legend-note li { margin: 3px 0; }
+.tour { background: var(--surface-1); border-radius: var(--radius); padding: 0.8rem 1rem; margin-bottom: 1.5rem; }
+.tour .row { margin-bottom: 0; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 10px 0 0; min-height: 2.6em; }
+details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem 1rem; margin-top: 1.5rem; }
+summary { cursor: pointer; font-size: 14px; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.7rem 0 0; }
+ol.work li { margin: 5px 0; }
+dl.glossary { font-size: 13px; margin: 0.7rem 0 0; }
+.glossary dt { font-weight: 500; margin-top: 9px; }
+.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Fresnel zones, earth bulge and path clearance</h1>
+<p class="sub">A radio beam is not a pencil line. The energy that reaches the far antenna travels through a fat cigar-shaped region wrapped around the straight path &mdash; the first Fresnel zone &mdash; and anything poking into that region steals signal even when you can still see the far antenna clearly. On top of that the earth itself bulges up in the middle of a long hop, by an amount that changes with the weather. This tool draws the hop to scale, computes how much of the zone is blocked, and turns that into decibels.</p>
+<p class="tip">New to decibels and received power? Start with <a href="link-budget.html">link budget</a>, then come back. Everything here is a correction that gets subtracted inside that budget.</p>
+<p class="sub"><b style="font-weight:500">An everyday analogy.</b> Shine a torch at a wall and slide a book up from below. The shadow does not appear the instant the book crosses the straight line from bulb to wall &mdash; the light dims gradually before that, and the edge of the shadow is soft, with faint bright and dark bands beside it. Radio does the same thing, on a scale of metres to hundreds of metres, and those bands are what this page is about.</p>
+
+<div class="grid2">
+  <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0.05" max="40" step="0.05" value="2"><span class="v" id="fqv">2.00 GHz</span></div>
+  <div class="ctl"><label for="dd">Path length</label><input type="range" id="dd" min="1" max="100" step="0.5" value="30"><span class="v" id="ddv">30.0 km</span></div>
+  <div class="ctl"><label for="h1">Tx mast height</label><input type="range" id="h1" min="1" max="200" step="1" value="40"><span class="v" id="h1v">40 m</span></div>
+  <div class="ctl"><label for="h2">Rx mast height</label><input type="range" id="h2" min="1" max="200" step="1" value="25"><span class="v" id="h2v">25 m</span></div>
+  <div class="ctl"><label for="ox">Obstacle position</label><input type="range" id="ox" min="0" max="100" step="1" value="50"><span class="v" id="oxv">50 %</span></div>
+  <div class="ctl"><label for="oh">Obstacle height</label><input type="range" id="oh" min="0" max="300" step="1" value="60"><span class="v" id="ohv">60 m</span></div>
+</div>
+<div class="row">
+  <span class="lbl">Atmosphere, k factor</span>
+  <button id="k0">k = 1/2 worst</button>
+  <button id="k1">k = 2/3 sub-refractive</button>
+  <button id="k2">k = 1 true earth</button>
+  <button id="k3">k = 4/3 median</button>
+</div>
+<div class="row">
+  <span class="lbl">Surface below path</span>
+  <button id="s0">Land, rough</button>
+  <button id="s1">Sea, smooth</button>
+</div>
+
+<div class="tour">
+  <div class="row">
+    <span class="lbl">Guided tour</span>
+    <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button>
+    <button id="t4">4</button><button id="t5">5</button><button id="t6">6</button>
+  </div>
+  <p class="tour-note" id="tnote">Press 1 to start. Each step moves the sliders for you and says what changed.</p>
+</div>
+
+<p class="sec"><b>1 &middot; The path, drawn to scale</b> <span>&mdash; two masts, the bulging earth between them, and the Fresnel zone wrapped around the sight line</span></p>
+<canvas id="pf" style="height: 370px;"></canvas>
+<ul class="legend-note">
+  <li>The <b style="font-weight:500;color:var(--accent)">blue cigar</b> is the first Fresnel zone. Its half-width at any point is F&#8321;, and it pinches to nothing at each mast. Keep it clear and the link behaves as if nothing were there.</li>
+  <li>The <b style="font-weight:500;color:var(--text-muted)">grey curve</b> is the earth. Height is measured from the straight chord joining the two mast bases, so the ends sit at zero and the middle rises by the bulge.</li>
+  <li>The <b style="font-weight:500">solid dark line</b> is the line of sight from one mast top to the other. The <b style="font-weight:500;color:var(--text-warning)">dashed line</b> below it is the 0.6 F&#8321; working limit &mdash; the obstacle must stay below that, not merely below the sight line.</li>
+  <li>The vertical arrow at the obstacle is the clearance: how far the sight line passes above the top of the obstacle, in metres and in units of F&#8321;.</li>
+  <li>The horizontal scale is kilometres and the vertical scale is metres, so the picture is stretched vertically. That is how every real path profile is drawn.</li>
+</ul>
+
+<div class="cards">
+  <div class="card">
+    <div class="hd">F&#8321; at the obstacle</div>
+    <div class="big" id="cF">&mdash;</div>
+    <div class="ft">17.3 &radic;(d&#8321;d&#8322; / f&middot;d) m, f in GHz, d in km</div>
+  </div>
+  <div class="card">
+    <div class="hd">Clearance</div>
+    <div class="big" id="cC">&mdash;</div>
+    <div class="ft" id="cCn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Earth bulge at obstacle</div>
+    <div class="big" id="cB">&mdash;</div>
+    <div class="ft" id="cBn">d&#8321;d&#8322; / (12.75 k) m</div>
+  </div>
+  <div class="card">
+    <div class="hd">Diffraction loss</div>
+    <div class="big" id="cL">&mdash;</div>
+    <div class="ft" id="cLn">&mdash;</div>
+  </div>
+  <div class="card">
+    <div class="hd">Clearance criterion</div>
+    <div class="big" id="cV">&mdash;</div>
+    <div class="ft" id="cVn">0.6 F&#8321; at k = 2/3</div>
+  </div>
+</div>
+
+<p class="sec"><b>2 &middot; What the blockage costs</b> <span>&mdash; knife-edge diffraction loss J(&nu;) from the exact Fresnel integrals</span></p>
+<canvas id="jc" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li>The <b style="font-weight:500;color:var(--accent)">blue curve</b> is the loss caused by a single sharp-topped obstacle, computed from the Fresnel cosine and sine integrals. Loss increases downwards, so lower means worse.</li>
+  <li>Left of zero the obstacle is above the sight line. Right of zero it is below, and the tool still charges you loss until the clearance reaches about 0.55 F&#8321;.</li>
+  <li>Beyond that the curve <b style="font-weight:500">rises above the free-space line and rings</b>: the diffracted field alternately adds to and subtracts from the direct field, up to about 1.4 dB either way. That ripple is real, not noise in the plot.</li>
+  <li>The <b style="font-weight:500;color:var(--accent-2)">dashed orange curve</b> is the closed-form approximation printed in ITU-R P.526. It tracks the exact answer beautifully to the right of its stated validity limit &nu; = &minus;0.78, and diverges without warning past it. That is why the limit is stated.</li>
+  <li>The <b style="font-weight:500;color:var(--accent-4)">pink dot</b> is your current path.</li>
+</ul>
+
+<p class="sec"><b>3 &middot; Why more clearance is not always better</b> <span>&mdash; the ground-reflected ray, and the comb of nulls it makes over water</span></p>
+<canvas id="rc" style="height: 300px;"></canvas>
+<ul class="legend-note">
+  <li>This panel assumes the direct path is open and asks a different question: a second ray bounces off the surface and arrives late. Its extra path length, measured in half-wavelengths, is exactly the Fresnel zone number n = (clearance / F&#8321;)&sup2; at the bounce point.</li>
+  <li>Odd n means the two rays arrive in phase and the signal is up to 6 dB <b style="font-weight:500">stronger</b> than free space. Even n means they arrive out of phase and cancel.</li>
+  <li>Over <b style="font-weight:500;color:var(--accent)">smooth sea</b> almost all the energy comes back, so the nulls are deep &mdash; tens of decibels. Over <b style="font-weight:500;color:var(--accent-2)">rough land</b> most of it scatters away and the ripple is a couple of decibels.</li>
+  <li>Raising a mast slides you along this axis. On a sea path that can walk you straight into a null, which is why over-water hops are designed to sit on a peak, not merely high.</li>
+</ul>
+
+<details>
+  <summary>The arithmetic, worked through on a textbook example</summary>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0.7rem 0 0;">Press guided-tour step 4 to put the tool into this state and read the numbers off the cards.</p>
+  <ol class="work">
+    <li>A 1 km hop at 150 MHz, that is f = 0.15 GHz. Both masts are 27 m. A ridge 21 m high sits at mid-path, so d&#8321; = d&#8322; = 0.5 km.</li>
+    <li>First Fresnel radius: F&#8321; = 17.3 &radic;(0.5 &times; 0.5 / (0.15 &times; 1)) = 17.3 &times; 1.291 = <b style="font-weight:500">22.33 m</b>.</li>
+    <li>Earth bulge at k = 4/3: 0.5 &times; 0.5 / (12.75 &times; 1.333) = 0.01 m. Negligible on a 1 km hop, which is the point of the k control &mdash; it does nothing here and dominates at 100 km.</li>
+    <li>The sight line runs level at 27 m, so the clearance is 27 &minus; 21 &minus; 0.01 = <b style="font-weight:500">5.99 m</b>, which is 5.99 / 22.33 = 0.27 F&#8321;.</li>
+    <li>Diffraction parameter: &nu; = &minus;&radic;2 &times; 0.27 = &minus;0.379.</li>
+    <li>Exact Fresnel-integral loss J(&minus;0.379) = <b style="font-weight:500">2.80 dB</b>. The P.526 closed form gives 2.88 dB. The course notes read 2.7 dB off a printed graph. All three agree to about a tenth of a decibel, and the spread between them is the whole argument for computing rather than eyeballing.</li>
+    <li>The criterion check: 0.27 F&#8321; is well under 0.6 F&#8321;, so this path fails the normal microwave clearance rule even though you can see straight over the ridge.</li>
+  </ol>
+</details>
+
+<p class="sub" style="margin-top: 1.75rem;">Three habits come out of these three panels. First, clearance is counted in Fresnel radii, never in metres: the same ridge that is harmless on a short 6 GHz hop is fatal on a long 150 MHz one, because F&#8321; grows with path length and shrinks with frequency. Second, the atmosphere is part of the geometry &mdash; the k factor stretches or flattens the effective earth, and a path that clears comfortably on a median day at k = 4/3 can be blocked by its own planet on a sub-refractive night at k = 1/2, which is why a clearance figure is meaningless unless a worst-case k is quoted beside it. Third, clearance has to be constrained from both sides over a reflecting surface, because the reflected ray does not care that you have plenty of room. A planner picks mast heights that satisfy 0.6 F&#8321; at k = 2/3 and, on a sea or lake path, land on an odd Fresnel zone at the bounce point rather than an even one.</p>
+<p class="sub">Where this model is simplified: the obstacle is treated as a single ideal knife edge, so a broad rounded hill or two ridges in a row will lose more than the figure shown; ITU-R P.526 gives rounded-obstacle and multiple-edge corrections for those. The reflection panel assumes one specular bounce off a plane surface, with the reflection magnitude fixed at 0.95 for sea and 0.30 for land rather than computed from grazing angle, polarisation and sea state. Atmospheric absorption, rain and antenna patterns are not included here at all.</p>
+<p class="tip">Next: put the diffraction loss you found here into <a href="link-budget.html">link budget</a> as a miscellaneous loss and see whether the hop still closes.</p>
+
+<details>
+  <summary>Glossary</summary>
+  <dl class="glossary">
+    <dt>Fresnel zone</dt><dd>The region around the straight path within which a reflected or scattered ray arrives less than half a wavelength late. The first zone is the innermost one and carries most of the energy.</dd>
+    <dt>F&#8321;</dt><dd>The radius of the first Fresnel zone at a given point along the path, in metres. Widest at mid-path, zero at each antenna.</dd>
+    <dt>Clearance</dt><dd>How far the straight sight line passes above the top of the obstacle. Negative clearance means the obstacle is above the sight line and you cannot see the far antenna.</dd>
+    <dt>Diffraction</dt><dd>The bending of a wave around an edge. It is why a blocked radio path still delivers some signal instead of none.</dd>
+    <dt>&nu; (nu)</dt><dd>The dimensionless diffraction parameter. &nu; = &minus;&radic;2 &times; clearance / F&#8321;. Positive &nu; means blocked, negative means clear.</dd>
+    <dt>J(&nu;)</dt><dd>The knife-edge diffraction loss in decibels as a function of &nu;. J(0) = 6.02 dB, the loss when the obstacle just grazes the sight line.</dd>
+    <dt>dB, decibel</dt><dd>A ratio on a logarithmic scale. 3 dB is half the power, 10 dB is a tenth, 20 dB is a hundredth.</dd>
+    <dt>Earth bulge</dt><dd>The height by which the curved earth rises above the straight chord joining two points on it. About 147 m in the middle of a 100 km path at k = 4/3.</dd>
+    <dt>k factor</dt><dd>The factor by which the earth's radius appears multiplied because the atmosphere bends radio waves downward. The median value is 4/3; it falls toward 1/2 in sub-refractive conditions, which doubles the bulge.</dd>
+    <dt>Grazing</dt><dd>The obstacle top sitting exactly on the sight line, clearance zero.</dd>
+    <dt>Specular reflection</dt><dd>A mirror-like bounce off a smooth surface, at an equal angle. Sea and lakes do this to radio; rough ground scatters instead.</dd>
+    <dt>Reflection magnitude</dt><dd>The fraction of the field amplitude that survives the bounce. Near 1 for smooth water at a shallow angle, small for rough land.</dd>
+  </dl>
+</details>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  var clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* ---- Fresnel cosine and sine integrals, tabulated once by composite Simpson ---- */
+  var DV = 0.005, NG = 2001, VMAX = (NG - 1) * DV;   /* nu = 0 .. 10 */
+  var Ct = new Float64Array(NG), St = new Float64Array(NG);
+  (function () {
+    var fc = function (t) { return Math.cos(Math.PI * t * t / 2); };
+    var fs = function (t) { return Math.sin(Math.PI * t * t / 2); };
+    var c = 0, s = 0;
+    for (var i = 1; i < NG; i++) {
+      var a = (i - 1) * DV, b = i * DV, m = (a + b) / 2, hh = (b - a) / 6;
+      c += hh * (fc(a) + 4 * fc(m) + fc(b));
+      s += hh * (fs(a) + 4 * fs(m) + fs(b));
+      Ct[i] = c; St[i] = s;
+    }
+  })();
+
+  /* ITU-R P.526 eq (31): closed form, stated valid only for nu > -0.78 */
+  var J31 = function (v) {
+    var a = Math.sqrt((v - 0.1) * (v - 0.1) + 1) + v - 0.1;
+    return 6.9 + 20 * L10(Math.max(a, 1e-12));
+  };
+
+  /* ITU-R P.526 eq (30): exact knife-edge loss from the Fresnel integrals */
+  var Jnu = function (v) {
+    if (!isFinite(v)) return v > 0 ? 200 : 0;
+    if (v > VMAX) return J31(v);
+    if (v < -VMAX) return 0;
+    var t = Math.abs(v) / DV, i = Math.min(Math.floor(t), NG - 2), fr = t - i;
+    var c = Ct[i] + (Ct[i + 1] - Ct[i]) * fr, s = St[i] + (St[i + 1] - St[i]) * fr;
+    if (v < 0) { c = -c; s = -s; }
+    var re = 1 - c - s, im = c - s;
+    return -20 * L10(Math.max(Math.sqrt(re * re + im * im) / 2, 1e-12));
+  };
+
+  /* where the exact curve crosses free space, found by bisection rather than pinned */
+  var NU0 = (function () {
+    var lo = -1.30, hi = -0.30;
+    for (var i = 0; i < 60; i++) { var m = (lo + hi) / 2; if (Jnu(m) < 0) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  })();
+  var CF0 = -NU0 / Math.SQRT2;   /* the same crossing expressed in units of F1 */
+
+  /* ---------------------------- state and geometry ---------------------------- */
+  var KS = [['k0', 0.5, '1/2'], ['k1', 2 / 3, '2/3'], ['k2', 1, '1'], ['k3', 4 / 3, '4/3']];
+  var S = { f: 2, d: 30, h1: 40, h2: 25, ox: 50, oh: 60, k: 4 / 3, kl: '4/3', sea: false };
+  var R_SEA = 0.95, R_LAND = 0.30;
+
+  var d1 = function () { return S.d * S.ox / 100; };
+  var d2 = function () { return S.d - d1(); };
+  var F1 = function (a, b) { return 17.3 * Math.sqrt(Math.max(a * b, 0) / Math.max(S.f * S.d, 1e-9)); };
+  var bulgeK = function (a, b, k) { return Math.max(a * b, 0) / (12.75 * k); };
+  var ground = function (x) { return bulgeK(x, S.d - x, S.k); };
+  var los = function (x) { return S.h1 + (S.h2 - S.h1) * (x / Math.max(S.d, 1e-9)); };
+  var F1o = function () { return F1(d1(), d2()); };
+  var obsTop = function () { return S.oh + ground(d1()); };
+  var clr = function () { return los(d1()) - obsTop(); };
+  var degenerate = function () { return F1o() < 1e-3; };
+  var cfrac = function () { var f = F1o(); return f < 1e-9 ? (clr() >= 0 ? 99 : -99) : clr() / f; };
+  var nu = function () { var f = F1o(); return f < 1e-9 ? (clr() >= 0 ? -10 : 60) : -Math.SQRT2 * clr() / f; };
+
+  /* specular reflection point, flat-earth mirror rule applied to the flattened profile */
+  var xrefl = function () { return S.d * S.h1 / Math.max(S.h1 + S.h2, 1e-9); };
+  var cfRefl = function () {
+    var xr = xrefl(), f = F1(xr, S.d - xr);
+    if (f < 1e-9) return 0;
+    return (los(xr) - ground(xr)) / f;
+  };
+  /* two-ray level relative to free space: |1 - R exp(j pi n)| in dB, n = (C/F1)^2 */
+  var twoRay = function (cf, R) {
+    var n = cf * cf;
+    var m2 = 1 - 2 * R * Math.cos(Math.PI * n) + R * R;
+    return 20 * L10(Math.max(Math.sqrt(Math.max(m2, 0)), 1e-9));
+  };
+
+  var fmtKm = function (x) { return x.toFixed(S.d < 2 ? 2 : (S.d < 10 ? 1 : 0)) + ' km'; };
+  var niceStep = function (v) {
+    if (!(v > 0)) return 1;
+    var e = Math.pow(10, Math.floor(L10(v))), m = v / e;
+    return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * e;
+  };
+
+  /* a left-aligned label that is nudged so it can never run off the plot frame */
+  function label(g, txt, x, y, lo, hi) {
+    var tw = g.measureText(txt).width;
+    g.textAlign = 'left';
+    g.fillText(txt, clamp(x, lo, Math.max(lo, hi - tw)), y);
+  }
+
+  function fit(c) {
+    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
+    var W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
+    return [Math.max(r.width, 1), Math.max(r.height, 1)];
+  }
+
+  /* ------------------------------ 1. path profile ------------------------------ */
+  function drawProfile() {
+    var c = $('pf'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    var bd = cvv('--border'), acc = cvv('--accent'), warn = cvv('--text-warning');
+    var l = 56, r = 14, t = 26, b = 40;
+    if (w - l - r < 40 || h - t - b < 40) return;
+
+    var N = 200, i, x, ymin = 0, ymax = Math.max(S.h1, S.h2, obsTop(), 1);
+    for (i = 0; i <= N; i++) {
+      x = S.d * i / N;
+      var up = los(x) + F1(x, S.d - x), dn = los(x) - F1(x, S.d - x);
+      if (up > ymax) ymax = up;
+      if (ground(x) > ymax) ymax = ground(x);
+      if (dn < ymin) ymin = dn;
+    }
+    var pad = (ymax - ymin) * 0.08 + 1;
+    ymax += pad; ymin -= pad * 0.4;
+    var X = function (v) { return l + v / Math.max(S.d, 1e-9) * (w - l - r); };
+    var Y = function (v) { return (h - b) - (v - ymin) / Math.max(ymax - ymin, 1e-9) * (h - t - b); };
+
+    /* height axis in metres */
+    g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'middle';
+    var stp = niceStep((ymax - ymin) / 5);
+    var y0 = Math.ceil(ymin / stp) * stp;
+    for (var v = y0; v <= ymax; v += stp) {
+      g.strokeStyle = bd; g.lineWidth = Math.abs(v) < stp * 0.01 ? 1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = sub;
+      g.fillText(v.toFixed(stp < 1 ? 1 : 0) + ' m', l - 6, Y(v));
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.fillText('height (m)', 2, 4);
+
+    /* distance axis in km */
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (i = 0; i <= 4; i++) {
+      x = S.d * i / 4;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(x), t); g.lineTo(X(x), h - b); g.stroke();
+      g.fillStyle = sub;
+      g.textAlign = i === 0 ? 'left' : (i === 4 ? 'right' : 'center');
+      g.fillText(fmtKm(x), X(x), h - b + 6);
+    }
+    g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('distance along the path', w - r, h - 4);
+
+    g.save();
+    g.beginPath(); g.rect(l, t, w - l - r, h - t - b); g.clip();
+
+    /* the earth */
+    g.fillStyle = S.sea ? acc : mut; g.globalAlpha = S.sea ? 0.16 : 0.26;
+    g.beginPath(); g.moveTo(X(0), Y(ground(0)));
+    for (i = 0; i <= N; i++) { x = S.d * i / N; g.lineTo(X(x), Y(ground(x))); }
+    g.lineTo(X(S.d), h); g.lineTo(X(0), h); g.closePath(); g.fill();
+    g.globalAlpha = 1;
+    g.strokeStyle = S.sea ? acc : mut; g.lineWidth = 1.5;
+    g.beginPath();
+    for (i = 0; i <= N; i++) { x = S.d * i / N; if (i === 0) g.moveTo(X(x), Y(ground(x))); else g.lineTo(X(x), Y(ground(x))); }
+    g.stroke();
+
+    /* Fresnel ellipsoid */
+    g.fillStyle = acc; g.globalAlpha = 0.12;
+    g.beginPath();
+    for (i = 0; i <= N; i++) { x = S.d * i / N; g.lineTo(X(x), Y(los(x) + F1(x, S.d - x))); }
+    for (i = N; i >= 0; i--) { x = S.d * i / N; g.lineTo(X(x), Y(los(x) - F1(x, S.d - x))); }
+    g.closePath(); g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = acc; g.lineWidth = 1.2;
+    [1, -1].forEach(function (sg) {
+      g.beginPath();
+      for (i = 0; i <= N; i++) {
+        x = S.d * i / N;
+        var yy = Y(los(x) + sg * F1(x, S.d - x));
+        if (i === 0) g.moveTo(X(x), yy); else g.lineTo(X(x), yy);
+      }
+      g.stroke();
+    });
+
+    /* 0.6 F1 working limit */
+    g.strokeStyle = warn; g.lineWidth = 1.2; g.setLineDash([5, 4]);
+    g.beginPath();
+    for (i = 0; i <= N; i++) {
+      x = S.d * i / N;
+      var yl = Y(los(x) - 0.6 * F1(x, S.d - x));
+      if (i === 0) g.moveTo(X(x), yl); else g.lineTo(X(x), yl);
+    }
+    g.stroke(); g.setLineDash([]);
+
+    /* reflected ray over a smooth surface */
+    if (S.sea) {
+      var xr = xrefl();
+      g.strokeStyle = cvv('--accent-3'); g.lineWidth = 1.3; g.setLineDash([3, 3]);
+      g.beginPath();
+      g.moveTo(X(0), Y(S.h1)); g.lineTo(X(xr), Y(ground(xr))); g.lineTo(X(S.d), Y(S.h2));
+      g.stroke(); g.setLineDash([]);
+      g.fillStyle = cvv('--accent-3');
+      g.beginPath(); g.arc(X(xr), Y(ground(xr)), 3.5, 0, 6.2832); g.fill();
+    }
+
+    /* line of sight */
+    g.strokeStyle = ink; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(X(0), Y(S.h1)); g.lineTo(X(S.d), Y(S.h2)); g.stroke();
+
+    /* obstacle */
+    var bx = X(d1()), gTop = Y(obsTop()), gBase = Y(ground(d1()));
+    var hw = Math.max(6, Math.min(28, (w - l - r) * 0.035));
+    var blocked = clr() < 0;
+    if (S.oh > 0) {
+      g.fillStyle = blocked ? cvv('--text-bad') : cvv('--accent-3');
+      g.globalAlpha = 0.72;
+      g.beginPath(); g.moveTo(bx - hw, gBase); g.lineTo(bx, gTop); g.lineTo(bx + hw, gBase);
+      g.closePath(); g.fill(); g.globalAlpha = 1;
+    }
+
+    /* clearance arrow */
+    var yTop = Y(los(d1())), yBot = gTop;
+    if (Math.abs(yBot - yTop) > 14) {
+      g.strokeStyle = blocked ? cvv('--text-bad') : cvv('--accent-3'); g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(bx, yTop); g.lineTo(bx, yBot); g.stroke();
+      [[yTop, yBot > yTop ? 1 : -1], [yBot, yBot > yTop ? -1 : 1]].forEach(function (a) {
+        g.beginPath(); g.moveTo(bx - 4, a[0] + 5 * a[1]); g.lineTo(bx, a[0]); g.lineTo(bx + 4, a[0] + 5 * a[1]); g.stroke();
+      });
+    }
+
+    /* masts */
+    [[0, S.h1, 'Tx'], [S.d, S.h2, 'Rx']].forEach(function (m) {
+      var mx = X(m[0]);
+      g.strokeStyle = ink; g.lineWidth = 2.4;
+      g.beginPath(); g.moveTo(mx, Y(ground(m[0]))); g.lineTo(mx, Y(m[1])); g.stroke();
+      g.fillStyle = sub; g.font = fnt(11);
+      g.textAlign = m[0] === 0 ? 'left' : 'right'; g.textBaseline = 'bottom';
+      g.fillText(m[2] + ' mast ' + m[1].toFixed(0) + ' m', mx + (m[0] === 0 ? 4 : -4), Y(m[1]) - 6);
+    });
+    g.restore();
+
+    /* on-canvas annotations, drawn outside the clip so they cannot be cut */
+    g.font = fnt(11); g.textBaseline = 'top';
+    var rlab = '0.6 F₁ limit';
+    g.fillStyle = warn; g.textAlign = 'right';
+    g.fillText(rlab, w - r - 5, t + 3);
+    g.fillStyle = acc;
+    label(g, 'F₁ = ' + F1o().toFixed(1) + ' m at the obstacle', l + 5, t + 3,
+      l + 5, w - r - 12 - g.measureText(rlab).width);
+    g.fillStyle = mut;
+    label(g, (S.sea ? 'sea' : 'land') + ' · bulge peaks at ' +
+      bulgeK(S.d / 2, S.d / 2, S.k).toFixed(1) + ' m at k = ' + S.kl, l + 5, t + 17, l + 5, w - r - 4);
+
+    /* clearance readout beside the arrow, kept inside the frame */
+    var txt = (clr() >= 0 ? 'clearance ' : 'blocked by ') + Math.abs(clr()).toFixed(1) + ' m';
+    if (!degenerate()) txt += ' = ' + Math.abs(cfrac()).toFixed(2) + ' F₁';
+    g.font = fnt(11); g.fillStyle = blocked ? cvv('--text-bad') : cvv('--accent-3');
+    g.textBaseline = 'top';
+    label(g, txt, bx + 8, clamp((yTop + yBot) / 2 - 6, t + 32, h - b - 16), l + 3, w - r - 3);
+  }
+
+  /* --------------------------- 2. knife-edge loss J(nu) --------------------------- */
+  function drawJ() {
+    var c = $('jc'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var acc = cvv('--accent'), acc2 = cvv('--accent-2'), warn = cvv('--text-warning');
+    var l = 54, r = 14, t = 16, b = 54;
+    if (w - l - r < 40 || h - t - b < 40) return;
+    var cmin = -2, cmax = 3, jlo = -3, jhi = 30;
+    var X = function (cf) { return l + (cf - cmin) / (cmax - cmin) * (w - l - r); };
+    var Y = function (j) { return t + (j - jlo) / (jhi - jlo) * (h - t - b); };
+
+    g.font = fnt(11);
+    for (var j = 0; j <= 30; j += 5) {
+      g.strokeStyle = bd; g.lineWidth = j === 0 ? 1.1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(j)); g.lineTo(w - r, Y(j)); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(j.toFixed(0) + ' dB', l - 6, Y(j));
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.fillText('loss (dB)', 2, 2);
+
+    [-2, -1, 0, 1, 2, 3].forEach(function (cf) {
+      g.strokeStyle = bd; g.lineWidth = cf === 0 ? 1.1 : 0.5;
+      g.beginPath(); g.moveTo(X(cf), t); g.lineTo(X(cf), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(cf.toFixed(0), X(cf), h - b + 5);
+    });
+    g.fillStyle = sub; g.textAlign = 'center';
+    g.fillText('clearance in units of F₁', (l + w - r) / 2, h - b + 19);
+    g.fillStyle = mut;
+    [3, 2, 1, 0, -1, -2, -3, -4].forEach(function (v) {
+      var cf = -v / Math.SQRT2;
+      if (cf < cmin || cf > cmax) return;
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText((v < 0 ? '−' : '') + Math.abs(v).toFixed(0), X(cf), h - b + 33);
+    });
+    g.textAlign = 'left';
+    g.fillText('ν', l - 12, h - b + 33);
+
+    /* region below the 0.6 F1 design rule */
+    g.fillStyle = warn; g.globalAlpha = 0.09;
+    g.fillRect(l, t, X(0.6) - l, h - t - b);
+    g.globalAlpha = 1;
+    g.fillStyle = warn; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('below the 0.6 F₁ rule', (l + X(0.6)) / 2, t + 3);
+
+    g.save();
+    g.beginPath(); g.rect(l, t, w - l - r, h - t - b); g.clip();
+
+    /* the P.526 closed-form approximation, drawn past its own validity limit */
+    g.strokeStyle = acc2; g.lineWidth = 1.4; g.setLineDash([5, 4]); g.globalAlpha = 0.85;
+    g.beginPath();
+    for (var px = l; px <= w - r; px++) {
+      var cf1 = cmin + (px - l) / (w - l - r) * (cmax - cmin);
+      var yy = Y(J31(-Math.SQRT2 * cf1));
+      if (px === l) g.moveTo(px, yy); else g.lineTo(px, yy);
+    }
+    g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+
+    /* the exact curve */
+    g.strokeStyle = acc; g.lineWidth = 2.2;
+    g.beginPath();
+    for (var px2 = l; px2 <= w - r; px2++) {
+      var cf2 = cmin + (px2 - l) / (w - l - r) * (cmax - cmin);
+      var y2 = Y(Jnu(-Math.SQRT2 * cf2));
+      if (px2 === l) g.moveTo(px2, y2); else g.lineTo(px2, y2);
+    }
+    g.stroke();
+
+    /* current path */
+    var cfn = cfrac();
+    if (cfn >= cmin && cfn <= cmax) {
+      var jn = Jnu(nu());
+      g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(X(cfn), t); g.lineTo(X(cfn), h - b); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cvv('--accent-4');
+      g.beginPath(); g.arc(X(cfn), clamp(Y(jn), t + 2, h - b - 2), 5, 0, 6.2832); g.fill();
+    }
+    g.restore();
+
+    /* annotations */
+    var jg = Jnu(0);
+    g.fillStyle = cvv('--text-primary'); g.font = fnt(11);
+    g.beginPath(); g.arc(X(0), Y(jg), 3.5, 0, 6.2832); g.fill();
+    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(X(0), Y(jg)); g.lineTo(X(0) + 24, Y(jg) + 22); g.stroke();
+    g.textBaseline = 'top';
+    label(g, 'grazing costs ' + jg.toFixed(2) + ' dB', X(0) + 26, Y(jg) + 16, l + 3, w - r - 3);
+
+    g.fillStyle = cvv('--accent-3');
+    g.beginPath(); g.arc(X(CF0), Y(0), 3.5, 0, 6.2832); g.fill();
+    g.strokeStyle = cvv('--accent-3'); g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(X(CF0), Y(0)); g.lineTo(X(CF0) + 18, Y(0) - 20); g.stroke();
+    g.textBaseline = 'bottom';
+    label(g, 'zero at ' + CF0.toFixed(3) + ' F₁, ν = ' + NU0.toFixed(2), X(CF0) + 20, Y(0) - 20, l + 3, w - r - 3);
+
+    g.fillStyle = acc; g.textBaseline = 'bottom';
+    label(g, 'ripple, up to ±1.4 dB', X(1.55), Y(-1.4) - 6, l + 3, w - r - 3);
+    g.fillStyle = acc2; g.textBaseline = 'top';
+    label(g, 'P.526 form, invalid past ν = −0.78', X(0.9), Y(24), l + 3, w - r - 3);
+  }
+
+  /* ----------------------- 3. reflection comb over the surface ----------------------- */
+  function drawRefl() {
+    var c = $('rc'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var acc = cvv('--accent'), acc2 = cvv('--accent-2');
+    var l = 54, r = 14, t = 16, b = 44;
+    if (w - l - r < 40 || h - t - b < 40) return;
+    var xmin = 0, xmax = 4, dlo = -30, dhi = 8;
+    var X = function (cf) { return l + (cf - xmin) / (xmax - xmin) * (w - l - r); };
+    var Y = function (v) { return t + (dhi - v) / (dhi - dlo) * (h - t - b); };
+
+    g.font = fnt(11);
+    for (var v = -30; v <= 5; v += 5) {
+      g.strokeStyle = bd; g.lineWidth = v === 0 ? 1.1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText((v < 0 ? '−' : (v > 0 ? '+' : '')) + Math.abs(v).toFixed(0) + ' dB', l - 6, Y(v));
+    }
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.fillText('level vs free space (dB)', 2, 2);
+
+    [0, 0.6, 1, 2, 3, 4].forEach(function (cf) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(cf), t); g.lineTo(X(cf), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(cf.toFixed(cf === 0.6 ? 1 : 0), X(cf), h - b + 5);
+    });
+    g.fillStyle = sub; g.textAlign = 'center';
+    g.fillText('clearance at the reflection point, in units of F₁', (l + w - r) / 2, h - b + 20);
+
+    /* Fresnel zone number markers: n = (C/F1)^2 */
+    g.font = fnt(10);
+    for (var n = 1; n <= 16; n++) {
+      var xz = Math.sqrt(n);
+      if (xz > xmax) break;
+      var even = n % 2 === 0;
+      g.strokeStyle = even ? acc : mut; g.globalAlpha = even ? 0.5 : 0.3;
+      g.lineWidth = 0.8; g.setLineDash([2, 3]);
+      g.beginPath(); g.moveTo(X(xz), t); g.lineTo(X(xz), h - b); g.stroke();
+      g.setLineDash([]); g.globalAlpha = 1;
+      if (n <= 4) {
+        g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillText(w > 560 ? 'n = ' + n + (even ? ' null' : ' peak') : String(n), X(xz), t + 2);
+      }
+    }
+
+    g.save();
+    g.beginPath(); g.rect(l, t, w - l - r, h - t - b); g.clip();
+    [[R_LAND, acc2, S.sea ? 1.3 : 2.4, S.sea ? 0.5 : 1], [R_SEA, acc, S.sea ? 2.4 : 1.3, S.sea ? 1 : 0.5]].forEach(function (q) {
+      g.strokeStyle = q[1]; g.lineWidth = q[2]; g.globalAlpha = q[3];
+      g.beginPath();
+      for (var px = l; px <= w - r; px++) {
+        var cf = xmin + (px - l) / (w - l - r) * (xmax - xmin);
+        var yy = Y(clamp(twoRay(cf, q[0]), dlo - 5, dhi + 5));
+        if (px === l) g.moveTo(px, yy); else g.lineTo(px, yy);
+      }
+      g.stroke(); g.globalAlpha = 1;
+    });
+
+    var cfr = cfRefl(), Rn = S.sea ? R_SEA : R_LAND;
+    if (cfr >= xmin && cfr <= xmax) {
+      g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(X(cfr), t); g.lineTo(X(cfr), h - b); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = cvv('--accent-4');
+      g.beginPath(); g.arc(X(cfr), clamp(Y(twoRay(cfr, Rn)), t + 2, h - b - 2), 5, 0, 6.2832); g.fill();
+    }
+    g.restore();
+
+    g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillStyle = acc; g.fillText('sea, reflection magnitude ' + R_SEA.toFixed(2), w - r - 4, Y(-6));
+    g.fillStyle = acc2; g.fillText('land, reflection magnitude ' + R_LAND.toFixed(2), w - r - 4, Y(-6) + 15);
+
+    g.textBaseline = 'bottom';
+    if (cfr < xmin || cfr > xmax) {
+      g.fillStyle = mut;
+      label(g, 'this path: ' + cfr.toFixed(2) + ' F₁, off the plotted range', l + 4, h - b - 6, l + 4, w - r - 4);
+    } else {
+      g.fillStyle = cvv('--accent-4');
+      label(g, 'this path: ' + cfr.toFixed(2) + ' F₁ · n = ' + (cfr * cfr).toFixed(2) + ' · ' +
+        (twoRay(cfr, Rn) >= 0 ? '+' : '−') + Math.abs(twoRay(cfr, Rn)).toFixed(1) + ' dB',
+        l + 4, h - b - 6, l + 4, w - r - 4);
+    }
+  }
+
+  /* --------------------------------- readouts --------------------------------- */
+  function syncInputs() {
+    $('fq').value = S.f; $('dd').value = S.d; $('h1').value = S.h1;
+    $('h2').value = S.h2; $('ox').value = S.ox; $('oh').value = S.oh;
+    $('fqv').textContent = S.f.toFixed(2) + ' GHz';
+    $('ddv').textContent = S.d.toFixed(1) + ' km';
+    $('h1v').textContent = S.h1.toFixed(0) + ' m';
+    $('h2v').textContent = S.h2.toFixed(0) + ' m';
+    $('oxv').textContent = S.ox.toFixed(0) + ' %';
+    $('ohv').textContent = S.oh.toFixed(0) + ' m';
+    KS.forEach(function (q) { $(q[0]).classList.toggle('on', q[1] === S.k); });
+    $('s0').classList.toggle('on', !S.sea);
+    $('s1').classList.toggle('on', S.sea);
+  }
+
+  function updateCards() {
+    var f1 = F1o(), cl = clr(), cf = cfrac(), deg = degenerate();
+    var v = nu(), loss = Jnu(v);
+
+    $('cF').textContent = f1.toFixed(2) + ' m';
+
+    $('cC').textContent = cl.toFixed(1) + ' m';
+    $('cC').style.color = deg ? '' : (cf >= 0.6 ? 'var(--text-good)' : (cf >= 0 ? 'var(--text-warning)' : 'var(--text-bad)'));
+    $('cCn').textContent = deg
+      ? 'the obstacle sits at a mast, where the zone has zero width'
+      : cf.toFixed(2) + ' F₁ · ' + (cf >= 0.6 ? 'clear of the working limit'
+        : cf >= 0 ? 'inside the zone, losing signal'
+        : 'the sight line is blocked');
+
+    $('cB').textContent = bulgeK(d1(), d2(), S.k).toFixed(1) + ' m';
+    var kAlt = S.k === 0.5 ? [4 / 3, '4/3'] : [0.5, '1/2'];
+    $('cBn').textContent = 'k = ' + S.kl + ' · at k = ' + kAlt[1] + ' it would be ' +
+      bulgeK(d1(), d2(), kAlt[0]).toFixed(1) + ' m';
+
+    /* past the zero crossing the obstacle no longer blocks; anything left is the ripple */
+    var capped = v > 25, ripple = cf >= CF0;
+    $('cL').textContent = (capped ? '> ' : '') +
+      (capped ? Jnu(25).toFixed(0) : (Math.abs(loss) < 0.05 ? (0).toFixed(1) : loss.toFixed(1))) + ' dB';
+    $('cL').style.color = capped || loss > 6 ? 'var(--text-bad)'
+      : ripple ? 'var(--text-good)' : (loss > 0.5 ? 'var(--text-warning)' : 'var(--text-good)');
+    $('cLn').textContent = capped ? 'far beyond a single knife edge, treat as no path'
+      : ripple ? (loss < -0.05 ? 'Fresnel ripple: the diffracted field is adding'
+        : loss < 0.05 ? 'the obstacle costs nothing here'
+        : 'Fresnel ripple, not blockage: the fields partly cancel')
+      : loss < 6 ? 'partial obstruction, budget this into the link'
+      : loss < 20 ? 'severe, raise a mast or move the site'
+      : 'deep shadow, this is not a line-of-sight hop';
+
+    /* the design criterion is always evaluated at k = 2/3, whatever k the slider shows */
+    var c23 = los(d1()) - (S.oh + bulgeK(d1(), d2(), 2 / 3));
+    var r23 = f1 < 1e-9 ? NaN : c23 / f1;
+    if (!isFinite(r23)) {
+      $('cV').textContent = '—';
+      $('cV').style.color = '';
+      $('cVn').textContent = 'no ratio exists with the obstacle at a mast';
+    } else {
+      $('cV').textContent = r23 >= 0.6 ? 'Pass' : 'Fail';
+      $('cV').style.color = r23 >= 0.6 ? 'var(--text-good)' : 'var(--text-bad)';
+      $('cVn').textContent = r23.toFixed(2) + ' F₁ at k = 2/3, rule needs 0.60 F₁';
+    }
+  }
+
+  var pending = false;
+  function redraw() {
+    updateCards();
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(function () {
+      pending = false;
+      drawProfile(); drawJ(); drawRefl();
+    });
+  }
+
+  /* ------------------------------- interaction ------------------------------- */
+  function readInputs() {
+    S.f = +$('fq').value; S.d = +$('dd').value; S.h1 = +$('h1').value;
+    S.h2 = +$('h2').value; S.ox = +$('ox').value; S.oh = +$('oh').value;
+  }
+  ['fq', 'dd', 'h1', 'h2', 'ox', 'oh'].forEach(function (id) {
+    $(id).addEventListener('input', function () { stopAnim(); readInputs(); syncInputs(); redraw(); });
+  });
+  KS.forEach(function (q) {
+    $(q[0]).addEventListener('click', function () { S.k = q[1]; S.kl = q[2]; syncInputs(); redraw(); });
+  });
+  $('s0').addEventListener('click', function () { S.sea = false; syncInputs(); redraw(); });
+  $('s1').addEventListener('click', function () { S.sea = true; syncInputs(); redraw(); });
+
+  /* ---------------------------------- tour ---------------------------------- */
+  var TOUR = [
+    { s: { f: 2, d: 30, h1: 40, h2: 25, ox: 50, oh: 60, k: 4 / 3, kl: '4/3', sea: false },
+      n: 'Step 1 of 6. A 30 km hop at 2 GHz with a 60 m hill at mid-path. The first Fresnel zone is 33.5 m wide there and the hill pushes well through it, so the sight line is blocked and the diffraction card reads about 17.9 dB. That loss comes straight off the link budget.' },
+    { s: { f: 2, d: 30, h1: 120, h2: 120, ox: 50, oh: 60, k: 4 / 3, kl: '4/3', sea: false },
+      n: 'Step 2. Both masts raised to 120 m. The clearance is now 1.40 F₁ and the 17.9 dB has gone. Under a decibel is left, and that is the Fresnel ripple rather than blockage: at 1.40 F₁ the diffracted field happens to be subtracting slightly. The criterion card has flipped to pass.' },
+    { s: { f: 0.1, d: 30, h1: 120, h2: 120, ox: 50, oh: 60, k: 4 / 3, kl: '4/3', sea: false },
+      n: 'Step 3. Nothing moved except the frequency, down to 100 MHz. F₁ has grown from 33.5 m to about 150 m, so the same 47 m of clearance is now only 0.31 F₁ and the loss is back. Clearance is a ratio, never a number of metres.' },
+    { s: { f: 0.15, d: 1, h1: 27, h2: 27, ox: 50, oh: 21, k: 4 / 3, kl: '4/3', sea: false },
+      n: 'Step 4. The textbook example: 1 km at 150 MHz, 27 m masts, a 21 m ridge at mid-path. F₁ = 22.33 m, clearance 5.99 m, 0.27 F₁. The exact answer is 2.80 dB where the course notes read 2.7 dB off a printed graph. Open the worked example below for the full arithmetic.' },
+    { s: { f: 6, d: 80, h1: 120, h2: 120, ox: 50, oh: 0, k: 4 / 3, kl: '4/3', sea: true },
+      n: 'Step 5. An 80 km sea crossing at 6 GHz with no obstacle at all, only the earth. At the median k = 4/3 the bulge is 94 m, the masts clear it by 0.82 F₁, and the loss card even reads slightly better than free space. But the criterion card, which always tests k = 2/3, already says fail. Press step 6 and change nothing but the weather.' },
+    { s: { f: 6, d: 80, h1: 120, h2: 120, ox: 50, oh: 0, k: 0.5, kl: '1/2', sea: true },
+      n: 'Step 6. Same masts, same sea, sub-refractive air: k has fallen to 1/2 and the bulge has grown from 94 m to 251 m. The planet itself is now the obstacle and the link is 28 dB down. This is why a clearance figure means nothing unless a worst-case k is quoted beside it.' }
+  ];
+  var anim = null;
+  function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = null; } }
+  function goTo(step) {
+    var tg = TOUR[step].s;
+    $('tnote').textContent = TOUR[step].n;
+    stopAnim();
+    S.k = tg.k; S.kl = tg.kl; S.sea = tg.sea;
+    var keys = ['f', 'd', 'h1', 'h2', 'ox', 'oh'], from = {}, i;
+    for (i = 0; i < keys.length; i++) from[keys[i]] = S[keys[i]];
+    if (RM.matches) {
+      for (i = 0; i < keys.length; i++) S[keys[i]] = tg[keys[i]];
+      syncInputs(); redraw(); return;
+    }
+    var t0 = performance.now(), dur = 550;
+    var frame = function (ts) {
+      var p = clamp((ts - t0) / dur, 0, 1);
+      var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      for (var j = 0; j < keys.length; j++) S[keys[j]] = from[keys[j]] + (tg[keys[j]] - from[keys[j]]) * e;
+      syncInputs(); redraw();
+      if (p < 1) { anim = requestAnimationFrame(frame); }
+      else { anim = null; for (var m = 0; m < keys.length; m++) S[keys[m]] = tg[keys[m]]; syncInputs(); redraw(); }
+    };
+    anim = requestAnimationFrame(frame);
+  }
+  ['t1', 't2', 't3', 't4', 't5', 't6'].forEach(function (id, i) {
+    $(id).addEventListener('click', function () { goTo(i); });
+  });
+
+  window.addEventListener('resize', redraw);
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', redraw);
+    else if (mq.addListener) mq.addListener(redraw);
+  }
+  syncInputs();
+  redraw();
+})();
+</script>
+</body>
+</html>
