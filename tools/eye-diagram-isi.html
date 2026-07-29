@@ -6,176 +6,311 @@
 <title>Pulse shaping, ISI and the eye diagram</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --series-1: #378ADD; --series-2: #D85A30; --series-3: #1D9E75; --series-4: #7F77DD;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #1a1f26; --text-secondary: #55606c; --text-muted: #869099;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
-    --series-1: #5AA9F0; --series-2: #F0824F; --series-3: #3FC393; --series-4: #9E97EE;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #e9edf1; --text-secondary: #b0bac4; --text-muted: #7d8791;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: flex; flex-direction: column; gap: 1rem; }
+.stage { display: flex; flex-direction: column; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
+  .wrap > .full { grid-column: 1 / -1; }
+  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+}
+
+h1 { font-size: 23px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 13px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 11px; cursor: pointer; font-size: 13px; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--series-1); color: var(--series-1); }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 0.85rem; }
-.lbl { font-size: 13px; color: var(--text-secondary); }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 6px 26px; margin-bottom: 1rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 120px; }
-.ctl input[type=range] { flex: 1; min-width: 90px; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums; }
-.sec { margin: 1.9rem 0 6px; font-size: 14px; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.sec span { color: var(--text-secondary); font-size: 12.5px; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 12.5px; color: var(--text-secondary); }
+.hero .val { font-size: 34px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 13px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 13px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 12.5px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+.card .hd { font-size: 12.5px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
-.legend-note li { margin-bottom: 2px; }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px; color: var(--text-secondary); margin-top: 1.25rem; }
-.note b { color: var(--text-primary); font-weight: 500; }
-.tour { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; margin-bottom: 1.25rem; }
-.tour .tt { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
-.tour .bts { display: flex; flex-wrap: wrap; gap: 8px; }
-.tour .msg { font-size: 13px; color: var(--text-secondary); margin-top: 10px; min-height: 2.6em; }
-canvas { width: 100%; display: block; }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.5rem 0 0; }
-ol.work li { margin-bottom: 4px; }
-ol.work b { color: var(--text-primary); font-weight: 500; }
-dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
-dl.glossary dt { font-weight: 500; margin-top: 9px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
 dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
-details { margin-bottom: 1rem; }
-summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; padding: 4px 0; }
-summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Pulse shaping, ISI and the eye diagram</h1>
-<p class="sub">A real channel smears every pulse into its neighbours &mdash; intersymbol interference. Shape the pulse so it is zero at every other sampling instant, and the eye diagram shows the margin that remains.</p>
-<p class="sub" style="margin-bottom: 1.5rem;">New to sampling and bandwidth? Start with <a href="sampling-aliasing.html">sampling and aliasing</a> first.</p>
+<div class="wrap">
 
-<div class="tour">
-  <div class="tt">Guided tour</div>
-  <div class="bts">
-    <button id="s1">1 &middot; a clean eye</button>
-    <button id="s2">2 &middot; squeeze the bandwidth</button>
-    <button id="s3">3 &middot; sample at the wrong moment</button>
-    <button id="s4">4 &middot; buy the margin back</button>
-    <button id="s5">5 &middot; three bits per symbol</button>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Pulse shaping, ISI and the eye diagram</h1>
+  <p class="sub">A channel smears every pulse into its neighbours &mdash; intersymbol interference. Shape the pulse to be zero at every other sampling instant and the eye shows the margin left.</p>
+  <p class="prereq">New to sampling? Start with <a href="sampling-aliasing.html">sampling and aliasing</a>.</p>
+</header>
+
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Eye height at the sampling instant</div>
+    <div class="val" id="heroVal">&mdash;<span class="u">% of ideal</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
   </div>
-  <p class="msg" id="tmsg">Press step 1. Each step moves the controls for you and says what changed.</p>
+
+  <div>
+    <div class="ctl">
+      <label for="ro">Roll-off <span class="var">&beta;</span></label>
+      <div class="in">
+        <input type="range" id="ro" min="0" max="1" step="0.01" value="0.35">
+        <input type="number" id="roN" min="0" max="1" step="0.01" aria-label="Roll-off factor beta">
+        <span class="unit"></span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="sr">Symbol rate R<sub>s</sub></label>
+      <div class="in">
+        <input type="range" id="sr" min="1" max="10" step="0.1" value="2">
+        <input type="number" id="srN" min="1" max="10" step="0.1" aria-label="Symbol rate in kilobaud">
+        <span class="unit">kBd</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="to">Timing offset</label>
+      <div class="in">
+        <input type="range" id="to" min="-0.5" max="0.5" step="0.01" value="0">
+        <input type="number" id="toN" min="-0.5" max="0.5" step="0.01" aria-label="Timing offset in symbol periods">
+        <span class="unit">T</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="sn">Signal-to-noise</label>
+      <div class="in">
+        <input type="range" id="sn" min="5" max="30" step="1" value="20">
+        <input type="number" id="snN" min="5" max="30" step="1" aria-label="Signal to noise ratio in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Levels M</span>
+      <button type="button" id="m2" class="on">2 &middot; 1 bit</button>
+      <button type="button" id="m4">4 &middot; 2 bits</button>
+      <button type="button" id="m8">8 &middot; 3 bits</button>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="pDvbs">DVB-S, &beta; = 0.35</button>
+      <button type="button" id="pDvbs2">DVB-S2X, &beta; = 0.05</button>
+      <button type="button" id="pUmts">UMTS, &beta; = 0.22</button>
+      <button type="button" id="pPam8">8-PAM backplane</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>Advanced controls</summary>
+    <div class="presets" style="margin-top: 0.2rem;">
+      <span class="lbl">Filter</span>
+      <button type="button" id="frc" class="on">Raised cosine, end to end</button>
+      <button type="button" id="frr">Root raised cosine, transmitter only</button>
+    </div>
+    <div class="ctl">
+      <label for="tr">Traces in the eye</label>
+      <div class="in">
+        <input type="range" id="tr" min="50" max="500" step="10" value="200">
+        <input type="number" id="trN" min="50" max="500" step="10" aria-label="Number of traces in the eye">
+        <span class="unit"></span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="sp">Filter span, each side</label>
+      <div class="in">
+        <input type="range" id="sp" min="2" max="20" step="1" value="12">
+        <input type="number" id="spN" min="2" max="20" step="1" aria-label="Filter span in symbol periods each side">
+        <span class="unit">T</span>
+      </div>
+    </div>
+    <div class="presets" style="margin-bottom: 0;">
+      <span class="lbl">Data</span>
+      <button type="button" id="nd">New symbol stream</button>
+    </div>
+  </details>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd">Occupied bandwidth</div>
+      <div class="big" id="cB">&mdash;</div>
+      <div class="ft">B = R<sub>s</sub>(1 + &beta;) at RF</div>
+    </div>
+    <div class="card">
+      <div class="hd">Bit rate</div>
+      <div class="big" id="cR">&mdash;</div>
+      <div class="ft">R<sub>b</sub> = R<sub>s</sub>&#8201;log<sub>2</sub>M</div>
+    </div>
+    <div class="card">
+      <div class="hd">Spectral efficiency</div>
+      <div class="big" id="cE">&mdash;</div>
+      <div class="ft">log<sub>2</sub>M / (1 + &beta;)</div>
+    </div>
+    <div class="card">
+      <div class="hd">Eye width</div>
+      <div class="big" id="cW">&mdash;</div>
+      <div class="ft">timing margin at the threshold</div>
+    </div>
+    <div class="card">
+      <div class="hd">Noise margin</div>
+      <div class="big" id="cM">&mdash;</div>
+      <div class="ft" id="cMf">opening over noise rms</div>
+    </div>
+    <div class="card">
+      <div class="hd">Eye height</div>
+      <div class="big" id="cH">&mdash;</div>
+      <div class="ft" id="cHf">fraction of the ideal opening</div>
+    </div>
+  </div>
+
 </div>
 
-<div class="grid2">
-  <div class="ctl"><label for="ro">Roll-off &beta;</label><input type="range" id="ro" min="0" max="1" step="0.01" value="0.35"><span class="v" id="rov">0.35</span></div>
-  <div class="ctl"><label for="sr">Symbol rate R<sub>s</sub></label><input type="range" id="sr" min="1" max="10" step="0.1" value="2"><span class="v" id="srv">2.0 kBd</span></div>
-  <div class="ctl"><label for="to">Timing offset</label><input type="range" id="to" min="-0.5" max="0.5" step="0.01" value="0"><span class="v" id="tov">0.00 T</span></div>
-  <div class="ctl"><label for="sn">Signal-to-noise</label><input type="range" id="sn" min="5" max="30" step="1" value="20"><span class="v" id="snv">20 dB</span></div>
-</div>
+<div class="stage">
 
-<div class="row">
-  <span class="lbl">Levels per symbol M</span>
-  <button id="m2" class="on">2 (1 bit)</button>
-  <button id="m4">4 (2 bits)</button>
-  <button id="m8">8 (3 bits)</button>
-</div>
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="s1">1 &middot; a clean eye</button>
+    <button type="button" id="s2">2 &middot; squeeze the band</button>
+    <button type="button" id="s3">3 &middot; sample late</button>
+    <button type="button" id="s4">4 &middot; buy the margin back</button>
+    <button type="button" id="s5">5 &middot; three bits per symbol</button>
+  </div>
+  <p class="tour-note" id="tmsg">Press the steps in order; each one moves the controls.</p>
 
-<details>
-  <summary>More controls &mdash; filter split and trace count</summary>
-  <div class="row" style="margin-top: 0.5rem;">
-    <span class="lbl">Filter</span>
-    <button id="frc" class="on">Raised cosine, end to end</button>
-    <button id="frr">Root raised cosine, transmitter only</button>
-  </div>
-  <div class="grid2" style="margin-bottom: 0.4rem;">
-    <div class="ctl"><label for="tr">Traces in the eye</label><input type="range" id="tr" min="50" max="500" step="10" value="200"><span class="v" id="trv">200</span></div>
-    <div class="ctl"><label style="min-width:120px">Random data</label><button id="nd">New symbol stream</button></div>
-  </div>
-  <p class="note" style="margin-top: 0.4rem;">Put a <b>root</b>-raised-cosine filter in the transmitter and an identical one in the receiver and the two cascade into exactly the raised cosine above &mdash; that is the standard split, and it also gives the receiver a matched filter. A root-raised cosine on its own is <b>not</b> ISI-free. The second button shows the waveform at that halfway point, on the wire, before the receive filter has done its half of the job.</p>
-</details>
+  <p class="sec"><b>1 &middot; On the wire</b> <span>&mdash; symbol levels and the shaped voltage that carries them</span></p>
+  <canvas id="cw" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>transmitted waveform</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>wanted level, one per T</li>
+    <li><span class="sw" style="background:var(--series-1)"></span>dots &mdash; samples at t = kT</li>
+  </ul>
 
-<p class="sec"><b>1 &middot; What the transmitter actually puts on the wire</b> <span>&mdash; the bits, the symbol levels they choose, and the shaped waveform that carries them, drawn to scale in milliseconds</span></p>
-<canvas id="cw" style="height: 250px;"></canvas>
-<ul class="legend-note">
-  <li>The orange stems are the wanted symbol values &mdash; one per symbol period T, each carrying log<sub>2</sub>M bits.</li>
-  <li>The blue curve is the real transmitted voltage. It is smooth, it wanders between the stems, and it overshoots.</li>
-  <li>The blue dots sit at the sampling instants t = kT. With a raised cosine every dot lands exactly on its own stem, no matter what the neighbours are doing.</li>
-</ul>
+  <p class="sec"><b>2 &middot; The pulse</b> <span>&mdash; one pulse, its neighbours, and the sampling instants</span></p>
+  <canvas id="ch" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>this symbol's pulse h(t)</li>
+    <li><span class="sw" style="background:var(--series-4)"></span>neighbouring symbols' pulses</li>
+    <li><span class="sw" id="hsw" style="background:var(--series-5)"></span><span id="hnote">dots &mdash; value at each instant</span></li>
+  </ul>
 
-<p class="sec"><b>2 &middot; The pulse that makes this work</b> <span>&mdash; one raised-cosine pulse, and its neighbours, sampled at the symbol instants</span></p>
-<canvas id="ch" style="height: 235px;"></canvas>
-<ul class="legend-note">
-  <li>The blue curve is one pulse h(t), scaled so its peak is 1. The purple curves are the pulses one symbol earlier and one symbol later.</li>
-  <li>The vertical grey lines are the sampling instants, spaced one symbol period T apart.</li>
-  <li id="hnote">The dots show what each pulse contributes at those instants.</li>
-</ul>
+  <p class="sec"><b>3 &middot; The eye diagram</b> <span>&mdash; every symbol period stacked, with noise added</span></p>
+  <canvas id="ce" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>received traces, folded</li>
+    <li><span class="sw dash" style="color:var(--series-4)"></span>decision threshold</li>
+    <li><span class="sw" style="background:var(--series-5)"></span>sampling instant, eye height</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>eye width at the threshold</li>
+  </ul>
 
-<p class="sec"><b>3 &middot; The eye diagram</b> <span>&mdash; every symbol period cut out and laid on top of the others, with noise added</span></p>
-<canvas id="ce" style="height: 320px;"></canvas>
-<ul class="legend-note">
-  <li>Each faint blue line is two symbol periods of the received waveform, folded onto the same time axis. Hundreds of them overlap.</li>
-  <li>The green vertical line is where the receiver samples. Drag the timing offset to move it.</li>
-  <li>The green bracket is the eye height &mdash; the smallest vertical gap between the highest trace of one level and the lowest trace of the level above. Noise larger than half that gap causes a bit error.</li>
-  <li>The orange bracket is the eye width, the horizontal gap at the decision threshold. It is the timing error the link can absorb.</li>
-</ul>
-
-<p class="sec"><b>4 &middot; What it costs in spectrum</b> <span>&mdash; the filter gain against frequency, and the band the signal actually occupies</span></p>
-<canvas id="cs" style="height: 255px;"></canvas>
-<ul class="legend-note">
-  <li>The blue curve is the filter's gain |H(f)|. Outside the bracket it is exactly zero: nothing is transmitted there.</li>
-  <li>The green bracket is the occupied bandwidth once modulated onto a carrier, B = R<sub>s</sub>(1 + &beta;) (RF); at baseband it is half this. The dashed lines at &plusmn;R<sub>s</sub>/2 mark the Nyquist minimum, the narrowest band that can carry R<sub>s</sub> symbols per second without ISI.</li>
-  <li>The gap between the dashed lines and the bracket is the excess bandwidth, and it is exactly the fraction &beta; of the minimum. That is the price of a usable eye.</li>
-</ul>
-
-<div class="cards">
-  <div class="card">
-    <div class="hd">Occupied bandwidth</div>
-    <div class="big" id="cB">&mdash;</div>
-    <div class="ft">B = R<sub>s</sub>(1 + &beta;) at RF; baseband half this</div>
-  </div>
-  <div class="card">
-    <div class="hd">Bit rate</div>
-    <div class="big" id="cR">&mdash;</div>
-    <div class="ft">R<sub>b</sub> = R<sub>s</sub> log<sub>2</sub>M, in kilobits per second</div>
-  </div>
-  <div class="card">
-    <div class="hd">Spectral efficiency</div>
-    <div class="big" id="cE">&mdash;</div>
-    <div class="ft">R<sub>b</sub>/B = log<sub>2</sub>M / (1 + &beta;), bit/s/Hz</div>
-  </div>
-  <div class="card">
-    <div class="hd">Eye height</div>
-    <div class="big" id="cH">&mdash;</div>
-    <div class="ft" id="cHf">fraction of the ideal opening</div>
-  </div>
-  <div class="card">
-    <div class="hd">Eye width</div>
-    <div class="big" id="cW">&mdash;</div>
-    <div class="ft">timing margin, in fractions of T</div>
-  </div>
-  <div class="card">
-    <div class="hd">Noise margin</div>
-    <div class="big" id="cM">&mdash;</div>
-    <div class="ft" id="cMf">20 log<sub>10</sub>(opening / noise rms)</div>
-  </div>
-</div>
+  <p class="sec"><b>4 &middot; The cost in spectrum</b> <span>&mdash; filter gain, and the band actually occupied</span></p>
+  <canvas id="cs" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>filter gain |H(f)|</li>
+    <li><span class="sw" style="background:var(--series-5)"></span>shaded &mdash; occupied band B</li>
+    <li><span class="sw dash" style="color:var(--series-2)"></span>&plusmn;R<sub>s</sub>/2, Nyquist minimum</li>
+  </ul>
 
 <details>
   <summary>The arithmetic, with the numbers now on screen</summary>
@@ -183,8 +318,13 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
 </details>
 
 <details>
+  <summary>Why the filter is split in half</summary>
+  <p class="sub" style="margin: 0.2rem 0 0;">A root-raised cosine in the transmitter and an identical one in the receiver cascade into exactly the raised cosine above, which is the standard split and also gives the receiver a matched filter. A root raised cosine on its own is not ISI-free; the second filter button shows the waveform at that halfway point, on the wire, before the receive filter has done its half.</p>
+</details>
+
+<details>
   <summary>An everyday version of the same idea</summary>
-  <p class="sub" style="margin: 0.5rem 0 0;">Think of a row of people passing buckets down a line, one bucket per second. If each person swings wildly, water from one bucket slops into the next and nobody can tell how full any single bucket was. Pulse shaping is agreeing on a swing that is guaranteed to be perfectly still at the exact moment the next bucket is read. The swing takes longer and needs more room &mdash; that extra room is the excess bandwidth &beta;.</p>
+  <p class="sub" style="margin: 0.2rem 0 0;">Think of a row of people passing buckets down a line, one bucket per second. If each person swings wildly, water from one bucket slops into the next and nobody can tell how full any single bucket was. Pulse shaping is agreeing on a swing that is guaranteed to be perfectly still at the exact moment the next bucket is read. The swing takes longer and needs more room &mdash; that extra room is the excess bandwidth &beta;.</p>
 </details>
 
 <details>
@@ -214,20 +354,398 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
   <p class="sub" style="margin: 0.5rem 0 0;">Every digital radio makes all three. Roll-off &beta; buys timing tolerance with bandwidth: drop it to zero for the narrowest possible signal and the pulse tails decay only as 1/t, so a fraction of a symbol period of clock error closes the eye completely; raise it to one and the eye stays open across almost the whole interval, for double the spectrum. Levels M buy data rate with noise margin: going from two levels to eight triples the bit rate at the same bandwidth, but the gaps between levels shrink to a seventh, which costs about 13 dB of noise margin at the same average-power SNR. And splitting the shaping into a root raised cosine at each end costs nothing in bandwidth while gaining the matched-filter SNR advantage &mdash; press the second filter button to see that the transmitted waveform on its own genuinely is not ISI-free, and that only the cascade is. Real links go further than this page does: they add a channel that is not flat, a clock recovered from the data rather than given, and an equaliser to undo whatever the channel did.</p>
 </details>
 
-<p class="sub" style="margin-top: 1rem;">Next: the <a href="iq-constellation.html">IQ constellation explorer</a>.</p>
+<p class="prereq" style="margin-top: 1rem;">Next: the <a href="iq-constellation.html">IQ constellation explorer</a>.</p>
+
+</div>
+</div>
 
 <script>
 (function () {
+  /* ============================================================
+     engineering-viz shared canvas kit — paste verbatim inside the
+     tool's IIFE, above your own drawing code. No dependencies.
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ---- the tool's own code ------------------------------------- */
   const $ = id => document.getElementById(id);
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
   const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
   const PI = Math.PI;
   const SPS = 32;
-  const LSPAN = 12;
+  let LSPAN = 12;
   const REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const S = { b: 0.35, rs: 2000, M: 2, tau: 0, snr: 20, tr: 200, filt: 'rc', seed: 7 };
+  const S = { b: 0.35, rs: 2000, M: 2, tau: 0, snr: 20, tr: 200, filt: 'rc', seed: 7, span: 12 };
 
   const fmt = (v, n) => (isFinite(v) ? v.toFixed(n) : '—');
   const sinc = x => (Math.abs(x) < 1e-9 ? 1 : Math.sin(PI * x) / (PI * x));
@@ -273,7 +791,7 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
   let D = null, dkey = '';
 
   function build() {
-    const key = [S.b, S.M, S.tr, S.filt, S.seed].join('|');
+    const key = [S.b, S.M, S.tr, S.filt, S.seed, S.span].join('|');
     if (key === dkey && D) return D;
     const M = S.M, lv = levels(M), b = S.b, nTr = S.tr;
     const n = nTr + 2 * LSPAN + 2;
@@ -356,205 +874,168 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
       complete: complete, samp: samp, sidx: sidx, ps: d.ps };
   }
 
-  function fit(c) {
-    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
-  }
-  const dec = span => (span >= 10 ? 1 : span >= 1 ? 2 : 3);
+  const RS = 'R' + sub('s');
 
   function drawWave() {
-    const c = $('cw'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
+    const c = $('cw'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
     const d = build();
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    const c1 = cvv('--series-1'), c2 = cvv('--series-2');
     const NS = 10, k0 = LSPAN + 1;
-    const l = 46, r = 12, t = 44, b = 46;
     const Tms = 1000 / S.rs, span = NS * Tms;
-    const X = tm => l + (tm / span) * (w - l - r);
-    const amp = 2.0;
-    const Y = v => t + (amp - v) / (2 * amp) * (h - t - b);
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: span, unit: 'ms', label: 'time' },
+      { min: -1.8, max: 1.8, unit: 'normalised', label: 'amplitude' });
+    const dotR = Math.max(2, Math.min(4, P.h * 0.014));
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    d.lv.forEach(v => { g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke(); });
-    g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
-
-    g.font = fnt(10); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
-    d.lv.forEach(v => g.fillText(v.toFixed(2), l - 5, Y(v)));
-    g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = sub; g.font = fnt(11);
-    g.fillText('level (normalised)', 4, 4);
-
-    g.strokeStyle = bd; g.lineWidth = 0.5; g.setLineDash([2, 3]);
-    for (let k = 0; k <= NS; k++) { const x = X(k * Tms); g.beginPath(); g.moveTo(x, t); g.lineTo(x, h - b); g.stroke(); }
-    g.setLineDash([]);
-
-    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-    const dp2 = dec(span);
-    for (let k = 0; k <= NS; k += 2) g.fillText((k * Tms).toFixed(dp2), X(k * Tms), h - b + 6);
-    g.textAlign = 'right'; g.fillText('time, ms', w - r, h - b + 22);
-
-    g.strokeStyle = c2; g.lineWidth = 2;
+    P.clip(g);
+    g.strokeStyle = t.s2; g.fillStyle = t.s2; g.lineWidth = 1.6;
     for (let k = 0; k < NS; k++) {
-      const x = X((k + 0.5) * Tms), v = d.sym[k0 + k];
-      g.beginPath(); g.moveTo(x, Y(0)); g.lineTo(x, Y(v)); g.stroke();
-      g.beginPath(); g.arc(x, Y(v), 2.6, 0, 7); g.fillStyle = c2; g.fill();
+      const x = P.X((k + 0.5) * Tms), v = d.sym[k0 + k];
+      g.beginPath(); g.moveTo(x, P.Y(0)); g.lineTo(x, P.Y(v)); g.stroke();
+      g.beginPath(); g.arc(x, P.Y(v), dotR, 0, PI * 2); g.fill();
     }
 
-    g.strokeStyle = c1; g.lineWidth = 1.8; g.beginPath();
+    g.strokeStyle = t.s1; g.lineWidth = 1.8; g.beginPath();
     const i0 = (k0 * SPS) - Math.floor(SPS / 2);
     let first = true;
     for (let s = 0; s <= NS * SPS; s++) {
       const idx = i0 + s;
       if (idx < 0 || idx >= d.N) continue;
-      const x = X((s / SPS) * Tms), y = Y(d.xw[idx]);
+      const x = P.X((s / SPS) * Tms), y = P.Y(d.xw[idx]);
       if (first) { g.moveTo(x, y); first = false; } else g.lineTo(x, y);
     }
     g.stroke();
 
-    g.fillStyle = c1;
+    g.fillStyle = t.s1;
     for (let k = 0; k < NS; k++) {
       const idx = (k0 + k) * SPS;
       if (idx >= d.N) continue;
-      g.beginPath(); g.arc(X((k + 0.5) * Tms), Y(d.xw[idx]), 3.4, 0, 7); g.fill();
+      g.beginPath(); g.arc(P.X((k + 0.5) * Tms), P.Y(d.xw[idx]), dotR * 1.3, 0, PI * 2); g.fill();
     }
+    P.unclip(g);
 
-    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
     const bits = Math.round(L10(S.M) / L10(2));
-    let str = '';
+    const labs = [];
+    g.font = t.font(Math.max(9, P.fs - 1));
+    let widest = 0;
     for (let k = 0; k < NS; k++) {
       let s = d.idx[k0 + k].toString(2);
       while (s.length < bits) s = '0' + s;
-      str += s + (k < NS - 1 ? ' ' : '');
+      labs.push(s); widest = Math.max(widest, g.measureText(s).width);
     }
-    let hdr = 'bits sent: ' + str;
-    while (hdr.length > 12 && g.measureText(hdr).width > w - l - r) hdr = hdr.slice(0, -2) + '…';
-    g.fillText(hdr, l, t - 10);
+    if (widest + 7 < P.w / NS) {
+      g.fillStyle = t.text2; g.textAlign = 'center'; g.textBaseline = 'bottom';
+      for (let k = 0; k < NS; k++) g.fillText(labs[k], P.X((k + 0.5) * Tms), P.y1 - 3);
+    }
 
-    g.textBaseline = 'middle';
-    g.fillStyle = c1; g.fillText('blue: the transmitted waveform', l + 5, Y(1.82));
-    g.fillStyle = c2; g.fillText('orange: the wanted symbol level, one every T', l + 5, Y(1.55));
+    const kA = 2, iA = (k0 + kA) * SPS;
+    if (iA < d.N) {
+      leader(g, P.X((kA + 0.5) * Tms), P.Y(d.xw[iA]), 'sample at t = kT',
+        { box: P, colour: t.s1, size: P.fs, dy: -28 });
+    }
+    const kB = 5;
+    leader(g, P.X((kB + 0.5) * Tms), P.Y(d.sym[k0 + kB]),
+      'wanted level ' + fmtNum(d.sym[k0 + kB], 2),
+      { box: P, colour: t.s2, size: P.fs, dx: 32, dy: 26 });
   }
 
   function drawPulse() {
-    const c = $('ch'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    const c1 = cvv('--series-1'), c4 = cvv('--series-4'), c2 = cvv('--series-2'), c3 = cvv('--series-3');
-    const l = 46, r = 14, t = 18, b = 46;
+    const c = $('ch'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
     const XR = 4.5;
-    const X = x => l + (x + XR) / (2 * XR) * (w - l - r);
-    const Y = v => t + (1.25 - v) / (1.7) * (h - t - b);
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -XR, max: XR, unit: 'T', label: 'time' },
+      { min: -0.35, max: 1.25, label: 'pulse amplitude h(t)' });
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let v = -0.25; v <= 1.001; v += 0.25) {
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(2), l - 5, Y(v));
+    g.save();
+    g.strokeStyle = t.gridStrong; g.lineWidth = 0.7; g.setLineDash([4, 3]);
+    g.beginPath();
+    for (let k = -4; k <= 4; k++) {
+      const x = Math.round(P.X(k)) + 0.5;
+      if (x > P.x0 && x < P.x1) { g.moveTo(x, P.y0); g.lineTo(x, P.y1); }
     }
-    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 0.7; g.setLineDash([2, 3]);
-    for (let k = -4; k <= 4; k++) { g.beginPath(); g.moveTo(X(k), t); g.lineTo(X(k), h - b); g.stroke(); }
-    g.setLineDash([]);
-    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-    const Tms = 1000 / S.rs;
-    for (let k = -4; k <= 4; k++) g.fillText(k === 0 ? '0' : (k > 0 ? '+' : '') + k + 'T', X(k), h - b + 6);
-    for (let k = -4; k <= 4; k += 2) g.fillText((k * Tms).toFixed(dec(4 * Tms)), X(k), h - b + 20);
-    g.textAlign = 'left'; g.fillText('ms', 4, h - b + 20);
-    g.textBaseline = 'top'; g.font = fnt(11);
-    g.fillText('h(t), peak 1', 4, 4);
+    g.stroke(); g.restore();
 
+    P.clip(g);
     const curve = (shift, col, lw, alpha) => {
       g.save(); g.globalAlpha = alpha; g.strokeStyle = col; g.lineWidth = lw; g.beginPath();
-      for (let px = l; px <= w - r; px++) {
-        const x = (px - l) / (w - l - r) * 2 * XR - XR;
-        const y = Y(pulse(x - shift, S.b));
-        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      for (let px = P.x0; px <= P.x1; px++) {
+        const x = (px - P.x0) / P.w * 2 * XR - XR;
+        const y = P.Y(pulse(x - shift, S.b));
+        if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
       }
       g.stroke(); g.restore();
     };
-    curve(-1, c4, 1.3, 0.75);
-    curve(1, c4, 1.3, 0.75);
-    curve(0, c1, 2.1, 1);
+    curve(-1, t.s4, 1.3, 0.75);
+    curve(1, t.s4, 1.3, 0.75);
+    curve(0, t.s1, 2, 1);
 
     let worst = 0;
     for (let k = 1; k <= 4; k++) worst = Math.max(worst, Math.abs(pulse(k, S.b)));
+    const dotR = Math.max(2.2, Math.min(4, P.h * 0.016));
     for (let k = -4; k <= 4; k++) {
       const v = pulse(k, S.b);
       const isz = Math.abs(v) < 1e-6;
-      g.fillStyle = k === 0 ? c1 : (isz ? c3 : c2);
-      g.beginPath(); g.arc(X(k), Y(v), k === 0 ? 4 : 3.4, 0, 7); g.fill();
+      g.fillStyle = k === 0 ? t.s1 : (isz ? t.s5 : t.s2);
+      g.beginPath(); g.arc(P.X(k), P.Y(v), k === 0 ? dotR * 1.2 : dotR, 0, PI * 2); g.fill();
     }
+    P.unclip(g);
 
-    g.font = fnt(11); g.textBaseline = 'bottom';
+    leader(g, P.X(0), P.Y(1), 'peak = 1', { box: P, colour: t.s1, size: P.fs, dx: -34, dy: 22 });
+    const swatch = $('hsw'), note = $('hnote');
     if (S.filt === 'rc') {
-      g.fillStyle = c3; g.textAlign = 'center';
-      g.fillText('zero at every other symbol instant', X(2), Y(0) - 8);
-      g.strokeStyle = c3; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(X(2), Y(0) - 6); g.lineTo(X(2), Y(0) - 2); g.stroke();
-      $('hnote').textContent = 'The dots are the value of each pulse at the sampling instants. Every dot away from the centre is exactly zero, so no other symbol can disturb this one. That is the Nyquist zero-ISI condition.';
+      leader(g, P.X(2), P.Y(0), 'zero at every neighbour',
+        { box: P, colour: t.s5, size: P.fs, dy: -30 });
+      if (swatch) swatch.style.background = 'var(--series-5)';
+      if (note) note.textContent = 'dots — zero at every neighbour';
     } else {
-      g.fillStyle = c2; g.textAlign = 'center';
-      g.fillText('not zero — leaks ' + (worst * 100).toFixed(1) + '% into the neighbour', X(1.9), Y(pulse(1, S.b)) - 10);
-      $('hnote').textContent = 'The dots away from the centre are no longer zero: the largest is ' + (worst * 100).toFixed(1)
-        + ' per cent of the peak, so neighbouring symbols do interfere. Only after the matching receive filter does the cascade become the raised cosine and the dots return to zero.';
+      leader(g, P.X(1), P.Y(pulse(1, S.b)), 'leaks ' + (worst * 100).toFixed(1) + ' % into neighbours',
+        { box: P, colour: t.s2, size: P.fs, dy: -30 });
+      if (swatch) swatch.style.background = 'var(--series-2)';
+      if (note) note.textContent = 'dots — ' + (worst * 100).toFixed(1) + ' % leak into neighbours';
     }
-    g.textAlign = 'left'; g.fillStyle = c4; g.font = fnt(10.5);
-    g.fillText('the neighbouring symbols\' pulses', X(-4.3), Y(1.18));
   }
 
   function drawEye() {
-    const c = $('ce'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
+    const c = $('ce'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
     const d = build(), m = metrics();
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c3 = cvv('--series-3'), c4 = cvv('--series-4');
-    const l = 46, r = 90, t = 16, b = 46;
     const AMP = 1.75;
-    const X = x => l + (x + 1) / 2 * (w - l - r);
-    const Y = v => t + (AMP - v) / (2 * AMP) * (h - t - b);
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -1, max: 1, unit: 'T', label: 'time within the symbol' },
+      { min: -AMP, max: AMP, unit: 'normalised', label: 'amplitude' });
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let v = -1.5; v <= 1.51; v += 0.5) {
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(1), l - 5, Y(v));
-    }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('amplitude (normalised)', 4, 4);
-
-    g.save();
-    g.beginPath(); g.rect(l, t, w - l - r, h - t - b); g.clip();
-    g.strokeStyle = c1; g.lineWidth = 0.7;
+    P.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 0.7;
     g.globalAlpha = Math.max(0.05, Math.min(0.4, 22 / d.nTr));
     const sg = m.sigma;
     for (let j = 0; j < d.nTr; j++) {
       const o = j * d.wlen;
       g.beginPath();
       for (let i = 0; i < d.wlen; i++) {
-        const x = X(i / SPS - 1), y = Y(d.eye[o + i] + d.nz[o + i] * sg);
+        const x = P.X(i / SPS - 1), y = P.Y(d.eye[o + i] + d.nz[o + i] * sg);
         if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
       }
       g.stroke();
     }
-    g.restore();
+    g.globalAlpha = 1;
 
-    g.strokeStyle = c4; g.lineWidth = 1; g.setLineDash([5, 4]);
+    g.strokeStyle = t.s4; g.lineWidth = 1; g.setLineDash([5, 4]);
     for (let i = 0; i < d.lv.length - 1; i++) {
       const th = (d.lv[i] + d.lv[i + 1]) / 2;
-      g.beginPath(); g.moveTo(l, Y(th)); g.lineTo(w - r, Y(th)); g.stroke();
+      g.beginPath(); g.moveTo(P.x0, P.Y(th)); g.lineTo(P.x1, P.Y(th)); g.stroke();
     }
     g.setLineDash([]);
-    g.fillStyle = c4; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.fillText('decision', w - r + 5, Y((d.lv[0] + d.lv[1]) / 2));
-    g.fillText('threshold', w - r + 5, Y((d.lv[0] + d.lv[1]) / 2) + 11);
 
-    const xs = X(S.tau);
-    g.strokeStyle = c3; g.lineWidth = 1.6;
-    g.beginPath(); g.moveTo(xs, t); g.lineTo(xs, h - b); g.stroke();
-    g.fillStyle = c3; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('sample here', xs, t + 2);
+    const xs = P.X(S.tau);
+    g.strokeStyle = t.s5; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(xs, P.y0); g.lineTo(xs, P.y1); g.stroke();
+    P.unclip(g);
+
+    leader(g, P.x1 - P.w * 0.06, P.Y((d.lv[0] + d.lv[1]) / 2), 'decision threshold',
+      { box: P, colour: t.s4, size: P.fs, dx: -30, dy: -24 });
+    leader(g, xs, P.y0 + P.h * 0.06, 'sample here',
+      { box: P, colour: t.s5, size: P.fs, dot: false, dx: 26, dy: 16 });
 
     if (isFinite(m.gap) && m.gap > 0) {
       let lo = 0, hi = 0, best = Infinity;
@@ -570,177 +1051,142 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
         if (pm !== null && mn[i] - pm < best) { best = mn[i] - pm; lo = pm; hi = mn[i]; }
         pm = mx[i];
       }
-      g.strokeStyle = c3; g.lineWidth = 1.6;
-      const bx = xs + 10;
-      g.beginPath();
-      g.moveTo(bx - 5, Y(lo)); g.lineTo(bx + 5, Y(lo));
-      g.moveTo(bx, Y(lo)); g.lineTo(bx, Y(hi));
-      g.moveTo(bx - 5, Y(hi)); g.lineTo(bx + 5, Y(hi));
-      g.stroke();
-      g.fillStyle = c3; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('eye height ' + fmt(m.frac * 100, 0) + '%', bx + 8, Y((lo + hi) / 2) - 4);
+      const bx = Math.min(P.x1 - P.w * 0.04, Math.max(P.x0 + P.w * 0.04, xs + P.w * 0.035));
+      dimension(g, bx, P.Y(lo), bx, P.Y(hi),
+        'eye height ' + fmt(m.frac * 100, 0) + ' %', { colour: t.s5, size: P.fs });
     } else {
-      g.fillStyle = c2; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText('eye closed at this instant', X(0), Y(0));
+      g.fillStyle = t.bad; g.font = t.font(P.fs + 1, '500');
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('eye closed at this instant', P.X(0), P.Y(0));
     }
 
-    const half = m.width / 2;
-    const wy = Y(-1.5);
-    g.strokeStyle = c2; g.lineWidth = 1.6;
-    g.beginPath();
-    g.moveTo(X(-half), wy - 5); g.lineTo(X(-half), wy + 5);
-    g.moveTo(X(-half), wy); g.lineTo(X(half), wy);
-    g.moveTo(X(half), wy - 5); g.lineTo(X(half), wy + 5);
-    g.stroke();
-    g.fillStyle = c2; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('eye width ' + fmt(m.width, 2) + ' T', X(0), wy - 7);
-
-    g.strokeStyle = bd; g.lineWidth = 0.5; g.setLineDash([2, 3]);
-    [-0.5, 0, 0.5].forEach(x => { g.beginPath(); g.moveTo(X(x), t); g.lineTo(X(x), h - b); g.stroke(); });
-    g.setLineDash([]);
-    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-    const Tms = 1000 / S.rs;
-    [-1, -0.5, 0, 0.5, 1].forEach(x => g.fillText((x > 0 ? '+' : '') + x.toFixed(1) + 'T', X(x), h - b + 6));
-    [-1, 0, 1].forEach(x => g.fillText((x * Tms).toFixed(dec(2 * Tms)), X(x), h - b + 20));
-    g.textAlign = 'left'; g.fillText('ms', 4, h - b + 20);
+    const half = m.width / 2, wy = P.Y(-1.5);
+    dimension(g, P.X(-half), wy, P.X(half), wy,
+      'eye width ' + fmt(m.width, 2) + ' T', { colour: t.s2, size: P.fs });
   }
 
   function drawSpec() {
-    const c = $('cs'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c3 = cvv('--series-3');
-    const l = 46, r = 14, t = 46, b = 46;
-    const FR = 1.15;
-    const X = f => l + (f + FR) / (2 * FR) * (w - l - r);
-    const Y = v => t + (1.12 - v) / 1.24 * (h - t - b);
-    const rk = S.rs / 1000;
+    const c = $('cs'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const FR = 1.15, rk = S.rs / 1000;
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -FR * rk, max: FR * rk, unit: 'kHz', label: 'frequency' },
+      { min: 0, max: 1.12, label: 'filter gain |H(f)|' });
+    const fe = (1 + S.b) / 2;
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let v = 0; v <= 1.001; v += 0.25) {
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(2), l - 5, Y(v));
-    }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('|H(f)| gain', 4, 4);
+    band(g, P, P.X(-fe * rk), P.X(fe * rk), t.s5);
 
-    g.fillStyle = c1; g.globalAlpha = 0.16;
-    g.beginPath(); g.moveTo(l, Y(0));
-    for (let px = l; px <= w - r; px++) {
-      const f = (px - l) / (w - l - r) * 2 * FR - FR;
-      g.lineTo(px, Y(Hmag(f, S.b)));
-    }
-    g.lineTo(w - r, Y(0)); g.closePath(); g.fill();
-    g.globalAlpha = 1;
-    g.strokeStyle = c1; g.lineWidth = 2; g.beginPath();
-    for (let px = l; px <= w - r; px++) {
-      const f = (px - l) / (w - l - r) * 2 * FR - FR;
-      const y = Y(Hmag(f, S.b));
-      if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+    P.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 2; g.beginPath();
+    for (let px = P.x0; px <= P.x1; px++) {
+      const f = (px - P.x0) / P.w * 2 * FR - FR;
+      const y = P.Y(Hmag(f, S.b));
+      if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
     }
     g.stroke();
 
     if (S.filt === 'rrc') {
-      g.strokeStyle = c1; g.lineWidth = 1.2; g.setLineDash([5, 4]); g.globalAlpha = 0.7;
+      g.save();
+      g.strokeStyle = t.s1; g.lineWidth = 1.2; g.setLineDash([5, 4]); g.globalAlpha = 0.7;
       g.beginPath();
-      for (let px = l; px <= w - r; px++) {
-        const f = (px - l) / (w - l - r) * 2 * FR - FR;
-        const y = Y(HRC(f, S.b));
-        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      for (let px = P.x0; px <= P.x1; px++) {
+        const f = (px - P.x0) / P.w * 2 * FR - FR;
+        const y = P.Y(HRC(f, S.b));
+        if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
       }
-      g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
-      g.fillStyle = c1; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('dashed: the pair cascaded = raised cosine', X(-FR + 0.06), Y(0.62));
+      g.stroke(); g.restore();
     }
 
-    g.strokeStyle = c2; g.lineWidth = 1.1; g.setLineDash([4, 4]);
-    [-0.5, 0.5].forEach(f => { g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke(); });
+    g.strokeStyle = t.s2; g.lineWidth = 1.1; g.setLineDash([4, 4]);
+    [-0.5, 0.5].forEach(f => {
+      g.beginPath(); g.moveTo(P.X(f * rk), P.y0); g.lineTo(P.X(f * rk), P.y1); g.stroke();
+    });
     g.setLineDash([]);
-    g.fillStyle = c2; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('±Rs/2 = ±' + (rk / 2).toFixed(2) + ' kHz', X(0.5), t + 1);
+    P.unclip(g);
 
-    const fe = (1 + S.b) / 2;
-    const by = t - 20;
-    g.strokeStyle = c3; g.lineWidth = 1.6;
-    g.beginPath();
-    g.moveTo(X(-fe), by - 5); g.lineTo(X(-fe), by + 5);
-    g.moveTo(X(-fe), by); g.lineTo(X(fe), by);
-    g.moveTo(X(fe), by - 5); g.lineTo(X(fe), by + 5);
-    g.stroke();
-    g.fillStyle = c3; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('occupied bandwidth (RF) B = Rs(1+β) = ' + (rk * (1 + S.b)).toFixed(2) + ' kHz', X(0), by - 7);
-
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
-    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-    [-1, -0.5, 0, 0.5, 1].forEach(f => g.fillText((f * rk).toFixed(2), X(f), h - b + 6));
-    g.textAlign = 'right'; g.fillText('frequency, kHz', w - r, h - b + 20);
+    dimension(g, P.X(-fe * rk), P.Y(1.06), P.X(fe * rk), P.Y(1.06),
+      'B = ' + (rk * (1 + S.b)).toFixed(2) + ' kHz', { colour: t.s5, size: P.fs });
+    leader(g, P.X(0.5 * rk), P.Y(0.5), '±' + RS + '/2 = ±' + (rk / 2).toFixed(2) + ' kHz',
+      { box: P, colour: t.s2, size: P.fs, dx: 28, dy: -26 });
+    if (S.filt === 'rrc') {
+      leader(g, P.X(0.15 * rk), P.Y(HRC(0.15, S.b)), 'dashed — the cascaded pair',
+        { box: P, colour: t.s1, size: P.fs, dx: -30, dy: 26 });
+    }
   }
 
   function updateUI() {
-    $('rov').textContent = S.b.toFixed(2);
-    $('srv').textContent = (S.rs / 1000).toFixed(1) + ' kBd';
-    $('tov').textContent = (S.tau >= 0 ? '+' : '−') + Math.abs(S.tau).toFixed(2) + ' T';
-    $('snv').textContent = S.snr.toFixed(0) + ' dB';
-    $('trv').textContent = S.tr.toFixed(0);
-
     const m = metrics();
     const bits = L10(S.M) / L10(2);
     const B = S.rs * (1 + S.b);
     const Rb = S.rs * bits;
     const eff = bits / (1 + S.b);
 
-    $('cB').textContent = (B / 1000).toFixed(2) + ' kHz';
-    $('cR').textContent = (Rb / 1000).toFixed(2) + ' kbit/s';
+    $('cB').textContent = fmtEng(B, 'Hz', 2);
+    $('cR').textContent = fmtEng(Rb, 'bit/s', 2);
     $('cE').textContent = eff.toFixed(2) + ' bit/s/Hz';
+
+    const hv = $('heroVal'), hb = $('heroBadge'), hf = $('heroFt');
+    const marginTxt = isFinite(m.margin)
+      ? (m.margin >= 0 ? '+' : '−') + Math.abs(m.margin).toFixed(1) + ' dB'
+      : '—';
 
     if (!m.complete) {
       $('cH').textContent = '—';
-      $('cHf').textContent = 'not every level appeared — raise the trace count';
+      $('cHf').textContent = 'not every level appeared';
+      $('cH').style.color = '';
+      hv.innerHTML = '—<span class="u">% of ideal</span>';
+      hb.className = 'badge warn'; hb.textContent = 'not all levels seen';
+      hf.textContent = 'raise the trace count';
     } else if (!(m.gap > 0)) {
       $('cH').textContent = '0.00';
-      $('cHf').textContent = 'eye closed at this sampling instant';
-      $('cH').style.color = 'var(--text-warning)';
+      $('cHf').textContent = 'eye closed at this instant';
+      $('cH').style.color = 'var(--bad)';
+      hv.innerHTML = '0<span class="u">% of ideal</span>';
+      hb.className = 'badge bad'; hb.textContent = 'eye closed';
+      hf.textContent = 'no decision margin at this instant';
     } else {
       $('cH').textContent = fmt(m.frac, 3);
-      $('cHf').textContent = 'of the ideal ' + m.ideal.toFixed(3) + ' opening (2/(M−1))';
-      $('cH').style.color = m.frac > 0.7 ? 'var(--text-good)' : m.frac > 0.3 ? 'var(--text-warning)' : 'var(--series-2)';
+      $('cHf').textContent = 'of the ideal ' + m.ideal.toFixed(3) + ' opening';
+      $('cH').style.color = m.frac > 0.7 ? 'var(--good)' : m.frac > 0.3 ? 'var(--warn)' : 'var(--bad)';
+      hv.innerHTML = fmt(m.frac * 100, 0) + '<span class="u">% of ideal</span>';
+      const st = m.frac > 0.7 ? 'good' : m.frac > 0.3 ? 'warn' : 'bad';
+      hb.className = 'badge ' + st;
+      hb.textContent = st === 'good' ? 'eye open' : st === 'warn' ? 'marginal' : 'nearly closed';
+      hf.textContent = fmt(m.width, 2) + ' T wide · ' + marginTxt + ' noise margin';
     }
 
     $('cW').textContent = fmt(m.width, 2) + ' T';
-    $('cW').style.color = m.width > 0.6 ? 'var(--text-good)' : m.width > 0.25 ? 'var(--text-warning)' : 'var(--series-2)';
+    $('cW').style.color = m.width > 0.6 ? 'var(--good)' : m.width > 0.25 ? 'var(--warn)' : 'var(--bad)';
 
     if (isFinite(m.margin)) {
-      $('cM').textContent = (m.margin >= 0 ? '+' : '−') + Math.abs(m.margin).toFixed(1) + ' dB';
-      $('cM').style.color = m.margin >= 12 ? 'var(--text-good)' : m.margin >= 6 ? 'var(--text-warning)' : 'var(--series-2)';
-      $('cMf').textContent = 'opening ' + fmt(m.gap, 3) + ' over noise rms ' + fmt(m.sigma, 4)
-        + ', noise measured in B';
+      $('cM').textContent = marginTxt;
+      $('cM').style.color = m.margin >= 12 ? 'var(--good)' : m.margin >= 6 ? 'var(--warn)' : 'var(--bad)';
+      $('cMf').textContent = 'opening ' + fmt(m.gap, 3) + ' over rms ' + fmt(m.sigma, 4);
     } else {
       $('cM').textContent = '—';
-      $('cM').style.color = 'var(--text-warning)';
-      $('cMf').textContent = 'no margin — the eye is closed here';
+      $('cM').style.color = 'var(--bad)';
+      $('cMf').textContent = 'no margin — the eye is closed';
     }
 
     const rk = (S.rs / 1000);
     const steps = [
-      'Symbol period <b>T = 1/R<sub>s</sub> = 1/' + (S.rs).toFixed(0) + ' = ' + (1e6 / S.rs).toFixed(1)
-        + ' µs</b>, so one unit interval on the eye is that wide.',
+      'Symbol period <b>T = 1/R<sub>s</sub> = ' + fmtEng(1 / S.rs, 's', 1)
+        + '</b>, so one unit interval on the eye is that wide.',
       'Each symbol carries <b>log<sub>2</sub>(' + S.M + ') = ' + bits.toFixed(0) + ' bit'
-        + (bits > 1 ? 's' : '') + '</b>, so the bit rate is R<sub>b</sub> = ' + rk.toFixed(1) + ' × '
-        + bits.toFixed(0) + ' = <b>' + (Rb / 1000).toFixed(2) + ' kbit/s</b>.',
-      'The raised cosine occupies <b>B = R<sub>s</sub>(1 + β) = ' + rk.toFixed(1) + ' × (1 + '
-        + S.b.toFixed(2) + ') = ' + (B / 1000).toFixed(2) + ' kHz</b> once modulated onto a carrier (RF); at baseband it is half this. The RF Nyquist minimum is R<sub>s</sub> = '
-        + rk.toFixed(2) + ' kHz, so β = ' + S.b.toFixed(2) + ' is literally '
+        + (bits > 1 ? 's' : '') + '</b>, so the bit rate is R<sub>b</sub> = ' + rk.toFixed(1) + ' · '
+        + bits.toFixed(0) + ' = <b>' + fmtEng(Rb, 'bit/s', 2) + '</b>.',
+      'The raised cosine occupies <b>B = R<sub>s</sub>(1 + β) = ' + rk.toFixed(1) + ' · (1 + '
+        + S.b.toFixed(2) + ') = ' + fmtEng(B, 'Hz', 2) + '</b> once modulated onto a carrier (RF); at baseband it is half this. The RF Nyquist minimum is R<sub>s</sub> = '
+        + fmtEng(S.rs, 'Hz', 2) + ', so β = ' + S.b.toFixed(2) + ' is exactly '
         + (S.b * 100).toFixed(0) + ' per cent extra.',
       'Spectral efficiency is <b>R<sub>b</sub>/B = ' + (Rb / 1000).toFixed(2) + ' / ' + (B / 1000).toFixed(2)
-        + ' = ' + eff.toFixed(2) + ' bit/s/Hz</b>, which equals log<sub>2</sub>(M)/(1+β) = ' + bits.toFixed(0)
+        + ' = ' + eff.toFixed(2) + ' bit/s/Hz</b>, which equals log<sub>2</sub>(M)/(1 + β) = ' + bits.toFixed(0)
         + '/' + (1 + S.b).toFixed(2) + '.',
-      'The ideal gap between neighbouring levels is <b>2/(M−1) = ' + m.ideal.toFixed(3)
+      'The ideal gap between neighbouring levels is <b>2/(M − 1) = ' + m.ideal.toFixed(3)
         + '</b>. Measured on the eye at this sampling instant it is <b>' + fmt(m.gap, 3) + '</b>'
         + (m.complete && m.gap > 0 ? ', a fraction of ' + fmt(m.frac, 3) + '.' : '.'),
-      'At ' + S.snr.toFixed(0) + ' dB the noise rms is √(P<sub>s</sub>) × 10<sup>−SNR/20</sup> = √('
-        + m.ps.toFixed(3) + ') × ' + Math.pow(10, -S.snr / 20).toFixed(4) + ' = <b>' + fmt(m.sigma, 4)
+      'At ' + S.snr.toFixed(0) + ' dB the noise rms is √(P<sub>s</sub>) · 10<sup>−SNR/20</sup> = √('
+        + m.ps.toFixed(3) + ') · ' + Math.pow(10, -S.snr / 20).toFixed(4) + ' = <b>' + fmt(m.sigma, 4)
         + '</b>, giving a margin of 20 log<sub>10</sub>(' + fmt(m.gap, 3) + '/' + fmt(m.sigma, 4) + ') = <b>'
         + (isFinite(m.margin) ? fmt(m.margin, 1) + ' dB' : 'none, the eye is closed') + '</b>.'
     ];
@@ -755,8 +1201,11 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
     S.tau = +$('to').value;
     S.snr = +$('sn').value;
     S.tr = +$('tr').value;
+    S.span = Math.max(2, Math.round(+$('sp').value));
+    LSPAN = S.span;
   };
-  ['ro', 'sr', 'to', 'sn', 'tr'].forEach(id => $(id).addEventListener('input', () => { read(); render(); }));
+  [['ro', 'roN'], ['sr', 'srN'], ['to', 'toN'], ['sn', 'snN'], ['tr', 'trN'], ['sp', 'spN']]
+    .forEach(p => bindPair($(p[0]), $(p[1]), () => { read(); render(); }));
 
   const mbtn = { m2: 2, m4: 4, m8: 8 };
   Object.keys(mbtn).forEach(id => $(id).addEventListener('click', () => {
@@ -772,11 +1221,17 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
   }));
   $('nd').addEventListener('click', () => { S.seed = (S.seed * 1103515245 + 12345) >>> 0 || 1; render(); });
 
-  function setAll(o, msg) {
-    if (o.b !== undefined) $('ro').value = o.b;
-    if (o.rs !== undefined) $('sr').value = o.rs;
-    if (o.tau !== undefined) $('to').value = o.tau;
-    if (o.snr !== undefined) $('sn').value = o.snr;
+  function setRange(id, v) {
+    $(id).value = v;
+    const n = $(id + 'N');
+    if (n) n.value = $(id).value;
+  }
+
+  function apply(o) {
+    if (o.b !== undefined) setRange('ro', o.b);
+    if (o.rs !== undefined) setRange('sr', o.rs);
+    if (o.tau !== undefined) setRange('to', o.tau);
+    if (o.snr !== undefined) setRange('sn', o.snr);
     if (o.M !== undefined) {
       S.M = o.M;
       Object.keys(mbtn).forEach(k => $(k).classList.toggle('on', mbtn[k] === o.M));
@@ -786,25 +1241,37 @@ summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px;
       Object.keys(fbtn).forEach(k => $(k).classList.toggle('on', fbtn[k] === o.filt));
     }
     read(); render();
+  }
+
+  function setAll(o, msg) {
+    apply(o);
     $('tmsg').textContent = msg;
     $('ce').scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'center' });
   }
 
+  const presets = {
+    pDvbs: { b: 0.35, filt: 'rrc', M: 2, tau: 0 },
+    pDvbs2: { b: 0.05, filt: 'rrc', M: 2, tau: 0 },
+    pUmts: { b: 0.22, filt: 'rrc', M: 2, tau: 0 },
+    pPam8: { b: 0.30, filt: 'rc', M: 8, tau: 0 }
+  };
+  Object.keys(presets).forEach(id => $(id).addEventListener('click', () => apply(presets[id])));
+
   $('s1').addEventListener('click', () => setAll(
     { b: 0.35, rs: 2, tau: 0, snr: 20, M: 2, filt: 'rc' },
-    'Step 1 — two levels, roll-off 0.35, sampling dead centre. The eye is wide open: the traces collapse to two tight points at the sampling line because every other pulse is exactly zero there.'));
+    'Step 1 — β = 0.35, sampling dead centre. The eye is wide open.'));
   $('s2').addEventListener('click', () => setAll(
     { b: 0, rs: 2, tau: 0, snr: 20, M: 2, filt: 'rc' },
-    'Step 2 — roll-off dropped to 0. The spectrum is now the narrowest possible brick wall, Rs wide, and efficiency has risen. But the pulse tails decay only as 1/t, so the eye has narrowed to a spike: the height is still perfect at t = 0, the width is nearly gone.'));
+    'Step 2 — β = 0 is the narrowest band; the eye narrows to a spike.'));
   $('s3').addEventListener('click', () => setAll(
     { b: 0, rs: 2, tau: 0.25, snr: 20, M: 2, filt: 'rc' },
-    'Step 3 — the receiver clock is a quarter of a symbol late. With β = 0 that is enough to collapse the eye height and the noise margin, even though nothing about the transmitter changed.'));
+    'Step 3 — the clock is a quarter symbol late; the eye collapses.'));
   $('s4').addEventListener('click', () => setAll(
     { b: 1, rs: 2, tau: 0.25, snr: 20, M: 2, filt: 'rc' },
-    'Step 4 — same quarter-symbol timing error, roll-off now 1. The eye reopens and the margin comes back. The bill is on the spectrum card: bandwidth has doubled from Rs to 2Rs and efficiency has halved.'));
+    'Step 4 — β = 1 reopens the eye, for double the bandwidth.'));
   $('s5').addEventListener('click', () => setAll(
     { b: 0.35, rs: 2, tau: 0, snr: 20, M: 8, filt: 'rc' },
-    'Step 5 — eight levels, three bits per symbol. Efficiency triples at the same bandwidth, but there are now seven eyes stacked in the same voltage range, each a seventh as tall. The level spacing shrinks by a factor of 7, worth 16.9 dB, and the average symbol power falls too, handing 3.7 dB back: the measured noise margin drops by about 13 dB. That is the whole bandwidth-versus-power trade in one click.'));
+    'Step 5 — eight levels: three times the bits, about 13 dB less margin.'));
 
   window.addEventListener('resize', () => { drawWave(); drawPulse(); drawEye(); drawSpec(); });
   if (window.matchMedia) {

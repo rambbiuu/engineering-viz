@@ -4,197 +4,715 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Frequency reuse, cluster size and SIR</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230072bd' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 12c2.5 0 2.5-7 5-7s2.5 14 5 14 2.5-7 5-7 2.5 3.5 5 3.5'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --accent: #378ADD; --pos: #1D9E75; --neg: #D85A30; --mark: #D4537E;
-  --g1: #378ADD; --g2: #1D9E75; --g3: #D85A30; --g4: #7F77DD; --g5: #BA7517; --g6: #D4537E;
-  --g7: #639922; --g8: #A32D2D; --g9: #5DCAA5; --g10: #F0997B; --g11: #85B7EB; --g12: #ED93B1;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #1a1f26; --text-secondary: #55606c; --text-muted: #869099;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
-    --accent: #5AA6EE; --pos: #35B98D; --neg: #EE7A4E; --mark: #E87199;
-    --g1: #5AA6EE; --g2: #35B98D; --g3: #EE7A4E; --g4: #9A93E8; --g5: #D89230; --g6: #E87199;
-    --g7: #85B93D; --g8: #D45C5C; --g9: #7FDCBC; --g10: #F5B097; --g11: #A5CBF2; --g12: #F3AFC7;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #e9edf1; --text-secondary: #b0bac4; --text-muted: #7d8791;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1rem; }
-.hint { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: flex; flex-direction: column; gap: 1rem; }
+.stage { display: flex; flex-direction: column; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
+  .wrap > .full { grid-column: 1 / -1; }
+  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+}
+
+h1 { font-size: 23px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 13px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--accent); color: var(--accent); }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.7rem; }
-.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
-.ctl input[type=range] { flex: 1; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
-.tour { border-top: 1px solid var(--border); padding-top: 0.8rem; margin-top: 0.4rem; }
-.narr { font-size: 13px; color: var(--text-secondary); margin: 0.5rem 0 0; min-height: 20px; }
 .sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.legend-note { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--text-secondary); margin: 6px 0 0; }
-.legend-note i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.sec span { color: var(--text-secondary); font-size: 12.5px; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 12.5px; color: var(--text-secondary); }
+.hero .val { font-size: 34px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 13px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 13px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 12.5px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+.card .hd { font-size: 12.5px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-@media (prefers-reduced-motion: no-preference) { .card { transition: background-color 0.4s; } }
-.card.flash { background: var(--border); }
-canvas { width: 100%; display: block; }
-.t { border-bottom: 1px dotted var(--border-strong); cursor: help; position: relative; }
-.t::after { content: attr(data-def); position: absolute; left: 0; top: 145%; z-index: 5;
-  width: max-content; max-width: 230px; background: var(--surface-1); border: 1px solid var(--border);
-  border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.35; color: var(--text-secondary);
-  opacity: 0; pointer-events: none; }
-.t:hover::after, .t:focus::after { opacity: 1; }
-.rad { border-top: 1px solid currentColor; padding: 0 1px; }
-details { border-top: 1px solid var(--border); padding: 0.7rem 0; font-size: 13px; color: var(--text-secondary); }
-details summary { cursor: pointer; color: var(--text-primary); font-size: 14px; }
-details p, details dd { margin: 0.5rem 0; }
-.glossary dt { font-weight: 500; color: var(--text-primary); margin-top: 0.5rem; }
-.glossary dd { margin-left: 0; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
-th, td { text-align: right; padding: 5px 8px; border-bottom: 0.5px solid var(--border); }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
 th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.rad { border-top: 1px solid currentColor; padding: 0 1px; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Frequency reuse, cluster size and SIR</h1>
-<p class="sub">A network has far fewer channels than users, so it spends the same frequencies again and again in different places. How far apart two cells must sit before they may share a channel is the whole design.</p>
-<p class="hint">New to path loss? Start with <a href="radio-propagation.html">radio propagation</a>.</p>
+<div class="wrap">
 
-<div class="row">
-  <span class="lbl">Cluster size N</span>
-  <button id="N1">1</button><button id="N3">3</button><button id="N4">4</button>
-  <button id="N7" class="on">7</button><button id="N9">9</button><button id="N12">12</button>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Frequency reuse, cluster size and SIR</h1>
+  <p class="sub">A network has far fewer channels than users, so the same frequencies are spent again and again. How far apart two cells must sit before they may share a channel is the whole design.</p>
+  <p class="prereq">New to path loss? Start with <a href="radio-propagation.html">radio propagation</a>.</p>
+</header>
+
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">SIR, simplified model</div>
+    <div class="val"><span id="heroVal">&mdash;</span><span class="u">dB</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div>
+    <div class="presets">
+      <span class="lbl">Cluster size <span class="var">N</span></span>
+      <button type="button" id="N1">1</button><button type="button" id="N3">3</button><button type="button" id="N4">4</button>
+      <button type="button" id="N7" class="on">7</button><button type="button" id="N9">9</button><button type="button" id="N12">12</button>
+    </div>
+    <div class="presets">
+      <span class="lbl">Sectors per cell</span>
+      <button type="button" id="s1" class="on">omni</button><button type="button" id="s3">120&deg; &times; 3</button><button type="button" id="s6">60&deg; &times; 6</button>
+    </div>
+
+    <div class="ctl">
+      <label for="pe">Path-loss exponent <span class="var">n</span></label>
+      <div class="in">
+        <input type="range" id="pe" min="2" max="5" step="0.1" value="4">
+        <input type="number" id="peN" min="2" max="5" step="0.1" aria-label="Path-loss exponent">
+        <span class="unit">&nbsp;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="cr">Cell radius <span class="var">R</span></label>
+      <div class="in">
+        <input type="range" id="cr" min="0.2" max="20" step="0.1" value="3">
+        <input type="number" id="crN" min="0.2" max="20" step="0.1" aria-label="Cell radius in kilometres">
+        <span class="unit">km</span>
+      </div>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="pAmps">AMPS 7-cell</button>
+      <button type="button" id="pGsm">GSM 4/12</button>
+      <button type="button" id="pCdma">CDMA <span class="var">N</span> = 1</button>
+      <button type="button" id="pUrban">Dense urban 60&deg;</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="ctl">
+      <label for="ti">Co-channel tiers drawn</label>
+      <div class="in">
+        <input type="range" id="ti" min="1" max="3" step="1" value="2">
+        <input type="number" id="tiN" min="1" max="3" step="1" aria-label="Co-channel tiers drawn">
+        <span class="unit">&nbsp;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="ch">Channels in system</label>
+      <div class="in">
+        <input type="range" id="ch" min="100" max="1200" step="5" value="395">
+        <input type="number" id="chN" min="100" max="1200" step="5" aria-label="Channels in system">
+        <span class="unit">ch</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="tg">SIR design target</label>
+      <div class="in">
+        <input type="range" id="tg" min="6" max="30" step="1" value="18">
+        <input type="number" id="tgN" min="6" max="30" step="1" aria-label="SIR design target in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="mp">Mobile position <span class="var">&rho;</span></label>
+      <div class="in">
+        <input type="range" id="mp" min="0.2" max="1" step="0.05" value="1">
+        <input type="number" id="mpN" min="0.2" max="1" step="0.05" aria-label="Mobile position as a fraction of the cell radius">
+        <span class="unit">&times;R</span>
+      </div>
+    </div>
+  </details>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd">Cluster size <span class="var">N</span></div>
+      <div class="big" id="cN">&mdash;</div>
+      <div class="ft" id="cNn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Reuse ratio <span class="var">q</span> = D/R</div>
+      <div class="big" id="cQ">&mdash;</div>
+      <div class="ft">&radic;<span class="rad">3N</span>, dimensionless</div>
+    </div>
+    <div class="card">
+      <div class="hd">Reuse distance D</div>
+      <div class="big" id="cD">&mdash;</div>
+      <div class="ft" id="cDn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Co-channel interferers</div>
+      <div class="big" id="cI">&mdash;</div>
+      <div class="ft" id="cIn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Margin over target</div>
+      <div class="big" id="cS">&mdash;</div>
+      <div class="ft" id="cSn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Channels per cell</div>
+      <div class="big" id="cC">&mdash;</div>
+      <div class="ft" id="cCn">&mdash;</div>
+    </div>
+  </div>
+
 </div>
-<div class="row">
-  <span class="lbl">Sectors per cell</span>
-  <button id="s1" class="on">Omni</button><button id="s3">120&deg; &times; 3</button><button id="s6">60&deg; &times; 6</button>
+
+<div class="stage">
+
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="t1">1 &middot; reuse everything</button>
+    <button type="button" id="t2">2 &middot; spread it out</button>
+    <button type="button" id="t3">3 &middot; free space</button>
+    <button type="button" id="t4">4 &middot; add sectors</button>
+    <button type="button" id="t0">reset</button>
+  </div>
+  <p class="tour-note" id="narr">Press the steps in order; each one moves the controls.</p>
+
+  <p class="sec"><b>1 &middot; The map</b> <span>&mdash; same group number, same channels</span></p>
+  <canvas id="map" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>co-channel cells, bold outline</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>reuse distance D</li>
+    <li><span class="sw" style="background:var(--series-3)"></span>other tints &mdash; other groups</li>
+  </ul>
+
+  <p class="sec"><b>2 &middot; What the mobile hears</b> <span>&mdash; one wanted site, the co-channel interferers D away</span></p>
+  <canvas id="geo" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>wanted signal</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>counted interferer</li>
+    <li><span class="sw dash" style="color:var(--text-secondary)"></span>rejected by the sector</li>
+    <li>course model rounds to D&minus;R, D, D+R</li>
+  </ul>
+
+  <p class="sec"><b>3 &middot; The trade-off</b> <span>&mdash; bigger cluster, quieter air, fewer channels</span></p>
+  <canvas id="tr" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>omni, 6 interferers</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>120&deg; sectors, 2</li>
+    <li><span class="sw" style="background:var(--series-3)"></span>60&deg; sectors, 1</li>
+    <li><span class="sw" style="background:var(--series-4)"></span>where you are now</li>
+  </ul>
+
+  <details>
+    <summary>Worked example, with the current numbers</summary>
+    <table id="wex"></table>
+    <p style="font-size:13px;color:var(--text-secondary)">The three SIR rows place the interferers differently: all at D, at the true distances from a mobile at the cell edge, or all at the closest distance D&nbsp;&minus;&nbsp;R. Quote which one you used.</p>
+  </details>
+
+  <details>
+    <summary>What the model leaves out</summary>
+    <p style="font-size:13px;color:var(--text-secondary)">Deterministic path loss with one exponent, ideal sector wedges and first-tier interference only. Real planning adds shadowing, terrain and antenna front-to-back ratio. Sectoring cuts interferers from six to two, worth about 4.8 dB, but each sector trunks its channels separately, so traffic per cell drops unless N drops too.</p>
+  </details>
+
+  <details>
+    <summary>Glossary</summary>
+    <dl class="glossary">
+      <dt>Cell radius R</dt><dd>Centre of the cell to a corner of the hexagon, not to an edge. Neighbouring cell centres sit &radic;3&nbsp;R apart.</dd>
+      <dt>Cluster size N</dt><dd>How many cells share out the whole channel list before the pattern repeats. Only N = <span class="var">i</span>&sup2; + <span class="var">ij</span> + <span class="var">j</span>&sup2; works: 1, 3, 4, 7, 9, 12, 13&hellip; never 2, 5, 6.</dd>
+      <dt>Co-channel cells</dt><dd>Cells using the same channels. Nothing separates them except distance or antenna direction.</dd>
+      <dt>Reuse distance D</dt><dd>Centre-to-centre distance to the nearest co-channel cell, D = R&radic;<span class="rad">3N</span>.</dd>
+      <dt>Path-loss exponent <span class="var">n</span></dt><dd>How fast power falls with distance: power &prop; <span class="var">d</span><sup>&minus;<span class="var">n</span></sup>. <span class="var">n</span> = 2 in free space, <span class="var">n</span> &asymp; 4 in a town.</dd>
+      <dt>Site</dt><dd>One base station and its antennas. One hexagon on the map is one site.</dd>
+      <dt>SIR</dt><dd>Signal-to-interference ratio: wanted power divided by the sum of the co-channel powers. Noise is ignored; interference dominates in a dense network.</dd>
+      <dt>Tier</dt><dd>A ring of co-channel cells. Tier 1 holds the six nearest; tier 2 sits further out and is normally ignored.</dd>
+    </dl>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: <a href="link-budget.html">link budget</a> &mdash; the same decibels, against noise instead of interference.</p>
+
 </div>
-<div class="grid2">
-  <div class="ctl"><label for="pe">Path loss exponent n</label><input type="range" id="pe" min="2" max="5" step="0.1" value="4"><span class="v" id="pev">4.0</span></div>
-  <div class="ctl"><label for="ti">Co-channel tiers</label><input type="range" id="ti" min="1" max="3" step="1" value="2"><span class="v" id="tiv">2</span></div>
-  <div class="ctl"><label for="ch">Channels in system</label><input type="range" id="ch" min="100" max="1200" step="5" value="395"><span class="v" id="chv">395</span></div>
 </div>
-
-<div class="tour row">
-  <span class="lbl">Guided tour</span>
-  <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button><button id="t4">4</button>
-  <p class="narr" id="narr">Step through four states, or move the controls yourself.</p>
-</div>
-
-<p class="sec"><b>1 &middot; The map</b> <span>&mdash; same colour, same channels</span></p>
-<canvas id="map" style="height: 440px;"></canvas>
-<p class="legend-note">
-  <span><i style="background: var(--g1)"></i>co-channel cells &mdash; same frequencies</span>
-  <span><i style="background: var(--mark)"></i>measured reuse distance D</span>
-  <span><i style="background: var(--text-muted)"></i>other colours &mdash; other channel groups</span>
-</p>
-
-<div class="cards">
-  <div class="card">
-    <div class="hd">Cluster size N</div>
-    <div class="big" id="cN">&mdash;</div>
-    <div class="ft" id="cNn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Reuse ratio q = D/R</div>
-    <div class="big" id="cQ">&mdash;</div>
-    <div class="ft">&radic;<span class="rad">3N</span>, dimensionless</div>
-  </div>
-  <div class="card">
-    <div class="hd">Reuse distance D</div>
-    <div class="big" id="cD">&mdash;</div>
-    <div class="ft" id="cDn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Co-channel interferers</div>
-    <div class="big" id="cI">&mdash;</div>
-    <div class="ft" id="cIn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">SIR, simplified model</div>
-    <div class="big" id="cS">&mdash;</div>
-    <div class="ft" id="cSn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Channels per cell</div>
-    <div class="big" id="cC">&mdash;</div>
-    <div class="ft" id="cCn">&mdash;</div>
-  </div>
-</div>
-
-<p class="sec"><b>2 &middot; What the mobile hears</b> <span>&mdash; one wanted tower, six shouting from D away</span></p>
-<canvas id="geo" style="height: 380px;"></canvas>
-<p class="legend-note">
-  <span><i style="background: var(--pos)"></i>wanted signal, distance R</span>
-  <span><i style="background: var(--neg)"></i>interferer inside this sector</span>
-  <span><i style="background: var(--text-muted)"></i>interferer the antenna rejects</span>
-  <span>course model rounds these to D&minus;R, D, D+R</span>
-</p>
-
-<p class="sec"><b>3 &middot; The trade-off</b> <span>&mdash; bigger cluster, quieter air, fewer channels</span></p>
-<canvas id="tr" style="height: 290px;"></canvas>
-<p class="legend-note">
-  <span><i style="background: var(--g1)"></i>omni, 6 interferers</span>
-  <span><i style="background: var(--g2)"></i>120&deg; sectors, 2</span>
-  <span><i style="background: var(--g3)"></i>60&deg; sectors, 1</span>
-  <span><i style="background: var(--mark)"></i>where you are now</span>
-</p>
-
-<details>
-  <summary>Worked example &mdash; N = 7, n = 4, omnidirectional</summary>
-  <table id="wex"></table>
-  <p>The three rows differ because they place the six interferers differently: all at D, at the true distances from a mobile on the cell edge, or all at the closest distance D&nbsp;&minus;&nbsp;R. Quote which one you used, always.</p>
-  <p>Small N gives every cell a fat slice of the spectrum, but the co-channel cells crowd in and SIR collapses. The escape is sectoring: three directional antennas per site cut the first-tier interferers from six to two, worth about 4.8 dB, which usually buys a step down in N. That gain is not free &mdash; each sector trunks its channels separately, so the traffic a cell carries drops unless N drops too, and every handover count rises. The model here is deterministic path loss with one exponent, ideal sector wedges and first-tier interference only; real planning adds shadowing, terrain and antenna front-to-back ratio on top.</p>
-</details>
-
-<details>
-  <summary>Glossary</summary>
-  <dl class="glossary">
-    <dt>Cell radius R</dt><dd>Centre of the cell to a corner of the hexagon, not to an edge. Neighbouring cell centres sit &radic;3&nbsp;R apart.</dd>
-    <dt>Cluster size N</dt><dd>How many cells share out the whole channel list before the pattern repeats. Only N = i&sup2; + ij + j&sup2; works: 1, 3, 4, 7, 9, 12, 13&hellip; never 2, 5, 6.</dd>
-    <dt>Co-channel cells</dt><dd>Cells using the same channels. They interfere with each other and nothing can be done about it except distance or antenna direction.</dd>
-    <dt>Reuse distance D</dt><dd>Centre-to-centre distance to the nearest co-channel cell, D = R&radic;<span class="rad">3N</span>.</dd>
-    <dt>Path loss exponent n</dt><dd>How fast power falls with distance: power &prop; d<sup>&minus;n</sup>. n = 2 in free space, n &asymp; 4 in a town.</dd>
-    <dt>SIR</dt><dd>Signal-to-interference ratio: wanted power divided by the sum of the co-channel powers. Noise is ignored; interference dominates in a dense network.</dd>
-    <dt>Tier</dt><dd>A ring of co-channel cells. Tier 1 holds the six nearest; tier 2 sits further out and is normally ignored.</dd>
-  </dl>
-</details>
-
-<p class="hint" style="margin-top: 1.5rem;">Next: <a href="link-budget.html">link budget</a> &mdash; the same decibels, against noise instead of interference.</p>
 
 <script>
 (function () {
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ---- tool code ---- */
   const $ = id => document.getElementById(id);
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
   const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
   const SQ3 = Math.sqrt(3);
   const D2R = Math.PI / 180;
-  const f = (x, d) => (isFinite(x) ? x : 0).toFixed(d);
 
   const NLIST = [1, 3, 4, 7, 9, 12];
   const IJ = { 1: [1, 0], 3: [1, 1], 4: [2, 0], 7: [1, 2], 9: [3, 0], 12: [2, 2] };
-  const S = { N: 7, sec: 1, n: 4, tiers: 2, chan: 395 };
+  const S = { N: 7, sec: 1, n: 4, tiers: 2, chan: 395, R: 3, tgt: 18, rho: 1 };
 
   const mod = (x, m) => ((x % m) + m) % m;
   const qOf = N => Math.sqrt(3 * N);
@@ -258,13 +776,6 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   }
   const sirCons = (N, n) => Math.pow(Math.max(qOf(N) - 1, 1e-6), n) / 6;
 
-  function fit(c) {
-    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
-  }
   function hexPath(g, x, y, R, pointy) {
     g.beginPath();
     for (let k = 0; k < 6; k++) {
@@ -274,241 +785,256 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     }
     g.closePath();
   }
-  function mast(g, x, y, s, col) {
-    g.strokeStyle = col; g.lineWidth = 1.2;
+  // plan-view site mark: thin circle with a centred cross, structure colour
+  function site(g, x, y, r, t) {
+    const s = Math.max(1.6, Math.min(r * 0.22, 9));
+    g.save();
+    g.strokeStyle = t.text; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.arc(x, y, s * 0.52, 0, 2 * Math.PI); g.stroke();
     g.beginPath();
-    g.moveTo(x - s * 0.5, y + s * 0.6); g.lineTo(x, y - s * 0.9);
-    g.lineTo(x + s * 0.5, y + s * 0.6);
-    g.moveTo(x - s * 0.3, y - s * 0.1); g.lineTo(x + s * 0.3, y - s * 0.1);
-    g.moveTo(x, y - s * 0.9); g.lineTo(x, y - s * 1.5);
+    g.moveTo(x, y - s); g.lineTo(x, y + s);
+    g.moveTo(x - s, y); g.lineTo(x + s, y);
     g.stroke();
+    g.restore();
   }
-  function chip(g, txt, x, y, col) {
-    g.font = fnt(11);
-    const wpx = g.measureText(txt).width;
-    g.fillStyle = cvv('--bg'); g.globalAlpha = 0.88;
-    g.fillRect(x - wpx / 2 - 3, y - 8, wpx + 6, 16);
-    g.globalAlpha = 1;
-    g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(txt, x, y);
-  }
-  function arrow(g, x0, y0, x1, y1, col) {
-    const ang = Math.atan2(y1 - y0, x1 - x0), A = 0.42;
-    g.strokeStyle = col; g.lineWidth = 1.4;
-    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
-    [[x0, y0, ang], [x1, y1, ang + Math.PI]].forEach(t => {
-      g.beginPath();
-      g.moveTo(t[0], t[1]); g.lineTo(t[0] + 9 * Math.cos(t[2] + A), t[1] + 9 * Math.sin(t[2] + A));
-      g.moveTo(t[0], t[1]); g.lineTo(t[0] + 9 * Math.cos(t[2] - A), t[1] + 9 * Math.sin(t[2] - A));
-      g.stroke();
-    });
+
+  // equal-scale plan view: pads fixed first so the two axes share one km-per-pixel
+  function eqPlot(g, w, h, halfY, title) {
+    const fs = Math.max(12, Math.round(w / 78));
+    let padL = fs * 4.4, padR = fs * 1.6;
+    let padT = title ? fs + 14 : Math.max(7, fs * 0.7), padB = fs * 2.9;
+    padL = Math.min(padL, w * 0.42); padR = Math.min(padR, w * 0.22);
+    padT = Math.min(padT, h * 0.28); padB = Math.min(padB, h * 0.38);
+    const iw = Math.max(12, w - padL - padR), ih = Math.max(12, h - padT - padB);
+    const hy = Math.max(halfY, 1e-3), hx = Math.max(hy * (iw / ih), 1e-3);
+    return graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -hx, max: hx, unit: 'km', label: 'east' },
+      { min: -hy, max: hy, unit: 'km', label: 'north' },
+      { padL: padL, padR: padR, padT: padT, padB: padB, fontSize: fs, title: title });
   }
 
   function drawMap() {
-    const c = $('map'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
-    const pal = [];
-    for (let k = 1; k <= 12; k++) pal.push(cvv('--g' + k));
-    const N = S.N, q = qOf(N);
-    const extent = q * tierScale(S.tiers) + 1.3;
-    const R = Math.max(Math.min(w, h) / (2 * extent), 4);
-    const cx = w / 2, cy = h / 2;
-    const bMax = Math.ceil(h / (2 * 1.5 * R)) + 2;
-    const aMax = Math.ceil(w / (2 * SQ3 * R)) + bMax + 2;
+    const c = $('map'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const N = S.N, q = qOf(N), Rk = Math.max(S.R, 0.05);
+    const half = Rk * (q * tierScale(S.tiers) + 1.35);
+    const P = eqPlot(g, w, h, half,
+      'N = ' + N + ' · ' + N + ' channel groups, then the pattern repeats');
+    const Rpx = Math.max(P.X(Rk) - P.X(0), 0.5);
+    const cx = P.X(0), cy = P.Y(0);
     const home = gidx(0, 0, N);
+    const ann = Math.max(12, Math.round(w / 62));
+    const bMax = Math.min(60, Math.ceil(half / (1.5 * Rk)) + 2);
+    const aMax = Math.min(140, Math.ceil(half * (P.w / P.h) / (SQ3 * Rk)) + bMax + 2);
+    const numFs = Math.min(P.fs, Rpx * 0.5);
+    const showNum = numFs >= 10;
 
+    P.clip(g);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
     for (let b = -bMax; b <= bMax; b++) {
       for (let a = -aMax; a <= aMax; a++) {
-        const x = cx + R * SQ3 * (a + b / 2), y = cy - R * 1.5 * b;
-        if (x < -R || x > w + R || y < -R || y > h + R) continue;
+        const px = P.X(Rk * SQ3 * (a + b / 2)), py = P.Y(Rk * 1.5 * b);
+        if (px < P.x0 - Rpx * 1.2 || px > P.x1 + Rpx * 1.2) continue;
+        if (py < P.y0 - Rpx * 1.2 || py > P.y1 + Rpx * 1.2) continue;
         const gi = gidx(a, b, N), same = gi === home;
-        hexPath(g, x, y, R, true);
-        g.fillStyle = pal[gi % 12];
-        g.globalAlpha = same ? 0.55 : 0.15;
+        hexPath(g, px, py, Rpx, true);
+        g.fillStyle = t.s[gi % 7];
+        g.globalAlpha = same ? 0.26 : 0.08;
         g.fill();
         g.globalAlpha = 1;
-        g.strokeStyle = cvv('--border-strong'); g.lineWidth = same ? 1.2 : 0.5;
+        g.strokeStyle = same ? t.s1 : t.gridStrong;
+        g.lineWidth = same ? 1.4 : 0.5;
         g.stroke();
-        if (same && R > 9) mast(g, x, y - R * 0.05, R * 0.34, ink);
+        if (showNum) {
+          g.font = t.font(numFs);
+          g.fillStyle = same ? t.s1 : t.text2;
+          g.fillText(String(gi + 1), px, py + Rpx * 0.45);
+        }
+        if (same && Rpx > 8) site(g, px, py, Rpx, t);
       }
     }
 
-    // tier rings
-    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([4, 5]);
+    // co-channel tier rings
+    g.strokeStyle = t.text2; g.lineWidth = 0.7; g.setLineDash([4, 3]);
+    let outer = 0;
     for (let k = 1; k <= S.tiers; k++) {
-      const rad = q * tierScale(k) * R;
+      const rad = q * tierScale(k) * Rpx;
+      if (!(rad > 0) || !isFinite(rad)) continue;
+      outer = rad;
       g.beginPath(); g.arc(cx, cy, rad, 0, 2 * Math.PI); g.stroke();
-      g.setLineDash([]);
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
-      if (cy + rad + 14 < h) g.fillText('tier ' + k, cx, cy + rad + 3);
-      g.setLineDash([4, 5]);
     }
     g.setLineDash([]);
 
-    // home cell, sector lines, R measure
-    hexPath(g, cx, cy, R, true);
-    g.strokeStyle = ink; g.lineWidth = 1.8; g.stroke();
+    // home cell outline and sector boresights
+    hexPath(g, cx, cy, Rpx, true);
+    g.strokeStyle = t.axis; g.lineWidth = 1.8; g.stroke();
     if (S.sec > 1) {
       const th0 = Math.atan2(1.5 * IJ[N][1], SQ3 * (IJ[N][0] + IJ[N][1] / 2)) / D2R;
-      const c0 = wedgeCentre(th0), half = halfWedge();
-      g.strokeStyle = ink; g.lineWidth = 1;
+      const c0 = wedgeCentre(th0), hw = halfWedge();
+      g.strokeStyle = t.axis; g.lineWidth = 1;
       for (let k = 0; k < S.sec; k++) {
-        const ang = (c0 + half + k * 2 * half) * D2R;
+        const ang = (c0 + hw + k * 2 * hw) * D2R;
         g.beginPath(); g.moveTo(cx, cy);
-        g.lineTo(cx + R * Math.cos(ang), cy - R * Math.sin(ang));
+        g.lineTo(cx + Rpx * Math.cos(ang), cy - Rpx * Math.sin(ang));
         g.stroke();
       }
     }
-    const vx = cx + R * Math.cos(D2R * 30), vy = cy - R * Math.sin(D2R * 30);
-    g.strokeStyle = sub; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(vx, vy); g.stroke();
-    if (R > 14) chip(g, 'R', (cx + vx) / 2, (cy + vy) / 2 - 8, sub);
+    P.unclip(g);
 
-    // measured reuse distance to the nearest co-channel cell
+    // real dimensions: cell radius, and the reuse distance to the nearest co-channel site
     const cell = sixCells(N)[0];
-    const tx = cx + R * SQ3 * (cell[0] + cell[1] / 2), ty = cy - R * 1.5 * cell[1];
-    arrow(g, cx, cy, tx, ty, cvv('--mark'));
-    chip(g, 'D = ' + f(q, 2) + ' R', (cx + tx) / 2, (cy + ty) / 2, cvv('--mark'));
+    const tx = P.X(Rk * SQ3 * (cell[0] + cell[1] / 2)), ty = P.Y(Rk * 1.5 * cell[1]);
+    // R runs to the 150° vertex; D always leaves in the 0–60° quadrant, so they never collide
+    if (Rpx > 16) {
+      dimension(g, cx, cy, P.X(Rk * Math.cos(D2R * 150)), P.Y(Rk * Math.sin(D2R * 150)),
+        'R = ' + fmtEng(Rk, 'km', 1), { size: ann - 1 });
+    }
+    dimension(g, cx, cy, tx, ty, 'D = ' + fmtEng(q * Rk, 'km', 1),
+      { colour: t.s2, size: ann - 1 });
 
-    g.fillStyle = ink; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('N = ' + N + ': ' + N + ' channel groups, then the pattern repeats', 8, 8);
-    g.fillStyle = sub;
-    g.fillText('(i, j) = (' + IJ[N][0] + ', ' + IJ[N][1] + ')', 8, 24);
-    g.textAlign = 'right';
-    g.fillText('one hexagon = one base station', w - 8, 8);
+    leader(g, tx, ty, 'nearest co-channel site', { box: P, colour: t.s2, size: ann, dx: 28, dy: -24 });
+    leader(g, cx, cy, 'one hexagon = one site', { box: P, size: ann, dx: -30, dy: 30 });
+    if (outer > 0) {
+      leader(g, cx, cy + outer, 'tier ' + S.tiers, { box: P, size: ann, dx: 24, dy: 20, dot: false });
+    }
   }
 
   function drawGeo() {
-    const c = $('geo'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
-    const q = qOf(S.N), n = S.n;
-    const R = Math.max(Math.min(w / 2 - 78, h / 2 - 26) / (q + 1.15), 6);
-    const cx = w / 2, cy = h / 2;
-    const vis = seen(0), half = halfWedge(), c0 = wedgeCentre(0);
-
-    if (S.sec > 1) {
-      g.fillStyle = cvv('--neg'); g.globalAlpha = 0.08;
-      g.beginPath(); g.moveTo(cx, cy);
-      g.arc(cx, cy, q * R + R, -(c0 + half) * D2R, -(c0 - half) * D2R);
-      g.closePath(); g.fill();
-      g.globalAlpha = 1;
-      g.strokeStyle = cvv('--neg'); g.lineWidth = 1; g.setLineDash([3, 4]);
-      [c0 - half, c0 + half].forEach(a => {
-        g.beginPath(); g.moveTo(cx, cy);
-        g.lineTo(cx + (q * R + R) * Math.cos(a * D2R), cy - (q * R + R) * Math.sin(a * D2R));
-        g.stroke();
-      });
-      g.setLineDash([]);
-    }
-
-    const mx = cx + R, my = cy;
-    for (let k = 0; k < 6; k++) {
-      const th = 60 * k * D2R;
-      const ix = cx + q * R * Math.cos(th), iy = cy - q * R * Math.sin(th);
-      hexPath(g, ix, iy, R, false);
-      g.fillStyle = cvv('--g1'); g.globalAlpha = vis[k] ? 0.35 : 0.12; g.fill(); g.globalAlpha = 1;
-      g.strokeStyle = cvv('--border-strong'); g.lineWidth = 0.6; g.stroke();
-      mast(g, ix, iy, R * 0.3, vis[k] ? cvv('--neg') : mut);
-      const d = Math.hypot(ix - mx, iy - my) / R;
-      g.strokeStyle = vis[k] ? cvv('--neg') : mut;
-      g.lineWidth = vis[k] ? 1.6 : 0.9;
-      g.globalAlpha = vis[k] ? 0.95 : 0.45;
-      if (!vis[k]) g.setLineDash([4, 4]);
-      g.beginPath(); g.moveTo(mx, my); g.lineTo(ix, iy); g.stroke();
-      g.setLineDash([]); g.globalAlpha = 1;
-      const lx = mx + (ix - mx) * 0.56, ly = my + (iy - my) * 0.56;
-      chip(g, f(d, 2) + ' R', Math.min(Math.max(lx, 30), w - 30), ly, vis[k] ? cvv('--neg') : mut);
-    }
-
-    hexPath(g, cx, cy, R, false);
-    g.fillStyle = cvv('--pos'); g.globalAlpha = 0.16; g.fill(); g.globalAlpha = 1;
-    g.strokeStyle = ink; g.lineWidth = 1.6; g.stroke();
-    mast(g, cx, cy, R * 0.36, ink);
-    g.strokeStyle = cvv('--pos'); g.lineWidth = 2.2;
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(mx, my); g.stroke();
-    g.fillStyle = cvv('--pos');
-    g.beginPath(); g.arc(mx, my, 4.5, 0, 2 * Math.PI); g.fill();
-    chip(g, '1.00 R', (cx + mx) / 2, cy - 11, cvv('--pos'));
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('mobile at the cell edge', Math.min(mx + 8, w - 130), my + 8);
+    const c = $('geo'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const q = qOf(S.N), n = S.n, Rk = Math.max(S.R, 0.05), rho = Math.max(S.rho, 0.05);
+    const vis = seen(0), hw = halfWedge(), c0 = wedgeCentre(0);
 
     let inv = 0, cnt = 0;
     for (let k = 0; k < 6; k++) {
       if (!vis[k]) continue;
       const th = 60 * k * D2R;
-      const d = Math.hypot(q * Math.cos(th) - 1, q * Math.sin(th));
+      const d = Math.hypot(q * Math.cos(th) - rho, q * Math.sin(th));
       inv += Math.pow(Math.max(d, 1e-6), -n); cnt++;
     }
-    const ex = inv > 0 ? dB(1 / inv) : 0;
-    g.fillStyle = ink; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText(cnt === 1 ? 'SIR from this one distance: ' + f(ex, 1) + ' dB'
-      : 'SIR from these ' + cnt + ' distances: ' + f(ex, 1) + ' dB', 8, 8);
-    g.fillStyle = sub;
-    g.fillText('n = ' + f(n, 1) + ', wanted tower at 1.00 R', 8, 24);
+    const ex = inv > 0 ? dB(Math.pow(rho, -n) / inv) : 0;
+    const title = (cnt === 1 ? 'SIR from this one distance: ' : 'SIR from these ' + cnt + ' distances: ')
+      + fmtNum(ex, 1) + ' dB';
+
+    const P = eqPlot(g, w, h, Rk * (q + 1.35), title);
+    const Rpx = Math.max(P.X(Rk) - P.X(0), 0.5);
+    const cx = P.X(0), cy = P.Y(0);
+    const mx = P.X(rho * Rk), my = cy;
+    const ann = Math.max(12, Math.round(w / 62));
+
+    P.clip(g);
+    if (S.sec > 1) {
+      const reach = Rpx * (q + 1);
+      g.fillStyle = t.s2; g.globalAlpha = 0.10;
+      g.beginPath(); g.moveTo(cx, cy);
+      g.arc(cx, cy, reach, -(c0 + hw) * D2R, -(c0 - hw) * D2R);
+      g.closePath(); g.fill();
+      g.globalAlpha = 1;
+      g.strokeStyle = t.s2; g.lineWidth = 1; g.setLineDash([4, 3]);
+      [c0 - hw, c0 + hw].forEach(a => {
+        g.beginPath(); g.moveTo(cx, cy);
+        g.lineTo(cx + reach * Math.cos(a * D2R), cy - reach * Math.sin(a * D2R));
+        g.stroke();
+      });
+      g.setLineDash([]);
+    }
+
+    let near = -1, nearD = Infinity;
+    for (let k = 0; k < 6; k++) {
+      const th = 60 * k * D2R;
+      const ix = P.X(q * Rk * Math.cos(th)), iy = P.Y(q * Rk * Math.sin(th));
+      hexPath(g, ix, iy, Rpx, false);
+      g.fillStyle = t.s2; g.globalAlpha = vis[k] ? 0.14 : 0.05; g.fill(); g.globalAlpha = 1;
+      g.strokeStyle = t.gridStrong; g.lineWidth = 0.5; g.stroke();
+      site(g, ix, iy, Rpx, t);
+      const d = Math.hypot(q * Math.cos(th) - rho, q * Math.sin(th));
+      if (vis[k]) {
+        if (d < nearD) { nearD = d; near = k; }
+        dimension(g, mx, my, ix, iy, fmtNum(d, 2) + ' R', { colour: t.s2, size: ann - 1 });
+      } else {
+        g.strokeStyle = t.text2; g.lineWidth = 1; g.setLineDash([4, 4]); g.globalAlpha = 0.55;
+        g.beginPath(); g.moveTo(mx, my); g.lineTo(ix, iy); g.stroke();
+        g.setLineDash([]); g.globalAlpha = 1;
+      }
+    }
+
+    hexPath(g, cx, cy, Rpx, false);
+    g.fillStyle = t.s1; g.globalAlpha = 0.12; g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = t.axis; g.lineWidth = 1.6; g.stroke();
+    site(g, cx, cy, Rpx, t);
+    dimension(g, cx, cy, mx, my, fmtNum(rho, 2) + ' R', { colour: t.s1, size: ann - 1 });
+    g.fillStyle = t.s1;
+    g.beginPath(); g.arc(mx, my, Math.max(2.5, Math.min(6, P.h * 0.016)), 0, 2 * Math.PI); g.fill();
+    P.unclip(g);
+
+    leader(g, mx, my, 'mobile', { box: P, colour: t.s1, size: ann, dx: 26, dy: 30 });
+    if (near >= 0) {
+      const th = 60 * near * D2R;
+      leader(g, P.X(q * Rk * Math.cos(th)), P.Y(q * Rk * Math.sin(th)), 'closest interferer',
+        { box: P, colour: t.s2, size: ann, dx: 26, dy: -26 });
+    }
   }
 
   function drawTrade() {
-    const c = $('tr'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
+    const c = $('tr'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
     const NS = [1, 3, 4, 7, 9, 12, 13, 16, 19, 21];
-    const cfg = [[6, '--g1', 'omni'], [2, '--g2', '120' + String.fromCharCode(176)], [1, '--g3', '60' + String.fromCharCode(176)]];
-    const l = 50, r = 52, t = 16, b = 40;
-    const X = i => l + i / (NS.length - 1) * (w - l - r);
-    let lo = 18, hi = 18;
+    const cfg = [[6, 0, 'omni'], [2, 1, '120° × 3'], [1, 2, '60° × 6']];
+    let lo = S.tgt, hi = S.tgt;
     NS.forEach(N => cfg.forEach(cf => {
       const v = dB(sirSimp(N, S.n, cf[0]));
-      lo = Math.min(lo, v); hi = Math.max(hi, v);
+      if (isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
     }));
     lo = Math.floor((lo - 3) / 5) * 5; hi = Math.ceil((hi + 3) / 5) * 5;
     if (hi - lo < 10) hi = lo + 10;
-    const step = (hi - lo) > 55 ? 10 : 5;
-    const Y = v => t + (hi - Math.min(Math.max(v, lo), hi)) / (hi - lo) * (h - t - b);
 
-    g.font = fnt(11);
-    for (let v = lo; v <= hi + 0.001; v += step) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(f(v, 0), l - 6, Y(v));
-    }
-    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('SIR (dB)', 4, 2);
-    NS.forEach((N, i) => {
-      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(String(N), X(i), h - b + 7);
-    });
-    g.fillText('cluster size N (cells per cluster)', l + (w - l - r) / 2, h - 16);
+    const fs = Math.max(12, Math.round(w / 78));
+    const ann = Math.max(12, Math.round(w / 62));
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: 22, unit: 'cells', label: 'cluster size N', dec: 0 },
+      { min: lo, max: hi, unit: 'dB', label: 'SIR, simplified model' },
+      { fontSize: fs });
 
-    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
-    g.beginPath(); g.moveTo(l, Y(18)); g.lineTo(w - r, Y(18)); g.stroke();
+    band(g, P, P.Y(lo), P.Y(S.tgt), t.bad, 'y');
+    g.strokeStyle = t.bad; g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P.x0, P.Y(S.tgt)); g.lineTo(P.x1, P.Y(S.tgt)); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = cvv('--text-warning'); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('18 dB design target', l + 4, Y(18) - 3);
 
+    P.clip(g);
+    const dotR = Math.max(2, Math.min(3.4, P.h * 0.011));
     cfg.forEach(cf => {
-      const active = i0() === cf[0], col = cvv(cf[1]);
-      g.strokeStyle = col; g.lineWidth = active ? 2.4 : 1.2;
-      g.globalAlpha = active ? 1 : 0.42;
+      const active = i0() === cf[0], col = t.s[cf[1]];
+      g.strokeStyle = col; g.fillStyle = col;
+      g.lineWidth = active ? 2 : 1.2;
+      g.globalAlpha = active ? 1 : 0.45;
       g.beginPath();
       NS.forEach((N, i) => {
-        const y = Y(dB(sirSimp(N, S.n, cf[0])));
-        if (i === 0) g.moveTo(X(i), y); else g.lineTo(X(i), y);
+        const y = P.Y(dB(sirSimp(N, S.n, cf[0])));
+        if (i === 0) g.moveTo(P.X(N), y); else g.lineTo(P.X(N), y);
       });
       g.stroke();
+      NS.forEach(N => {
+        g.beginPath(); g.arc(P.X(N), P.Y(dB(sirSimp(N, S.n, cf[0]))), dotR, 0, 2 * Math.PI); g.fill();
+      });
       g.globalAlpha = 1;
-      g.fillStyle = col; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
-      g.fillText(cf[2], w - r + 4, Y(dB(sirSimp(NS[NS.length - 1], S.n, cf[0]))));
     });
+    P.unclip(g);
 
-    const idx = NS.indexOf(S.N);
-    if (idx >= 0) {
-      const v = dB(sirSimp(S.N, S.n, i0()));
-      g.fillStyle = cvv('--mark');
-      g.beginPath(); g.arc(X(idx), Y(v), 5, 0, 2 * Math.PI); g.fill();
-      chip(g, f(v, 1) + ' dB', Math.min(X(idx) + 34, w - r - 24), Y(v) - 12, cvv('--mark'));
+    cfg.forEach(cf => {
+      const last = NS[NS.length - 1];
+      leader(g, P.X(last), P.Y(dB(sirSimp(last, S.n, cf[0]))), cf[2],
+        { box: P, colour: t.s[cf[1]], size: ann, dx: -30, dy: -22, dot: false });
+    });
+    leader(g, P.x1, P.Y(S.tgt), 'target ' + fmtNum(S.tgt, 0) + ' dB',
+      { box: P, colour: t.bad, size: ann, dx: -30, dy: 24, dot: false });
+
+    const v = dB(sirSimp(S.N, S.n, i0()));
+    if (isFinite(v)) {
+      g.fillStyle = t.s4;
+      g.beginPath(); g.arc(P.X(S.N), P.Y(Math.min(Math.max(v, lo), hi)),
+        Math.max(3, Math.min(5.5, P.h * 0.017)), 0, 2 * Math.PI); g.fill();
+      leader(g, P.X(S.N), P.Y(Math.min(Math.max(v, lo), hi)), fmtNum(v, 1) + ' dB now',
+        { box: P, colour: t.s4, size: ann, dx: 30, dy: -26, dot: false });
     }
   }
 
@@ -520,34 +1046,39 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
   function schedule() { if (!pending) { pending = true; requestAnimationFrame(draw); } }
 
   function updateUI() {
-    $('pev').textContent = f(S.n, 1);
-    $('tiv').textContent = String(S.tiers);
-    $('chv').textContent = String(S.chan);
-
     const N = S.N, q = qOf(N), M = i0(), sd = dB(sirSimp(N, S.n, M));
     const perCell = Math.floor(S.chan / N), perSec = Math.floor(perCell / S.sec);
+    const ok = sd >= S.tgt;
+
+    $('heroVal').textContent = fmtNum(sd, 1);
+    const badge = $('heroBadge');
+    badge.className = 'badge ' + (ok ? 'good' : 'bad');
+    badge.textContent = (ok ? 'meets the ' : 'below the ') + fmtNum(S.tgt, 0) + ' dB target';
+    $('heroFt').textContent = 'N = ' + N + ' · ' + M + (M === 1 ? ' interferer' : ' interferers')
+      + ' · n = ' + fmtNum(S.n, 1);
+
     $('cN').textContent = String(N);
-    $('cNn').textContent = 'N = i' + String.fromCharCode(178) + ' + ij + j' + String.fromCharCode(178)
-      + ' with (i, j) = (' + IJ[N][0] + ', ' + IJ[N][1] + ')';
-    $('cQ').textContent = f(q, 2);
-    $('cD').textContent = f(q, 2) + ' R';
-    $('cDn').textContent = f(Math.sqrt(N), 2) + ' cell-to-cell hops away';
+    $('cNn').innerHTML = '(<span class="var">i</span>, <span class="var">j</span>) = ('
+      + IJ[N][0] + ', ' + IJ[N][1] + ')';
+    $('cQ').textContent = fmtNum(q, 2);
+    $('cD').textContent = fmtEng(q * S.R, 'km', 2);
+    $('cDn').textContent = fmtNum(q, 2) + ' × R, ' + fmtNum(Math.sqrt(N), 2) + ' hops';
     $('cI').textContent = String(M);
     $('cIn').textContent = S.sec === 1 ? 'first tier, all six visible'
       : 'first tier, ' + S.sec + ' sectors reject the rest';
-    $('cS').textContent = f(sd, 1) + ' dB';
-    $('cS').style.color = sd >= 18 ? 'var(--text-good)' : 'var(--text-warning)';
-    $('cSn').innerHTML = 'q<sup>n</sup> / ' + M + ' &middot; ' + (sd >= 18 ? 'meets' : 'misses') + ' the 18 dB target';
+    $('cS').textContent = fmtNum(sd - S.tgt, 1) + ' dB';
+    $('cS').style.color = ok ? 'var(--good)' : 'var(--bad)';
+    $('cSn').textContent = 'qⁿ / ' + M + ', against ' + fmtNum(S.tgt, 0) + ' dB';
     $('cC').textContent = String(perCell);
-    $('cCn').textContent = S.sec === 1 ? 'of ' + S.chan + ' channels, split N ways'
-      : perSec + ' per sector, of ' + S.chan + ' total';
+    $('cCn').textContent = S.sec === 1 ? 'of ' + fmtNum(S.chan, 0) + ' channels, split N ways'
+      : fmtNum(perSec, 0) + ' per sector, of ' + fmtNum(S.chan, 0) + ' total';
 
-    const wq = qOf(7), rows = [
-      ['q = ' + String.fromCharCode(8730) + '(3' + String.fromCharCode(215) + '7)', f(wq, 4), ''],
-      ['Simplified, six at D', f(dB(sirSimp(7, 4, 6)), 2), 'dB'],
-      ['Practical, D&minus;R / D / D+R', f(dB(sirPract(7, 4)), 2), 'dB'],
-      ['Conservative, six at D&minus;R', f(dB(sirCons(7, 4)), 2), 'dB'],
-      ['Channels per cell, 395 total', String(Math.floor(395 / 7)), 'ch']
+    const rows = [
+      ['q = &radic;(3&thinsp;&times;&thinsp;' + N + ')', fmtNum(q, 4), ''],
+      ['Simplified, ' + M + ' at D', fmtNum(dB(sirSimp(N, S.n, M)), 2), 'dB'],
+      ['Practical omni, D&minus;R / D / D+R', fmtNum(dB(sirPract(N, S.n)), 2), 'dB'],
+      ['Conservative omni, six at D&minus;R', fmtNum(dB(sirCons(N, S.n)), 2), 'dB'],
+      ['Channels per cell, ' + fmtNum(S.chan, 0) + ' total', fmtNum(perCell, 0), 'ch']
     ];
     $('wex').innerHTML = rows.map(rw => '<tr><td>' + rw[0] + '</td><td>' + rw[1]
       + '</td><td style="color:var(--text-muted);width:34px">' + rw[2] + '</td></tr>').join('');
@@ -562,31 +1093,55 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     S.sec = k;
     [1, 3, 6].forEach(o => $('s' + o).classList.toggle('on', o === k));
   }
+  function setPair(id, v) { $(id).value = String(v); $(id + 'N').value = String(v); }
+
   NLIST.forEach(N => $('N' + N).addEventListener('click', () => { setN(N); updateUI(); }));
   [1, 3, 6].forEach(k => $('s' + k).addEventListener('click', () => { setSec(k); updateUI(); }));
-  $('pe').addEventListener('input', () => { S.n = +$('pe').value; updateUI(); });
-  $('ti').addEventListener('input', () => { S.tiers = +$('ti').value; updateUI(); });
-  $('ch').addEventListener('input', () => { S.chan = +$('ch').value; updateUI(); });
+  bindPair($('pe'), $('peN'), v => { S.n = v; updateUI(); });
+  bindPair($('cr'), $('crN'), v => { S.R = v; updateUI(); });
+  bindPair($('ti'), $('tiN'), v => { S.tiers = v; updateUI(); });
+  bindPair($('ch'), $('chN'), v => { S.chan = v; updateUI(); });
+  bindPair($('tg'), $('tgN'), v => { S.tgt = v; updateUI(); });
+  bindPair($('mp'), $('mpN'), v => { S.rho = v; updateUI(); });
+
+  function apply(st, note) {
+    setN(st.N); setSec(st.sec);
+    S.n = st.n; S.tiers = st.ti; S.chan = st.ch; S.R = st.R;
+    setPair('pe', st.n); setPair('ti', st.ti); setPair('ch', st.ch); setPair('cr', st.R);
+    $('narr').textContent = note;
+    updateUI();
+  }
+
+  const PRESETS = [
+    ['pAmps', { N: 7, sec: 1, n: 4, ti: 2, ch: 395, R: 3 }, 'AMPS: 395 channels, 7-cell reuse, omnidirectional sites.'],
+    ['pGsm', { N: 4, sec: 3, n: 4, ti: 2, ch: 990, R: 1.5 }, 'GSM 4/12: four sites, three sectors each, twelve groups.'],
+    ['pCdma', { N: 1, sec: 1, n: 4, ti: 1, ch: 100, R: 2 }, 'CDMA reuses every channel everywhere; codes, not distance, separate users.'],
+    ['pUrban', { N: 3, sec: 6, n: 4.5, ti: 2, ch: 1200, R: 0.5 }, 'Dense urban: small cells, 60° sectors, fast path loss.']
+  ];
+  PRESETS.forEach(p => $(p[0]).addEventListener('click', () => {
+    apply(p[1], p[2]);
+    PRESETS.forEach(o => $(o[0]).classList.toggle('on', o[0] === p[0]));
+    [1, 2, 3, 4].forEach(o => $('t' + o).classList.remove('on'));
+  }));
 
   const TOUR = [
-    { N: 1, sec: 1, n: 4, ti: 2, ch: 395, say: 'N = 1: every cell reuses everything, so co-channel cells touch.' },
-    { N: 7, sec: 1, n: 4, ti: 2, ch: 395, say: 'N = 7 pushes the same channel 4.58 cell radii away.' },
-    { N: 7, sec: 1, n: 2, ti: 2, ch: 395, say: 'Free space, n = 2: interference fades as slowly as the wanted signal.' },
-    { N: 4, sec: 3, n: 4, ti: 2, ch: 395, say: 'Three sectors see two interferers, so N = 4 now clears 18 dB.' }
+    { N: 1, sec: 1, n: 4, ti: 2, ch: 395, R: 3, say: 'N = 1: every cell reuses everything, so co-channel cells touch.' },
+    { N: 7, sec: 1, n: 4, ti: 2, ch: 395, R: 3, say: 'N = 7 pushes the same channel 4.58 cell radii away.' },
+    { N: 7, sec: 1, n: 2, ti: 2, ch: 395, R: 3, say: 'Free space, n = 2: interference fades as slowly as the wanted signal.' },
+    { N: 4, sec: 3, n: 4, ti: 2, ch: 395, R: 3, say: 'Three sectors see two interferers, so N = 4 now clears 18 dB.' }
   ];
   TOUR.forEach((st, k) => $('t' + (k + 1)).addEventListener('click', () => {
-    setN(st.N); setSec(st.sec);
-    S.n = st.n; S.tiers = st.ti; S.chan = st.ch;
-    $('pe').value = String(st.n); $('ti').value = String(st.ti); $('ch').value = String(st.ch);
-    $('narr').textContent = st.say;
+    apply(st, st.say);
     [1, 2, 3, 4].forEach(o => $('t' + o).classList.toggle('on', o === k + 1));
-    updateUI();
-    const cards = document.querySelectorAll('.card');
-    for (let idx = 0; idx < cards.length; idx++) cards[idx].classList.add('flash');
-    setTimeout(() => {
-      for (let idx = 0; idx < cards.length; idx++) cards[idx].classList.remove('flash');
-    }, 260);
+    PRESETS.forEach(o => $(o[0]).classList.remove('on'));
   }));
+  $('t0').addEventListener('click', () => {
+    S.tgt = 18; S.rho = 1;
+    setPair('tg', 18); setPair('mp', 1);
+    apply({ N: 7, sec: 1, n: 4, ti: 2, ch: 395, R: 3 }, 'Back to the default 7-cell omnidirectional plan.');
+    [1, 2, 3, 4].forEach(o => $('t' + o).classList.remove('on'));
+    PRESETS.forEach(o => $(o[0]).classList.remove('on'));
+  });
 
   window.addEventListener('resize', schedule);
   if (window.matchMedia) {

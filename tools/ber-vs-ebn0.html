@@ -1,193 +1,297 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bit error rate against Eb/N0</title>
+<title>Bit error rate against Eb/N₀</title>
 <style>
 :root {
-  --bg: #ffffff;
-  --surface-1: #f4f6f8;
-  --surface-2: #ffffff;
-  --plot-bg: #ffffff;
-  --grid: #e4e8ec;
-  --grid-strong: #c8ced4;
-  --axis: #3c4650;
-  --text-primary: #1a1f26;
-  --text-secondary: #55606c;
-  --text-muted: #869099;
-  --series-1: #0072bd;
-  --series-2: #d95319;
-  --series-3: #edb120;
-  --series-4: #7e2f8e;
-  --series-5: #77ac30;
-  --series-6: #4dbeee;
-  --series-7: #a2142f;
-  --good: #77ac30;
-  --warn: #d95319;
-  --bad: #a2142f;
-  --border: #dfe4e9;
-  --border-strong: #b6bfc8;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #1a1f26; --text-secondary: #55606c; --text-muted: #869099;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
   --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #16191d;
-    --surface-1: #1e2328;
-    --surface-2: #232930;
-    --plot-bg: #1a1e23;
-    --grid: #2c333a;
-    --grid-strong: #444d56;
-    --axis: #9aa5b1;
-    --text-primary: #e9edf1;
-    --text-secondary: #b0bac4;
-    --text-muted: #7d8791;
-    --series-1: #4da6ff;
-    --series-2: #ff8c42;
-    --series-3: #ffd24d;
-    --series-4: #c77dda;
-    --series-5: #9fd356;
-    --series-6: #7fd4f5;
-    --series-7: #ff6b6b;
-    --good: #9fd356;
-    --warn: #ff8c42;
-    --bad: #ff6b6b;
-    --border: #2c333a;
-    --border-strong: #49525b;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #e9edf1; --text-secondary: #b0bac4; --text-muted: #7d8791;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: flex; flex-direction: column; gap: 1rem; }
+.stage { display: flex; flex-direction: column; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
+  .wrap > .full { grid-column: 1 / -1; }
+  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.4rem; }
+
+h1 { font-size: 23px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 13px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button, select { font: inherit; color: inherit; }
-button, select { background: transparent; border: 1px solid var(--border-strong);
-  border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
-button:hover, select:hover { background: var(--surface-1); }
-button.on { background: var(--surface-1); border-color: var(--axis); font-weight: 500; }
-button[disabled] { opacity: 0.45; cursor: default; }
-button[disabled]:hover { background: transparent; }
-input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
-.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 138px; }
-.ctl input[type=range] { flex: 1; min-width: 60px; }
-.ctl input[type=range][disabled] { opacity: 0.4; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 84px; text-align: right; font-variant-numeric: tabular-nums; }
-.btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0.75rem; align-items: center; }
-.btnrow .lbl { font-size: 13px; color: var(--text-secondary); min-width: 62px; }
-.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.sec span { color: var(--text-secondary); font-size: 12.5px; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 12.5px; color: var(--text-secondary); }
+.hero .val { font-size: 34px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 13px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 13px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 12.5px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+.card .hd { font-size: 12.5px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-canvas { width: 100%; display: block; background: var(--plot-bg); border-radius: var(--radius); }
-.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
-.legend-note li { margin: 2px 0; }
-.note { font-size: 13px; color: var(--text-secondary); background: var(--surface-1);
-  border-left: 3px solid var(--series-1); border-radius: 0 var(--radius) var(--radius) 0;
-  padding: 8px 12px; margin: 0 0 1rem; }
-details { margin: 0 0 1rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
-details summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
-details[open] summary { margin-bottom: 10px; }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.5rem 0 0; }
-ol.work li { margin: 5px 0; }
-ol.work code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--text-primary); }
-dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
 dl.glossary dt { font-weight: 500; margin-top: 8px; }
 dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.btnrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.7rem; }
+.btnrow .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.ctl input[type=range][disabled], .ctl input[type=number][disabled] { opacity: 0.4; }
+ol.work code { font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12px; color: var(--text-primary); }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Bit error rate against Eb/N0</h1>
-<p class="sub">A receiver guesses each bit from one noisy voltage; the fraction it gets wrong is the bit error rate. Here it is plotted against E<sub>b</sub>/N<sub>0</sub>, in clean noise and in fading.</p>
-<p class="sub" style="margin-bottom: 1.4rem;">New to decibels, noise floors and Eb/N0? Start with <a href="link-budget.html">the link budget tool</a>.</p>
+<div class="wrap">
 
-<p class="note">Fading is a noisy room whose loudness swings: the words you lose land in the loud moments, and repeating from two places helps more than shouting.</p>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Bit error rate against E<sub>b</sub>/N<sub>0</sub></h1>
+  <p class="sub">A receiver guesses each bit from one noisy voltage; the fraction it gets wrong is the bit error rate. It is plotted here against E<sub>b</sub>/N<sub>0</sub>, in clean noise and in fading.</p>
+  <p class="prereq">New to decibels and noise floors? Start with <a href="link-budget.html">link budget</a>.</p>
+</header>
 
-<div class="btnrow">
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Error rate now</div>
+    <div class="val" id="heroVal">&mdash;</div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div>
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" data-pre="sat">Satellite QPSK</button>
+      <button type="button" data-pre="gsm">GSM 900 mobile</button>
+      <button type="button" data-pre="wifi">Wi-Fi 64-QAM</button>
+      <button type="button" data-pre="lte">LTE 16-QAM, 2 branches</button>
+    </div>
+
+    <div class="ctl">
+      <label for="eb">Operating E<sub>b</sub>/N<sub>0</sub></label>
+      <div class="in">
+        <input type="range" id="eb" min="0" max="40" step="0.1" value="20">
+        <input type="number" id="ebN" min="0" max="40" step="0.1" aria-label="Operating Eb/N0 in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="tg">Target error rate, 10<sup>&minus;n</sup></label>
+      <div class="in">
+        <input type="range" id="tg" min="3" max="9" step="1" value="6">
+        <input type="number" id="tgN" min="3" max="9" step="1" aria-label="Target error rate exponent n">
+        <span class="unit">n</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="br">Diversity branches</label>
+      <div class="in">
+        <input type="range" id="br" min="1" max="4" step="1" value="1">
+        <input type="number" id="brN" min="1" max="4" step="1" aria-label="Number of diversity branches">
+        <span class="unit">L</span>
+      </div>
+    </div>
+
+    <div class="btnrow">
+      <span class="lbl">Scheme</span>
+      <button type="button" data-sch="bpsk">BPSK</button>
+      <button type="button" data-sch="qpsk">QPSK</button>
+      <button type="button" data-sch="psk8">8-PSK</button>
+      <button type="button" data-sch="qam16">16-QAM</button>
+      <button type="button" data-sch="qam64">64-QAM</button>
+      <button type="button" data-sch="dpsk">DPSK</button>
+      <button type="button" data-sch="fsk">FSK</button>
+    </div>
+    <div class="btnrow">
+      <span class="lbl">Channel</span>
+      <button type="button" data-ch="awgn">AWGN</button>
+      <button type="button" data-ch="rice">Rician</button>
+      <button type="button" data-ch="rayl">Rayleigh</button>
+    </div>
+  </div>
+
+  <details id="expert">
+    <summary>More controls</summary>
+    <div class="ctl">
+      <label for="kk">Rician K factor</label>
+      <div class="in">
+        <input type="range" id="kk" min="-10" max="20" step="0.5" value="6">
+        <input type="number" id="kkN" min="-10" max="20" step="0.5" aria-label="Rician K factor in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="cg">Coding gain</label>
+      <div class="in">
+        <input type="range" id="cg" min="0" max="8" step="0.1" value="0">
+        <input type="number" id="cgN" min="0" max="8" step="0.1" aria-label="Coding gain in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="il">Implementation loss</label>
+      <div class="in">
+        <input type="range" id="il" min="0" max="3" step="0.1" value="0">
+        <input type="number" id="ilN" min="0" max="3" step="0.1" aria-label="Implementation loss in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fd">Fade depth drawn</label>
+      <div class="in">
+        <input type="range" id="fd" min="0" max="30" step="0.5" value="10">
+        <input type="number" id="fdN" min="0" max="30" step="0.5" aria-label="Fade depth drawn in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <p style="font-size:12.5px;color:var(--text-secondary);margin:8px 0 0;">Coding gain and implementation loss shift the working point by a fixed number of decibels; the extra bandwidth a code needs is not modelled. Fade depth only sets the dashed pair drawn in plot 1.</p>
+  </details>
+
+  <div class="cards">
+    <div class="card"><div class="hd">Required E<sub>b</sub>/N<sub>0</sub></div><div class="big" id="cReq">&mdash;</div><div class="ft" id="cReqf">&mdash;</div></div>
+    <div class="card"><div class="hd">Fading penalty</div><div class="big" id="cPen">&mdash;</div><div class="ft" id="cPenf">&mdash;</div></div>
+    <div class="card"><div class="hd">Diversity gain</div><div class="big" id="cDiv">&mdash;</div><div class="ft" id="cDivf">&mdash;</div></div>
+    <div class="card"><div class="hd">E<sub>s</sub>/N<sub>0</sub></div><div class="big" id="cEs">&mdash;</div><div class="ft" id="cEsf">&mdash;</div></div>
+    <div class="card"><div class="hd">Spectral efficiency</div><div class="big" id="cSe">&mdash;</div><div class="ft">ideal Nyquist filter</div></div>
+    <div class="card"><div class="hd">Error rate now</div><div class="big" id="cBer">&mdash;</div><div class="ft" id="cBerf">&mdash;</div></div>
+  </div>
+
+</div>
+
+<div class="stage">
+
+<div class="tour">
   <span class="lbl">Guided tour</span>
   <button type="button" id="t1">1 &middot; the clean cliff</button>
   <button type="button" id="t2">2 &middot; add fading</button>
   <button type="button" id="t3">3 &middot; two branches</button>
   <button type="button" id="t4">4 &middot; four branches</button>
-  <button type="button" id="t5">5 &middot; try it with 64-QAM</button>
+  <button type="button" id="t5">5 &middot; 64-QAM</button>
 </div>
-<p class="note" id="tourNote">Step 1 puts QPSK in a plain additive-noise channel. The curve is a cliff: below about 8 dB almost nothing works, above about 11 dB almost everything does. A single decibel changes the error rate by a factor of ten.</p>
+<p class="tour-note" id="tourNote">Press the steps in order; each one moves the controls.</p>
 
-<div class="btnrow">
-  <span class="lbl">Scheme</span>
-  <button type="button" data-sch="bpsk">BPSK</button>
-  <button type="button" data-sch="qpsk">QPSK</button>
-  <button type="button" data-sch="psk8">8-PSK</button>
-  <button type="button" data-sch="qam16">16-QAM</button>
-  <button type="button" data-sch="qam64">64-QAM</button>
-  <button type="button" data-sch="dpsk">DPSK</button>
-  <button type="button" data-sch="fsk">FSK</button>
-</div>
-<div class="btnrow">
-  <span class="lbl">Channel</span>
-  <button type="button" data-ch="awgn">AWGN</button>
-  <button type="button" data-ch="rice">Rician</button>
-  <button type="button" data-ch="rayl">Rayleigh</button>
-</div>
-
-<div class="row">
-  <div class="ctl"><label for="eb">Operating Eb/N0</label><input type="range" id="eb" min="0" max="40" step="0.1" value="20"><span class="v" id="ebv">20.0 dB</span></div>
-  <div class="ctl"><label for="tg">Target bit error rate</label><input type="range" id="tg" min="3" max="9" step="1" value="6"><span class="v" id="tgv">&mdash;</span></div>
-  <div class="ctl"><label for="kk">Rician K factor</label><input type="range" id="kk" min="-10" max="20" step="0.5" value="6"><span class="v" id="kkv">6.0 dB</span></div>
-  <div class="ctl"><label for="br">Diversity branches</label><input type="range" id="br" min="1" max="4" step="1" value="1"><span class="v" id="brv">1</span></div>
-</div>
-
-<details id="expert">
-  <summary>Coding gain and implementation loss</summary>
-  <div class="row" style="margin-bottom:0">
-    <div class="ctl"><label for="cg">Coding gain</label><input type="range" id="cg" min="0" max="8" step="0.1" value="0"><span class="v" id="cgv">0.0 dB</span></div>
-    <div class="ctl"><label for="il">Implementation loss</label><input type="range" id="il" min="0" max="3" step="0.1" value="0"><span class="v" id="ilv">0.0 dB</span></div>
-  </div>
-  <p style="font-size:12.5px;color:var(--text-secondary);margin:8px 0 0;">Error-correcting coding lets the demodulator work at a lower Eb/N0 for the same delivered error rate, which is worth a fixed number of decibels. Implementation loss is the opposite: the decibels a real receiver wastes on imperfect timing, imperfect carrier phase and quantisation. Both are modelled here as a straight shift of the working point, and only the coding gain in decibels is modelled, not the extra bandwidth a code needs.</p>
-</details>
-
-<p class="sec"><b>1 &middot; Where an error comes from</b> <span>&mdash; the receiver samples once per symbol and compares against a threshold</span></p>
-<canvas id="c1" style="height: 270px;"></canvas>
+<p class="sec"><b>1 &middot; Where an error comes from</b> <span>&mdash; one voltage per symbol, one threshold</span></p>
+<canvas id="c1" class="cv-sub"></canvas>
 <ul class="legend-note" id="ln1"></ul>
 
-<p class="sec"><b>2 &middot; The error rate curves</b> <span>&mdash; bit error rate against Eb/N0, on a logarithmic vertical axis</span></p>
-<canvas id="c2" style="height: 370px;"></canvas>
+<p class="sec"><b>2 &middot; The error rate curves</b> <span>&mdash; log vertical axis, one decade per gridline</span></p>
+<canvas id="c2" class="cv-hero"></canvas>
 <ul class="legend-note" id="ln2"></ul>
 
-<p class="sec"><b>3 &middot; What each channel costs</b> <span>&mdash; the Eb/N0 needed to reach the target, in three channels</span></p>
-<canvas id="c3" style="height: 235px;"></canvas>
+<p class="sec"><b>3 &middot; What each channel costs</b> <span>&mdash; E<sub>b</sub>/N<sub>0</sub> needed to hit the target</span></p>
+<canvas id="c3" class="cv-sub"></canvas>
 <ul class="legend-note" id="ln3"></ul>
 
-<div class="cards">
-  <div class="card"><div class="hd">Required Eb/N0</div><div class="big" id="cReq">&mdash;</div><div class="ft" id="cReqf">&mdash;</div></div>
-  <div class="card"><div class="hd">Fading penalty</div><div class="big" id="cPen">&mdash;</div><div class="ft" id="cPenf">&mdash;</div></div>
-  <div class="card"><div class="hd">Diversity gain</div><div class="big" id="cDiv">&mdash;</div><div class="ft" id="cDivf">&mdash;</div></div>
-  <div class="card"><div class="hd">Es/N0</div><div class="big" id="cEs">&mdash;</div><div class="ft" id="cEsf">&mdash;</div></div>
-  <div class="card"><div class="hd">Spectral efficiency</div><div class="big" id="cSe">&mdash;</div><div class="ft">bit/s per hertz, ideal Nyquist filter</div></div>
-  <div class="card"><div class="hd">Error rate now</div><div class="big" id="cBer">&mdash;</div><div class="ft" id="cBerf">&mdash;</div></div>
-</div>
-
-<details style="margin-top:1.5rem;">
+<details>
   <summary>The arithmetic, on the settings as they stand</summary>
   <ol class="work" id="work"></ol>
-  <p style="font-size:13px;color:var(--text-secondary);margin:10px 0 0;">The shape of the curve matters more than its position. In additive noise the error rate falls off a cliff, so a link that is 2 dB short is nearly fixed by a slightly better amplifier. Under Rayleigh fading the same scheme gives a straight, shallow slope of one decade of error rate per decade of power, because the errors are dominated by the moments the signal happens to be deeply faded, and no amount of average power removes those moments. That is why chasing a fading link with transmit power is the wrong move &mdash; the required margin runs to tens of decibels &mdash; and why every mobile system instead buys independent copies of the signal. Watch the slope steepen from one to two to four as branches are added: four branches recover most of what fading took, at a fraction of the power a single branch would need. Three simplifications are worth naming. The fading is flat and slowly varying, and the branches are assumed perfectly independent and combined by maximal-ratio combining, which is the best case; the M-PSK and M-QAM curves use the standard nearest-neighbour approximation with Gray coding, which is accurate at the error rates that matter and slightly pessimistic at very low Eb/N0; and Eb/N0 here is the mean per branch, so L branches also collect L times the energy.</p>
+  <p style="font-size:13px;color:var(--text-secondary);margin:10px 0 0;">Under Rayleigh fading the errors come from the moments the signal is deeply faded, so average power buys little and independent copies of the signal buy a lot. Simplifications: fading is flat and slow, branches are independent and combined by maximal-ratio combining, the M-PSK and M-QAM curves use the nearest-neighbour approximation with Gray coding, and E<sub>b</sub>/N<sub>0</sub> is the mean per branch, so L branches also collect L times the energy.</p>
 </details>
 
 <details>
   <summary>Words used on this page</summary>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0 0 6px;">Fading is a noisy room whose loudness swings: repeating from two places helps more than shouting.</p>
   <dl class="glossary">
     <dt>Bit error rate (BER)</dt><dd>The fraction of received bits that come out wrong. 1 &times; 10<sup>&minus;6</sup> means one bit in a million. Voice can live with 10<sup>&minus;3</sup>; a file transfer wants 10<sup>&minus;9</sup> or better before coding.</dd>
     <dt>E<sub>b</sub>/N<sub>0</sub></dt><dd>Energy received per information bit, divided by the noise power in one hertz of bandwidth. It is a ratio, quoted in dB. Unlike a plain signal-to-noise ratio it does not change when you change the bit rate or the bandwidth, so it is the fair way to compare two modulation schemes.</dd>
@@ -200,33 +304,405 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     <dt>Flat fading</dt><dd>Fading that affects the whole signal bandwidth equally, so it scales the amplitude without distorting the waveform. All the fading formulas here assume it.</dd>
     <dt>Diversity</dt><dd>Receiving the same information over more than one independently fading path &mdash; two antennas, two frequencies, two time slots. Deep fades on every path at once are rare, so the combined signal fades far less.</dd>
     <dt>Maximal-ratio combining (MRC)</dt><dd>The best way to add diversity branches: weight each by its own signal strength before summing. The combined signal-to-noise ratio is the sum of the branch ratios.</dd>
-    <dt>Diversity order L</dt><dd>The number of independently fading branches. At high Eb/N0 the error rate falls as the L-th power of the signal-to-noise ratio, so the curve on this plot steepens to L decades of error rate per decade of power.</dd>
+    <dt>Diversity order L</dt><dd>The number of independently fading branches. At high E<sub>b</sub>/N<sub>0</sub> the error rate falls as the L-th power of the signal-to-noise ratio, so the curve on this plot steepens to L decades of error rate per decade of power.</dd>
     <dt>Gray coding</dt><dd>Numbering the constellation points so neighbours differ in one bit only. A symbol error then usually costs one bit, which is why the bit error rate is roughly the symbol error rate divided by log<sub>2</sub>M.</dd>
-    <dt>Coding gain</dt><dd>The decibels of Eb/N0 an error-correcting code saves you at a stated output error rate.</dd>
+    <dt>Coding gain</dt><dd>The decibels of E<sub>b</sub>/N<sub>0</sub> an error-correcting code saves you at a stated output error rate.</dd>
     <dt>Implementation loss</dt><dd>The decibels a real receiver falls short of theory because of timing error, phase error and quantisation. One to two dB is normal.</dd>
-    <dt>Spectral efficiency</dt><dd>Information bits carried per second in each hertz of bandwidth. Higher-order schemes buy it and pay for it in required Eb/N0.</dd>
+    <dt>Spectral efficiency</dt><dd>Information bits carried per second in each hertz of bandwidth. Higher-order schemes buy it and pay for it in required E<sub>b</sub>/N<sub>0</sub>.</dd>
   </dl>
 </details>
 
-<p class="sub" style="margin-top: 2rem;">Next, see where fading comes from in <a href="multipath-fading.html">the multipath and fading tool</a>.</p>
+<p class="prereq" style="margin-top: 1rem;">Next: <a href="multipath-fading.html">multipath and fading</a>.</p>
+
+</div>
+</div>
 
 <script>
 (function () {
+  /* ============================================================
+     engineering-viz shared canvas kit
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ---- tool code ---- */
+
   var $ = function (id) { return document.getElementById(id); };
-  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
   var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
   var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
   var fx = function (v, n) { return isFinite(v) ? v.toFixed(n).replace('-', '−') : '—'; };
   var sgn = function (v, n) { return isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(n) : '—'; };
-
-  var SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
-    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
-  function supStr(n) {
-    var s = String(n), o = '', i;
-    for (i = 0; i < s.length; i++) o += (SUP[s.charAt(i)] || s.charAt(i));
-    return o;
-  }
+  function supStr(n) { return sup(String(n)); }
+  var EBN0 = 'E' + sub('b') + '/N' + sub('0');
   var BER_FLOOR = 1e-15;
   function fmtBER(p) {
     if (!isFinite(p) || p <= 0 || p < BER_FLOOR) return '< 1 × 10' + supStr(-15);
@@ -267,26 +743,26 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     var k = Math.round(L10(M) / L10(2));
     var s = Math.sin(Math.PI / M);
     return { id: '', n: name, M: M, k: k, kind: 'q', a: 2 / k, b: 2 * k * s * s,
-      f: 'P_s = 2 Q(√(2 E_s/N₀) sin(π/' + M + ')),  P_b = P_s / ' + k };
+      f: 'P<sub>s</sub> = 2 Q(√(2 E<sub>s</sub>/N<sub>0</sub>) · sin(π/' + M + ')),  P<sub>b</sub> = P<sub>s</sub> / ' + k };
   }
   function mkQAM(name, M) {
     var k = Math.round(L10(M) / L10(2));
     var rt = Math.sqrt(M);
     return { id: '', n: name, M: M, k: k, kind: 'q', a: 4 * (1 - 1 / rt) / k, b: 3 * k / (M - 1),
-      f: 'P_s = 4(1 − 1/√' + M + ') Q(√(3 E_s/((' + (M - 1) + ') N₀))),  P_b = P_s / ' + k };
+      f: 'P<sub>s</sub> = 4(1 − 1/√' + M + ') Q(√(3 E<sub>s</sub>/((' + (M - 1) + ') N<sub>0</sub>))),  P<sub>b</sub> = P<sub>s</sub> / ' + k };
   }
   var SCHEMES = {
-    bpsk: { n: 'BPSK', M: 2, k: 1, kind: 'q', a: 1, b: 2, f: 'P_b = Q(√(2 E_b/N₀))' },
-    qpsk: { n: 'QPSK', M: 4, k: 2, kind: 'q', a: 1, b: 2, f: 'P_b = Q(√(2 E_b/N₀))' },
+    bpsk: { n: 'BPSK', M: 2, k: 1, kind: 'q', a: 1, b: 2, f: 'P<sub>b</sub> = Q(√(2 E<sub>b</sub>/N<sub>0</sub>))' },
+    qpsk: { n: 'QPSK', M: 4, k: 2, kind: 'q', a: 1, b: 2, f: 'P<sub>b</sub> = Q(√(2 E<sub>b</sub>/N<sub>0</sub>))' },
     psk8: mkPSK('8-PSK', 8),
     qam16: mkQAM('16-QAM', 16),
     qam64: mkQAM('64-QAM', 64),
-    dpsk: { n: 'DPSK', M: 2, k: 1, kind: 'e', a: 0.5, c: 1, f: 'P_b = 0.5 exp(−E_b/N₀)' },
-    fsk: { n: 'FSK', M: 2, k: 1, kind: 'e', a: 0.5, c: 0.5, f: 'P_b = 0.5 exp(−E_b/2N₀)' }
+    dpsk: { n: 'DPSK', M: 2, k: 1, kind: 'e', a: 0.5, c: 1, f: 'P<sub>b</sub> = 0.5 exp(−E<sub>b</sub>/N<sub>0</sub>)' },
+    fsk: { n: 'FSK', M: 2, k: 1, kind: 'e', a: 0.5, c: 0.5, f: 'P<sub>b</sub> = 0.5 exp(−E<sub>b</sub>/2N<sub>0</sub>)' }
   };
   var CHAN = { awgn: 'AWGN', rice: 'Rician', rayl: 'Rayleigh' };
 
-  var S = { sch: 'qpsk', ch: 'rayl', eb: 20, tgExp: 6, kdb: 6, L: 1, cg: 0, il: 0 };
+  var S = { sch: 'qpsk', ch: 'rayl', eb: 20, tgExp: 6, kdb: 6, L: 1, cg: 0, il: 0, fade: 10 };
 
   var DB_LO = -30, DB_HI = 130;
 
@@ -360,38 +836,12 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     return 0.5 * (lo + hi);
   }
 
-  function niceStep(span, target) {
-    var raw = Math.max(span, 1e-6) / Math.max(target, 1);
-    var p = Math.pow(10, Math.floor(L10(Math.max(raw, 1e-9))));
-    var m = raw / p;
-    var s = m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10;
-    return s * p;
-  }
-
-  function fit(c) {
-    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    var W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [Math.max(r.width, 1), Math.max(r.height, 1)];
-  }
-
   function clipText(g, t, maxW) {
     if (maxW <= 8) return '';
     if (g.measureText(t).width <= maxW) return t;
     var s = t;
     while (s.length > 1 && g.measureText(s + '…').width > maxW) s = s.slice(0, -1);
     return s + '…';
-  }
-
-  function rrect(g, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    g.beginPath();
-    g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
-    g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
-    g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y);
-    g.closePath();
   }
 
   function calc() {
@@ -422,85 +872,76 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   }
 
   function drawDecision(R) {
-    var c = $('c1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var txt = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
-    var bd = cvv('--border-strong'), s1 = cvv('--series-1'), s2 = cvv('--series-2');
-    var badc = cvv('--bad'), gr = cvv('--grid'), ax = cvv('--axis');
+    var c = $('c1'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme();
+    var i, k, v;
 
-    var chainH = 74;
-    var boxH = 30, boxY = 20;
-    var xs = [0.055, 0.235, 0.435, 0.60, 0.815];
-    var names = ['antenna', 'front end', 'demodulator', 'sampler', 'decision'];
-    g.strokeStyle = bd; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(w * xs[0], boxY + boxH / 2); g.lineTo(w * xs[4] + w * 0.075, boxY + boxH / 2); g.stroke();
+    var fs = clamp(w / 62, 9.5, 12.5);
+    var strip = clamp(h * 0.25, 32, 68);
+    var names = ['front end', 'demodulator', 'sampler', 'decision'];
+    var n = names.length;
+    var bw = Math.min(w * 0.16, 112), bh = Math.min(strip * 0.48, 26);
+    var by = strip * 0.2, cy = by + bh / 2;
+    var xa = w * 0.055;
 
-    var fs = clamp(w / 68, 8, 11);
-    g.font = fnt(fs); g.textAlign = 'center';
-    var i, bx;
-    for (i = 1; i <= 4; i++) {
-      bx = w * xs[i];
-      var bw2 = Math.min(w * 0.15, 108);
-      g.fillStyle = cvv('--surface-1');
-      rrect(g, bx - bw2 / 2, boxY, bw2, boxH, 5); g.fill();
-      g.strokeStyle = (i === 4) ? s2 : bd; g.lineWidth = (i === 4) ? 1.8 : 1.1;
-      rrect(g, bx - bw2 / 2, boxY, bw2, boxH, 5); g.stroke();
-      g.fillStyle = txt; g.textBaseline = 'middle';
-      g.fillText(clipText(g, names[i], bw2 - 8), bx, boxY + boxH / 2);
-    }
-    var ax0 = w * xs[0];
-    g.strokeStyle = s1; g.lineWidth = 1.8;
-    g.beginPath(); g.moveTo(ax0, boxY + boxH / 2); g.lineTo(ax0, boxY - 2); g.stroke();
+    g.save();
+    g.font = t.font(fs);
+    g.strokeStyle = t.borderStrong; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(xa), _px(cy)); g.lineTo(_px(w * 0.9 + bw / 2), _px(cy)); g.stroke();
+    var dh = Math.min(strip * 0.4, 17);
+    g.strokeStyle = t.text2; g.lineWidth = 1.1;
     g.beginPath();
-    g.moveTo(ax0 - 11, boxY - 15); g.lineTo(ax0, boxY - 2); g.lineTo(ax0 + 11, boxY - 15); g.stroke();
-    g.fillStyle = txt; g.font = fnt(fs); g.textBaseline = 'top'; g.textAlign = 'center';
-    g.fillText('antenna', ax0, boxY + boxH + 4);
+    g.moveTo(xa, cy); g.lineTo(xa, cy - dh);
+    g.moveTo(xa - dh * 0.45, cy - dh * 0.6); g.lineTo(xa + dh * 0.45, cy - dh * 0.6);
+    g.moveTo(xa - dh * 0.3, cy - dh); g.lineTo(xa + dh * 0.3, cy - dh);
+    g.stroke();
+    for (i = 0; i < n; i++) {
+      var bx = w * (0.2 + 0.7 * i / (n - 1));
+      g.fillStyle = t.surface;
+      g.fillRect(bx - bw / 2, by, bw, bh);
+      g.strokeStyle = (i === n - 1) ? t.s2 : t.borderStrong;
+      g.lineWidth = (i === n - 1) ? 1.4 : 1;
+      g.strokeRect(_px(bx - bw / 2), _px(by), Math.round(bw), Math.round(bh));
+      g.fillStyle = t.text; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(clipText(g, names[i], bw - 8), bx, cy);
+    }
+    g.restore();
 
-    var sx = w * xs[3];
-    g.strokeStyle = mut; g.lineWidth = 1; g.setLineDash([3, 3]);
-    g.beginPath(); g.moveTo(sx, boxY + boxH + 2); g.lineTo(sx, chainH + 6); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = sub; g.font = fnt(Math.max(fs - 1, 8)); g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.fillText(clipText(g, 'one voltage per symbol lands here', w - sx - 12), sx + 6, (boxY + boxH + chainH + 8) / 2);
-
-    var l = 40, r = 14, t = chainH + 12, b = 40;
-    var pw = Math.max(w - l - r, 60), ph = Math.max(h - t - b, 50);
-    var pb = Math.max(Math.min(R.berNow, 0.5), 1e-16);
+    var pb = clamp(R.berNow, 1e-16, 0.5);
     var m = qinv(pb);
-    var mFade = 0;
     var fading = (S.ch !== 'awgn');
+    var mFade = 0;
     if (fading) {
       var gEff = Math.pow(10, (S.eb + S.cg - S.il) / 10) * S.L;
-      mFade = qinv(Math.max(berAWGN(R.sc, gEff / 10), 1e-16));
+      mFade = qinv(Math.max(berAWGN(R.sc, gEff / Math.pow(10, S.fade / 10)), 1e-16));
     }
     var span = Math.max(m + 4.2, 6);
-    var X = function (v) { return l + (v + span) / (2 * span) * pw; };
     var pk = 0.39894228;
-    var Y = function (d) { return t + ph - clamp(d, 0, pk) / pk * (ph - 12); };
-    var pdf = function (v, mu) { var z = v - mu; return pk * Math.exp(-0.5 * z * z); };
+    var pdf = function (vv, mu) { var z = vv - mu; return pk * Math.exp(-0.5 * z * z); };
 
-    g.strokeStyle = gr; g.lineWidth = 0.5;
-    g.beginPath(); g.moveTo(l, t + ph); g.lineTo(l + pw, t + ph); g.stroke();
+    var P = graticule(g, { x: 0, y: strip, w: w, h: Math.max(h - strip, 40) },
+      { min: -span, max: span, unit: 'σ', label: 'sampled voltage' },
+      { min: 0, max: pk * 1.1, unit: '1/σ', label: 'probability density' });
 
-    var N = 260, k, v, y0 = t + ph;
+    var N = 240, yb = P.Y(0);
+    P.clip(g);
 
-    g.fillStyle = badc; g.globalAlpha = 0.28;
-    g.beginPath(); g.moveTo(X(0), y0);
-    for (k = 0; k <= N; k++) { v = -span + (0 + span) * k / N; g.lineTo(X(v), Y(pdf(v, m))); }
-    g.lineTo(X(-span), y0); g.closePath(); g.fill();
-    g.beginPath(); g.moveTo(X(0), y0);
-    for (k = 0; k <= N; k++) { v = 0 + span * k / N; g.lineTo(X(v), Y(pdf(v, -m))); }
-    g.lineTo(X(span), y0); g.closePath(); g.fill();
+    g.fillStyle = t.bad; g.globalAlpha = 0.18;
+    g.beginPath(); g.moveTo(P.X(0), yb);
+    for (k = 0; k <= N; k++) { v = -span + span * k / N; g.lineTo(P.X(v), P.Y(pdf(v, m))); }
+    g.lineTo(P.X(-span), yb); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(P.X(0), yb);
+    for (k = 0; k <= N; k++) { v = span * k / N; g.lineTo(P.X(v), P.Y(pdf(v, -m))); }
+    g.lineTo(P.X(span), yb); g.closePath(); g.fill();
     g.globalAlpha = 1;
 
     if (fading && mFade > 0.001) {
-      g.strokeStyle = mut; g.lineWidth = 1.2; g.setLineDash([4, 3]);
-      var mu2;
+      g.strokeStyle = t.text2; g.lineWidth = 1.1; g.setLineDash([4, 3]);
       for (i = 0; i < 2; i++) {
-        mu2 = (i === 0) ? -mFade : mFade;
+        var mu2 = (i === 0) ? -mFade : mFade;
         g.beginPath();
         for (k = 0; k <= N; k++) { v = -span + 2 * span * k / N;
-          if (k === 0) g.moveTo(X(v), Y(pdf(v, mu2))); else g.lineTo(X(v), Y(pdf(v, mu2))); }
+          if (k === 0) g.moveTo(P.X(v), P.Y(pdf(v, mu2))); else g.lineTo(P.X(v), P.Y(pdf(v, mu2))); }
         g.stroke();
       }
       g.setLineDash([]);
@@ -508,159 +949,128 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 
     g.lineWidth = 2;
     for (i = 0; i < 2; i++) {
-      g.strokeStyle = (i === 0) ? s1 : s2;
+      g.strokeStyle = (i === 0) ? t.s1 : t.s2;
       var mu = (i === 0) ? -m : m;
       g.beginPath();
       for (k = 0; k <= N; k++) { v = -span + 2 * span * k / N;
-        if (k === 0) g.moveTo(X(v), Y(pdf(v, mu))); else g.lineTo(X(v), Y(pdf(v, mu))); }
+        if (k === 0) g.moveTo(P.X(v), P.Y(pdf(v, mu))); else g.lineTo(P.X(v), P.Y(pdf(v, mu))); }
       g.stroke();
     }
 
-    g.strokeStyle = ax; g.lineWidth = 1.4; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(X(0), t); g.lineTo(X(0), y0); g.stroke();
+    g.strokeStyle = t.axis; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(_px(P.X(0)), P.y0); g.lineTo(_px(P.X(0)), P.y1); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = ax; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('decision threshold', X(0), t - 1);
+    P.unclip(g);
 
-    g.font = fnt(11); g.textBaseline = 'bottom';
-    g.fillStyle = s1; g.textAlign = 'right';
-    g.fillText(clipText(g, 'bit 0 sent', X(-m) - 4 - l), Math.max(X(-m) - 4, l + 30), Y(pk) + 2);
-    g.fillStyle = s2; g.textAlign = 'left';
-    g.fillText(clipText(g, 'bit 1 sent', l + pw - X(m) - 4), Math.min(X(m) + 4, l + pw - 60), Y(pk) + 2);
+    g.save();
+    g.font = t.font(Math.max(10, P.fs)); g.fillStyle = t.axis; g.textBaseline = 'top';
+    var thT = 'decision threshold', thW = g.measureText(thT).width;
+    var right = P.X(0) + 5 + thW < P.x1;
+    g.textAlign = right ? 'left' : 'right';
+    g.fillText(thT, P.X(0) + (right ? 5 : -5), P.y0 + 3);
+    g.restore();
 
-    g.fillStyle = badc; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    var lx = clamp(X(0), l + 70, l + pw - 70);
-    g.fillText('shaded tails = errors, ' + fmtBER(pb), lx, y0 - 4);
+    leader(g, P.X(-m), P.Y(pk), 'bit 0 sent', { box: P, colour: t.s1, dx: -32, dy: 22, size: Math.max(10, P.fs) });
+    leader(g, P.X(m), P.Y(pk), 'bit 1 sent', { box: P, colour: t.s2, dx: 32, dy: 22, size: Math.max(10, P.fs) });
+    leader(g, P.X(0), P.Y(pdf(0, m)), 'errors ' + fmtBER(pb),
+      { box: P, colour: t.bad, dx: -38, dy: -30, size: Math.max(10, P.fs) });
+    if (fading && mFade > 0.001) {
+      leader(g, P.X(mFade), P.Y(pk * 0.62), 'during a ' + fx(S.fade, 0) + ' dB fade',
+        { box: P, colour: t.text2, dx: 34, dy: -22, size: Math.max(10, P.fs) });
+    }
+  }
 
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText(clipText(g, 'sampled voltage, in multiples of the noise standard deviation', pw),
-      l + pw / 2, y0 + 20);
-    g.textAlign = 'left';
-    g.fillText('−' + fx(span, 1), l, y0 + 4);
-    g.textAlign = 'right';
-    g.fillText('+' + fx(span, 1), l + pw, y0 + 4);
-    g.textAlign = 'center';
-    g.fillStyle = mut;
-    g.fillText('0', X(0), y0 + 4);
+  function tagCurve(g, P, x, y, text, col) {
+    var t = theme(), size = Math.max(10, P.fs);
+    g.save();
+    g.font = t.font(size);
+    var tw = g.measureText(text).width;
+    var tx = clamp(x - tw / 2, P.x0 + 3, Math.max(P.x0 + 3, P.x1 - tw - 3));
+    var ty = clamp(y - 6, P.y0 + size + 2, P.y1 - 3);
+    g.globalAlpha = 0.86; g.fillStyle = t.plot;
+    g.fillRect(tx - 3, ty - size * 0.85, tw + 6, size * 1.3);
+    g.globalAlpha = 1; g.fillStyle = col;
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText(text, tx, ty);
+    g.restore();
   }
 
   function drawCurves(R) {
-    var c = $('c2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), gr = cvv('--grid');
-    var grs = cvv('--grid-strong'), ax = cvv('--axis');
-    var col = [cvv('--series-1'), cvv('--series-2'), cvv('--series-3'), cvv('--series-4')];
+    var c = $('c2'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme();
+    var YBOT = 1e-10, xmax = R.xmax;
 
-    var l = 62, r = 58, t = 16, b = 44;
-    var pw = Math.max(w - l - r, 60), ph = Math.max(h - t - b, 60);
-    var xmin = 0, xmax = R.xmax, ytop = 0, ybot = -10;
-    var X = function (d) { return l + (clamp(d, xmin, xmax) - xmin) / (xmax - xmin) * pw; };
-    var Y = function (lp) { return t + (ytop - clamp(lp, ybot, ytop)) / (ytop - ybot) * ph; };
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: xmax, unit: 'dB', label: EBN0 },
+      { min: YBOT, max: 1, log: true, label: 'bit error rate',
+        fmt: function (v) { return '10' + supStr(Math.round(L10(v))); } });
 
-    g.font = fnt(11);
-    var d, e;
-    var xs2 = niceStep(xmax - xmin, 6);
-    g.strokeStyle = gr; g.lineWidth = 0.5;
-    for (d = xmin; d <= xmax + 1e-9; d += xs2) {
-      g.beginPath(); g.moveTo(X(d), t); g.lineTo(X(d), t + ph); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(fx(d, 0), X(d), t + ph + 6);
-    }
-    for (e = 0; e >= -10; e--) {
-      g.strokeStyle = gr; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(e)); g.lineTo(l + pw, Y(e)); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText('10' + supStr(e), l - 7, Y(e));
-    }
-    g.strokeStyle = grs; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, t); g.lineTo(l, t + ph); g.lineTo(l + pw, t + ph); g.stroke();
-    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('Eb/N0 (dB)', l + pw / 2, t + ph + 24);
-    g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('bit error rate', 4, 2);
+    var target = R.target;
+    band(g, P, P.Y(target), P.y1, t.good, 'y');
 
-    var ty = Y(-S.tgExp);
-    g.strokeStyle = ax; g.lineWidth = 1.3; g.setLineDash([6, 4]);
-    g.beginPath(); g.moveTo(l, ty); g.lineTo(l + pw, ty); g.stroke();
+    P.clip(g);
+    g.strokeStyle = t.axis; g.lineWidth = 1.3; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P.x0, _px(P.Y(target))); g.lineTo(P.x1, _px(P.Y(target))); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = ax; g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('target ' + fmtTarget(S.tgExp), l + 5, ty - 3);
 
     var Ls = [1, 2, 4];
-    var series = [{ ch: 'awgn', L: S.L, c: col[0], lab: 'AWGN', dash: [7, 4], wdt: 1.6 }];
+    var series = [{ ch: 'awgn', L: S.L, c: t.s1, lab: 'AWGN', dash: [7, 4], wdt: 1.6 }];
     var q;
     for (q = 0; q < 3; q++) {
-      series.push({ ch: S.ch, L: Ls[q], c: col[1 + q], lab: 'L = ' + Ls[q],
+      series.push({ ch: S.ch, L: Ls[q], c: t.s[1 + q], lab: 'L = ' + Ls[q],
         dash: [], wdt: (Ls[q] === S.L) ? 2.6 : 1.5 });
     }
 
-    var N = 150, i, si, s, p, lp, x, y, lastX, lastY, started;
+    var N = 180, i, si, s, d, p, x, y, lastX, lastY, started, tags = [];
     for (si = 0; si < series.length; si++) {
       s = series[si];
       g.strokeStyle = s.c; g.lineWidth = s.wdt; g.setLineDash(s.dash);
       g.beginPath(); started = false; lastX = -1; lastY = -1;
       for (i = 0; i <= N; i++) {
-        d = xmin + (xmax - xmin) * i / N;
+        d = xmax * i / N;
         p = berAt(R.sc, s.ch, R.K, s.L, d);
-        lp = L10(Math.max(p, 1e-300));
-        x = X(d);
-        if (lp < ybot) {
-          if (started) { g.lineTo(x, Y(ybot)); lastX = x; lastY = Y(ybot); }
+        if (!isFinite(p) || p <= 0) p = 1e-300;
+        x = P.X(d);
+        if (p < YBOT) {
+          if (started) { g.lineTo(x, P.Y(YBOT)); lastX = x; lastY = P.Y(YBOT); }
           break;
         }
-        y = Y(lp);
+        y = P.Y(p);
         if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
         lastX = x; lastY = y;
       }
       g.stroke();
       g.setLineDash([]);
-      if (started && lastX > 0) {
-        g.fillStyle = s.c; g.font = fnt(11.5);
-        if (lastX >= l + pw - 1.5) {
-          g.textAlign = 'left'; g.textBaseline = 'middle';
-          g.fillText(clipText(g, s.lab, r - 6), l + pw + 5, clamp(lastY, t + 7, t + ph - 7));
-        } else {
-          g.textAlign = 'center'; g.textBaseline = 'bottom';
-          g.fillText(s.lab, clamp(lastX, l + 22, l + pw - 22), Math.max(lastY - 5, t + 11));
-        }
-      }
-    }
-
-    if (isFinite(R.reqCur) && R.reqCur >= xmin && R.reqCur <= xmax) {
-      g.strokeStyle = ax; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(X(R.reqCur), ty); g.lineTo(X(R.reqCur), t + ph); g.stroke();
-      g.fillStyle = ax; g.font = fnt(11); g.textBaseline = 'top';
-      var rx = clamp(X(R.reqCur), l + 4, l + pw - 4);
-      g.textAlign = (rx > l + pw - 74) ? 'right' : 'left';
-      g.fillText('needs ' + fx(R.reqCur, 1) + ' dB', rx + (g.textAlign === 'left' ? 4 : -4), ty + 4);
+      if (started && lastX > 0) tags.push({ x: lastX, y: lastY, lab: s.lab, c: s.c });
     }
 
     var pOp = Math.max(R.berNow, 1e-300);
-    var lpOp = L10(pOp);
-    var opX = X(S.eb), opY = Y(lpOp);
-    var onScale = (lpOp >= ybot && S.eb <= xmax);
-    g.strokeStyle = cvv('--series-7'); g.lineWidth = 1.2; g.setLineDash([2, 3]);
-    g.beginPath(); g.moveTo(opX, t + ph); g.lineTo(opX, opY); g.lineTo(l, opY); g.stroke();
+    var opX = P.X(clamp(S.eb, 0, xmax)), opY = P.Y(Math.max(pOp, YBOT));
+    g.strokeStyle = t.s7; g.lineWidth = 1.2; g.setLineDash([2, 3]);
+    g.beginPath(); g.moveTo(opX, P.y1); g.lineTo(opX, opY); g.lineTo(P.x0, opY); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = cvv('--series-7');
-    g.beginPath(); g.arc(opX, opY, 4.2, 0, 6.2832); g.fill();
-    g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText(clipText(g, 'now: ' + fx(S.eb, 1) + ' dB', 130), clamp(opX, l + 34, l + pw - 34), Math.max(opY - 8, t + 11));
-    g.textAlign = 'left'; g.textBaseline = 'bottom';
-    if (onScale) g.fillText(fmtBER(pOp), l + 4, Math.max(opY - 3, t + 11));
+    g.fillStyle = t.s7;
+    g.beginPath(); g.arc(opX, opY, clamp(P.h * 0.011, 2.6, 4.6), 0, 6.2832); g.fill();
+    P.unclip(g);
+
+    for (i = 0; i < tags.length; i++) tagCurve(g, P, tags[i].x, tags[i].y, tags[i].lab, tags[i].c);
+
+    tagCurve(g, P, P.x0 + P.w * 0.14, P.Y(target) - 2, 'target ' + fmtTarget(S.tgExp), t.axis);
+
+    if (isFinite(R.reqCur) && R.reqCur >= 0 && R.reqCur <= xmax) {
+      leader(g, P.X(R.reqCur), P.Y(target), 'needs ' + fx(R.reqCur, 1) + ' dB',
+        { box: P, colour: t.axis, dx: 30, dy: 30, size: Math.max(10, P.fs) });
+    }
+    leader(g, opX, opY, 'now ' + fx(S.eb, 1) + ' dB, ' + fmtBER(pOp),
+      { box: P, colour: t.s7, dx: -36, dy: -28, size: Math.max(10, P.fs), dot: false });
   }
 
   function drawBars(R) {
-    var c = $('c3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), gr = cvv('--grid');
-    var ax = cvv('--axis');
+    var c = $('c3'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme();
     var keys = ['awgn', 'rice', 'rayl'];
-    var cols = [cvv('--good'), cvv('--warn'), cvv('--bad')];
+    var cols = [t.good, t.warn, t.bad];
     var labs = ['AWGN', 'Rician K = ' + fx(S.kdb, 1) + ' dB', 'Rayleigh'];
-
-    var l = 46, r = 14, t = 22, b = 46;
-    var pw = Math.max(w - l - r, 60), ph = Math.max(h - t - b, 50);
 
     var vals = [], i, any = false, mx = -1e9, mn = 1e9;
     for (i = 0; i < 3; i++) {
@@ -671,84 +1081,95 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     if (!any) { mx = 60; mn = 0; }
     var v0 = Math.min(0, Math.floor((mn - 3) / 5) * 5);
     var v1 = Math.max(mx + 8, v0 + 10);
-    var Y = function (v) { return t + (v1 - clamp(v, v0, v1)) / (v1 - v0) * ph; };
 
-    var st = niceStep(v1 - v0, 5);
-    g.font = fnt(11); g.lineWidth = 0.5;
-    var vv;
-    for (vv = Math.ceil(v0 / st) * st; vv <= v1 + 1e-9; vv += st) {
-      g.strokeStyle = gr;
-      g.beginPath(); g.moveTo(l, Y(vv)); g.lineTo(l + pw, Y(vv)); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(fx(vv, 0), l - 6, Y(vv));
-    }
-    g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('Eb/N0 needed (dB)', 4, 2);
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: 3, fmt: function () { return ''; }, title: '' },
+      { min: v0, max: v1, unit: 'dB', label: EBN0 + ' needed' });
 
-    var slot = pw / 3, bw2 = Math.min(slot * 0.5, 92);
+    var slot = P.w / 3, bw = Math.min(slot * 0.5, 96);
+    var yBase = P.Y(v0), size = Math.max(10, P.fs);
+    P.clip(g);
     for (i = 0; i < 3; i++) {
-      var cx = l + slot * (i + 0.5);
+      var cx = P.x0 + slot * (i + 0.5);
       var val = vals[i];
-      var yTop = isFinite(val) ? Y(val) : t;
-      var yBase = Y(v0);
+      var yTop = isFinite(val) ? P.Y(clamp(val, v0, v1)) : P.y0;
       g.fillStyle = cols[i];
-      g.globalAlpha = (keys[i] === S.ch) ? 0.95 : 0.42;
-      g.fillRect(cx - bw2 / 2, yTop, bw2, Math.max(yBase - yTop, 1.5));
+      g.globalAlpha = (keys[i] === S.ch) ? 0.9 : 0.32;
+      g.fillRect(cx - bw / 2, yTop, bw, Math.max(yBase - yTop, 1.5));
       g.globalAlpha = 1;
-      if (keys[i] === S.ch) {
-        g.strokeStyle = ax; g.lineWidth = 1.4;
-        g.strokeRect(cx - bw2 / 2, yTop, bw2, Math.max(yBase - yTop, 1.5));
-      }
-      g.fillStyle = cvv('--text-primary'); g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-      g.fillText(isFinite(val) ? fx(val, 1) + ' dB' : '> ' + fx(DB_HI, 0) + ' dB', cx, yTop - 4);
-      g.fillStyle = sub; g.font = fnt(11); g.textBaseline = 'top';
-      g.fillText(clipText(g, labs[i], slot - 6), cx, Y(v0) + 6);
+      g.strokeStyle = cols[i]; g.lineWidth = (keys[i] === S.ch) ? 1.6 : 1;
+      g.strokeRect(_px(cx - bw / 2), _px(yTop), Math.round(bw), Math.round(Math.max(yBase - yTop, 1.5)));
+      g.fillStyle = t.text; g.font = t.font(size, '500');
+      g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText(isFinite(val) ? fx(val, 1) + ' dB' : '> ' + fx(DB_HI, 0) + ' dB',
+        cx, Math.max(yTop - 4, P.y0 + size));
     }
+    P.unclip(g);
+
+    g.save();
+    g.font = t.font(size); g.fillStyle = t.text2;
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (i = 0; i < 3; i++) {
+      g.fillText(clipText(g, labs[i], slot - 6), P.x0 + slot * (i + 0.5), P.y1 + 4);
+    }
+    g.restore();
 
     if (isFinite(R.pen) && S.ch !== 'awgn' && isFinite(R.req.awgn)) {
       var iCur = (S.ch === 'rice') ? 1 : 2;
-      var xA = l + slot * 0.5, xB = l + slot * (iCur + 0.5);
-      var yA = Y(R.req.awgn), yB = Y(R.req[S.ch]);
-      var bx = (xA + xB) / 2;
-      g.strokeStyle = ax; g.lineWidth = 1; g.setLineDash([3, 3]);
-      g.beginPath(); g.moveTo(xA, yA); g.lineTo(xB + bw2 / 2, yA); g.stroke();
+      var xA = P.x0 + slot * 0.5, xB = P.x0 + slot * (iCur + 0.5);
+      var yA = P.Y(clamp(R.req.awgn, v0, v1)), yB = P.Y(clamp(R.req[S.ch], v0, v1));
+      g.save();
+      g.strokeStyle = t.axis; g.lineWidth = 1; g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(xA, _px(yA)); g.lineTo(xB + bw / 2, _px(yA)); g.stroke();
       g.setLineDash([]);
-      var arrX = clamp(xB - bw2 / 2 - 12, l + 6, l + pw - 6);
-      g.beginPath(); g.moveTo(arrX, yA); g.lineTo(arrX, yB); g.stroke();
-      g.beginPath(); g.moveTo(arrX - 3.5, yA - 5); g.lineTo(arrX, yA); g.lineTo(arrX + 3.5, yA - 5); g.stroke();
-      g.beginPath(); g.moveTo(arrX - 3.5, yB + 5); g.lineTo(arrX, yB); g.lineTo(arrX + 3.5, yB + 5); g.stroke();
-      g.fillStyle = ax; g.font = fnt(11.5); g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(clipText(g, 'margin ' + sgn(R.pen, 1) + ' dB', arrX - l - 6), arrX - 6, (yA + yB) / 2);
+      g.restore();
+      var arrX = clamp(xB - bw / 2 - slot * 0.1, P.x0 + 8, P.x1 - 8);
+      dimension(g, arrX, yA, arrX, yB, 'margin ' + sgn(R.pen, 1) + ' dB', { colour: t.axis, size: size });
     }
   }
 
+  function sw(v, dash) {
+    return '<span class="sw' + (dash ? ' dash' : '') + '" style="' +
+      (dash ? 'color:' : 'background:') + v + '"></span>';
+  }
   function legends(R) {
     var fading = (S.ch !== 'awgn');
-    var l1 = '<li>Blue and orange bells: the two possible sampled voltages, blurred by noise.</li>' +
-      '<li>Dashed grey line: the threshold. Anything on the wrong side is a wrong bit.</li>' +
-      '<li>Red shading: the error tails. Their combined area is the bit error rate.</li>' +
-      '<li>The separation drawn is the one that produces this scheme’s error rate at ' +
-      fx(S.eb + S.cg - S.il, 1) + ' dB.</li>';
-    if (fading) {
-      l1 += '<li>Grey dashed bells: the same instant during a 10 dB fade' +
-        (S.ch === 'rayl' ? ', which Rayleigh delivers ' + fx((1 - Math.exp(-0.1)) * 100, 1) + ' % of the time' : '') +
-        '. The bells slide together and the tails swell.</li>';
-    }
+    var l1 = '<li>' + sw('var(--series-1)') + 'bit 0, blurred by noise</li>' +
+      '<li>' + sw('var(--series-2)') + 'bit 1, blurred by noise</li>' +
+      '<li>' + sw('var(--bad)') + 'error tails</li>' +
+      '<li>' + sw('var(--axis)', true) + 'decision threshold</li>';
+    if (fading) l1 += '<li>' + sw('var(--text-secondary)', true) + 'same bits, ' + fx(S.fade, 0) + ' dB fade</li>';
     $('ln1').innerHTML = l1;
 
     $('ln2').innerHTML =
-      '<li>Blue dashed: the same scheme in plain noise, for reference.</li>' +
-      '<li>Orange, yellow, purple: ' + CHAN[S.ch] + ' with 1, 2 and 4 diversity branches. The thick one is your setting.</li>' +
-      '<li>Black dashed line: the target error rate. Where a curve crosses it is the Eb/N0 that scheme needs.</li>' +
-      '<li>Dark red dot: the operating point, dotted across to both axes.</li>' +
-      '<li>Slope tells the story: L branches give L decades of error rate per decade of power.</li>';
+      '<li>' + sw('var(--series-1)', true) + 'AWGN reference</li>' +
+      '<li>' + sw('var(--series-2)') + CHAN[S.ch] + ', L = 1</li>' +
+      '<li>' + sw('var(--series-3)') + 'L = 2</li>' +
+      '<li>' + sw('var(--series-4)') + 'L = 4</li>' +
+      '<li>' + sw('var(--axis)', true) + 'target ' + fmtTarget(S.tgExp) + '</li>' +
+      '<li>' + sw('var(--series-7)') + 'operating point</li>' +
+      '<li>' + sw('var(--good)') + 'shaded &mdash; target met</li>';
 
     $('ln3').innerHTML =
-      '<li>Each bar is the Eb/N0 needed to reach ' + fmtTarget(S.tgExp) + ' with ' + S.L +
-      ' branch' + (S.L === 1 ? '' : 'es') + '.</li>' +
-      '<li>The outlined bar is the channel you have selected.</li>' +
-      '<li>The bracket is the required margin: the decibels fading adds on top of AWGN.</li>' +
-      '<li>The two fading bars stay on screen in AWGN, to show what the same link would cost if the path faded.</li>';
+      '<li>' + sw('var(--good)') + 'AWGN</li>' +
+      '<li>' + sw('var(--warn)') + 'Rician</li>' +
+      '<li>' + sw('var(--bad)') + 'Rayleigh</li>' +
+      '<li>bold bar &mdash; your channel</li>' +
+      '<li>arrow &mdash; margin over AWGN</li>';
+  }
+
+  function hero(R) {
+    var v = $('heroVal'), b = $('heroBadge'), f = $('heroFt');
+    v.textContent = fmtBER(R.berNow);
+    var shortBy = isFinite(R.reqCur) ? R.reqCur - S.eb : NaN;
+    b.className = 'badge';
+    if (R.berNow <= R.target) { b.classList.add('good'); b.textContent = 'meets target'; }
+    else if (!isFinite(shortBy)) { b.classList.add('bad'); b.textContent = 'target out of reach'; }
+    else { b.classList.add(shortBy <= 3 ? 'warn' : 'bad'); b.textContent = 'short by ' + fx(shortBy, 1) + ' dB'; }
+    f.textContent = (isFinite(R.reqCur)
+      ? 'needs ' + fx(R.reqCur, 1) + ' dB for ' + fmtTarget(S.tgExp)
+      : 'target unreachable above ' + fx(DB_HI, 0) + ' dB') +
+      ' · ' + R.sc.n + ' · ' + CHAN[S.ch] + ' · L = ' + S.L;
   }
 
   function cards(R) {
@@ -761,16 +1182,16 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     $('cPen').style.color = !isFinite(R.pen) ? 'var(--text-primary)'
       : (R.pen > 10 ? 'var(--bad)' : (R.pen > 3 ? 'var(--warn)' : 'var(--good)'));
     $('cPenf').textContent = isFinite(R.pen)
-      ? 'extra Eb/N0 over AWGN, in dB'
-      : 'target out of reach in this channel';
+      ? 'extra ' + EBN0 + ' over AWGN'
+      : 'target out of reach here';
 
     $('cDiv').textContent = isFinite(R.dgain) ? sgn(R.dgain, 1) + ' dB' : '—';
     $('cDivf').textContent = S.L === 1 ? 'one branch, nothing gained yet'
-      : 'saved by ' + S.L + ' branches over 1, in dB';
+      : 'saved by ' + S.L + ' branches over 1';
 
     var esn = S.eb + 10 * L10(sc.k);
     $('cEs').textContent = fx(esn, 2) + ' dB';
-    $('cEsf').textContent = 'Eb/N0 + 10 log10(' + sc.k + '), ' + sc.k + ' bit per symbol';
+    $('cEsf').textContent = EBN0 + ' + 10 log' + sub('10') + '(' + sc.k + ')';
 
     $('cSe').textContent = fx(sc.k, 2) + ' bit/s/Hz';
 
@@ -782,13 +1203,15 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   function work(R) {
     var sc = R.sc, o = [];
     var eff = S.eb + S.cg - S.il, gl = Math.pow(10, eff / 10);
-    o.push('Scheme ' + sc.n + ' carries <code>k = log2(' + sc.M + ') = ' + sc.k +
-      '</code> bit per symbol, so <code>Es/N0 = Eb/N0 + 10 log10(' + sc.k + ') = ' +
+    o.push('Scheme ' + sc.n + ' carries <code>k = log<sub>2</sub>(' + sc.M + ') = ' + sc.k +
+      '</code> bit per symbol, so <code>E<sub>s</sub>/N<sub>0</sub> = E<sub>b</sub>/N<sub>0</sub> + 10 log<sub>10</sub>(' + sc.k + ') = ' +
       fx(S.eb + 10 * L10(sc.k), 2) + ' dB</code> at the current working point.');
-    o.push('Working Eb/N0 <code>= ' + fx(S.eb, 1) + ' + ' + fx(S.cg, 1) + ' − ' + fx(S.il, 1) +
-      ' = ' + fx(eff, 1) + ' dB</code>, which as a plain ratio is <code>γ = 10^(' +
-      fx(eff, 1) + '/10) = ' + (gl >= 1e5 ? gl.toExponential(3).replace('e+', ' × 10^') : fx(gl, 2)) + '</code>.');
-    o.push('In plain noise, <code>' + sc.f + '</code> gives <code>P_b = ' +
+    o.push('Working E<sub>b</sub>/N<sub>0</sub> <code>= ' + fx(S.eb, 1) + ' + ' + fx(S.cg, 1) + ' − ' + fx(S.il, 1) +
+      ' = ' + fx(eff, 1) + ' dB</code>, which as a plain ratio is <code>γ = 10<sup>(' +
+      fx(eff, 1) + '/10)</sup> = ' + (gl >= 1e5
+        ? gl.toExponential(3).replace('-', '−').replace(/e\+?(−?\d+)/, ' × 10<sup>$1</sup>')
+        : fx(gl, 2)) + '</code>.');
+    o.push('In plain noise, <code>' + sc.f + '</code> gives <code>P<sub>b</sub> = ' +
       fmtBER(berAWGN(sc, gl * S.L)) + '</code>' + (S.L > 1 ? ' with ' + S.L +
       ' branches combined, which multiply the ratio by ' + S.L + '.' : '.'));
     if (S.ch === 'rayl') {
@@ -797,23 +1220,23 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
         var mu = Math.sqrt(ge / (1 + ge));
         o.push('Under Rayleigh fading the ratio itself is random, so the error rate is averaged over it. ' +
           'With <code>μ = √(γ̄/(1+γ̄)) = ' + fx(mu, 6) +
-          '</code>, one branch gives <code>P_b = 0.5(1 − μ)' +
+          '</code>, one branch gives <code>P<sub>b</sub> = 0.5(1 − μ)' +
           (sc.a === 1 ? '' : ' × ' + fx(sc.a, 4)) + ' = ' +
           fmtBER(berRayleigh(sc, gl, 1)) + '</code>.');
       } else {
         o.push('Under Rayleigh fading the average of <code>' + sc.f + '</code> over the fading ' +
-          'is <code>P_b = ' + fx(sc.a, 2) + ' / (1 + ' + fx(sc.c, 2) + 'γ̄)^L = ' +
+          'is <code>P<sub>b</sub> = ' + fx(sc.a, 2) + ' / (1 + ' + fx(sc.c, 2) + 'γ̄)<sup>L</sup> = ' +
           fmtBER(berRayleigh(sc, gl, S.L)) + '</code> with L = ' + S.L + '.');
       }
       if (S.L > 1) {
-        o.push('With <code>L = ' + S.L + '</code> branches combined the same average becomes <code>P_b = ' +
-          fmtBER(berRayleigh(sc, gl, S.L)) + '</code>, and at high Eb/N0 it falls as <code>γ̄^−' +
-          S.L + '</code>.');
+        o.push('With <code>L = ' + S.L + '</code> branches combined the same average becomes <code>P<sub>b</sub> = ' +
+          fmtBER(berRayleigh(sc, gl, S.L)) + '</code>, and at high E<sub>b</sub>/N<sub>0</sub> it falls as <code>γ̄<sup>−' +
+          S.L + '</sup></code>.');
       }
     } else if (S.ch === 'rice') {
       o.push('Under Rician fading with <code>K = ' + fx(S.kdb, 1) + ' dB = ' + fx(R.K, 3) +
         '</code> the average is taken through the moment generating function of the faded ratio, ' +
-        'evaluated by numerical integration. It gives <code>P_b = ' + fmtBER(R.berNow) + '</code>.');
+        'evaluated by numerical integration. It gives <code>P<sub>b</sub> = ' + fmtBER(R.berNow) + '</code>.');
     }
     o.push('Solving for the target <code>' + fmtTarget(S.tgExp) + '</code> in ' + CHAN[S.ch] +
       ' needs <code>' + (isFinite(R.reqCur) ? fx(R.reqCur, 2) + ' dB' : 'more than ' + fx(DB_HI, 0) + ' dB') +
@@ -823,6 +1246,8 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       '</code>, is the required margin. It is the reason a fading link buys diversity rather than a bigger amplifier.');
     $('work').innerHTML = o.map(function (s) { return '<li>' + s + '</li>'; }).join('');
   }
+
+  var IDS = ['eb', 'tg', 'kk', 'br', 'cg', 'il', 'fd'];
 
   function syncUI() {
     var i, bs = document.querySelectorAll('[data-sch]');
@@ -835,13 +1260,9 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       if (bs[i].getAttribute('data-ch') === S.ch) bs[i].classList.add('on');
       else bs[i].classList.remove('on');
     }
-    $('ebv').textContent = fx(S.eb, 1) + ' dB';
-    $('tgv').textContent = fmtTarget(S.tgExp);
-    $('kkv').textContent = fx(S.kdb, 1) + ' dB';
-    $('brv').textContent = String(S.L);
-    $('cgv').textContent = fx(S.cg, 1) + ' dB';
-    $('ilv').textContent = fx(S.il, 1) + ' dB';
-    $('kk').disabled = (S.ch !== 'rice');
+    var off = (S.ch !== 'rice');
+    $('kk').disabled = off; $('kkN').disabled = off;
+    $('fd').disabled = (S.ch === 'awgn'); $('fdN').disabled = (S.ch === 'awgn');
   }
 
   function refresh() {
@@ -851,6 +1272,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     drawCurves(R);
     drawBars(R);
     legends(R);
+    hero(R);
     cards(R);
     work(R);
   }
@@ -862,50 +1284,82 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     S.L = clamp(Math.round(+$('br').value), 1, 4);
     S.cg = clamp(+$('cg').value, 0, 8);
     S.il = clamp(+$('il').value, 0, 3);
+    S.fade = clamp(+$('fd').value, 0, 30);
   }
 
-  ['eb', 'tg', 'kk', 'br', 'cg', 'il'].forEach(function (id) {
-    $(id).addEventListener('input', function () { readCtl(); refresh(); });
+  function clearPresets() {
+    var i, bs = document.querySelectorAll('[data-pre]');
+    for (i = 0; i < bs.length; i++) bs[i].classList.remove('on');
+  }
+
+  IDS.forEach(function (id) {
+    bindPair($(id), $(id + 'N'), function () { clearPresets(); readCtl(); refresh(); });
   });
+
   var i, bs = document.querySelectorAll('[data-sch]');
   for (i = 0; i < bs.length; i++) {
     bs[i].addEventListener('click', function () {
       var v = this.getAttribute('data-sch');
-      if (SCHEMES[v]) { S.sch = v; refresh(); }
+      if (SCHEMES[v]) { S.sch = v; clearPresets(); refresh(); }
     });
   }
   bs = document.querySelectorAll('[data-ch]');
   for (i = 0; i < bs.length; i++) {
     bs[i].addEventListener('click', function () {
       var v = this.getAttribute('data-ch');
-      if (CHAN[v]) { S.ch = v; refresh(); }
+      if (CHAN[v]) { S.ch = v; clearPresets(); refresh(); }
+    });
+  }
+
+  function setVal(id, v) {
+    $(id).value = String(v);
+    $(id + 'N').value = $(id).value;
+  }
+  function setAll(sch, ch, eb, tg, kdb, L, cg, il) {
+    S.sch = sch; S.ch = ch;
+    setVal('eb', eb); setVal('tg', tg); setVal('kk', kdb);
+    setVal('br', L); setVal('cg', cg); setVal('il', il);
+    readCtl();
+  }
+
+  var PRESETS = {
+    sat:  { a: ['qpsk', 'awgn', 8, 6, 6, 1, 5, 1] },
+    gsm:  { a: ['bpsk', 'rayl', 20, 3, 6, 1, 3, 1] },
+    wifi: { a: ['qam64', 'rice', 25, 5, 10, 2, 4, 1.5] },
+    lte:  { a: ['qam16', 'rayl', 20, 4, 6, 2, 4, 1] }
+  };
+  bs = document.querySelectorAll('[data-pre]');
+  for (i = 0; i < bs.length; i++) {
+    bs[i].addEventListener('click', function () {
+      var p = PRESETS[this.getAttribute('data-pre')];
+      if (!p) return;
+      setAll.apply(null, p.a);
+      clearPresets();
+      this.classList.add('on');
+      $('tourNote').textContent = 'Preset loaded; every control moved.';
+      refresh();
     });
   }
 
   function note(t) { $('tourNote').textContent = t; }
-  function setAll(sch, ch, eb, tg, kdb, L, cg, il) {
-    S.sch = sch; S.ch = ch;
-    $('eb').value = String(eb); $('tg').value = String(tg); $('kk').value = String(kdb);
-    $('br').value = String(L); $('cg').value = String(cg); $('il').value = String(il);
-    readCtl();
-  }
   function tour(n) {
     if (n === 1) {
       setAll('qpsk', 'awgn', 12, 6, 6, 1, 0, 0);
-      note('Step 1 — QPSK in plain additive noise. The curve is a cliff: one more decibel divides the error rate by roughly ten, so a link that is short by 2 dB is nearly fixed by a better amplifier.');
+      note('QPSK in plain noise — one more decibel divides the error rate by ten.');
     } else if (n === 2) {
       setAll('qpsk', 'rayl', 12, 6, 6, 1, 0, 0);
-      note('Step 2 — the same scheme, now in Rayleigh fading. The cliff has become a shallow straight slope, and the Eb/N0 needed for one error in a million jumps by more than 40 dB. Errors now come from the moments the signal is deeply faded.');
+      note('Same scheme in Rayleigh fading — the cliff becomes a shallow slope.');
     } else if (n === 3) {
       setAll('qpsk', 'rayl', 12, 6, 6, 2, 0, 0);
-      note('Step 3 — two independently fading branches, combined. The slope doubles and most of that 40 dB comes straight back, because two paths are rarely deeply faded at the same instant.');
+      note('Two branches combined — the slope doubles and most decibels come back.');
     } else if (n === 4) {
       setAll('qpsk', 'rayl', 12, 6, 6, 4, 0, 0);
-      note('Step 4 — four branches. The slope is now four decades of error rate per decade of power, and the required Eb/N0 is within a few decibels of the clean-noise case. Diversity, not power, is what beats fading.');
+      note('Four branches — within a few decibels of the clean-noise case.');
     } else if (n === 5) {
       setAll('qam64', 'rayl', 20, 6, 6, 1, 0, 0);
-      note('Step 5 — 64-QAM carries six bits per symbol instead of two, and pays for it. In Rayleigh fading with one branch the required Eb/N0 becomes extreme, which is why high-order constellations are used only on links that are close to clean noise or well protected by diversity.');
+      note('64-QAM carries six bits per symbol and pays heavily in fading.');
     }
+    clearPresets();
     refresh();
   }
   ['t1', 't2', 't3', 't4', 't5'].forEach(function (id, k) {

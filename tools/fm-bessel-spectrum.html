@@ -6,208 +6,774 @@
 <title>FM sidebands, Bessel functions and Carson's rule</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --s1: #378ADD; --s2: #D85A30; --s3: #1D9E75; --s4: #7F77DD; --s5: #B3860F; --s6: #D4537E;
-  --accent: #378ADD;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #1a1f26; --text-secondary: #55606c; --text-muted: #869099;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
-    --s1: #6FB2F0; --s2: #F08A5C; --s3: #4FC79E; --s4: #A49BF0; --s5: #E0B44E; --s6: #EE7EA2;
-    --accent: #6FB2F0;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #e9edf1; --text-secondary: #b0bac4; --text-muted: #7d8791;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: flex; flex-direction: column; gap: 1rem; }
+.stage { display: flex; flex-direction: column; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
+  .wrap > .full { grid-column: 1 / -1; }
+  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+}
+
+h1 { font-size: 23px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 13px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 11px; cursor: pointer; font-size: 13px; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--accent); color: var(--accent); }
-button[disabled] { opacity: 0.45; cursor: default; }
-input[type=number] { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
-  padding: 4px 8px; width: 84px; font-variant-numeric: tabular-nums; font-size: 13px; }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.9rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
-.ctl input[type=range] { flex: 1; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
-.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 0.85rem; }
-.lbl { font-size: 13px; color: var(--text-secondary); }
-.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.sec span { color: var(--text-secondary); font-size: 12.5px; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 12.5px; color: var(--text-secondary); }
+.hero .val { font-size: 34px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 13px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 13px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 12.5px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+.card .hd { font-size: 12.5px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-canvas { width: 100%; display: block; }
-.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.15rem; }
-.legend-note li { margin: 3px 0; }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px; color: var(--text-secondary); margin-top: 1rem; }
-.note b { color: var(--text-primary); font-weight: 500; }
-details { margin: 0.25rem 0 1rem; font-size: 13px; }
-summary { cursor: pointer; color: var(--text-secondary); }
-details .inner { padding: 0.7rem 0 0.2rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.glossary { font-size: 13px; margin-top: 0.5rem; }
-.glossary dt { font-weight: 500; margin-top: 9px; }
-.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
-ol.worked { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.5rem 0 0; }
-ol.worked li { margin: 4px 0; }
-ol.worked b { color: var(--text-primary); font-weight: 500; }
-.fail { background: var(--surface-1); border-left: 3px solid var(--s2); padding: 0.7rem 1rem; font-size: 13px; margin: 1rem 0; }
-h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.fail { background: color-mix(in srgb, var(--bad) 12%, transparent);
+  border: 1px solid var(--bad); border-radius: var(--radius);
+  padding: 0.6rem 0.9rem; font-size: 13px; color: var(--bad); margin: 0 0 1rem; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>FM sidebands, Bessel functions and Carson's rule</h1>
-<p class="sub">One tone wobbling one carrier creates an endless comb of sidebands whose heights are Bessel functions. Push harder and the power reshuffles along the comb &mdash; the carrier itself can vanish &mdash; while the total never changes.</p>
-<p class="sub" style="margin: -1.4rem 0 1.6rem;">If the words carrier, sideband or spectrum are new, start with <a href="modulation.html">the modulation playground</a>.</p>
+<div class="wrap">
 
-<p id="fail" class="fail" hidden></p>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>FM sidebands, Bessel functions and Carson's rule</h1>
+  <p class="sub">One tone wobbling one carrier makes an endless comb of sidebands whose heights are Bessel functions. Push harder and the power reshuffles along the comb &mdash; the carrier itself can vanish.</p>
+  <p class="prereq">New to carriers and sidebands? Start with <a href="modulation.html">the modulation playground</a>.</p>
+</header>
 
-<div class="grid2">
-  <div class="ctl"><label for="bt">Modulation index &beta;</label><input type="range" id="bt" min="0" max="10" step="0.005" value="5"><span class="v" id="btv">5.000</span></div>
-  <div class="ctl"><label for="fm">Tone frequency f<sub>m</sub></label><input type="range" id="fm" min="1" max="60" step="0.5" value="15"><span class="v" id="fmv">15.0 kHz</span></div>
-  <div class="ctl"><label for="ac">Carrier amplitude A<sub>c</sub></label><input type="range" id="ac" min="0.1" max="10" step="0.1" value="1"><span class="v" id="acv">1.0 V</span></div>
-  <div class="ctl"><label for="dv">Peak deviation &Delta;f</label><input type="range" id="dv" min="0" max="600" step="0.5" value="75"><span class="v" id="dvv">75.0 kHz</span></div>
-</div>
+<div class="rail">
 
-<div class="row">
-  <span class="lbl">Modulation</span>
-  <button id="mFM" class="on">FM</button>
-  <button id="mPM">PM</button>
-  <span class="lbl" style="margin-left: 6px;">Brackets</span>
-  <button id="bCar" class="on">Carson</button>
-  <button id="bPct" class="on">1 % rule</button>
-  <button id="bAM" disabled>Compare with AM</button>
-  <button id="anim" style="margin-left: 6px;">Animate &beta;</button>
-  <button id="pre">FM broadcast preset</button>
-</div>
+  <p id="fail" class="fail" hidden></p>
 
-<div class="row">
-  <span class="lbl">Guided tour</span>
-  <button id="t1">1 &middot; narrowband</button>
-  <button id="t2">2 &middot; carrier null</button>
-  <button id="t3">3 &middot; broadcast FM</button>
-  <button id="t4">4 &middot; wideband</button>
-</div>
-<p class="note" id="tour"><b>Start here.</b> The tool opens at &beta; = 5, the value used by every mono FM broadcast station. Walk the four tour buttons left to right; each one moves the sliders for you and says what changed.</p>
-
-<details>
-  <summary>Set the deviation and tone frequency by hand instead</summary>
-  <div class="inner">
-    <label for="dfn">Peak deviation &Delta;f, kHz</label>
-    <input type="number" id="dfn" min="0" max="600" step="0.1" value="75">
-    <label for="fmn">Tone f<sub>m</sub>, kHz</label>
-    <input type="number" id="fmn" min="1" max="60" step="0.5" value="15">
-    <span class="lbl" id="dfnote">&beta; = &Delta;f / f<sub>m</sub> = 5.000</span>
+  <div class="hero">
+    <div class="lbl">Carson bandwidth</div>
+    <div class="val"><span id="heroVal">&mdash;</span><span class="u">kHz</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="dfnote">&mdash;</div>
   </div>
-</details>
 
-<p class="sec"><b>1 &middot; The tone, the frequency swing and the wave</b> <span>&mdash; how a message of a few volts becomes a carrier that slides back and forth in frequency</span></p>
-<canvas id="cw" style="height: 330px;"></canvas>
-<ul class="legend-note">
-  <li>Top strip: the message, one pure tone m(t) = A<sub>m</sub> cos(2&pi;f<sub>m</sub>t). Nothing about it changes when you drag &beta;.</li>
-  <li>Middle strip: where the carrier actually sits at each instant, in kilohertz above or below its resting frequency f<sub>c</sub>. The shaded band is the full swing, &plusmn;&Delta;f. The vertical scale is fixed at the widest swing this tone can produce, so dragging &beta; visibly grows the band.</li>
-  <li>Bottom strip: the transmitted wave. Watch the cycles bunch up where the swing is positive and stretch where it is negative &mdash; and watch the two envelope lines never move. That constant envelope is the whole reason FM survives amplitude noise.</li>
-  <li>In FM the swing follows the message itself; in PM it follows the message's slope, which is why the middle strip shifts a quarter period when you switch.</li>
-</ul>
+  <div>
+    <div class="ctl">
+      <label for="bt">Modulation index &beta;</label>
+      <div class="in">
+        <input type="range" id="bt" min="0" max="10" step="0.005" value="5">
+        <input type="number" id="btN" min="0" max="10" step="0.005" aria-label="Modulation index beta, radians">
+        <span class="unit">rad</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fm">Tone frequency f<sub>m</sub></label>
+      <div class="in">
+        <input type="range" id="fm" min="1" max="60" step="0.5" value="15">
+        <input type="number" id="fmn" min="1" max="60" step="0.5" aria-label="Tone frequency in kilohertz">
+        <span class="unit">kHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="dv">Peak deviation &Delta;f</label>
+      <div class="in">
+        <input type="range" id="dv" min="0" max="600" step="0.5" value="75">
+        <input type="number" id="dfn" min="0" max="600" step="0.5" aria-label="Peak deviation in kilohertz">
+        <span class="unit">kHz</span>
+      </div>
+    </div>
 
-<p class="sec"><b>2 &middot; The line spectrum</b> <span>&mdash; one tone on one carrier makes an infinite comb of lines, spaced by f<sub>m</sub>, of height A<sub>c</sub>|J<sub>n</sub>(&beta;)|</span></p>
-<canvas id="cs" style="height: 310px;"></canvas>
-<ul class="legend-note">
-  <li>Each vertical stem is one sideband at frequency f<sub>c</sub> + n&middot;f<sub>m</sub>. Its height is A<sub>c</sub>|J<sub>n</sub>(&beta;)| volts, computed from the Bessel series, not drawn by hand.</li>
-  <li>Blue stems have a positive Bessel coefficient, orange stems a negative one &mdash; a negative coefficient means that line is phase-inverted. Push &beta; past 2.405 and the centre stem turns orange: the carrier has passed through zero and come back inverted.</li>
-  <li>The upper bracket is Carson's rule, the lower one the 1 % rule. Carson is the convenient formula; the 1 % rule counts the sidebands that actually matter. They do not agree, and Carson is the narrower of the two for every &beta; above about 0.6.</li>
-  <li>Total power never moves. Dragging &beta; only shuffles height between stems, which is what the in-band power card is checking.</li>
-  <li>Faint green stems &mdash; equivalent AM ghost.</li>
-</ul>
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="pre" class="on">FM broadcast</button>
+      <button type="button" id="pTv">TV aural</button>
+      <button type="button" id="pNb">NBFM land mobile</button>
+      <button type="button" id="pWb">Wideband &beta; = 10</button>
+    </div>
 
-<div class="cards">
-  <div class="card"><div class="hd">Modulation index &beta;</div><div class="big" id="kB">&mdash;</div><div class="ft" id="kBf">&mdash;</div></div>
-  <div class="card"><div class="hd">Peak deviation &Delta;f</div><div class="big" id="kD">&mdash;</div><div class="ft" id="kDf">&mdash;</div></div>
-  <div class="card"><div class="hd">Carson bandwidth</div><div class="big" id="kC">&mdash;</div><div class="ft" id="kCf">&mdash;</div></div>
-  <div class="card"><div class="hd">1 % rule bandwidth</div><div class="big" id="kP">&mdash;</div><div class="ft" id="kPf">&mdash;</div></div>
-  <div class="card"><div class="hd">Power inside Carson</div><div class="big" id="kW">&mdash;</div><div class="ft" id="kWf">&mdash;</div></div>
-  <div class="card"><div class="hd">Carrier line A<sub>c</sub>|J<sub>0</sub>|</div><div class="big" id="kJ">&mdash;</div><div class="ft" id="kJf">&mdash;</div></div>
-  <div class="card"><div class="hd">Regime</div><div class="big" id="kR">&mdash;</div><div class="ft">NBFM when &beta; &le; 0.2</div></div>
-  <div class="card"><div class="hd">Noise advantage</div><div class="big" id="kN">&mdash;</div><div class="ft" id="kNf">&mdash;</div></div>
+    <div class="presets">
+      <span class="lbl">Modulation</span>
+      <button type="button" id="mFM" class="on">FM</button>
+      <button type="button" id="mPM">PM</button>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Overlays</span>
+      <button type="button" id="bCar" class="on">Carson</button>
+      <button type="button" id="bPct" class="on">1 % rule</button>
+      <button type="button" id="bAM">AM ghost</button>
+      <button type="button" id="anim">Animate &beta;</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="ctl">
+      <label for="ac">Carrier amplitude A<sub>c</sub></label>
+      <div class="in">
+        <input type="range" id="ac" min="0.1" max="10" step="0.1" value="1">
+        <input type="number" id="acN" min="0.1" max="10" step="0.1" aria-label="Carrier amplitude in volts">
+        <span class="unit">V</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="aDf">NBFM deviation &Delta;f&#8321;</label>
+      <div class="in">
+        <input type="range" id="aDf" min="5" max="50" step="1" value="25">
+        <input type="number" id="aDfN" min="5" max="50" step="1" aria-label="Narrowband deviation in hertz">
+        <span class="unit">Hz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="aFm">Chain tone f<sub>m</sub></label>
+      <div class="in">
+        <input type="range" id="aFm" min="50" max="500" step="10" value="200">
+        <input type="number" id="aFmN" min="50" max="500" step="10" aria-label="Chain tone frequency in hertz">
+        <span class="unit">Hz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="aFc">NBFM carrier f<sub>c1</sub></label>
+      <div class="in">
+        <input type="range" id="aFc" min="100" max="500" step="10" value="200">
+        <input type="number" id="aFcN" min="100" max="500" step="10" aria-label="Narrowband carrier frequency in kilohertz">
+        <span class="unit">kHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="aN1">First multiplier n&#8321;</label>
+      <div class="in">
+        <input type="range" id="aN1" min="2" max="100" step="1" value="64">
+        <input type="number" id="aN1N" min="2" max="100" step="1" aria-label="First multiplier ratio">
+        <span class="unit">&times;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="aMx">Mixer shift, subtracted</label>
+      <div class="in">
+        <input type="range" id="aMx" min="0" max="20" step="0.1" value="10.9">
+        <input type="number" id="aMxN" min="0" max="20" step="0.1" aria-label="Mixer shift in megahertz">
+        <span class="unit">MHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="aN2">Second multiplier n&#8322;</label>
+      <div class="in">
+        <input type="range" id="aN2" min="2" max="100" step="1" value="48">
+        <input type="number" id="aN2N" min="2" max="100" step="1" aria-label="Second multiplier ratio">
+        <span class="unit">&times;</span>
+      </div>
+    </div>
+  </details>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd">Peak deviation &Delta;f</div>
+      <div class="big" id="kD">&mdash;</div>
+      <div class="ft">&beta; &times; f<sub>m</sub></div>
+    </div>
+    <div class="card">
+      <div class="hd">1 % rule bandwidth</div>
+      <div class="big" id="kP">&mdash;</div>
+      <div class="ft" id="kPf">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Power inside Carson</div>
+      <div class="big" id="kW">&mdash;</div>
+      <div class="ft" id="kWf">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Carrier line</div>
+      <div class="big" id="kJ">&mdash;</div>
+      <div class="ft" id="kJf">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Noise advantage</div>
+      <div class="big" id="kN">&mdash;</div>
+      <div class="ft" id="kNf">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Significant lines</div>
+      <div class="big" id="kL">&mdash;</div>
+      <div class="ft">stems above 1 % of A<sub>c</sub></div>
+    </div>
+  </div>
+
 </div>
 
-<p class="sec"><b>3 &middot; The Bessel functions themselves</b> <span>&mdash; every stem height in section 2 is one vertical slice through this picture</span></p>
-<canvas id="cb" style="height: 280px;"></canvas>
-<ul class="legend-note">
-  <li>Six curves, J<sub>0</sub> to J<sub>5</sub>, plotted against &beta;. The vertical line is where you are; the dots on it are the stem heights in section 2, before the A<sub>c</sub> scaling.</li>
-  <li>The three dotted lines mark where J<sub>0</sub> crosses zero &mdash; &beta; = 2.405, 5.520 and 8.654. At those three settings the carrier line disappears completely and all the power lives in the sidebands.</li>
-  <li>Every curve starts at zero except J<sub>0</sub>, which starts at 1. That is an unmodulated carrier: one line, no sidebands.</li>
-</ul>
+<div class="stage">
 
-<p class="sec"><b>4 &middot; From narrowband to broadcast &mdash; the Armstrong chain</b> <span>&mdash; multipliers scale &beta;, mixers only move f<sub>c</sub></span></p>
-<canvas id="ca" style="height: 240px;"></canvas>
-<ul class="legend-note">
-  <li>Blue &mdash; carrier f<sub>c</sub>.</li>
-  <li>Orange &mdash; deviation &Delta;f.</li>
-  <li>Green &mdash; index &beta;.</li>
-</ul>
-<details open>
-  <summary>Chain settings</summary>
-  <div class="grid2" style="margin-top: 0.6rem;">
-    <div class="ctl"><label for="aDf">NBFM deviation &Delta;f&#8321;</label><input type="range" id="aDf" min="5" max="50" step="1" value="25"><span class="v" id="aDfv">25 Hz</span></div>
-    <div class="ctl"><label for="aFm">Tone f<sub>m</sub></label><input type="range" id="aFm" min="50" max="500" step="10" value="200"><span class="v" id="aFmv">200 Hz</span></div>
-    <div class="ctl"><label for="aN1">First multiplier n&#8321;</label><input type="range" id="aN1" min="2" max="100" step="1" value="64"><span class="v" id="aN1v">&times;64</span></div>
-    <div class="ctl"><label for="aMx">Mixer shift (subtract)</label><input type="range" id="aMx" min="0" max="20" step="0.1" value="10.9"><span class="v" id="aMxv">10.9 MHz</span></div>
-    <div class="ctl"><label for="aN2">Second multiplier n&#8322;</label><input type="range" id="aN2" min="2" max="100" step="1" value="48"><span class="v" id="aN2v">&times;48</span></div>
-    <div class="ctl"><label for="aFc">NBFM carrier f<sub>c1</sub></label><input type="range" id="aFc" min="100" max="500" step="10" value="200"><span class="v" id="aFcv">200 kHz</span></div>
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="t1">1 &middot; narrowband</button>
+    <button type="button" id="t2">2 &middot; carrier null</button>
+    <button type="button" id="t3">3 &middot; broadcast FM</button>
+    <button type="button" id="t4">4 &middot; wideband</button>
+    <button type="button" id="t0">reset</button>
   </div>
-</details>
+  <p class="tour-note" id="tour">Press the steps in order; each one moves the controls.</p>
 
-<details class="wordy"><summary>Worked example &mdash; mono FM broadcast</summary>
-<ol class="worked">
-  <li>A station is allowed a peak deviation of <b>&Delta;f = 75 kHz</b> and its audio runs up to <b>f<sub>m</sub> = 15 kHz</b>.</li>
-  <li>Modulation index <b>&beta; = &Delta;f / f<sub>m</sub> = 75 / 15 = 5</b>. It is a pure number: the peak phase swing in radians.</li>
-  <li>Carson's rule: <b>BW = 2(&Delta;f + f<sub>m</sub>) = 2(75 + 15) = 180 kHz</b>.</li>
-  <li>The 1 % rule: the last Bessel coefficient at or above 0.01 is J<sub>8</sub>(5) = 0.0184, so n&prime; = 8 and <b>BW = 2 &times; 8 &times; 15 = 240 kHz</b>.</li>
-  <li>The two disagree by 60 kHz, and the regulator sides with neither: broadcast channels are spaced <b>200 kHz</b> apart, which gives Carson's estimate some room without paying for the full 1 % width.</li>
-  <li id="wkNB">&mdash;</li>
-  <li>Single-tone FM output SNR: <b>S<sub>0</sub>/N<sub>0</sub> = 3A<sub>c</sub>&sup2;&beta;&sup2; / (4&eta;f<sub>m</sub>)</b> &mdash; A<sub>c</sub> [V], &eta; one-sided noise PSD [W/Hz], f<sub>m</sub> [Hz], &beta; dimensionless.</li>
-  <li>The &beta;&sup2; advantage collapses below &asymp;10 dB input SNR &mdash; the capture threshold.</li>
-</ol>
+  <p class="sec"><b>1 &middot; Tone, frequency swing, transmitted wave</b> <span>&mdash; the message slides the carrier in frequency</span></p>
+  <canvas id="cw" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-5)"></span>message tone</li>
+    <li><span class="sw" style="background:var(--series-1)"></span>carrier frequency, wave</li>
+    <li><span class="sw dash" style="color:var(--series-2)"></span>deviation and envelope</li>
+  </ul>
 
-</details>
-<details class="wordy"><summary>Glossary</summary>
-<dl class="glossary">
-  <dt>Carrier</dt><dd>The steady high-frequency wave the transmitter would send if there were no message. Its frequency is f<sub>c</sub>.</dd>
-  <dt>Sideband</dt><dd>An extra spectral line that modulation creates either side of the carrier. In single-tone FM they appear at f<sub>c</sub> + n&middot;f<sub>m</sub> for every whole number n.</dd>
-  <dt>Line spectrum</dt><dd>A picture of which frequencies a signal contains and how strong each one is. "Line" because a pure tone occupies a single frequency, drawn as a vertical stem.</dd>
-  <dt>Peak deviation &Delta;f</dt><dd>The furthest the carrier's instantaneous frequency strays from f<sub>c</sub>, in hertz. Set by how loud the message is, not how fast.</dd>
-  <dt>Modulation index &beta;</dt><dd>&Delta;f divided by f<sub>m</sub>. Equivalently the peak phase swing in radians. Dimensionless, and the only thing the sideband heights depend on.</dd>
-  <dt>Bessel function J<sub>n</sub>(&beta;)</dt><dd>The function that gives the height of the nth sideband. It comes out of writing a wobbling phase as a Fourier series; it is not an approximation.</dd>
-  <dt>Carrier null</dt><dd>A value of &beta; where J<sub>0</sub> is zero, so the centre line of the spectrum vanishes. Engineers use the first null, &beta; = 2.405, to calibrate a deviation meter.</dd>
-  <dt>Bandwidth</dt><dd>The span of positive frequency a signal occupies. FM strictly occupies an infinite span, so both rules here are conventions for "wide enough".</dd>
-  <dt>Constant envelope</dt><dd>The property that the wave's peak height never varies. It lets an FM transmitter run its amplifier flat out and lets the receiver throw away amplitude noise.</dd>
-</dl>
+  <p class="sec"><b>2 &middot; The line spectrum</b> <span>&mdash; stems spaced f<sub>m</sub>, height A<sub>c</sub>|J<sub>n</sub>(&beta;)|</span></p>
+  <canvas id="cs" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>positive coefficient</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>negative, phase inverted</li>
+    <li><span class="sw" style="background:var(--series-4)"></span>Carson bandwidth</li>
+    <li><span class="sw" style="background:var(--series-3)"></span>1 % rule bandwidth</li>
+    <li><span class="sw" style="background:var(--series-5)"></span>equivalent AM ghost</li>
+  </ul>
 
-<p class="sub" style="margin-top: 2rem;">The lesson is that bandwidth in FM is bought, not given. Set &beta; near zero and the spectrum collapses to a carrier and one sideband pair, occupying 2f<sub>m</sub> exactly like AM, with none of FM's noise advantage. Raise &beta; and the comb spreads roughly as 2(&beta;+1)f<sub>m</sub> while the output signal-to-noise ratio climbs as &beta;<sup>2</sup> &mdash; that is the trade every FM system is built around, and it is why broadcast radio sounds better than AM while using ten times the channel width. Two cautions about what you are looking at. Carson's rule is a convention that captures roughly 98 % of the power, so it under-estimates the true occupied width; the 1 % rule is stricter and is the one to quote when adjacent-channel interference matters. And the bottom strip of section 1 draws the carrier at only 16 times the tone frequency so the squeeze is visible; a real FM carrier is thousands of times higher, and the idea of reading instantaneous frequency off the zero crossings only holds when f<sub>m</sub> is far below f<sub>c</sub>. Next, see how that wide spectrum is squeezed back down in <a href="superhet-image.html">the superhet receiver</a>.</p>
+  <p class="sec"><b>3 &middot; The Bessel functions</b> <span>&mdash; each stem is one slice through here</span></p>
+  <canvas id="cb" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>J<sub>0</sub></li>
+    <li><span class="sw" style="background:var(--series-2)"></span>J<sub>1</sub></li>
+    <li><span class="sw" style="background:var(--series-3)"></span>J<sub>2</sub></li>
+    <li><span class="sw" style="background:var(--series-4)"></span>J<sub>3</sub></li>
+    <li><span class="sw" style="background:var(--series-5)"></span>J<sub>4</sub></li>
+    <li><span class="sw" style="background:var(--series-6)"></span>J<sub>5</sub></li>
+    <li><span class="sw dash" style="color:var(--warn)"></span>carrier nulls</li>
+  </ul>
 
-</details>
+  <p class="sec"><b>4 &middot; The Armstrong chain</b> <span>&mdash; multipliers scale &beta;, mixers only move f<sub>c</sub></span></p>
+  <canvas id="ca" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>carrier f<sub>c</sub></li>
+    <li><span class="sw" style="background:var(--series-2)"></span>deviation &Delta;f</li>
+  </ul>
+
+  <details>
+    <summary>Worked example &mdash; mono FM broadcast</summary>
+    <ol class="work">
+      <li>Allowed peak deviation &Delta;f = 75 kHz, audio to f<sub>m</sub> = 15 kHz.</li>
+      <li>Modulation index &beta; = &Delta;f / f<sub>m</sub> = 75 / 15 = 5, the peak phase swing in radians.</li>
+      <li>Carson's rule: BW = 2(&Delta;f + f<sub>m</sub>) = 2(75 + 15) = 180 kHz.</li>
+      <li>1 % rule: last coefficient at or above 0.01 is J<sub>8</sub>(5) = 0.0184, so <span class="var">n</span>&prime; = 8 and BW = 2 &times; 8 &times; 15 = 240 kHz.</li>
+      <li>The regulator sides with neither: broadcast channels are spaced 200 kHz apart.</li>
+      <li id="wkNB">&mdash;</li>
+      <li>Single-tone FM output SNR: S<sub>0</sub>/N<sub>0</sub> = 3A<sub>c</sub><sup>2</sup>&beta;<sup>2</sup> / (4&eta;f<sub>m</sub>), with &eta; the one-sided noise PSD in W/Hz.</li>
+      <li>That &beta;<sup>2</sup> advantage collapses below &asymp; 10 dB input SNR &mdash; the capture threshold.</li>
+    </ol>
+  </details>
+
+  <details>
+    <summary>What this model simplifies</summary>
+    <p class="sub" style="font-size:13px">Carson's rule captures about 98 % of the power, so it under-estimates the true occupied width; the 1 % rule is stricter. Section 1 draws the carrier at only 16 &times; f<sub>m</sub> so the squeeze is visible; a real carrier is thousands of times higher.</p>
+  </details>
+
+  <details>
+    <summary>Glossary</summary>
+    <dl class="glossary">
+      <dt>Carrier</dt><dd>The steady high-frequency wave sent with no message. Its frequency is f<sub>c</sub>.</dd>
+      <dt>Sideband</dt><dd>An extra spectral line either side of the carrier, at f<sub>c</sub> + <span class="var">n</span>&middot;f<sub>m</sub>.</dd>
+      <dt>Line spectrum</dt><dd>Which frequencies a signal contains and how strong each one is, drawn as vertical stems.</dd>
+      <dt>Peak deviation &Delta;f</dt><dd>The furthest the instantaneous frequency strays from f<sub>c</sub>. Set by loudness, not by pitch.</dd>
+      <dt>Modulation index &beta;</dt><dd>&Delta;f divided by f<sub>m</sub>, equivalently the peak phase swing in radians.</dd>
+      <dt>Bessel function J<sub>n</sub>(&beta;)</dt><dd>Gives the height of the <span class="var">n</span>th sideband. Exact, not an approximation.</dd>
+      <dt>Carrier null</dt><dd>A &beta; where J<sub>0</sub> is zero, so the centre line vanishes. The first is &beta; = 2.405.</dd>
+      <dt>Constant envelope</dt><dd>The wave's peak height never varies, so the receiver can discard amplitude noise.</dd>
+    </dl>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: <a href="superhet-image.html">the superheterodyne receiver and its image</a>.</p>
+
+</div>
+</div>
 <script>
 (function () {
   'use strict';
+
+  /* ============================================================
+     engineering-viz shared canvas kit
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ============================================================
+     tool code
+     ============================================================ */
+
   var $ = function (id) { return document.getElementById(id); };
-  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
-  var F = function (x, d) { return Number.isFinite(x) ? x.toFixed(d) : '—'; };
+  var F = function (x, d) { return Number.isFinite(x) ? fmtNum(x, d) : '—'; };
   var clamp = function (x, a, b) { return x < a ? a : (x > b ? b : x); };
   var TAU = Math.PI * 2;
 
@@ -335,14 +901,11 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   var A = { df1: 25, fm: 200, n1: 64, mix: 10.9, n2: 48, fc1: 200 };
   var P = coeffs(S.beta);
   var MQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var CHANNEL = 200;   // kHz, broadcast channel spacing
 
   var dev = function () { return S.beta * S.fm; };                 // kHz
   var carsonBW = function () { return 2 * (S.beta + 1) * S.fm; };  // kHz
   var pctBW = function () { return 2 * P.np * S.fm; };             // kHz
-  var kf = function (v) {
-    if (!Number.isFinite(v)) return '—';
-    return (Math.abs(v) >= 100 || Math.abs(v - Math.round(v)) < 0.05) ? v.toFixed(0) : v.toFixed(1);
-  };
 
   function setBeta(b) {
     S.capped = Number.isFinite(b) && b > 10;
@@ -354,425 +917,350 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     S.fm = clamp(+$('fm').value, 1, 60);
   }
 
-  // ---- canvas -------------------------------------------------------------
-  function fit(c) {
-    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
+  // canvas type sizes, scaled with width, never below the legibility floor
+  function typeSizes(w) {
+    return { tick: Math.max(11, Math.min(13, w / 78)), ann: Math.max(11.5, Math.min(14, w / 62)) };
   }
 
+  // ---- 1 · tone, swing, wave ---------------------------------------------
   function drawWave() {
-    var c = $('cw'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
+    var c = $('cw'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
     if (w < 40 || h < 40) return;
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var c1 = cvv('--s1'), c2 = cvv('--s2'), c3 = cvv('--s3');
-    var l = 74, r = 16, W = Math.max(w - l - r, 10);
+    var Z = typeSizes(w);
     var isFM = S.mode === 'fm';
-    var df = dev(), half = Math.max(10 * S.fm, 1e-6);
+    var df = dev();                              // kHz
+    var full = Math.max(10 * S.fm, 1e-6);        // kHz, fixed full-scale swing
+    var T = 2 / Math.max(S.fm, 1e-6);            // ms, two tone periods
+    var padL = Math.max(30, Math.min(w * 0.13, 76));
+    var padR = Math.max(10, w * 0.03);
+    var hA = h * 0.30, hB = h * 0.38, hC = Math.max(h - hA - hB, 20);
+    var o = { padL: padL, padR: padR, fontSize: Z.tick };
+    var blank = function () { return ''; };   // time is labelled once, on the bottom strip
+    var i, u, y;
 
-    // strip A: the message tone
-    var aT = 22, aH = 52, aM = aT + aH / 2;
-    g.strokeStyle = bd; g.lineWidth = 0.8;
-    g.beginPath(); g.moveTo(l, aM); g.lineTo(l + W, aM); g.stroke();
-    g.strokeStyle = c3; g.lineWidth = 1.8; g.beginPath();
-    for (var px = 0; px <= W; px += 0.5) {
-      var u = px / W * 2;                       // u = t * f_m, two periods
-      var y = aM - Math.cos(TAU * u) * (aH / 2 - 4);
-      if (px === 0) g.moveTo(l + px, y); else g.lineTo(l + px, y);
+    // strip A — the message tone
+    var PA = graticule(g, { x: 0, y: 0, w: w, h: hA },
+      { min: 0, max: T, unit: 'ms', title: '', fmt: blank },
+      { min: -1.2, max: 1.2, unit: 'V', label: 'm(t)' }, o);
+    PA.clip(g);
+    g.strokeStyle = t.s5; g.lineWidth = 1.8; g.beginPath();
+    for (i = 0; i <= PA.w; i += 0.5) {
+      u = i / Math.max(PA.w, 1) * 2;
+      y = PA.Y(Math.cos(TAU * u));
+      if (i === 0) g.moveTo(PA.x0, y); else g.lineTo(PA.x0 + i, y);
     }
     g.stroke();
-    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-    g.fillText('message', l - 8, aM - 7); g.fillText('m(t)', l - 8, aM + 7);
-    g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillStyle = mut; g.font = fnt(10);
-    g.fillText('one period = 1 / fₘ = ' + F(1000 / Math.max(S.fm, 1e-6), 1) + ' µs', l + 2, aT - 4);
+    PA.unclip(g);
+    leader(g, PA.X(T / 2), PA.Y(1), 'one period = ' + fmtEng(1e-3 / Math.max(S.fm, 1e-6), 's', 1),
+      { box: PA, colour: t.s5, size: Z.ann, dy: 20 });
 
-    // strip B: instantaneous frequency
-    var bT = 104, bH = 108, bM = bT + bH / 2, bS = (bH / 2 - 8) / half;
-    g.fillStyle = c1; g.globalAlpha = 0.12;
-    g.fillRect(l, bM - df * bS, W, Math.max(2 * df * bS, 1.5));
-    g.globalAlpha = 1;
-    g.strokeStyle = bd; g.lineWidth = 0.6;
-    [-1, -0.5, 0.5, 1].forEach(function (fr) {
-      var yy = bM - fr * half * bS;
-      g.beginPath(); g.moveTo(l, yy); g.lineTo(l + W, yy); g.stroke();
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText((fr > 0 ? '+' : '−') + kf(Math.abs(fr) * half), l - 8, yy);
-    });
-    g.strokeStyle = cvv('--text-muted'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, bM); g.lineTo(l + W, bM); g.stroke();
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'middle';
-    g.fillText('fᴄ', l - 8, bM);
-    g.save(); g.translate(14, bM); g.rotate(-Math.PI / 2);
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('kHz from fᴄ', 0, 0); g.restore();
-
-    g.strokeStyle = c1; g.lineWidth = 2; g.beginPath();
-    for (px = 0; px <= W; px += 0.5) {
-      u = px / W * 2;
-      var off = isFM ? df * Math.cos(TAU * u) : -df * Math.sin(TAU * u);
-      y = bM - off * bS;
-      if (px === 0) g.moveTo(l + px, y); else g.lineTo(l + px, y);
+    // strip B — instantaneous frequency offset
+    var PB = graticule(g, { x: 0, y: hA, w: w, h: hB },
+      { min: 0, max: T, unit: 'ms', title: '', fmt: blank },
+      { min: -full, max: full, unit: 'kHz', label: 'frequency offset' }, o);
+    band(g, PB, PB.Y(-df), PB.Y(df), t.s1, 'y');
+    PB.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 2; g.beginPath();
+    for (i = 0; i <= PB.w; i += 0.5) {
+      u = i / Math.max(PB.w, 1) * 2;
+      y = PB.Y(isFM ? df * Math.cos(TAU * u) : -df * Math.sin(TAU * u));
+      if (i === 0) g.moveTo(PB.x0, y); else g.lineTo(PB.x0 + i, y);
     }
     g.stroke();
-    if (df * bS > 7) {
-      g.strokeStyle = c2; g.lineWidth = 1; g.setLineDash([5, 4]);
-      [1, -1].forEach(function (s) {
-        g.beginPath(); g.moveTo(l, bM - s * df * bS); g.lineTo(l + W, bM - s * df * bS); g.stroke();
-      });
-      g.setLineDash([]);
-      g.fillStyle = c2; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('+Δf = ' + F(df, 1) + ' kHz', l + 6, bM - df * bS - 3);
-      g.textBaseline = 'top';
-      g.fillText('−Δf', l + 6, bM + df * bS + 3);
-    } else {
-      g.fillStyle = c2; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('Δf = ' + F(df, 1) + ' kHz — almost no swing', l + 6, bM - 4);
-    }
+    g.strokeStyle = t.s2; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath();
+    g.moveTo(PB.x0, PB.Y(df)); g.lineTo(PB.x1, PB.Y(df));
+    g.moveTo(PB.x0, PB.Y(-df)); g.lineTo(PB.x1, PB.Y(-df));
+    g.stroke(); g.setLineDash([]);
+    PB.unclip(g);
+    var tPk = isFM ? T / 2 : T * 0.75;
+    leader(g, PB.X(tPk), PB.Y(df), '+Δf = ' + fmtEng(df, 'kHz', 1),
+      { box: PB, colour: t.s2, size: Z.ann, dy: -22 });
 
-    // strip C: the transmitted wave
-    var cT = 240, cH = 62, cM = cT + cH / 2, amp = cH / 2 - 6;
-    g.strokeStyle = c2; g.lineWidth = 1; g.setLineDash([4, 4]);
-    g.beginPath(); g.moveTo(l, cM - amp); g.lineTo(l + W, cM - amp); g.stroke();
-    g.beginPath(); g.moveTo(l, cM + amp); g.lineTo(l + W, cM + amp); g.stroke();
-    g.setLineDash([]);
-    g.strokeStyle = c1; g.lineWidth = 1.4; g.beginPath();
-    for (px = 0; px <= W; px += 0.35) {
-      u = px / W * 2;
+    // strip C — the transmitted wave
+    var amp = Math.max(S.ac, 1e-6);
+    var PC = graticule(g, { x: 0, y: hA + hB, w: w, h: hC },
+      { min: 0, max: T, unit: 'ms', label: 'time' },
+      { min: -amp * 1.25, max: amp * 1.25, unit: 'V', label: 'amplitude' }, o);
+    PC.clip(g);
+    g.strokeStyle = t.s2; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath();
+    g.moveTo(PC.x0, PC.Y(amp)); g.lineTo(PC.x1, PC.Y(amp));
+    g.moveTo(PC.x0, PC.Y(-amp)); g.lineTo(PC.x1, PC.Y(-amp));
+    g.stroke(); g.setLineDash([]);
+    g.strokeStyle = t.s1; g.lineWidth = 1.4; g.beginPath();
+    for (i = 0; i <= PC.w; i += 0.35) {
+      u = i / Math.max(PC.w, 1) * 2;
       var ph = TAU * 16 * u + (isFM ? S.beta * Math.sin(TAU * u) : S.beta * Math.cos(TAU * u));
-      y = cM - Math.cos(ph) * amp;
-      if (px === 0) g.moveTo(l + px, y); else g.lineTo(l + px, y);
+      y = PC.Y(amp * Math.cos(ph));
+      if (i === 0) g.moveTo(PC.x0, y); else g.lineTo(PC.x0 + i, y);
     }
     g.stroke();
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'middle';
-    g.fillText('transmitted', l - 8, cM - 7); g.fillText('wave', l - 8, cM + 7);
-    g.fillStyle = c2; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'bottom';
-    g.fillText('envelope fixed at Aᴄ = ' + F(S.ac, 1) + ' V', l + W, cM - amp - 3);
-    g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('carrier drawn at 16 × fₘ (schematic)', l, cM + amp + 4);
-    g.textAlign = 'right';
-    g.fillText('time →', l + W, cM + amp + 4);
+    PC.unclip(g);
+    leader(g, PC.X(T * 0.25), PC.Y(amp), 'envelope fixed at ' + fmtEng(S.ac, 'V', 1),
+      { box: PC, colour: t.s2, size: Z.ann, dy: 20 });
   }
 
+  // ---- 2 · the line spectrum ---------------------------------------------
   function drawSpec() {
-    var c = $('cs'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
+    var c = $('cs'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
     if (w < 40 || h < 40) return;
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var c1 = cvv('--s1'), c2 = cvv('--s2'), c4 = cvv('--s4'), c5 = cvv('--s5');
-    var l = 46, r = 16, W = Math.max(w - l - r, 10);
-    var by = h - 46, pt = 62;
+    var Z = typeSizes(w);
     var nCarF = S.beta + 1;
-    var half = Math.max(P.np, nCarF, 2.5) * 1.16;
-    var X = function (n) { return l + (n + half) / (2 * half) * W; };
-    var nD = Math.min(Math.floor(half), P.N);
+    var halfN = Math.max(P.np, nCarF, 2.5) * 1.16;
+    var nD = Math.max(1, Math.min(Math.floor(halfN), P.N));
+    var fHalf = Math.max(halfN * S.fm, 1e-6);          // kHz
+    var i, a, x;
 
-    var amax = 1e-9, i;
+    var amax = 1e-6;
     for (i = 0; i <= nD; i++) amax = Math.max(amax, Math.abs(P.J[i]));
-    amax *= S.ac;
-    var Y = function (a) { return by - clamp(a / amax, 0, 1.02) * (by - pt); };
+    amax = Math.max(amax * S.ac, 1e-6);
 
-    // axis
-    g.strokeStyle = cvv('--text-muted'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, by); g.lineTo(l + W, by); g.stroke();
+    var nb = S.beta <= 0.2;
+    var Pl = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -fHalf, max: fHalf, unit: 'kHz', label: 'offset from carrier' },
+      { min: 0, max: amax * 1.32, unit: 'V', label: 'line amplitude' },
+      { fontSize: Z.tick, title: nb ? 'NBFM' : 'WBFM' });
 
-    var step = Math.max(1, Math.ceil((2 * half) / 12));
-    g.font = fnt(10); g.textAlign = 'center';
-    for (i = -nD; i <= nD; i++) {
-      if (i % step !== 0) continue;
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(i), by); g.lineTo(X(i), by + 4); g.stroke();
-      g.fillStyle = sub; g.textBaseline = 'top';
-      g.fillText(i === 0 ? '0' : (i > 0 ? '+' + i : String(i)), X(i), by + 6);
-      g.fillStyle = mut;
-      g.fillText(kf(i * S.fm), X(i), by + 19);
-    }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('upper row: sideband order n   ·   lower row: kHz from fᴄ', l + W / 2, h - 4);
-    g.textAlign = 'right'; g.textBaseline = 'bottom'; g.fillStyle = mut; g.font = fnt(10);
-    g.fillText('volts', l - 5, pt - 11);
-
-    // amplitude gridlines
-    g.font = fnt(10);
-    for (i = 1; i <= 4; i++) {
-      var av = amax * i / 4, yy = Y(av);
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, yy); g.lineTo(l + W, yy); g.stroke();
-      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(av.toFixed(2), l - 5, yy);
+    // equivalent AM ghost, drawn behind the FM stems
+    if (S.am) {
+      g.save(); g.globalAlpha = 0.45;
+      g.strokeStyle = t.s5; g.fillStyle = t.s5;
+      var gOff = Math.max(3, Pl.w * 0.005);
+      [[0, S.ac], [1, S.beta * S.ac / 2], [-1, S.beta * S.ac / 2]].forEach(function (st) {
+        var gx = Pl.X(st[0] * S.fm) + gOff;
+        if (gx < Pl.x0 || gx > Pl.x1) return;
+        g.lineWidth = st[0] === 0 ? 3 : 2;
+        g.beginPath(); g.moveTo(gx, Pl.Y(0)); g.lineTo(gx, Pl.Y(Math.min(st[1], amax * 1.32))); g.stroke();
+      });
+      g.restore();
     }
 
     // stems
+    Pl.clip(g);
     for (i = -nD; i <= nD; i++) {
       var J = P.J[Math.abs(i)];
       var sg = (i < 0 && (i % 2)) ? -1 : 1;
       var Jn = sg * J;
-      var a = S.ac * Math.abs(Jn);
-      var x = X(i);
-      g.strokeStyle = Jn < 0 ? c2 : c1;
-      g.lineWidth = i === 0 ? 3.4 : 2.2;
-      g.beginPath(); g.moveTo(x, by); g.lineTo(x, Y(a)); g.stroke();
+      a = S.ac * Math.abs(Jn);
+      x = Pl.X(i * S.fm);
+      g.strokeStyle = Jn < 0 ? t.s2 : t.s1;
+      g.lineWidth = i === 0 ? 3 : 2;
+      g.beginPath(); g.moveTo(x, Pl.Y(0)); g.lineTo(x, Pl.Y(a)); g.stroke();
       if (a / amax > 0.004) {
-        g.fillStyle = Jn < 0 ? c2 : c1;
-        g.beginPath(); g.arc(x, Y(a), i === 0 ? 3.4 : 2.6, 0, TAU); g.fill();
+        g.fillStyle = Jn < 0 ? t.s2 : t.s1;
+        g.beginPath(); g.arc(x, Pl.Y(a), Math.max(2.2, Math.min(4, Pl.h * 0.008)) * (i === 0 ? 1.3 : 1), 0, TAU); g.fill();
       }
     }
+    Pl.unclip(g);
 
-    // carrier annotation
+    // carrier label
     var J0 = P.J[0], a0 = S.ac * Math.abs(J0);
-    var clab = J0 < 0 ? 'carrier, inverted' : 'carrier';
-    g.font = fnt(10);
-    var lw = g.measureText(clab).width;
-    var cx = clamp(X(0), lw / 2 + 4, w - lw / 2 - 4);
-    // when the carrier is the tallest line there is no room above it for the label
-    var cy = (Y(a0) - 7 < pt + 8) ? Y(a0) + 17 : Y(a0) - 7;
-    g.fillStyle = cvv('--bg');
-    g.fillRect(cx - lw / 2 - 3, cy - 11, lw + 6, 13);
-    g.fillStyle = J0 < 0 ? c2 : c1;
-    g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText(clab, cx, cy);
+    leader(g, Pl.X(0), Pl.Y(a0), J0 < 0 ? 'carrier, inverted' : 'carrier',
+      { box: Pl, colour: J0 < 0 ? t.s2 : t.s1, size: Z.ann, dy: -24, dx: 26 });
 
-    // regime label, top right
-    var nb = S.beta <= 0.2;
-    g.fillStyle = nb ? cvv('--text-good') : sub;
-    g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
-    g.fillText(nb ? 'NBFM' : 'WBFM', l + W, 6);
-
-    // equivalent AM ghost (only offered for beta <= 0.5)
+    // tallest sideband
+    var nPk = 1, aPk = 0;
+    for (i = 1; i <= nD; i++) { if (Math.abs(P.J[i]) > aPk) { aPk = Math.abs(P.J[i]); nPk = i; } }
+    if (aPk > 0) {
+      leader(g, Pl.X(nPk * S.fm), Pl.Y(S.ac * aPk),
+        'n = ' + nPk + ', ' + fmtEng(S.ac * aPk, 'V', 3),
+        { box: Pl, colour: t.s1, size: Z.ann, dy: -26, dx: 34 });
+    }
     if (S.am) {
-      var c3 = cvv('--s3');
-      g.globalAlpha = 0.3; g.strokeStyle = c3; g.fillStyle = c3;
-      [[0, S.ac], [1, S.beta * S.ac / 2], [-1, S.beta * S.ac / 2]].forEach(function (st) {
-        var gx = X(st[0]) + 5;
-        g.lineWidth = st[0] === 0 ? 3.4 : 2.2;
-        g.beginPath(); g.moveTo(gx, by); g.lineTo(gx, Y(st[1])); g.stroke();
-        g.beginPath(); g.arc(gx, Y(st[1]), 2.6, 0, TAU); g.fill();
-      });
-      g.globalAlpha = 1;
-      var lsb = 'minus sign — this is not AM';
-      var lx1 = X(-1), lya = Y(S.ac * Math.abs(P.J[1]));
-      g.strokeStyle = c2; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(lx1 - 4, lya - 4); g.lineTo(lx1 - 24, lya - 22); g.stroke();
-      g.fillStyle = c2; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'bottom';
-      g.fillText(lsb, Math.max(lx1 - 26, g.measureText(lsb).width + 4), lya - 24);
+      leader(g, Pl.X(-S.fm), Pl.Y(S.ac * Math.abs(P.J[1])), 'sign flips — not AM',
+        { box: Pl, colour: t.s2, size: Z.ann, dy: -24, dx: -30 });
     }
 
-    // brackets
-    function bracket(y, nHalf, col, label) {
-      var x0 = X(-nHalf), x1 = X(nHalf);
-      g.strokeStyle = col; g.lineWidth = 1.4;
-      g.beginPath();
-      g.moveTo(x0, y - 5); g.lineTo(x0, y + 5);
-      g.moveTo(x0, y); g.lineTo(x1, y);
-      g.moveTo(x1, y - 5); g.lineTo(x1, y + 5);
-      g.stroke();
-      g.fillStyle = col; g.font = fnt(11);
-      g.textAlign = 'center'; g.textBaseline = 'bottom';
-      centred(label, (x0 + x1) / 2, y - 4);
+    // bandwidth rules as dimension lines
+    if (S.carson) {
+      var yc = Pl.y0 + Pl.h * 0.09;
+      dimension(g, Pl.X(-carsonBW() / 2), yc, Pl.X(carsonBW() / 2), yc,
+        'Carson ' + fmtEng(carsonBW(), 'kHz', 1), { colour: t.s4, size: Z.ann });
     }
-    // keep a centred label inside the canvas however narrow the window is
-    function centred(label, cx, y) {
-      var lw = Math.min(g.measureText(label).width, w - 8) / 2;
-      g.fillText(label, clamp(cx, lw + 4, w - lw - 4), y);
-    }
-    if (S.carson) bracket(26, nCarF, c4, "Carson  2(Δf + fₘ) = " + F(carsonBW(), 1) + ' kHz');
     if (S.pct) {
+      var yp = Pl.y0 + Pl.h * 0.21;
       if (P.np > 0) {
-        bracket(52, P.np, c5, "1 % rule  2n′fₘ = " + F(pctBW(), 1) + ' kHz  (n′ = ' + P.np + ')');
+        dimension(g, Pl.X(-pctBW() / 2), yp, Pl.X(pctBW() / 2), yp,
+          '1 % rule ' + fmtEng(pctBW(), 'kHz', 1), { colour: t.s3, size: Z.ann });
       } else {
-        g.strokeStyle = c5; g.lineWidth = 1.4;
-        g.beginPath(); g.moveTo(X(0), 47); g.lineTo(X(0), 57); g.stroke();
-        g.fillStyle = c5; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-        centred('1 % rule  0.0 kHz — no sideband reaches 1 %', X(0), 43);
+        g.save();
+        g.fillStyle = t.s3; g.font = t.font(Z.ann);
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('1 % rule — no sideband reaches 1 %', Pl.x0 + Pl.w / 2, yp);
+        g.restore();
       }
     }
   }
 
+  // ---- 3 · the Bessel functions ------------------------------------------
   function drawBessel() {
-    var c = $('cb'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
+    var c = $('cb'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
     if (w < 40 || h < 40) return;
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var cols = [cvv('--s1'), cvv('--s2'), cvv('--s3'), cvv('--s4'), cvv('--s5'), cvv('--s6')];
-    var l = 54, r = 16, t = 30, b = 36;
-    var W = Math.max(w - l - r, 10), H = Math.max(h - t - b, 10);
+    var Z = typeSizes(w);
     var ylo = -0.55, yhi = 1.05;
-    var X = function (v) { return l + v / 10 * W; };
-    var Y = function (v) { return t + (yhi - v) / (yhi - ylo) * H; };
-    var i, v;
-
-    g.font = fnt(10);
-    for (v = -0.4; v <= 1.001; v += 0.2) {
-      if (Math.abs(v) < 1e-9) v = 0;
-      g.strokeStyle = Math.abs(v) < 1e-9 ? cvv('--text-muted') : bd;
-      g.lineWidth = Math.abs(v) < 1e-9 ? 1 : 0.5;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(l + W, Y(v)); g.stroke();
-      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(1), l - 6, Y(v));
-    }
-    for (i = 0; i <= 10; i += 2) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(i), t); g.lineTo(X(i), t + H); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(i.toFixed(0), X(i), t + H + 5);
-    }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('modulation index β  (radians of peak phase swing)', l + W / 2, h - 4);
-    g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = mut; g.font = fnt(10);
-    g.fillText('Jₙ(β)', 4, t - 12);
+    var Pl = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: 10, label: 'modulation index β', unit: 'rad' },
+      { min: ylo, max: yhi, label: 'J' + sub('n') + '(β)' },
+      { fontSize: Z.tick });
+    var n, i;
 
     // carrier nulls
-    g.setLineDash([3, 3]); g.lineWidth = 1;
-    NULLS.forEach(function (z, k) {
-      g.strokeStyle = cvv('--text-warning');
-      g.beginPath(); g.moveTo(X(z), t); g.lineTo(X(z), t + H); g.stroke();
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(10);
-      g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(z.toFixed(3), X(z), t + H - (k === 1 ? 26 : 13));
+    g.save();
+    g.setLineDash([6, 4]); g.lineWidth = 1; g.strokeStyle = t.warn;
+    NULLS.forEach(function (z) {
+      g.beginPath(); g.moveTo(Pl.X(z), Pl.y0); g.lineTo(Pl.X(z), Pl.y1); g.stroke();
     });
-    g.setLineDash([]);
+    g.restore();
 
     // curves
-    for (var n = 0; n <= 5; n++) {
-      g.strokeStyle = cols[n]; g.lineWidth = n === 0 ? 2.2 : 1.5;
+    Pl.clip(g);
+    for (n = 0; n <= 5; n++) {
+      g.strokeStyle = t.s[n]; g.lineWidth = n === 0 ? 2 : 1.5;
       g.beginPath();
       for (i = 0; i <= BSTEPS; i++) {
-        var xx = X(i * 10 / BSTEPS), yy = Y(clamp(BCURVE[n][i], ylo, yhi));
+        var xx = Pl.X(i * 10 / BSTEPS), yy = Pl.Y(clamp(BCURVE[n][i], ylo, yhi));
         if (i === 0) g.moveTo(xx, yy); else g.lineTo(xx, yy);
       }
       g.stroke();
     }
-
-    // legend
-    g.font = fnt(11); g.textBaseline = 'middle';
-    var gap = Math.min(52, (W - 16) / 6), lx = l + 4;
-    for (n = 0; n <= 5; n++) {
-      g.strokeStyle = cols[n]; g.lineWidth = 2.4;
-      g.beginPath(); g.moveTo(lx, 14); g.lineTo(lx + Math.min(14, gap * 0.28), 14); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'left';
-      g.fillText('J' + '₀₁₂₃₄₅'.charAt(n), lx + Math.min(18, gap * 0.36), 14);
-      lx += gap;
-    }
-
-    // current beta
-    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 1.2;
-    g.beginPath(); g.moveTo(X(S.beta), t); g.lineTo(X(S.beta), t + H); g.stroke();
+    // current beta marker
+    g.strokeStyle = t.text; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(Pl.X(S.beta), Pl.y0); g.lineTo(Pl.X(S.beta), Pl.y1); g.stroke();
     for (n = 0; n <= 5; n++) {
       var jv = besselJ(n, S.beta);
       if (jv < ylo || jv > yhi) continue;
-      g.fillStyle = cols[n];
-      g.beginPath(); g.arc(X(S.beta), Y(jv), 3.2, 0, TAU); g.fill();
+      g.fillStyle = t.s[n];
+      g.beginPath(); g.arc(Pl.X(S.beta), Pl.Y(jv), Math.max(2.4, Math.min(4, Pl.h * 0.012)), 0, TAU); g.fill();
     }
-    g.fillStyle = cvv('--text-primary'); g.font = fnt(11);
-    g.textBaseline = 'top';
-    g.textAlign = X(S.beta) > l + W * 0.8 ? 'right' : 'left';
-    g.fillText(' β = ' + F(S.beta, 3) + ' ', X(S.beta), t + 2);
+    Pl.unclip(g);
+
+    leader(g, Pl.X(NULLS[0]), Pl.Y(0), 'carrier null, β = 2.405',
+      { box: Pl, colour: t.warn, size: Z.ann, dy: 26, dx: 28 });
+    leader(g, Pl.X(S.beta), Pl.Y(clamp(P.J[0], ylo, yhi)),
+      'J' + sub('0') + '(β) = ' + F(P.J[0], 3),
+      { box: Pl, colour: t.s1, size: Z.ann, dy: -28, dx: 30 });
   }
 
+  // ---- 4 · the Armstrong chain -------------------------------------------
   function drawChain() {
-    var c = $('ca'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
+    var c = $('ca'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
     if (w < 40 || h < 40) return;
-    var mut = cvv('--text-muted'), bs = cvv('--border-strong');
-    var c1 = cvv('--s1'), c2 = cvv('--s2'), c3 = cvv('--s3');
+    var Z = typeSizes(w);
     var st = armstrongCalc(A.df1, A.fm, A.n1, A.mix * 1e6, A.n2, A.fc1 * 1e3);
-    var names = ['NBFM modulator', '×' + F(A.n1, 0) + ' multiplier', 'mixer −' + F(A.mix, 1) + ' MHz', '×' + F(A.n2, 0) + ' multiplier'];
-    var inA = 30, outA = 46, gap = 24, l = 6;
-    var W = Math.max(w - 12, 40);
-    var bw = Math.max((W - inA - outA - 3 * gap) / 4, 30), bh = 46, bt = 50, my = bt + bh / 2;
-    var fb = function (b) { return b < 1 ? F(b, 3) : (b < 100 ? F(b, 1) : F(b, 0)); };
-    var fC = function (hz) { return hz >= 1e6 ? F(hz / 1e6, 1) + ' MHz' : F(hz / 1e3, 0) + ' kHz'; };
-    var fD = function (hz) { return hz >= 1000 ? F(hz / 1e3, 1) + ' kHz' : F(hz, 0) + ' Hz'; };
-
-    function arrow(x0, x1, y) {
-      g.strokeStyle = bs; g.lineWidth = 1.2;
-      g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
-      g.fillStyle = bs;
-      g.beginPath(); g.moveTo(x1, y); g.lineTo(x1 - 6, y - 3.5); g.lineTo(x1 - 6, y + 3.5); g.closePath(); g.fill();
+    var names = ['NBFM', '×' + F(A.n1, 0), 'mixer', '×' + F(A.n2, 0)];
+    var safe = function (v) { return Math.max(v, 1); };
+    var lo = Infinity, hi = 1, k;
+    for (k = 0; k < 4; k++) {
+      lo = Math.min(lo, safe(st[k].df), safe(st[k].fc));
+      hi = Math.max(hi, safe(st[k].df), safe(st[k].fc));
     }
+    if (!isFinite(lo) || lo <= 0) lo = 1;
+    lo = Math.max(lo * 0.35, 1e-3); hi = hi * 3;
 
-    arrow(l, l + inA, my);
-    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('m(t), fₘ = ' + F(A.fm, 0) + ' Hz', l, bt - 8);
-    g.textAlign = 'right';
-    g.fillText('total multiplication ×' + F(A.n1 * A.n2, 0), l + W, bt - 8);
+    var Pl = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0.5, max: 4.5, label: 'stage',
+        fmt: function (v) {
+          var kk = Math.round(v);
+          return (Math.abs(v - kk) < 1e-6 && kk >= 1 && kk <= 4) ? names[kk - 1] : '';
+        } },
+      { min: lo, max: hi, unit: 'Hz', label: 'frequency', log: true },
+      { fontSize: Z.tick });
 
-    for (var k = 0; k < 4; k++) {
-      var bx = l + inA + k * (bw + gap);
-      g.strokeStyle = bs; g.lineWidth = 1.2;
-      g.strokeRect(bx, bt, bw, bh);
-      g.fillStyle = cvv('--text-primary'); g.font = fnt(bw < 110 ? 10 : 11);
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(names[k], bx + bw / 2, bt + bh / 2, bw - 6);
-      if (k < 3) arrow(bx + bw, bx + bw + gap, my);
-      var cx = bx + bw / 2, ty = bt + bh + 20;
-      g.font = fnt(11); g.textBaseline = 'alphabetic';
-      g.fillStyle = c1; g.fillText('fᴄ ' + fC(st[k].fc), cx, ty, bw + gap - 8);
-      g.fillStyle = c2; g.fillText('Δf ' + fD(st[k].df), cx, ty + 16, bw + gap - 8);
-      g.fillStyle = c3; g.fillText('β ' + fb(st[k].beta), cx, ty + 32, bw + gap - 8);
-      if (k === 0 && st[0].beta > 0.2) {
-        g.fillStyle = cvv('--text-warning'); g.font = fnt(10);
-        g.fillText('not narrowband — distortion', cx, ty + 50, bw + gap + 20);
+    Pl.clip(g);
+    [['fc', t.s1], ['df', t.s2]].forEach(function (sr) {
+      g.strokeStyle = sr[1]; g.fillStyle = sr[1]; g.lineWidth = 2;
+      g.beginPath();
+      for (k = 0; k < 4; k++) {
+        var xx = Pl.X(k + 1), yy = Pl.Y(safe(st[k][sr[0]]));
+        if (k === 0) g.moveTo(xx, yy); else g.lineTo(xx, yy);
       }
+      g.stroke();
+      for (k = 0; k < 4; k++) {
+        g.beginPath();
+        g.arc(Pl.X(k + 1), Pl.Y(safe(st[k][sr[0]])), Math.max(2.4, Math.min(4, Pl.h * 0.012)), 0, TAU);
+        g.fill();
+      }
+    });
+    Pl.unclip(g);
+
+    // beta at each stage, printed under the deviation trace
+    g.save();
+    g.fillStyle = t.text2; g.font = t.font(Z.tick);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (k = 0; k < 4; k++) {
+      var b = st[k].beta;
+      var lab = 'β ' + (b < 1 ? F(b, 3) : (b < 100 ? F(b, 1) : F(b, 0)));
+      var ly = Math.min(Pl.Y(safe(st[k].df)) + Pl.h * 0.04, Pl.y1 - Z.tick * 1.4);
+      g.fillText(lab, clamp(Pl.X(k + 1), Pl.x0 + 18, Pl.x1 - 18), ly);
     }
-    arrow(l + inA + 4 * bw + 3 * gap, l + W - 2, my);
-    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'top';
-    g.fillText('WBFM out', l + W, my + 6);
+    g.restore();
+
+    leader(g, Pl.X(2), Pl.Y(safe(st[1].fc)), 'multiplier lifts both',
+      { box: Pl, colour: t.s1, size: Z.ann, dy: -26, dx: -24 });
+    leader(g, Pl.X(3), Pl.Y(safe(st[2].df)), 'mixer leaves Δf alone',
+      { box: Pl, colour: t.s2, size: Z.ann, dy: 26, dx: 24 });
+    if (st[0].beta > 0.2) {
+      leader(g, Pl.X(1), Pl.Y(safe(st[0].df)), 'not narrowband',
+        { box: Pl, colour: t.warn, size: Z.ann, dy: -24, dx: 26 });
+    }
   }
 
   // ---- readouts -----------------------------------------------------------
-  function updateUI() {
-    var df = dev();
-    $('btv').textContent = F(S.beta, 3);
-    $('fmv').textContent = F(S.fm, 1) + ' kHz';
-    $('acv').textContent = F(S.ac, 1) + ' V';
-    $('dvv').textContent = F(df, 1) + ' kHz';
-    $('dv').value = clamp(df, 0, 600);
-    if (document.activeElement !== $('dfn')) $('dfn').value = F(df, 1);
-    if (document.activeElement !== $('fmn')) $('fmn').value = F(S.fm, 1);
-    $('dfnote').textContent = 'β = Δf / fₘ = ' + F(df, 1) + ' / ' + F(S.fm, 1) + ' = ' + F(S.beta, 3);
+  function syncInputs() {
+    var df = clamp(dev(), 0, 600);
+    $('bt').value = S.beta;
+    if (document.activeElement !== $('btN')) $('btN').value = S.beta.toFixed(3);
+    $('fm').value = S.fm;
+    if (document.activeElement !== $('fmn')) $('fmn').value = S.fm.toFixed(1);
+    $('dv').value = df;
+    if (document.activeElement !== $('dfn')) $('dfn').value = df.toFixed(1);
+    $('ac').value = S.ac;
+    if (document.activeElement !== $('acN')) $('acN').value = S.ac.toFixed(1);
+  }
 
-    $('kB').textContent = F(S.beta, 3) + ' rad';
-    $('kBf').textContent = S.capped
-      ? 'capped at 10 — the Bessel series here is checked to β = 10, so Δf was cut to β × fₘ'
-      : (S.mode === 'fm'
-        ? 'Δf / fₘ — peak phase swing'
-        : 'kₚ Aₘ — peak phase swing, set directly');
-    $('kB').style.color = S.capped ? 'var(--text-warning)' : '';
-    $('kD').textContent = F(df, 1) + ' kHz';
-    $('kDf').textContent = 'β × fₘ — furthest the carrier strays from fᴄ';
-    $('kC').textContent = F(carsonBW(), 1) + ' kHz';
-    $('kCf').textContent = '2(Δf + fₘ) = 2(β + 1) fₘ';
-    $('kP').textContent = F(pctBW(), 1) + ' kHz';
+  function updateUI() {
+    var df = dev(), bwC = carsonBW();
+    syncInputs();
+
+    $('heroVal').textContent = F(bwC, 1);
+    $('dfnote').textContent = 'β = Δf / f' + sub('m') + ' = ' + F(df, 1) + ' / ' + F(S.fm, 1)
+      + ' = ' + F(S.beta, 3);
+
+    var badge = $('heroBadge'), cls = 'badge', txt;
+    if (S.capped) { cls += ' warn'; txt = 'β capped at 10'; }
+    else if (Math.abs(P.J[0]) < 0.01) { cls += ' warn'; txt = 'carrier null'; }
+    else if (bwC <= CHANNEL) { cls += ' good'; txt = 'fits a 200 kHz channel'; }
+    else { cls += ' bad'; txt = 'wider than a 200 kHz channel'; }
+    badge.className = cls;
+    badge.textContent = txt;
+
+    $('kD').textContent = fmtEng(df, 'kHz', 1);
+    $('kP').textContent = fmtEng(pctBW(), 'kHz', 1);
     $('kPf').textContent = P.np > 0
-      ? "2 n′ fₘ with n′ = " + P.np + ", |J" + P.np + "| = " + F(Math.abs(P.J[P.np]), 4)
-      : "n′ = 0 — no sideband reaches 1 %";
+      ? '2n′f' + sub('m') + ', |J' + sub(String(P.np)) + '| = ' + F(Math.abs(P.J[P.np]), 4)
+      : 'no sideband reaches 1 %';
     $('kW').textContent = F(P.inb * 100, 2) + ' %';
-    $('kWf').textContent = 'of Aᴄ²/2, over |n| ≤ ' + P.nCar
-      + '. ΣJₙ² across all ' + (2 * P.N + 1) + ' lines = ' + F(P.tot, 6);
-    $('kJ').textContent = F(S.ac * Math.abs(P.J[0]), 4) + ' V';
-    $('kJf').textContent = 'J₀(β) = ' + F(P.J[0], 4) + (P.J[0] < 0 ? ' — phase inverted' : '');
-    $('kJ').style.color = Math.abs(P.J[0]) < 0.01 ? 'var(--text-warning)' : '';
+    $('kWf').textContent = 'over |n| ≤ ' + P.nCar + ', ΣJ' + sub('n') + '² = ' + F(P.tot, 6);
+    $('kJ').textContent = fmtEng(S.ac * Math.abs(P.J[0]), 'V', 4);
+    $('kJf').textContent = 'J' + sub('0') + '(β) = ' + F(P.J[0], 4) + (P.J[0] < 0 ? ', inverted' : '');
+    $('kL').textContent = F(2 * P.np + 1, 0);
 
     var nb = S.beta <= 0.2;
-    $('kR').textContent = nb ? 'NBFM' : 'WBFM';
-    $('kR').style.color = nb ? 'var(--text-good)' : '';
     var adv = 20 * Math.log10(Math.max(S.beta, 1e-12));
-    $('kN').textContent = S.beta < 0.05 ? '—' : (adv >= 0 ? '+' : '−') + F(Math.abs(adv), 1) + ' dB';
-    $('kN').style.color = nb ? 'var(--text-muted)' : '';
-    $('kNf').textContent = nb ? 'NBFM — no advantage over AM' : 'output SNR ∝ β², above threshold';
+    $('kN').textContent = S.beta < 0.05 ? '—' : fmtEng(adv, 'dB', 1);
+    $('kNf').textContent = nb ? 'NBFM — no advantage over AM' : 'output SNR ∝ β²';
 
     var amOK = S.beta <= 0.5;
     if (!amOK && S.am) S.am = false;
     $('bAM').disabled = !amOK;
+    $('bAM').style.opacity = amOK ? '' : '0.45';
     $('bAM').classList.toggle('on', S.am);
 
     var J1 = besselJ(1, S.beta), exv = S.ac * J1, apv = S.beta * S.ac / 2;
     var nbErr = Math.abs(exv) > 1e-12 ? Math.abs((apv - exv) / exv) * 100 : NaN;
-    $('wkNB').innerHTML = 'Small-angle check at β = ' + F(S.beta, 3) + ': exact A<sub>c</sub>J₁(β) = '
-      + F(exv, 6) + ' V, approximation βA<sub>c</sub>/2 = ' + F(apv, 6) + ' V — error '
+    $('wkNB').innerHTML = 'Small-angle check at &beta; = ' + F(S.beta, 3) + ': exact A<sub>c</sub>J<sub>1</sub>(&beta;) = '
+      + F(exv, 6) + ' V, approximation &beta;A<sub>c</sub>/2 = ' + F(apv, 6) + ' V &mdash; error '
       + (Number.isFinite(nbErr) ? F(nbErr, 2) + ' %' : '—') + '.';
   }
 
@@ -780,36 +1268,18 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   function refresh() { P = coeffs(S.beta); updateUI(); draw(); }
 
   // ---- controls -----------------------------------------------------------
-  $('bt').addEventListener('input', function () { setBeta(+$('bt').value); refresh(); });
-  $('ac').addEventListener('input', function () { S.ac = clamp(+$('ac').value, 0.1, 10); refresh(); });
-
-  $('fm').addEventListener('input', function () {
+  bindPair($('bt'), $('btN'), function (v) { setBeta(v); refresh(); });
+  bindPair($('ac'), $('acN'), function (v) { S.ac = clamp(v, 0.1, 10); refresh(); });
+  bindPair($('fm'), $('fmn'), function (v) {
     var oldDf = dev();
-    setFm(+$('fm').value);
+    setFm(v);
     // FM holds the deviation and lets beta fall as the tone rises;
     // PM holds beta and lets the deviation grow with the tone.
     if (S.mode === 'fm') setBeta(oldDf / Math.max(S.fm, 1e-6));
     refresh();
   });
-
-  $('dv').addEventListener('input', function () {
-    var v = clamp(+$('dv').value, 0, 600);
-    setBeta(v / Math.max(S.fm, 1e-6));
-    refresh();
-  });
-
-  $('dfn').addEventListener('input', function () {
-    var raw = $('dfn').value.trim(), v = +raw;
-    if (raw === '' || !Number.isFinite(v) || v < 0) return;
+  bindPair($('dv'), $('dfn'), function (v) {
     setBeta(clamp(v, 0, 600) / Math.max(S.fm, 1e-6));
-    refresh();
-  });
-  $('fmn').addEventListener('input', function () {
-    var v = +$('fmn').value;
-    if (!Number.isFinite(v) || v < 1) return;
-    var oldDf = dev();
-    setFm(v);
-    if (S.mode === 'fm') setBeta(oldDf / Math.max(S.fm, 1e-6));
     refresh();
   });
 
@@ -817,9 +1287,6 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     S.mode = m;
     $('mFM').classList.toggle('on', m === 'fm');
     $('mPM').classList.toggle('on', m === 'pm');
-    $('tour').innerHTML = m === 'fm'
-      ? '<b>FM.</b> The carrier’s frequency follows the message, so β = Δf / fₘ. Raise the tone frequency and β falls, because the same deviation is now divided by a bigger number — the deviation itself is held.'
-      : '<b>PM.</b> The carrier’s phase follows the message, so β = kₚ Aₘ is set by loudness alone and does not care about the tone frequency. Raise the tone and β stays put while Δf = β fₘ grows. The line heights are the same |Jₙ(β)| in both cases — only the line phases and the middle strip of section 1 differ.';
     refresh();
   }
   $('mFM').addEventListener('click', function () { setMode('fm'); });
@@ -836,40 +1303,48 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
     S.am = !S.am; $('bAM').classList.toggle('on', S.am); draw();
   });
 
-  function chainUI() {
-    $('aDfv').textContent = F(A.df1, 0) + ' Hz';
-    $('aFmv').textContent = F(A.fm, 0) + ' Hz';
-    $('aN1v').textContent = '×' + F(A.n1, 0);
-    $('aMxv').textContent = F(A.mix, 1) + ' MHz';
-    $('aN2v').textContent = '×' + F(A.n2, 0);
-    $('aFcv').textContent = F(A.fc1, 0) + ' kHz';
-    drawChain();
-  }
-  [['aDf', 'df1', 5, 50], ['aFm', 'fm', 50, 500], ['aN1', 'n1', 2, 100],
-   ['aMx', 'mix', 0, 20], ['aN2', 'n2', 2, 100], ['aFc', 'fc1', 100, 500]].forEach(function (d) {
-    $(d[0]).addEventListener('input', function () { A[d[1]] = clamp(+$(d[0]).value, d[2], d[3]); chainUI(); });
+  function chainUI() { drawChain(); }
+  [['aDf', 'aDfN', 'df1', 5, 50], ['aFm', 'aFmN', 'fm', 50, 500], ['aN1', 'aN1N', 'n1', 2, 100],
+   ['aMx', 'aMxN', 'mix', 0, 20], ['aN2', 'aN2N', 'n2', 2, 100], ['aFc', 'aFcN', 'fc1', 100, 500]
+  ].forEach(function (d) {
+    bindPair($(d[0]), $(d[1]), function (v) { A[d[2]] = clamp(v, d[3], d[4]); chainUI(); });
   });
-  $('pre').addEventListener('click', function () {
-    setFm(15); setBeta(5); setMode('fm');
-    $('tour').innerHTML = '<b>Mono FM broadcast.</b> Δf = 75 kHz, fₘ = 15 kHz, so β = 5. Carson asks for 180 kHz, the 1 % rule for 240 kHz, and the regulator allocates 200 kHz channels.';
+
+  // ---- presets ------------------------------------------------------------
+  var PRESETS = [
+    ['pre', 15, 75, 'Mono FM broadcast: Δf = 75 kHz, fₘ = 15 kHz, β = 5.'],
+    ['pTv', 15, 25, 'TV aural carrier: Δf = 25 kHz on 15 kHz audio.'],
+    ['pNb', 3, 2.5, 'NBFM land mobile, 12.5 kHz channel: Δf = 2.5 kHz.'],
+    ['pWb', 15, 150, 'Wideband: β = 10 spreads power across many sidebands.']
+  ];
+  PRESETS.forEach(function (p) {
+    $(p[0]).addEventListener('click', function () {
+      if (S.anim) toggleAnim();
+      setFm(p[1]); setBeta(p[2] / p[1]); setMode('fm');
+      PRESETS.forEach(function (q) { $(q[0]).classList.toggle('on', q[0] === p[0]); });
+      $('tour').textContent = p[3];
+      refresh();
+    });
   });
 
   // ---- guided tour --------------------------------------------------------
   var TOUR = [
-    [0.2, 15, '<b>Step 1 — narrowband FM.</b> β = 0.2: the AM ghost matches everything except the minus sign.'],
-    [2.405, 15, '<b>Step 2 — the first carrier null.</b> β = 2.405 is the first zero of J₀, so the centre stem has vanished: every watt is now in the sidebands. Bench engineers use exactly this to calibrate a deviation meter — turn the modulation up until the carrier disappears and Δf must be 2.405 × fₘ.'],
-    [5, 15, '<b>Step 3 — broadcast FM.</b> β = 5, Δf = 75 kHz, fₘ = 15 kHz. The carrier is back but inverted and small. Carson gives 180 kHz, the 1 % rule 240 kHz — the two rules now disagree by a third, which is why the label on the bracket matters.'],
-    [10, 15, '<b>Step 4 — wideband.</b> β = 10 spreads the power over 29 significant lines and asks for 420 kHz by the 1 % rule. Output signal-to-noise improves as β², so this is the trade in its clearest form: four times the spectrum for a much quieter receiver.']
+    [0.2, 15, 'Narrowband: one sideband pair, like AM but with a sign flip.'],
+    [2.405, 15, 'First carrier null at β = 2.405 — the centre line vanishes.'],
+    [5, 15, 'Broadcast FM: Carson asks 180 kHz, the 1 % rule 240 kHz.'],
+    [10, 15, 'Wideband β = 10: many lines, and output SNR climbs as β².']
   ];
   ['t1', 't2', 't3', 't4'].forEach(function (id, k) {
     $(id).addEventListener('click', function () {
       if (S.anim) toggleAnim();
       setFm(TOUR[k][1]); setBeta(TOUR[k][0]);
       S.am = k === 0;
-      $('tour').innerHTML = TOUR[k][2];
+      PRESETS.forEach(function (q) { $(q[0]).classList.remove('on'); });
+      $('tour').textContent = TOUR[k][2];
       refresh();
     });
   });
+  $('t0').addEventListener('click', function () { $('pre').click(); });
 
   // ---- beta sweep ---------------------------------------------------------
   var raf = 0, last = 0, dir = 1;
@@ -898,7 +1373,6 @@ h2 { font-size: 16px; font-weight: 500; margin: 2.5rem 0 4px; }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
 
   setMode('fm');
-  chainUI();
   refresh();
   window.__fmFrame = frame;
   window.__fmState = function () {

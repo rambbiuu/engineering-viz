@@ -6,158 +6,307 @@
 <title>AM, DSBSC, SSB and the cost of the carrier</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --accent: #378ADD;
-  --s1: #378ADD; --s2: #D85A30; --s3: #1D9E75; --s4: #7F77DD; --s5: #D4537E;
-  --bad: #B4342A; --good: #3B6D11;
-  --on-fill: #ffffff;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
-    --accent: #6FB4EE;
-    --s1: #6FB4EE; --s2: #F0855A; --s3: #45BE93; --s4: #A29BEC; --s5: #E7799F;
-    --bad: #E06C63; --good: #C0DD97;
-    --on-fill: #1b1b19;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.6;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: flex; flex-direction: column; gap: 1rem; }
+.stage { display: flex; flex-direction: column; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
+  .wrap > .full { grid-column: 1 / -1; }
+  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 820px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
-.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back { font-size: 14px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-.prereq { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
-  padding: 5px 11px; cursor: pointer; font-size: 13px; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--accent); color: var(--accent); }
-button:disabled { opacity: 0.4; cursor: default; }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-input[type=range]:disabled { opacity: 0.4; }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
-.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 74px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1.1rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
-.ctl input[type=range] { flex: 1; min-width: 90px; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
-.sec { margin: 1.9rem 0 6px; font-size: 14px; }
+.sec { margin: 1.5rem 0 6px; font-size: 16px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 1.1rem; }
-.legend-note li { margin: 2px 0; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-canvas { width: 100%; display: block; }
-.tour { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 0 0 0.5rem; }
-.tourtxt { font-size: 13px; color: var(--text-secondary); min-height: 2.6em; margin: 0 0 1.2rem; }
-.worked { font-size: 13px; color: var(--text-secondary); margin: 0.4rem 0 0; padding-left: 1.3rem; font-variant-numeric: tabular-nums; }
-.worked li { margin: 3px 0; }
-details { margin: 1.2rem 0; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.9rem; }
-summary { font-size: 13.5px; cursor: pointer; color: var(--text-secondary); }
-details[open] summary { margin-bottom: 0.7rem; }
-.glossary { font-size: 13px; margin: 0.5rem 0 0; }
-.glossary dt { font-weight: 500; margin-top: 8px; }
-.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
-.warn { color: var(--text-warning); }
+.sec span { color: var(--text-secondary); font-size: 14px; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+button:disabled { opacity: 0.4; cursor: default; }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+input:disabled { opacity: 0.4; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 14px; color: var(--text-secondary); }
+.hero .val { font-size: 36px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 18px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 13px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 14.5px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 13px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 14px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 14.5px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-stack { aspect-ratio: 16 / 9; min-height: 400px; max-height: 70vh; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 14px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+.card .hd { font-size: 14px; color: var(--text-secondary); }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 14px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 14px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+p.note { font-size: 14px; color: var(--text-secondary); margin: 0 0 0.7rem; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>AM, DSBSC, SSB and the cost of the carrier</h1>
-<p class="sub">A transmitter has a fixed number of watts, and in full AM most of them feed a carrier tone that carries no information. Four analogue schemes side by side, with a running account of where the power goes.</p>
-<p class="prereq">If waveforms and spectra are new, start with the <a href="modulation.html">modulation playground</a> first. Every frequency here is a real number in hertz, and the carrier amplitude is fixed at 1 volt into 1 ohm so the power figures are watts.</p>
+<div class="wrap">
 
-<div class="row">
-  <span class="lbl">Scheme</span>
-  <button id="bam" class="on">Full AM</button>
-  <button id="bdsb">DSBSC</button>
-  <button id="bssb">SSB</button>
-  <button id="bvsb">VSB</button>
-  <button id="bqam">QAM</button>
-  <button id="bfdm">FDM</button>
-</div>
-<div class="row">
-  <span class="lbl">FDM uses</span>
-  <button id="fdb" class="on">DSBSC channels</button>
-  <button id="fsb">SSB channels</button>
-</div>
-<div class="row">
-  <span class="lbl">Message</span>
-  <button id="mt1" class="on">Single tone</button>
-  <button id="mt2">Two tones</button>
-  <span style="font-size:12px;color:var(--text-muted)">tone at 1.00 kHz; two-tone adds a second at 2.50 kHz</span>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>AM, DSBSC, SSB and the cost of the carrier</h1>
+  <p class="sub">In full AM most of the transmitter's watts feed a carrier that carries no information. Six analogue schemes side by side, with the power accounted for.</p>
+  <p class="prereq">New here? Start with the <a href="modulation.html">modulation playground</a>. Carrier amplitude A<sub>c</sub> = 1 V into 1 &Omega;, so powers are watts.</p>
+</header>
+
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Power carrying information</div>
+    <div class="val" id="heroVal">&mdash;<span class="u">%</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div>
+    <div class="presets">
+      <span class="lbl">Scheme</span>
+      <button type="button" id="bam" class="on">Full AM</button>
+      <button type="button" id="bdsb">DSBSC</button>
+      <button type="button" id="bssb">SSB</button>
+      <button type="button" id="bvsb">VSB</button>
+      <button type="button" id="bqam">QAM</button>
+      <button type="button" id="bfdm">FDM</button>
+    </div>
+
+    <div class="ctl">
+      <label for="mi">Modulation index <span class="var">m</span></label>
+      <div class="in">
+        <input type="range" id="mi" min="0" max="1.5" step="0.05" value="0.6">
+        <input type="number" id="miN" min="0" max="1.5" step="0.05" aria-label="Modulation index">
+        <span class="unit">&nbsp;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fc">Carrier frequency f<sub>c</sub></label>
+      <div class="in">
+        <input type="range" id="fc" min="5" max="50" step="1" value="20">
+        <input type="number" id="fcN" min="5" max="50" step="1" aria-label="Carrier frequency in kilohertz">
+        <span class="unit">kHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="ph">Detector phase error &phi;</label>
+      <div class="in">
+        <input type="range" id="ph" min="0" max="90" step="1" value="0">
+        <input type="number" id="phN" min="0" max="90" step="1" aria-label="Detector phase error in degrees">
+        <span class="unit">&deg;</span>
+      </div>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="pAm" class="on">AM broadcast</button>
+      <button type="button" id="pSsb">Amateur SSB</button>
+      <button type="button" id="pTv">Analogue TV</button>
+      <button type="button" id="pFdm">FDM telephony</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>More controls</summary>
+
+    <div class="presets">
+      <span class="lbl">Message</span>
+      <button type="button" id="mt1" class="on">Single tone</button>
+      <button type="button" id="mt2">Two tones</button>
+    </div>
+
+    <div class="ctl">
+      <label for="fm">Message tone f<sub>1</sub></label>
+      <div class="in">
+        <input type="range" id="fm" min="0.2" max="4" step="0.1" value="1">
+        <input type="number" id="fmN" min="0.2" max="4" step="0.1" aria-label="Message tone frequency in kilohertz">
+        <span class="unit">kHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="df">Detector frequency error &Delta;f</label>
+      <div class="in">
+        <input type="range" id="df" min="0" max="200" step="5" value="0">
+        <input type="number" id="dfN" min="0" max="200" step="5" aria-label="Detector frequency error in hertz">
+        <span class="unit">Hz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fv">Vestige width f<sub>v</sub></label>
+      <div class="in">
+        <input type="range" id="fv" min="0.05" max="1" step="0.05" value="0.3">
+        <input type="number" id="fvN" min="0.05" max="1" step="0.05" aria-label="Vestige width as a fraction of W">
+        <span class="unit">&times;W</span>
+      </div>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">FDM uses</span>
+      <button type="button" id="fdb" class="on">DSBSC channels</button>
+      <button type="button" id="fsb">SSB channels</button>
+    </div>
+
+    <div class="ctl">
+      <label for="nc">FDM channels N</label>
+      <div class="in">
+        <input type="range" id="nc" min="2" max="8" step="1" value="4">
+        <input type="number" id="ncN" min="2" max="8" step="1" aria-label="Number of FDM channels">
+        <span class="unit">&nbsp;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="sp">Carrier spacing</label>
+      <div class="in">
+        <input type="range" id="sp" min="1" max="3" step="0.05" value="2.1">
+        <input type="number" id="spN" min="1" max="3" step="0.05" aria-label="Carrier spacing as a multiple of W">
+        <span class="unit">&times;W</span>
+      </div>
+    </div>
+
+    <p class="prereq" id="ctlnote">&mdash;</p>
+  </details>
+
+  <div class="cards">
+    <div class="card"><div class="hd">Total power</div><div class="big" id="cP">&mdash;</div><div class="ft">into 1 &Omega;</div></div>
+    <div class="card"><div class="hd">Carrier share</div><div class="big" id="cC">&mdash;</div><div class="ft" id="cCn">&mdash;</div></div>
+    <div class="card"><div class="hd">Occupied bandwidth</div><div class="big" id="cB">&mdash;</div><div class="ft" id="cBn">&mdash;</div></div>
+    <div class="card"><div class="hd">Detection loss</div><div class="big" id="cD">&mdash;</div><div class="ft" id="cDn">&mdash;</div></div>
+    <div class="card"><div class="hd">Spacing rule</div><div class="big" id="cR">&mdash;</div><div class="ft" id="cRn">&mdash;</div></div>
+  </div>
+
 </div>
 
-<div class="grid2">
-  <div class="ctl"><label for="mi">Modulation index m</label><input type="range" id="mi" min="0" max="1.5" step="0.05" value="0.6"><span class="v" id="miv">0.60</span></div>
-  <div class="ctl"><label for="fc">Carrier frequency</label><input type="range" id="fc" min="5" max="50" step="1" value="20"><span class="v" id="fcv">20.0 kHz</span></div>
-  <div class="ctl"><label for="ph">Detector phase error</label><input type="range" id="ph" min="0" max="90" step="1" value="0"><span class="v" id="phv">0&deg;</span></div>
-  <div class="ctl"><label for="df">Detector freq error</label><input type="range" id="df" min="0" max="200" step="5" value="0"><span class="v" id="dfv">0 Hz</span></div>
-  <div class="ctl"><label for="nc">FDM channels</label><input type="range" id="nc" min="2" max="8" step="1" value="4"><span class="v" id="ncv">4</span></div>
-  <div class="ctl"><label for="fv">Vestige width f<sub>v</sub></label><input type="range" id="fv" min="0.05" max="1" step="0.05" value="0.3"><span class="v" id="fvv">&mdash;</span></div>
-  <div class="ctl"><label for="sp">Carrier spacing</label><input type="range" id="sp" min="1" max="3" step="0.05" value="2.1"><span class="v" id="spv">&mdash;</span></div>
-</div>
-<p id="ctlnote" style="font-size:12.5px;color:var(--text-muted);margin:-0.5rem 0 1.4rem;">&mdash;</p>
+<div class="stage">
 
 <div class="tour">
-  <span class="lbl" style="font-size:13px;color:var(--text-secondary)">Guided tour</span>
-  <button id="t1">1</button><button id="t2">2</button><button id="t3">3</button><button id="t4">4</button><button id="t5">5</button><button id="t6">6</button>
-  <button id="t0">reset</button>
+  <span class="lbl">Guided tour</span>
+  <button type="button" id="t1">1</button><button type="button" id="t2">2</button><button type="button" id="t3">3</button><button type="button" id="t4">4</button><button type="button" id="t5">5</button><button type="button" id="t6">6</button>
+  <button type="button" id="t0">reset</button>
 </div>
-<p class="tourtxt" id="tourtxt">Press 1 to start. Each step moves the controls for you and says what changed.</p>
+<p class="tour-note" id="tourtxt">Press the steps in order; each one moves the controls.</p>
 
-<p class="sec"><b>1 &middot; Where the transmitter power goes</b> <span>&mdash; the same transmitter, split into the part that carries information and the part that does not</span></p>
-<canvas id="cvA" style="height: 210px;"></canvas>
+<p class="sec"><b>1 &middot; Where the power goes</b> <span>&mdash; carrier against sidebands, versus modulation index</span></p>
+<canvas id="cvA" class="cv-hero"></canvas>
 <ul class="legend-note" id="nA"></ul>
 
-<p class="sec"><b>2 &middot; Message, carrier and the resulting envelope</b> <span>&mdash; three traces on one time axis, 2 milliseconds wide</span></p>
-<canvas id="cvB" style="height: 330px;"></canvas>
+<p class="sec"><b>2 &middot; Message, carrier, transmitted signal</b> <span>&mdash; three traces, one time axis</span></p>
+<canvas id="cvB" class="cv-stack"></canvas>
 <ul class="legend-note" id="nB"></ul>
 
-<p class="sec"><b>3 &middot; The spectrum, drawn to scale</b> <span>&mdash; every line is a real sinusoid; its height is that sinusoid's amplitude in volts</span></p>
-<canvas id="cvC" style="height: 250px;"></canvas>
+<p class="sec"><b>3 &middot; The spectrum, drawn to scale</b> <span>&mdash; every line is one real sinusoid</span></p>
+<canvas id="cvC" class="cv-sub"></canvas>
 <ul class="legend-note" id="nC"></ul>
 
-<p class="sec"><b>4 &middot; What the detector recovers</b> <span>&mdash; the original message dashed, the detector output solid</span></p>
-<canvas id="cvD" style="height: 220px;"></canvas>
+<p class="sec"><b>4 &middot; What the detector recovers</b> <span>&mdash; message dashed, detector output solid</span></p>
+<canvas id="cvD" class="cv-sub"></canvas>
 <ul class="legend-note" id="nD"></ul>
 
-<div class="cards">
-  <div class="card"><div class="hd">Modulation index m</div><div class="big" id="cM">&mdash;</div><div class="ft" id="cMn">&mdash;</div></div>
-  <div class="card"><div class="hd">Total transmitted power</div><div class="big" id="cP">&mdash;</div><div class="ft">A<sub>c</sub> = 1 V into 1 &Omega;</div></div>
-  <div class="card"><div class="hd">Carrier power share</div><div class="big" id="cC">&mdash;</div><div class="ft" id="cCn">&mdash;</div></div>
-  <div class="card"><div class="hd">Sideband power share</div><div class="big" id="cS">&mdash;</div><div class="ft" id="cSn">&mdash;</div></div>
-  <div class="card"><div class="hd">Occupied bandwidth</div><div class="big" id="cB">&mdash;</div><div class="ft" id="cBn">&mdash;</div></div>
-  <div class="card"><div class="hd">Spacing rule</div><div class="big" id="cR">&mdash;</div><div class="ft" id="cRn">&mdash;</div></div>
-  <div class="card"><div class="hd">Detection loss</div><div class="big" id="cD">&mdash;</div><div class="ft" id="cDn">&mdash;</div></div>
-</div>
-
 <details>
-  <summary>The arithmetic, with the current numbers substituted in</summary>
-  <ol class="worked" id="wk"></ol>
+  <summary>The arithmetic, with the current numbers</summary>
+  <ol class="work" id="wk"></ol>
 </details>
 
 <details>
-  <summary>An everyday analogy, and the envelope detector's time constant</summary>
-  <p style="font-size:13px;color:var(--text-secondary);margin:0 0 0.8rem;">Think of shouting a message across a valley. The carrier is the raw loudness of your voice; the message is the way you shape it. Full AM keeps shouting at full volume even during the silences, because the receiver on the far side finds the message by tracking how loud you are, and it needs a steady reference to compare against. Suppressed-carrier schemes stop shouting during the silences, which saves a great deal of breath, but then the far side has to guess the reference for itself &mdash; and if it guesses the timing wrong, the message comes back wrong.</p>
-  <p style="font-size:13px;color:var(--text-secondary);margin:0 0 0.8rem;" id="rcnote">&mdash;</p>
-  <p style="font-size:13px;color:var(--text-secondary);margin:0;">Three trades live in these controls. Full AM buys a receiver that is a diode, a capacitor and a resistor, and pays for it with the carrier: at the legal limit of m = 1 only 33.3 per cent of the transmitter is doing work, and at the more typical m = 0.6 it is 15.3 per cent. Suppressing the carrier recovers all of that, but the receiver now needs a local oscillator locked to the transmitter, and the phase-error slider shows the penalty &mdash; output falls as cos&nbsp;&phi; and vanishes completely at 90 degrees, which is why practical receivers carry a Costas loop or a pilot tone. Single sideband then halves the bandwidth as well, and is remarkably tolerant of phase error because the error only rotates the recovered tone rather than shrinking it; what single sideband cannot tolerate is a frequency error, which shifts every component of the message by the same number of hertz and makes speech sound wrong even when nothing is lost. What is simplified here: the filters are ideal, there is no noise, the message is one or two pure tones so its Hilbert transform is exact, and the VSB filter is an idealised linear ramp &mdash; the course names VSB only in the AM taxonomy (analogue TV); the detailed filter shape lives in the textbooks (Haykin).</p>
+  <summary>Analogy, detector time constant, and what is simplified</summary>
+  <p class="note">Shouting across a valley: the carrier is the loudness of your voice, the message is how you shape it. Full AM keeps shouting through the silences so the far side always has a reference; suppressed-carrier schemes go quiet and make the far side guess the reference instead.</p>
+  <p class="note" id="rcnote">&mdash;</p>
+  <p class="note">Full AM buys a receiver that is a diode, a capacitor and a resistor, and pays with the carrier: at <span class="var">m</span> = 1 only 33.3 % of the transmitter does work. Suppressing the carrier recovers all of it, but the receiver needs a local oscillator locked to the transmitter &mdash; output then falls as cos&nbsp;&phi; and vanishes at 90&deg;, which is why real receivers carry a Costas loop or a pilot tone. SSB also halves the bandwidth and shrugs off phase error, because the error rotates the recovered tone instead of shrinking it; what SSB cannot survive is a frequency error, which shifts every message component by the same hertz.</p>
+  <p class="note" style="margin-bottom:0">Simplified here: ideal filters, no noise, one or two pure tones so the Hilbert transform is exact, and an idealised linear-ramp VSB filter (Haykin has the real shape).</p>
 </details>
-
-<p class="sub">Where to go next: <a href="iq-constellation.html">the I/Q constellation</a> takes the quadrature idea into digital modulation, and <a href="superhet-image.html">the superheterodyne receiver</a> shows what the mixer in these detectors does to unwanted frequencies.</p>
 
 <details><summary>Glossary</summary>
 <dl class="glossary">
@@ -183,22 +332,405 @@ details[open] summary { margin-bottom: 0.7rem; }
 </dl>
 </details>
 
+<p class="prereq" style="margin-top:1rem">Next: <a href="iq-constellation.html">the I/Q constellation</a>, then <a href="superhet-image.html">the superheterodyne receiver</a>.</p>
+
+</div>
+</div>
+
 <script>
 (function () {
+  /* ============================================================
+     engineering-viz shared canvas kit — verbatim.
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ---- the tool's own code ------------------------------------- */
+
   var $ = function (id) { return document.getElementById(id); };
-  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
   var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
   var TAU = Math.PI * 2;
+  var NBSP = ' ';
 
-  var FM = 1000;
   var AC = 1;
-  var TWIN = 2 / FM;
+  var MMAX = 1.5;
 
-  var S = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4, fv: 0.3, spm: 2.1, fdmMode: 'dsb' };
+  var S = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4, fv: 0.3, spm: 2.1, fdmMode: 'dsb', fm: 1000 };
+
+  function tw() { return 2 / S.fm; }
+  function tms() { return tw() * 1000; }
 
   function comps() {
-    return S.msg === 'tone' ? [{ a: 1, f: FM }] : [{ a: 0.5, f: FM }, { a: 0.5, f: 2.5 * FM }];
+    return S.msg === 'tone' ? [{ a: 1, f: S.fm }] : [{ a: 0.5, f: S.fm }, { a: 0.5, f: 2.5 * S.fm }];
   }
   function scaled(c, k) {
     return c.map(function (x) { return { a: x.a, f: x.f * k }; });
@@ -276,7 +808,7 @@ details[open] summary { margin-bottom: 0.7rem; }
   var envMean = 1;
   function computeEnvMean() {
     var N = 2048, s = 0, c = comps(), i;
-    for (i = 0; i < N; i++) s += Math.abs(1 + S.m * ev(c, i * TWIN / N));
+    for (i = 0; i < N; i++) s += Math.abs(1 + S.m * ev(c, i * tw() / N));
     envMean = s / N;
   }
 
@@ -315,19 +847,20 @@ details[open] summary { margin-bottom: 0.7rem; }
     return S.m * ev(c, t);
   }
 
-  function powers() {
-    var mu = muOf(comps()), m = S.m, pc = AC * AC / 2, car = 0, sb = 0;
-    if (S.sch === 'am') { car = pc; sb = pc * m * m * mu; }
-    else if (S.sch === 'dsb') { sb = pc * m * m * mu; }
-    else if (S.sch === 'ssb') { sb = pc * m * m * mu / 2; }
-    else if (S.sch === 'vsb') {
+  function powers(mOverride, schOverride) {
+    var mu = muOf(comps()), m = mOverride == null ? S.m : mOverride, pc = AC * AC / 2, car = 0, sb = 0;
+    var sch = schOverride == null ? S.sch : schOverride;
+    if (sch === 'am') { car = pc; sb = pc * m * m * mu; }
+    else if (sch === 'dsb') { sb = pc * m * m * mu; }
+    else if (sch === 'ssb') { sb = pc * m * m * mu / 2; }
+    else if (sch === 'vsb') {
       var c2 = comps(), i2;
       for (i2 = 0; i2 < c2.length; i2++) {
         var wt = vsbWts(c2[i2].f);
         sb += pc * m * m * c2[i2].a * c2[i2].a / 4 * (wt.u * wt.u + wt.l * wt.l);
       }
     }
-    else if (S.sch === 'qam') { sb = pc * m * m * mu * 2; }
+    else if (sch === 'qam') { sb = pc * m * m * mu * 2; }
     else { sb = S.nch * pc * m * m * mu * (S.fdmMode === 'dsb' ? 1 : 0.5); }
     return { car: car, sb: sb, tot: car + sb };
   }
@@ -375,7 +908,7 @@ details[open] summary { margin-bottom: 0.7rem; }
     return out;
   }
 
-  function band() {
+  function occBand() {
     var W = bwOf(comps());
     if (S.sch === 'ssb') return { lo: S.fc, hi: S.fc + W, bw: W };
     if (S.sch === 'vsb') { var fv = vsbFv(); return { lo: S.fc - fv, hi: S.fc + W, bw: W + fv }; }
@@ -393,7 +926,7 @@ details[open] summary { margin-bottom: 0.7rem; }
     if (m <= 1) return 0;
     var N = 4096, sem = 0, smm = 0;
     for (i = 0; i < N; i++) {
-      t = i * TWIN / N;
+      t = i * tw() / N;
       var mn = ev(c, t);
       sem += (Math.abs(1 + m * mn) - envMean) * mn;
       smm += mn * mn;
@@ -408,586 +941,446 @@ details[open] summary { margin-bottom: 0.7rem; }
     return -20 * L10(Math.max(Math.abs(Math.cos(S.phi * Math.PI / 180)), 1e-3));
   }
 
-  function fit(c) {
-    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
-  }
   function peakOf(fn) {
     var N = 1600, p = 0, i;
     for (i = 0; i <= N; i++) {
-      var v = Math.abs(fn(i / N * TWIN));
+      var v = Math.abs(fn(i / N * tw()));
       if (isFinite(v) && v > p) p = v;
     }
     return Math.max(p, 1e-3);
   }
-  function dense(g, l, rr, ymid, sc, fn) {
-    var spp = 8, px, k;
+  /* min/max envelope per pixel column — for traces faster than the pixel grid */
+  function dense(g, P, fn) {
+    var spp = 8, px, k, T = tw();
     g.beginPath();
-    for (px = l; px <= rr; px++) {
+    for (px = Math.round(P.x0); px <= P.x1; px++) {
       var lo = Infinity, hi = -Infinity;
       for (k = 0; k <= spp; k++) {
-        var t = (px - l + k / spp) / (rr - l) * TWIN;
+        var t = (px - P.x0 + k / spp) / P.w * T;
         var v = fn(t);
         if (!isFinite(v)) continue;
         if (v < lo) lo = v;
         if (v > hi) hi = v;
       }
       if (!isFinite(lo) || !isFinite(hi)) continue;
-      var y1 = ymid - hi * sc, y2 = ymid - lo * sc;
+      var y1 = P.Y(hi), y2 = P.Y(lo);
       g.moveTo(px + 0.5, y1);
       g.lineTo(px + 0.5, Math.max(y2, y1 + 0.8));
     }
     g.stroke();
   }
-  function curve(g, l, rr, ymid, sc, fn, dash) {
-    var N = 600, i;
+  function curve(g, P, fn, dash) {
+    var N = 600, i, started = false, T = tw();
     g.setLineDash(dash || []);
     g.beginPath();
     for (i = 0; i <= N; i++) {
-      var t = i / N * TWIN, x = l + (i / N) * (rr - l), v = fn(t);
-      if (!isFinite(v)) continue;
-      var y = ymid - v * sc;
-      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      var t = i / N * T, x = P.x0 + (i / N) * P.w, v = fn(t);
+      if (!isFinite(v)) { started = false; continue; }
+      var y = P.Y(v);
+      if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
     }
     g.stroke();
     g.setLineDash([]);
   }
-  function timeAxis(g, l, rr, yb, sub, bd) {
-    var k;
-    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    for (k = 0; k <= 4; k++) {
-      var x = l + (rr - l) * k / 4;
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(x, 6); g.lineTo(x, yb); g.stroke();
-      g.fillText((TWIN * 1000 * k / 4).toFixed(1), x, yb + 4);
-    }
-    g.textAlign = 'right';
-    g.fillText('time (ms)', rr, yb + 16);
+  function tickFs(w) { return Math.max(12, Math.round(w / 78)); }
+  function annFs(w) { return Math.max(12, Math.round(w / 62)); }
+  function shareAt(mv, sch) {
+    var Pw = powers(mv, sch);
+    if (!(Pw.tot > 1e-12)) return { car: 0, sb: 0 };
+    return { car: Pw.car / Pw.tot * 100, sb: Pw.sb / Pw.tot * 100 };
   }
 
   function drawA() {
-    var c = $('cvA'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border-strong');
-    var s1 = cvv('--s1'), s2 = cvv('--s2'), txt = cvv('--text-primary');
-    var P = powers();
-    var l = 10, rr = w - 10;
+    var c = $('cvA'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fs = tickFs(w), af = annFs(w);
+    var isAm = S.sch === 'am';
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: MMAX, label: 'modulation index m', dec: 2 },
+      { min: 0, max: 100, unit: '%', label: 'share of transmitted power', dec: 0 },
+      { fontSize: fs });
 
-    var by = 22, bh = 40;
-    var boxw = Math.min(120, (rr - l) * 0.2);
-    g.strokeStyle = bd; g.lineWidth = 1.2; g.fillStyle = sub; g.font = fnt(11);
-    g.strokeRect(l, by, boxw, bh);
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('transmitter', l + boxw / 2, by + bh / 2);
+    if (isAm) band(g, P, P.X(1), P.X(MMAX), t.bad);
 
-    var mx = l + boxw + 34;
-    g.beginPath(); g.moveTo(l + boxw, by + bh / 2); g.lineTo(mx, by + bh / 2); g.stroke();
-    g.beginPath(); g.moveTo(mx, by + bh + 6); g.lineTo(mx, by - 10); g.stroke();
-    g.beginPath(); g.moveTo(mx - 9, by + bh + 6); g.lineTo(mx + 9, by + bh + 6); g.stroke();
-    var k;
-    g.strokeStyle = s1; g.lineWidth = 1;
-    for (k = 1; k <= 3; k++) {
+    P.clip(g);
+    var px, mv, sh;
+    if (!isAm) {
+      g.strokeStyle = t.text2; g.lineWidth = 1.4; g.setLineDash([6, 4]);
       g.beginPath();
-      g.arc(mx, by - 10, k * 11, -Math.PI * 0.42, Math.PI * 0.42);
-      g.stroke();
+      for (px = P.x0; px <= P.x1; px++) {
+        mv = (px - P.x0) / P.w * MMAX;
+        var y = P.Y(shareAt(mv, 'am').sb);
+        if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
     }
+    g.strokeStyle = t.s2; g.lineWidth = 2;
+    g.beginPath();
+    for (px = P.x0; px <= P.x1; px++) {
+      mv = (px - P.x0) / P.w * MMAX;
+      var yc = P.Y(shareAt(mv).car);
+      if (px === P.x0) g.moveTo(px, yc); else g.lineTo(px, yc);
+    }
+    g.stroke();
+    g.strokeStyle = t.s1; g.lineWidth = 2;
+    g.beginPath();
+    for (px = P.x0; px <= P.x1; px++) {
+      mv = (px - P.x0) / P.w * MMAX;
+      var ys = P.Y(shareAt(mv).sb);
+      if (px === P.x0) g.moveTo(px, ys); else g.lineTo(px, ys);
+    }
+    g.stroke();
 
-    var rxw = boxw;
-    var rx = rr - rxw;
-    g.strokeStyle = bd; g.lineWidth = 1.2; g.fillStyle = sub;
-    g.strokeRect(rx, by, rxw, bh);
-    var dtx = S.sch === 'am' ? 'envelope detector' : 'coherent detector';
-    g.font = fnt(10.5);
-    g.fillText(dtx.split(' ')[0], rx + rxw / 2, by + bh / 2 - 7);
-    g.fillText(dtx.split(' ')[1], rx + rxw / 2, by + bh / 2 + 7);
-    var mx2 = rx - 34;
-    g.strokeStyle = bd; g.lineWidth = 1.2;
-    g.beginPath(); g.moveTo(mx2, by + bh / 2); g.lineTo(rx, by + bh / 2); g.stroke();
-    g.beginPath(); g.moveTo(mx2, by + bh + 6); g.lineTo(mx2, by - 10); g.stroke();
-    g.beginPath(); g.moveTo(mx2 - 9, by + bh + 6); g.lineTo(mx2 + 9, by + bh + 6); g.stroke();
+    var now = shareAt(S.m);
+    g.strokeStyle = t.axis; g.lineWidth = 1; g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(_px(P.X(S.m)), P.y0); g.lineTo(_px(P.X(S.m)), P.y1); g.stroke();
+    g.setLineDash([]);
+    P.unclip(g);
 
-    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('radio path', (mx + mx2) / 2, by + bh / 2 - 6);
+    var dotR = Math.max(2.5, Math.min(6, P.h * 0.016));
+    g.fillStyle = t.s1;
+    g.beginPath(); g.arc(P.X(S.m), P.Y(now.sb), dotR, 0, TAU); g.fill();
 
-    var yb = 108, hh = 34;
-    g.fillStyle = txt; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('every watt the transmitter sends: ' + P.tot.toFixed(4) + ' W total', l, yb - 6);
-
-    if (P.tot < 1e-9) {
-      g.strokeStyle = bd; g.lineWidth = 1; g.setLineDash([4, 4]);
-      g.strokeRect(l, yb, rr - l, hh);
-      g.setLineDash([]);
-      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText('no signal at all — the message amplitude m is zero', (l + rr) / 2, yb + hh / 2);
+    leader(g, P.X(S.m), P.Y(now.sb), 'now, ' + now.sb.toFixed(1) + NBSP + '%',
+      { box: P, colour: t.s1, size: af, dy: now.sb > 60 ? 30 : -28, dot: false });
+    if (isAm) {
+      var at1 = shareAt(1, 'am').sb;
+      leader(g, P.X(1), P.Y(at1), 'best AM, ' + at1.toFixed(1) + NBSP + '%',
+        { box: P, colour: t.s2, size: af, dx: -34, dy: -30 });
+      leader(g, P.X((1 + MMAX) / 2), P.Y(50), 'overmodulated',
+        { box: P, colour: t.bad, size: af, dx: 20, dy: -34, dot: false });
     } else {
-      var fcar = P.car / P.tot, fsb = P.sb / P.tot;
-      var wcar = (rr - l) * fcar, wsb = (rr - l) * fsb;
-      g.fillStyle = s2; g.fillRect(l, yb, wcar, hh);
-      g.fillStyle = s1; g.fillRect(l + wcar, yb, wsb, hh);
-      g.strokeStyle = bd; g.lineWidth = 1; g.strokeRect(l, yb, rr - l, hh);
-      var onf = cvv('--on-fill');
-      g.font = fnt(12); g.textBaseline = 'middle';
-      if (wcar > 46) {
-        g.fillStyle = onf; g.textAlign = 'center';
-        g.fillText((fcar * 100).toFixed(1) + '%', l + wcar / 2, yb + hh / 2);
-      }
-      if (wsb > 46) {
-        g.fillStyle = onf; g.textAlign = 'center';
-        g.fillText((fsb * 100).toFixed(1) + '%', l + wcar + wsb / 2, yb + hh / 2);
-      }
-      g.textBaseline = 'top'; g.font = fnt(11.5);
-      if (fcar > 0.001) {
-        g.fillStyle = s2; g.textAlign = 'left';
-        g.fillText('carrier — carries no information (' + P.car.toFixed(4) + ' W)', l, yb + hh + 7);
-      }
-      g.fillStyle = s1;
-      g.textAlign = fcar > 0.001 ? 'right' : 'left';
-      g.fillText('sidebands — this is the message (' + P.sb.toFixed(4) + ' W)', fcar > 0.001 ? rr : l, yb + hh + 7);
+      leader(g, P.X(MMAX * 0.72), P.Y(shareAt(MMAX * 0.72, 'am').sb), 'full AM would give this',
+        { box: P, colour: t.text2, size: af, dx: -30, dy: -30 });
     }
-
-    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('scheme: ' + schemeName() + ', modulation index m = ' + S.m.toFixed(2) + ', carrier at ' + (S.fc / 1000).toFixed(1) + ' kHz', l, yb + hh + 26);
   }
 
   function drawB() {
-    var c = $('cvB'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var s1 = cvv('--s1'), s2 = cvv('--s2');
-    var l = 46, rr = w - 12, top = 8, bot = h - 26;
-    var ph = (bot - top) / 3;
-    var mid = [top + ph * 0.5, top + ph * 1.5, top + ph * 2.5];
-
-    timeAxis(g, l, rr, bot, sub, bd);
-    var i;
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (i = 0; i < 3; i++) {
-      g.beginPath(); g.moveTo(l, mid[i]); g.lineTo(rr, mid[i]); g.stroke();
-    }
-
+    var c = $('cvB'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fs = tickFs(w), af = annFs(w), T = tms();
+    var ph = h / 3;
     var pMsg = Math.max(peakOf(msgTrace), 0.02);
-    var scM = (ph * 0.36) / pMsg;
-    g.strokeStyle = s1; g.lineWidth = 1.6;
-    curve(g, l, rr, mid[0], scM, msgTrace);
+    var pSig = Math.max(peakOf(sig), 0.02);
 
-    g.strokeStyle = s2; g.lineWidth = 1;
-    dense(g, l, rr, mid[1], ph * 0.36 / AC, carTrace);
+    var xTop = { min: 0, max: T, unit: 'ms', title: '' };
+    var xBot = { min: 0, max: T, unit: 'ms', label: 'time' };
 
-    var pSig = peakOf(sig);
-    var scS = (ph * 0.40) / pSig;
-    g.strokeStyle = s1; g.lineWidth = 1;
-    dense(g, l, rr, mid[2], scS, sig);
-    g.strokeStyle = s2; g.lineWidth = 1.7;
-    curve(g, l, rr, mid[2], scS, envl);
-    curve(g, l, rr, mid[2], scS, function (t) { return -envl(t); });
+    var P0 = graticule(g, { x: 0, y: 0, w: w, h: ph }, xTop,
+      { min: -pMsg * 1.15, max: pMsg * 1.15, unit: 'V', dec: 2 },
+      { fontSize: fs, title: S.sch === 'fdm' ? 'message on channel 1' : 'message m(t), scaled by m' });
+    P0.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 2;
+    curve(g, P0, msgTrace);
+    P0.unclip(g);
+    leader(g, P0.X(T * 0.18), P0.Y(msgTrace(tw() * 0.18)), 'message',
+      { box: P0, colour: t.s1, size: af, dy: -22 });
 
-    g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
-    var lbl0 = S.sch === 'fdm' ? 'message on channel 1 (V)' : 'message m(t), scaled by m (V)';
-    g.fillStyle = s1; g.fillText(lbl0, l + 4, top + 3);
-    g.fillStyle = s2; g.fillText('carrier at ' + (S.fc / 1000).toFixed(1) + ' kHz (V)', l + 4, top + ph + 3);
-    g.fillStyle = s1; g.fillText('modulated signal s(t) (V)', l + 4, top + 2 * ph + 3);
-    g.fillStyle = s2; g.textAlign = 'right'; g.fillText('envelope', rr - 4, top + 2 * ph + 3);
+    var P1 = graticule(g, { x: 0, y: ph, w: w, h: ph }, xTop,
+      { min: -AC * 1.15, max: AC * 1.15, unit: 'V', dec: 2 },
+      { fontSize: fs, title: 'carrier at ' + (S.fc / 1000).toFixed(1) + NBSP + 'kHz' });
+    P1.clip(g);
+    g.strokeStyle = t.s2; g.lineWidth = 1;
+    dense(g, P1, carTrace);
+    P1.unclip(g);
 
-    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
-    g.fillText(pMsg.toFixed(2), l - 5, mid[0] - ph * 0.36);
-    g.fillText('0', l - 5, mid[0]);
-    g.fillText(AC.toFixed(2), l - 5, mid[1] - ph * 0.36);
-    g.fillText('0', l - 5, mid[1]);
-    g.fillText(pSig.toFixed(2), l - 5, mid[2] - ph * 0.40);
-    g.fillText('0', l - 5, mid[2]);
-
+    var P2 = graticule(g, { x: 0, y: 2 * ph, w: w, h: h - 2 * ph }, xBot,
+      { min: -pSig * 1.1, max: pSig * 1.1, unit: 'V', dec: 2 },
+      { fontSize: fs, title: 'transmitted s(t), with its envelope' });
+    P2.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 1;
+    dense(g, P2, sig);
+    g.strokeStyle = t.s2; g.lineWidth = 1.8;
+    curve(g, P2, envl);
+    curve(g, P2, function (tt) { return -envl(tt); });
+    P2.unclip(g);
+    leader(g, P2.X(T * 0.3), P2.Y(envl(tw() * 0.3)), 'envelope',
+      { box: P2, colour: t.s2, size: af, dy: -24 });
     if (S.sch === 'am' && S.m > 1) {
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-      g.fillText('overmodulated — the envelope folds through zero', (l + rr) / 2, mid[2] + ph * 0.48);
+      leader(g, P2.X(T * 0.5), P2.Y(0), 'envelope folds through zero',
+        { box: P2, colour: t.bad, size: af, dx: -30, dy: -26 });
     }
   }
 
   function drawC() {
-    var c = $('cvC'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var s1 = cvv('--s1'), s2 = cvv('--s2'), s3 = cvv('--s3'), s4 = cvv('--s4');
-    var l = 50, rr = w - 14, top = 16, bot = h - 34;
-    var B = band(), ln = lines();
+    var c = $('cvC'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fs = tickFs(w), af = annFs(w);
+    var B = occBand(), ln = lines(), i, k;
     var pad = Math.max(B.bw * 0.35, bwOf(comps()) * 0.6);
     var flo = Math.max(0, B.lo - pad), fhi = B.hi + pad;
     if (fhi - flo < 1) fhi = flo + 1;
-    var X = function (f) { return l + (f - flo) / (fhi - flo) * (rr - l); };
-    var amax = 1e-3, i;
+    var amax = 1e-3;
     for (i = 0; i < ln.length; i++) if (ln[i].a > amax) amax = ln[i].a;
     amax = Math.max(amax, 0.05);
-    var Y = function (a) { return bot - (a / (amax * 1.18)) * (bot - top); };
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.beginPath(); g.moveTo(l, bot); g.lineTo(rr, bot); g.stroke();
-    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    var nT = 6, k;
-    for (k = 0; k <= nT; k++) {
-      var f = flo + (fhi - flo) * k / nT, x = X(f);
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(x, top); g.lineTo(x, bot); g.stroke();
-      g.fillStyle = sub;
-      g.fillText((f / 1000).toFixed(1), x, bot + 4);
-    }
-    g.textAlign = 'right'; g.fillText('frequency (kHz)', rr, bot + 17);
-    g.textAlign = 'right'; g.textBaseline = 'middle';
-    for (k = 0; k <= 2; k++) {
-      var av = amax * 1.18 * k / 2;
-      g.fillText(av.toFixed(2), l - 6, Y(av));
-    }
-    g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('amplitude (V)', 2, top - 12 > 0 ? top - 12 : 2);
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: flo / 1000, max: fhi / 1000, unit: 'kHz', label: 'frequency' },
+      { min: 0, max: amax * 1.18, unit: 'V', label: 'amplitude', dec: 2 },
+      { fontSize: fs });
+    var X = function (f) { return P.X(f / 1000); };
+    var Y = function (a) { return P.Y(a); };
 
     if (S.sch === 'fdm') {
       var sp = spacing(), W = bwOf(comps()), dsbm = S.fdmMode === 'dsb';
       var chLo = function (kk) { return S.fc + kk * sp - (dsbm ? W : 0); };
       var chHi = function (kk) { return S.fc + kk * sp + W; };
-      for (k = 0; k < S.nch; k++) {
-        var x0 = X(chLo(k)), x1 = X(chHi(k));
-        g.fillStyle = k % 2 === 0 ? s1 : s3;
-        g.globalAlpha = 0.10;
-        g.fillRect(x0, top, Math.max(x1 - x0, 1), bot - top);
-        g.globalAlpha = 1;
-      }
+      for (k = 0; k < S.nch; k++) band(g, P, X(chLo(k)), X(chHi(k)), k % 2 === 0 ? t.s1 : t.s5);
       if (!fdmPass()) {
         var ovx0 = null, ovx1 = null;
         for (k = 0; k + 1 < S.nch; k++) {
           var oLo = chLo(k + 1), oHi = chHi(k);
           if (oHi > oLo) {
-            var xa = X(oLo), xb = X(oHi);
-            g.fillStyle = cvv('--bad');
-            g.globalAlpha = 0.35;
-            g.fillRect(xa, top, Math.max(xb - xa, 1), bot - top);
-            g.globalAlpha = 1;
-            if (ovx0 === null) { ovx0 = xa; ovx1 = xb; }
+            band(g, P, X(oLo), X(oHi), t.bad);
+            band(g, P, X(oLo), X(oHi), t.bad);
+            if (ovx0 === null) { ovx0 = X(oLo); ovx1 = X(oHi); }
           }
         }
         if (ovx0 !== null) {
-          g.fillStyle = cvv('--bad'); g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
-          g.fillText('overlap — demultiplexing fails', Math.min((ovx0 + ovx1) / 2 + 6, rr - 170), (top + bot) / 2);
+          leader(g, (ovx0 + ovx1) / 2, P.y0 + P.h * 0.55, 'overlap, demultiplexing fails',
+            { box: P, colour: t.bad, size: af, dx: 22, dy: -26, dot: false });
         }
       }
     }
     if (S.sch === 'vsb') {
       var Wv = bwOf(comps()), fvv2 = vsbFv();
-      var Hf = function (f) {
-        var d = f - S.fc;
-        if (d < -fvv2 || d > Wv) return 0;
-        if (d <= fvv2) return (d + fvv2) / (2 * fvv2);
-        return 1;
-      };
-      g.strokeStyle = s4; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.save();
+      g.strokeStyle = t.s4; g.lineWidth = 1.4; g.setLineDash([5, 4]);
       g.beginPath();
       g.moveTo(X(S.fc - fvv2), Y(0));
       g.lineTo(X(S.fc + fvv2), Y(amax));
       g.lineTo(X(S.fc + Wv), Y(amax));
       g.lineTo(X(S.fc + Wv), Y(0));
       g.stroke();
-      g.setLineDash([]);
-      var lx = X(S.fc), ly = Y(Hf(S.fc) * amax);
-      g.strokeStyle = s4; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(lx, ly); g.lineTo(lx - 26, ly - 20); g.stroke();
-      g.fillStyle = s4; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
-      g.fillText('vestige', lx - 28, ly - 20);
+      g.restore();
+      leader(g, X(S.fc), Y(amax / 2), 'vestigial filter',
+        { box: P, colour: t.s4, size: af, dx: -28, dy: -26 });
     }
 
+    P.clip(g);
+    var dotR = Math.max(2.5, Math.min(6, P.h * 0.02));
     for (i = 0; i < ln.length; i++) {
-      var col = ln[i].kind === 'car' ? s2 : ln[i].kind === 'q' ? s4 : ln[i].kind === 'ch' ? (ln[i].ch % 2 === 0 ? s1 : s3) : s1;
+      var col = ln[i].kind === 'car' ? t.s2 : ln[i].kind === 'q' ? t.s4
+              : ln[i].kind === 'ch' ? (ln[i].ch % 2 === 0 ? t.s1 : t.s5) : t.s1;
       var x = X(ln[i].f);
-      if (x < l - 1 || x > rr + 1) continue;
-      g.strokeStyle = col; g.lineWidth = ln[i].kind === 'car' ? 3 : 2.2;
-      g.beginPath(); g.moveTo(x, bot); g.lineTo(x, Y(ln[i].a)); g.stroke();
+      if (x < P.x0 - 1 || x > P.x1 + 1) continue;
+      g.strokeStyle = col; g.lineWidth = ln[i].kind === 'car' ? 3 : 2;
+      g.beginPath(); g.moveTo(x, Y(0)); g.lineTo(x, Y(ln[i].a)); g.stroke();
       g.fillStyle = col;
-      g.beginPath(); g.arc(x, Y(ln[i].a), 2.6, 0, 7); g.fill();
+      g.beginPath(); g.arc(x, Y(ln[i].a), dotR, 0, TAU); g.fill();
     }
+    P.unclip(g);
 
-    var yb = top + 6;
-    g.strokeStyle = mut; g.lineWidth = 1;
-    g.beginPath();
-    g.moveTo(X(B.lo), yb); g.lineTo(X(B.hi), yb);
-    g.moveTo(X(B.lo), yb - 4); g.lineTo(X(B.lo), yb + 4);
-    g.moveTo(X(B.hi), yb - 4); g.lineTo(X(B.hi), yb + 4);
-    g.stroke();
-    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('occupied bandwidth ' + (B.bw / 1000).toFixed(2) + ' kHz', (X(B.lo) + X(B.hi)) / 2, yb + 5);
+    var yb = P.y0 + P.h * 0.10;
+    dimension(g, X(B.lo), yb, X(B.hi), yb, (B.bw / 1000).toFixed(2) + NBSP + 'kHz occupied', { size: af });
 
     if (S.sch === 'am' && S.m > 0.02) {
-      var cx = X(S.fc);
-      g.fillStyle = s2; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-      g.fillText('carrier', cx, Y(AC) - 6);
-      var sx = X(S.fc + comps()[0].f);
-      g.fillStyle = s1; g.textAlign = 'left';
-      g.fillText('sideband', sx + 4, Y(AC * S.m * comps()[0].a / 2) - 5);
-    }
-    if (S.sch === 'qam') {
-      g.fillStyle = s4; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-      g.fillText('violet lines: the quadrature channel', l + 6, top + 26);
+      leader(g, X(S.fc), Y(AC), 'carrier, no information',
+        { box: P, colour: t.s2, size: af, dx: -30, dy: 26 });
+      leader(g, X(S.fc + comps()[0].f), Y(AC * S.m * comps()[0].a / 2), 'sideband',
+        { box: P, colour: t.s1, size: af, dx: 26, dy: -24 });
+    } else if (S.sch === 'qam') {
+      leader(g, X(S.fc + comps()[0].f * 0.6), Y(AC * S.m * comps()[0].a / 2), 'quadrature channel',
+        { box: P, colour: t.s4, size: af, dx: 26, dy: -26 });
+    } else if (S.sch !== 'fdm' && ln.length) {
+      leader(g, X(ln[0].f), Y(ln[0].a), 'sideband',
+        { box: P, colour: t.s1, size: af, dx: 26, dy: -24 });
     }
     if (S.sch === 'fdm') {
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.save();
+      g.fillStyle = t.text2; g.font = t.font(fs); g.textAlign = 'center'; g.textBaseline = 'bottom';
       for (k = 0; k < S.nch; k++) {
         var xc = X(S.fc + k * spacing() + (S.fdmMode === 'dsb' ? 0 : bwOf(comps()) / 2));
-        if (xc > l && xc < rr) g.fillText('ch ' + (k + 1), xc, bot - 4);
+        if (xc > P.x0 + 6 && xc < P.x1 - 6) g.fillText('ch' + NBSP + (k + 1), xc, P.y1 - 4);
       }
+      g.restore();
     }
   }
 
   function drawD() {
-    var c = $('cvD'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var s3 = cvv('--s3'), s4 = cvv('--s4');
-    var l = 46, rr = w - 12, top = 22, bot = h - 26;
-    var mid = (top + bot) / 2;
+    var c = $('cvD'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fs = tickFs(w), af = annFs(w), T = tms();
+    var pk = Math.max(peakOf(function (tt) { return recov(tt, 0); }),
+                      peakOf(function (tt) { return refTrace(tt, 0); }), 0.02);
+    if (S.sch === 'qam') pk = Math.max(pk, peakOf(function (tt) { return recov(tt, 1); }));
 
-    timeAxis(g, l, rr, bot, sub, bd);
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.beginPath(); g.moveTo(l, mid); g.lineTo(rr, mid); g.stroke();
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: T, unit: 'ms', label: 'time' },
+      { min: -pk * 1.15, max: pk * 1.15, unit: 'V', label: 'recovered', dec: 2 },
+      { fontSize: fs });
 
-    var pk = Math.max(peakOf(function (t) { return recov(t, 0); }),
-                      peakOf(function (t) { return refTrace(t, 0); }), 0.02);
-    if (S.sch === 'qam') pk = Math.max(pk, peakOf(function (t) { return recov(t, 1); }));
-    var sc = (mid - top) * 0.80 / pk;
-
-    g.strokeStyle = mut; g.lineWidth = 1.4;
-    curve(g, l, rr, mid, sc, function (t) { return refTrace(t, 0); }, [5, 4]);
-    g.strokeStyle = s3; g.lineWidth = 1.9;
-    curve(g, l, rr, mid, sc, function (t) { return recov(t, 0); });
+    P.clip(g);
+    g.strokeStyle = t.text2; g.lineWidth = 1.5;
+    curve(g, P, function (tt) { return refTrace(tt, 0); }, [6, 4]);
+    g.strokeStyle = t.s5; g.lineWidth = 2;
+    curve(g, P, function (tt) { return recov(tt, 0); });
     if (S.sch === 'qam') {
-      g.strokeStyle = s4; g.lineWidth = 1.6;
-      curve(g, l, rr, mid, sc, function (t) { return recov(t, 1); });
+      g.strokeStyle = t.s4; g.lineWidth = 1.8;
+      curve(g, P, function (tt) { return recov(tt, 1); });
     }
+    P.unclip(g);
 
-    g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillStyle = mut; g.fillText('original message (dashed)', l + 4, top - 16);
-    g.fillStyle = s3; g.textAlign = 'center';
-    g.fillText(S.sch === 'qam' ? 'recovered I channel' : 'recovered message', (l + rr) / 2, top - 16);
-    if (S.sch === 'qam') {
-      g.fillStyle = s4; g.textAlign = 'right';
-      g.fillText('recovered Q channel', rr - 4, top - 16);
+    var tp = T * 0.22, vp = recov(tw() * 0.22, 0);
+    leader(g, P.X(tp), P.Y(vp), S.sch === 'qam' ? 'recovered I' : 'recovered',
+      { box: P, colour: t.s5, size: af, dy: vp > 0 ? -26 : 26 });
+    var tr = T * 0.62;
+    leader(g, P.X(tr), P.Y(refTrace(tw() * 0.62, 0)), 'sent',
+      { box: P, colour: t.text2, size: af, dx: -30, dy: -26 });
+    if (S.sch !== 'am' && S.sch !== 'ssb' && S.phi > 0.5) {
+      leader(g, P.X(T * 0.85), P.Y(pk * 0.6), 'cos φ = ' + Math.cos(S.phi * Math.PI / 180).toFixed(3),
+        { box: P, colour: t.warn, size: af, dx: -30, dy: -28, dot: false });
     }
-    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'middle';
-    g.fillText(pk.toFixed(2), l - 5, mid - (mid - top) * 0.80);
-    g.fillText('0', l - 5, mid);
-    g.fillText('-' + pk.toFixed(2), l - 5, mid + (mid - top) * 0.80);
-    g.save();
-    g.translate(12, mid); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top'; g.font = fnt(10);
-    g.fillText('recovered (V)', 0, 0);
-    g.restore();
   }
+
 
   function schemeName() {
     return { am: 'full AM', dsb: 'DSBSC', ssb: 'SSB (upper sideband)', vsb: 'VSB (vestigial sideband)', qam: 'QAM', fdm: 'FDM' }[S.sch];
   }
 
+  function sw(tok, text, dash) {
+    return '<li><span class="sw' + (dash ? ' dash' : '') + '" style="' +
+      (dash ? 'color:' : 'background:') + 'var(' + tok + ')"></span>' + text + '</li>';
+  }
+
   function notes() {
-    var W = bwOf(comps()), P = powers(), phi = S.phi;
     var nA = [], nB = [], nC = [], nD = [];
 
-    nA.push('The bar is the whole transmitter output, split by where the power actually goes.');
-    if (S.sch === 'am') {
-      nA.push('The coral part is the carrier. It is a bare tone at ' + (S.fc / 1000).toFixed(1) + ' kHz and it would still be there if you stopped talking.');
-      nA.push('Raising m moves power from coral to blue, but m cannot pass 1 without breaking the envelope detector.');
-    } else if (S.sch === 'fdm') {
-      nA.push('There is no carrier line at all, so every watt is message. The cost has moved to bandwidth instead.');
-      nA.push('Each of the ' + S.nch + ' channels carries its own message on its own carrier frequency.');
-    } else {
-      nA.push('There is no coral part: the carrier has been suppressed, so all of the power carries information.');
-      nA.push('The receiver now needs its own copy of the carrier, which is what the phase and frequency error sliders disturb.');
+    nA.push(sw('--series-1', 'sideband share'));
+    nA.push(sw('--series-2', 'carrier share'));
+    if (S.sch !== 'am') nA.push(sw('--text-secondary', 'full AM, for comparison', true));
+    else nA.push(sw('--bad', 'shaded — overmodulated'));
+
+    nB.push(sw('--series-1', 'message and s(t)'));
+    nB.push(sw('--series-2', 'carrier and envelope'));
+
+    nC.push(sw('--series-1', S.sch === 'fdm' ? 'odd channels' : 'sidebands'));
+    if (S.sch === 'am') nC.push(sw('--series-2', 'carrier line'));
+    if (S.sch === 'qam') nC.push(sw('--series-4', 'quadrature channel'));
+    if (S.sch === 'vsb') nC.push(sw('--series-4', 'vestigial filter', true));
+    if (S.sch === 'fdm') {
+      nC.push(sw('--series-5', 'even channels'));
+      if (!fdmPass()) nC.push(sw('--bad', 'shaded — channels overlap'));
     }
 
-    nB.push('Top trace is the message. Middle trace is the bare carrier. Bottom trace is what is actually transmitted.');
-    nB.push('The coral outline on the bottom trace is the envelope, the shape the peaks trace out.');
-    if (S.sch === 'am') {
-      nB.push(S.m <= 1
-        ? 'The envelope is a faithful copy of the message sitting on a constant offset, so a diode and a capacitor can recover it.'
-        : 'With m above 1 the term 1 + m·m(t) goes negative, the envelope folds back up, and the recovered shape is no longer the message.');
-    } else if (S.sch === 'dsb') {
-      nB.push('The envelope is the absolute value of the message, so it goes to zero and back and the carrier flips phase there. An envelope detector would recover the wrong shape.');
-    } else if (S.sch === 'ssb') {
-      nB.push('For a single tone the envelope is flat, because one sideband on its own is just a single sinusoid at '
-        + ((S.fc + W) / 1000).toFixed(2) + ' kHz. A two-tone message brings the envelope back to life.');
-    } else if (S.sch === 'vsb') {
-      nB.push('With a small vestige this looks like SSB; grow f_v towards W and it heads back towards DSBSC.');
-    } else if (S.sch === 'qam') {
-      nB.push('Two independent messages ride on carriers 90 degrees apart, so the envelope is the length of the vector they form.');
-    } else {
-      nB.push('The bottom trace is all ' + S.nch + ' channels added together. It looks like noise because it is several unrelated signals sharing one wire.');
-    }
+    nD.push(sw('--text-secondary', 'message that was sent', true));
+    nD.push(sw('--series-5', S.sch === 'qam' ? 'recovered I channel' : 'recovered message'));
+    if (S.sch === 'qam') nD.push(sw('--series-4', 'recovered Q channel'));
 
-    nC.push('Each vertical line is one real sinusoid; the dot height is its amplitude in volts, so the picture is to scale.');
-    if (S.sch === 'am') {
-      nC.push('The tall coral line in the middle is the carrier at 1.000 V. The blue lines beside it are the sidebands, each at m · A_c · a/2 = '
-        + (S.m * comps()[0].a / 2).toFixed(3) + ' V.');
-      nC.push('Even at m = 1 each sideband is only half the carrier height, and power goes as amplitude squared, which is where the 33.3 per cent limit comes from.');
-    } else if (S.sch === 'dsb') {
-      nC.push('The centre line is gone. The two sidebands are mirror images, so half of what is sent is redundant.');
-    } else if (S.sch === 'ssb') {
-      nC.push('Only the upper sideband survives. The bandwidth is W = ' + (W / 1000).toFixed(2) + ' kHz instead of 2W = ' + (2 * W / 1000).toFixed(2) + ' kHz, and the transmitted power is halved as well.');
-    } else if (S.sch === 'vsb') {
-      nC.push('<span style="display:inline-block;width:10px;height:10px;background:var(--s4);border-radius:2px;vertical-align:-1px;"></span> dashed — the vestigial filter');
-      nC.push('The lower-sideband remnant shrinks as its twin above the carrier grows, so their sum never changes.');
-    } else if (S.sch === 'qam') {
-      nC.push('Blue lines are the in-phase channel, violet lines the quadrature channel. Both fit inside the same 2W = ' + (2 * W / 1000).toFixed(2) + ' kHz.');
-    } else {
-      var bnd = fdmBound();
-      nC.push('Each shaded block is one ' + (S.fdmMode === 'dsb' ? 'DSBSC channel of width 2W = ' + (2 * W / 1000).toFixed(2) : 'SSB channel of width W = ' + (W / 1000).toFixed(2)) + ' kHz.');
-      nC.push(fdmPass()
-        ? 'Spacing ' + (spacing() / 1000).toFixed(2) + ' kHz clears the limit of ' + (bnd / 1000).toFixed(2) + ' kHz, so the channels stay apart.'
-        : 'Spacing ' + (spacing() / 1000).toFixed(2) + ' kHz is at or below the limit of ' + (bnd / 1000).toFixed(2) + ' kHz — the red region is shared by two channels.');
-    }
-
-    nD.push('The dashed grey curve is the message that was sent. The green curve is what came out of the detector.');
-    if (S.sch === 'am') {
-      nD.push('An envelope detector is non-coherent: it has no local oscillator, so the phase and frequency error sliders do nothing here.');
-      nD.push(S.m <= 1 ? 'The two curves lie on top of each other, which is the whole appeal of full AM.'
-                       : 'The two curves have parted company. This is what overmodulation sounds like.');
-    } else if (S.sch === 'dsb' || S.sch === 'vsb') {
-      nD.push('The output amplitude scales as cos φ. At φ = ' + phi.toFixed(0) + '° that factor is ' + Math.cos(phi * Math.PI / 180).toFixed(3) + ', and at 90° the output disappears completely.');
-      if (S.df > 0) nD.push('The frequency error adds a beat at cos(2π · ' + S.df.toFixed(0) + ' t), so the recovered message swells and fades ' + S.df.toFixed(0) + ' times a second.');
-      if (S.sch === 'vsb') nD.push('The recovered amplitude does not depend on f_v: the two vestige lines always sum to the full sideband.');
-    } else if (S.sch === 'fdm') {
-      nD.push(fdmPass()
-        ? 'Spacing obeys f₂ − f₁ > ' + (S.fdmMode === 'dsb' ? 'W₁ + W₂' : 'W') + ', so channel 1 comes back clean.'
-        : 'The neighbour channel has spilled into channel 1\'s filter — the extra ripple on the green curve is its sideband.');
-    } else if (S.sch === 'ssb') {
-      nD.push('A phase error rotates the recovered tone rather than shrinking it, so the amplitude survives. Compare this with DSBSC at the same phase error.');
-      nD.push(S.df > 0
-        ? 'A frequency error is the real problem: every component of the message has moved down by ' + S.df.toFixed(0) + ' Hz, so a 1.00 kHz tone comes back at ' + ((FM - S.df) / 1000).toFixed(3) + ' kHz.'
-        : 'Drag the frequency error slider to see the defect single sideband cannot survive.');
-    } else {
-      nD.push('Green is the in-phase channel, violet the quadrature channel. With no phase error each one recovers its own message and ignores the other.');
-      nD.push('A phase error lets each channel leak into the other; the crosstalk amplitude scales as sin φ, which at φ = ' + phi.toFixed(0) + '° is ' + Math.sin(phi * Math.PI / 180).toFixed(3) + '.');
-    }
-
-    var put = function (id, arr) {
-      $(id).innerHTML = arr.map(function (x) { return '<li>' + x + '</li>'; }).join('');
-    };
+    var put = function (id, arr) { $(id).innerHTML = arr.join(''); };
     put('nA', nA); put('nB', nB); put('nC', nC); put('nD', nD);
   }
 
   function updateUI() {
     computeEnvMean();
-    var c = comps(), mu = muOf(c), W = bwOf(c), P = powers(), B = band(), m = S.m;
-
-    $('miv').textContent = m.toFixed(2);
-    $('fcv').textContent = (S.fc / 1000).toFixed(1) + ' kHz';
-    $('phv').textContent = S.phi.toFixed(0) + '°';
-    $('dfv').textContent = S.df.toFixed(0) + ' Hz';
-    $('ncv').textContent = S.nch.toFixed(0);
-    $('fvv').textContent = (S.fv * W / 1000).toFixed(2) + ' kHz';
-    $('spv').textContent = (spacing() / 1000).toFixed(2) + ' kHz';
+    var c = comps(), mu = muOf(c), W = bwOf(c), P = powers(), B = occBand(), m = S.m;
 
     var coh = S.sch !== 'am';
-    $('ph').disabled = !coh;
-    $('df').disabled = !coh;
-    $('nc').disabled = S.sch !== 'fdm';
-    $('sp').disabled = S.sch !== 'fdm';
+    setEnabled('ph', coh); setEnabled('df', coh);
+    setEnabled('nc', S.sch === 'fdm'); setEnabled('sp', S.sch === 'fdm');
+    setEnabled('fv', S.sch === 'vsb');
     $('fdb').disabled = S.sch !== 'fdm';
     $('fsb').disabled = S.sch !== 'fdm';
-    $('fv').disabled = S.sch !== 'vsb';
-    $('ctlnote').textContent = coh
+    $('ctlnote').innerHTML = coh
       ? (S.sch === 'fdm'
-        ? 'The phase and frequency errors apply to the detector for channel 1. The channel count and carrier spacing set how the messages are stacked.'
+        ? 'Phase and frequency errors apply to the channel&nbsp;1 detector.'
         : S.sch === 'vsb'
-        ? 'The vestige width f_v sets how much of the lower sideband survives the filter.'
-        : 'The phase and frequency errors describe how far the receiver local oscillator has drifted from the true carrier.')
-      : 'Full AM uses an envelope detector, which has no local oscillator, so the phase and frequency error sliders are switched off here.';
+        ? 'f<sub>v</sub> sets how much lower sideband survives the filter.'
+        : 'Phase and frequency errors are local-oscillator drift.')
+      : 'An envelope detector has no local oscillator, so those two are off.';
 
-    $('cM').textContent = m.toFixed(2);
-    $('cMn').textContent = S.sch === 'am'
-      ? (m > 1 ? 'above 1 — overmodulated, the envelope detector fails' : (m === 1 ? 'at the limit for envelope detection' : 'm = A_m / A_c; the limit for envelope detection is 1'))
-      : 'here m scales the message; no carrier to overmodulate';
-    $('cM').style.color = (S.sch === 'am' && m > 1) ? 'var(--text-warning)' : '';
-
-    $('cP').textContent = P.tot.toFixed(4) + ' W';
+    $('cP').textContent = P.tot.toFixed(4) + NBSP + 'W';
 
     var okP = P.tot > 1e-9;
     var fcar = okP ? P.car / P.tot * 100 : 0;
     var fsb = okP ? P.sb / P.tot * 100 : 0;
-    $('cC').textContent = fcar.toFixed(1) + ' %';
-    $('cS').textContent = fsb.toFixed(1) + ' %';
+    $('cC').textContent = fcar.toFixed(1) + NBSP + '%';
     $('cCn').textContent = okP
-      ? (S.sch === 'am' ? P.car.toFixed(4) + ' W of pure carrier, wasted' : 'carrier fully suppressed')
+      ? (S.sch === 'am' ? P.car.toFixed(4) + NBSP + 'W of pure carrier' : 'carrier fully suppressed')
       : 'no signal at m = 0';
-    $('cSn').textContent = okP
-      ? (S.sch === 'am' ? 'η = m²〈m²(t)〉 / (1 + m²〈m²(t)〉)' : 'all of the power carries information')
-      : 'no signal at m = 0';
-    $('cS').style.color = okP && fsb >= 50 ? 'var(--text-good)' : '';
 
-    $('cB').textContent = (B.bw / 1000).toFixed(2) + ' kHz';
-    $('cBn').textContent = S.sch === 'ssb' ? 'W, one sideband only'
-      : S.sch === 'vsb' ? 'between SSB W and DSB 2W'
-      : S.sch === 'fdm' ? '(N − 1)·spacing + ' + (S.fdmMode === 'dsb' ? '2W' : 'W')
-      : S.sch === 'qam' ? '2W, but carrying two messages'
+    var dlNow = detLoss();
+    if (!isFinite(dlNow)) dlNow = 60;
+    $('heroVal').innerHTML = fsb.toFixed(1) + '<span class="u">%</span>';
+    var badge = $('heroBadge'), cls = 'badge', txt;
+    if (!okP) { cls += ' warn'; txt = 'no signal'; }
+    else if (S.sch === 'am' && m > 1) { cls += ' bad'; txt = 'overmodulated'; }
+    else if (S.sch === 'fdm' && !fdmPass()) { cls += ' bad'; txt = 'channels overlap'; }
+    else if (dlNow >= 3) { cls += ' warn'; txt = 'detector losing signal'; }
+    else if (fsb >= 50) { cls += ' good'; txt = 'carrier suppressed'; }
+    else { cls += ' warn'; txt = 'carrier dominates'; }
+    badge.className = cls;
+    badge.textContent = txt;
+    $('heroFt').textContent = schemeName() + ' · ' + (B.bw / 1000).toFixed(2) + NBSP + 'kHz occupied';
+
+
+    $('cB').textContent = (B.bw / 1000).toFixed(2) + NBSP + 'kHz';
+    $('cBn').innerHTML = S.sch === 'ssb' ? 'W, one sideband only'
+      : S.sch === 'vsb' ? 'between W and 2W'
+      : S.sch === 'fdm' ? '(N &minus; 1)·spacing + ' + (S.fdmMode === 'dsb' ? '2W' : 'W')
+      : S.sch === 'qam' ? '2W, carrying two messages'
       : '2W, both sidebands';
 
     if (S.sch === 'fdm') {
       var ok = fdmPass();
       $('cR').textContent = ok ? 'pass' : 'fail';
       $('cR').style.color = ok ? 'var(--good)' : 'var(--bad)';
-      $('cRn').textContent = S.fdmMode === 'dsb' ? 'needs f₂ − f₁ > W₁ + W₂' : 'needs f₂ − f₁ > W';
+      $('cRn').innerHTML = S.fdmMode === 'dsb'
+        ? 'needs f<sub>2</sub> &minus; f<sub>1</sub> &gt; W<sub>1</sub> + W<sub>2</sub>'
+        : 'needs f<sub>2</sub> &minus; f<sub>1</sub> &gt; W';
     } else {
       $('cR').textContent = '—';
       $('cR').style.color = '';
       $('cRn').textContent = 'FDM only';
     }
 
-    var dl = detLoss();
-    if (!isFinite(dl)) dl = 60;
-    $('cD').textContent = dl >= 59.99 ? '≥ 60.0 dB' : dl.toFixed(2) + ' dB';
+    var dl = dlNow;
+    $('cD').textContent = dl >= 59.99 ? '≥ 60.0' + NBSP + 'dB' : dl.toFixed(2) + NBSP + 'dB';
     var xt = 20 * L10(Math.max(Math.abs(Math.sin(S.phi * Math.PI / 180)), 1e-3));
-    $('cDn').textContent = S.sch === 'am'
-      ? (m > 1 ? 'envelope shape error from overmodulation' : 'envelope detector, non-coherent — no loss')
-      : (S.sch === 'dsb' || S.sch === 'vsb' || (S.sch === 'fdm' && S.fdmMode === 'dsb')) ? '−20 log₁₀|cos φ| at φ = ' + S.phi.toFixed(0) + '°'
-      : S.sch === 'qam' ? 'wanted × cos φ; crosstalk ' + (xt <= -59.99 ? '≤ −60' : '−' + Math.abs(xt).toFixed(1)) + ' dB'
-      : 'phase error rotates, it does not attenuate';
-    $('cD').style.color = dl >= 3 ? 'var(--text-warning)' : '';
+    $('cDn').innerHTML = S.sch === 'am'
+      ? (m > 1 ? 'envelope shape error' : 'non-coherent, no loss')
+      : (S.sch === 'dsb' || S.sch === 'vsb' || (S.sch === 'fdm' && S.fdmMode === 'dsb'))
+        ? '&minus;20&nbsp;log<sub>10</sub>|cos&nbsp;&phi;| at &phi; = ' + S.phi.toFixed(0) + '&deg;'
+      : S.sch === 'qam' ? 'crosstalk ' + (xt <= -59.99 ? '≤ &minus;60' : '&minus;' + Math.abs(xt).toFixed(1)) + '&nbsp;dB'
+      : 'phase rotates, does not attenuate';
+    $('cD').style.color = dl >= 3 ? 'var(--warn)' : '';
 
     var pc = AC * AC / 2;
     var wk = [];
     wk.push('Message mean square 〈m²(t)〉 = ' + mu.toFixed(4) + ' for the ' + (S.msg === 'tone' ? 'single tone' : 'two-tone') + ' message, peak normalised to 1.');
-    wk.push('Unmodulated carrier power P_c = A_c²/2 = 1²/2 = ' + pc.toFixed(4) + ' W.');
+    wk.push('Unmodulated carrier power P<sub>c</sub> = A<sub>c</sub>²/2 = 1²/2 = ' + pc.toFixed(4) + ' W.');
     wk.push('m²〈m²(t)〉 = ' + (m * m).toFixed(4) + ' × ' + mu.toFixed(4) + ' = ' + (m * m * mu).toFixed(4) + '.');
     if (S.sch === 'am') {
-      wk.push('Total power P_t = P_c(1 + m²〈m²(t)〉) = ' + pc.toFixed(4) + ' × ' + (1 + m * m * mu).toFixed(4) + ' = ' + P.tot.toFixed(4) + ' W.');
-      wk.push('Sideband power = P_t − P_c = ' + P.tot.toFixed(4) + ' − ' + pc.toFixed(4) + ' = ' + P.sb.toFixed(4) + ' W.');
+      wk.push('Total power P<sub>t</sub> = P<sub>c</sub>(1 + m²〈m²(t)〉) = ' + pc.toFixed(4) + ' × ' + (1 + m * m * mu).toFixed(4) + ' = ' + P.tot.toFixed(4) + ' W.');
+      wk.push('Sideband power = P<sub>t</sub> − P<sub>c</sub> = ' + P.tot.toFixed(4) + ' − ' + pc.toFixed(4) + ' = ' + P.sb.toFixed(4) + ' W.');
       if (S.msg === 'tone') {
         wk.push('Sideband fraction η = m²/(2 + m²) = ' + (m * m).toFixed(4) + ' / ' + (2 + m * m).toFixed(4) + ' = ' + (okP ? (fsb / 100).toFixed(4) : '0.0000') + ', that is ' + fsb.toFixed(1) + ' per cent.');
       } else {
         wk.push('Sideband fraction η = ' + P.sb.toFixed(4) + ' / ' + P.tot.toFixed(4) + ' = ' + (okP ? (fsb / 100).toFixed(4) : '0.0000') + ', that is ' + fsb.toFixed(1) + ' per cent. Two tones spread the peak, so η is lower than the single-tone m²/(2 + m²).');
       }
     } else {
-      wk.push('No carrier line, so P_t is sidebands only: ' + P.tot.toFixed(4) + ' W, and the sideband fraction is ' + fsb.toFixed(1) + ' per cent.');
+      wk.push('No carrier line, so P<sub>t</sub> is sidebands only: ' + P.tot.toFixed(4) + ' W, and the sideband fraction is ' + fsb.toFixed(1) + ' per cent.');
       if (S.sch === 'ssb') wk.push('Removing one sideband halves the DSBSC power: ' + (2 * P.tot).toFixed(4) + ' W becomes ' + P.tot.toFixed(4) + ' W.');
       if (S.sch === 'vsb') {
         var fvh = vsbFv();
-        wk.push('Vestige width f_v = ' + (S.fv).toFixed(2) + '·W = ' + (fvh / 1000).toFixed(2) + ' kHz.');
+        wk.push('Vestige width f<sub>v</sub> = ' + (S.fv).toFixed(2) + '·W = ' + (fvh / 1000).toFixed(2) + ' kHz.');
         c.forEach(function (cc) {
           var wt = vsbWts(cc.f), half = m * cc.a / 2;
           wk.push('Tone at ' + (cc.f / 1000).toFixed(2) + ' kHz: USB ' + (half * wt.u).toFixed(3) + ' V, LSB ' + (half * wt.l).toFixed(3)
-            + ' V; the coherent detector sums the pair to ' + (half * (wt.u + wt.l)).toFixed(3) + ' V = m·A_c·a/2 — flat for any f_v.');
+            + ' V; the coherent detector sums the pair to ' + (half * (wt.u + wt.l)).toFixed(3) + ' V = m·A<sub>c</sub>·a/2 — flat for any f<sub>v</sub>.');
         });
       }
       if (S.sch === 'qam') wk.push('Two channels, each the size of one DSBSC signal, so the power is doubled while the bandwidth is not.');
       if (S.sch === 'fdm') {
         wk.push(S.nch + ' ' + (S.fdmMode === 'dsb' ? 'DSBSC' : 'single-sideband') + ' channels, each ' + (P.tot / Math.max(S.nch, 1)).toFixed(4) + ' W.');
-        wk.push('Spacing = ' + (spacing() / 1000).toFixed(2) + ' kHz vs ' + (S.fdmMode === 'dsb' ? 'W₁ + W₂' : 'W') + ' = ' + (fdmBound() / 1000).toFixed(2) + ' kHz — ' + (fdmPass() ? 'pass.' : 'fail: the channels overlap and demultiplexing fails.'));
+        wk.push('Spacing = ' + (spacing() / 1000).toFixed(2) + ' kHz vs ' + (S.fdmMode === 'dsb' ? 'W<sub>1</sub> + W<sub>2</sub>' : 'W') + ' = ' + (fdmBound() / 1000).toFixed(2) + ' kHz — ' + (fdmPass() ? 'pass.' : 'fail: the channels overlap and demultiplexing fails.'));
       }
     }
-    wk.push('Occupied bandwidth = ' + (S.sch === 'ssb' ? 'W' : S.sch === 'vsb' ? 'W + f_v' : S.sch === 'fdm' ? '(N − 1)·spacing + ' + (S.fdmMode === 'dsb' ? '2W' : 'W') : '2W') + ' = ' + (B.bw / 1000).toFixed(2) + ' kHz, with message bandwidth W = ' + (W / 1000).toFixed(2) + ' kHz.');
+    wk.push('Occupied bandwidth = ' + (S.sch === 'ssb' ? 'W' : S.sch === 'vsb' ? 'W + f<sub>v</sub>' : S.sch === 'fdm' ? '(N − 1)·spacing + ' + (S.fdmMode === 'dsb' ? '2W' : 'W') : '2W') + ' = ' + (B.bw / 1000).toFixed(2) + ' kHz, with message bandwidth W = ' + (W / 1000).toFixed(2) + ' kHz.');
     $('wk').innerHTML = wk.map(function (x) { return '<li>' + x + '</li>'; }).join('');
 
     var rcLo = 1 / S.fc, rcHi = 1 / W;
-    $('rcnote').innerHTML = 'The capacitor in an envelope detector has to be slow enough to ignore the carrier but fast enough to follow the message: 1/f_c ≪ RC ≪ 1/W. At f_c = '
+    $('rcnote').innerHTML = 'The envelope detector capacitor must be slow enough to ignore the carrier and fast enough to follow the message: 1/f<sub>c</sub> ≪ RC ≪ 1/W. At f<sub>c</sub> = '
       + (S.fc / 1000).toFixed(1) + ' kHz and W = ' + (W / 1000).toFixed(2) + ' kHz that is '
       + (rcLo * 1e6).toFixed(1) + ' µs ≪ RC ≪ ' + (rcHi * 1e6).toFixed(1)
       + ' µs, so a value near the geometric mean, about ' + (Math.sqrt(rcLo * rcHi) * 1e6).toFixed(1)
-      + ' µs, is a sensible starting point. Too fast and the ripple at f_c comes through; too slow and the capacitor cannot follow the message down and the output clips.';
+      + ' µs, is a sensible starting point. Too fast and the ripple at f<sub>c</sub> comes through; too slow and the capacitor cannot follow the message down and the output clips.';
 
     ['bam', 'bdsb', 'bssb', 'bvsb', 'bqam', 'bfdm'].forEach(function (id, i) {
       var k = ['am', 'dsb', 'ssb', 'vsb', 'qam', 'fdm'][i];
@@ -1012,14 +1405,23 @@ details[open] summary { margin-bottom: 0.7rem; }
     S.nch = +$('nc').value;
     S.fv = +$('fv').value;
     S.spm = +$('sp').value;
+    S.fm = +$('fm').value * 1000;
   }
+  function setEnabled(id, on) {
+    $(id).disabled = !on;
+    $(id + 'N').disabled = !on;
+  }
+  function setVal(id, v) { $(id).value = v; $(id + 'N').value = $(id).value; }
   function spRange() {
-    var el = $('sp');
-    if (S.fdmMode === 'dsb') { el.min = 1; el.max = 3; } else { el.min = 0.5; el.max = 2; }
+    var lo = S.fdmMode === 'dsb' ? 1 : 0.5, hi = S.fdmMode === 'dsb' ? 3 : 2;
+    $('sp').min = lo; $('sp').max = hi;
+    $('spN').min = lo; $('spN').max = hi;
   }
-  ['mi', 'fc', 'ph', 'df', 'nc', 'fv', 'sp'].forEach(function (id) {
-    $(id).addEventListener('input', function () { readInputs(); refresh(); });
+  var PAIRS = ['mi', 'fc', 'ph', 'df', 'nc', 'fv', 'sp', 'fm'];
+  PAIRS.forEach(function (id) {
+    bindPair($(id), $(id + 'N'), function () { readInputs(); refresh(); });
   });
+
   var setScheme = function (k) { return function () { S.sch = k; refresh(); }; };
   $('bam').addEventListener('click', setScheme('am'));
   $('bdsb').addEventListener('click', setScheme('dsb'));
@@ -1031,7 +1433,7 @@ details[open] summary { margin-bottom: 0.7rem; }
     return function () {
       S.fdmMode = mode;
       spRange();
-      $('sp').value = mode === 'dsb' ? 2.1 : 1.1;
+      setVal('sp', mode === 'dsb' ? 2.1 : 1.1);
       readInputs();
       refresh();
     };
@@ -1044,37 +1446,51 @@ details[open] summary { margin-bottom: 0.7rem; }
   function apply(st, txt) {
     S.sch = st.sch; S.msg = st.msg; S.fdmMode = st.fdmMode;
     spRange();
-    $('mi').value = st.m; $('fc').value = st.fc / 1000;
-    $('ph').value = st.phi; $('df').value = st.df; $('nc').value = st.nch;
-    $('fv').value = st.fv; $('sp').value = st.spm;
+    setVal('mi', st.m); setVal('fc', st.fc / 1000);
+    setVal('ph', st.phi); setVal('df', st.df); setVal('nc', st.nch);
+    setVal('fv', st.fv); setVal('sp', st.spm); setVal('fm', st.fm / 1000);
     readInputs();
     refresh();
-    $('tourtxt').textContent = txt;
+    if (txt != null) $('tourtxt').textContent = txt;
   }
-  var base = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4, fv: 0.3, spm: 2.1, fdmMode: 'dsb' };
+  var base = { sch: 'am', msg: 'tone', m: 0.6, fc: 20000, phi: 0, df: 0, nch: 4, fv: 0.3, spm: 2.1, fdmMode: 'dsb', fm: 1000 };
   function withState(o) {
     var r = {}, k;
     for (k in base) if (Object.prototype.hasOwnProperty.call(base, k)) r[k] = base[k];
     for (k in o) if (Object.prototype.hasOwnProperty.call(o, k)) r[k] = o[k];
     return r;
   }
+
+  var PRESETS = [
+    ['pAm', { sch: 'am', m: 0.8, fc: 20000, fm: 1000 }, 'AM broadcast: envelope detection, m = 0.80.'],
+    ['pSsb', { sch: 'ssb', msg: 'two', m: 1, fc: 30000, fm: 700 }, 'Amateur SSB: two-tone test, one sideband only.'],
+    ['pTv', { sch: 'vsb', m: 1, fc: 25000, fm: 1500, fv: 0.35 }, 'Analogue TV: VSB keeps a vestige of the lower sideband.'],
+    ['pFdm', { sch: 'fdm', fdmMode: 'ssb', m: 1, fc: 12000, fm: 900, nch: 6, spm: 1.3 }, 'FDM telephony: six SSB channels stacked in one band.']
+  ];
+  PRESETS.forEach(function (pr) {
+    $(pr[0]).addEventListener('click', function () {
+      apply(withState(pr[1]), pr[2]);
+      PRESETS.forEach(function (q) { $(q[0]).className = q[0] === pr[0] ? 'on' : ''; });
+    });
+  });
+
   $('t1').addEventListener('click', function () {
-    apply(withState({}), 'Step 1 — full AM at m = 0.60: only 15.3 per cent is message.');
+    apply(withState({}), 'Step 1 — full AM at m = 0.60: only 15.3 % is message.');
   });
   $('t2').addEventListener('click', function () {
-    apply(withState({ m: 1 }), 'Step 2 — m = 1.00: sidebands reach 33.3 per cent, AM\'s best.');
+    apply(withState({ m: 1 }), 'Step 2 — m = 1.00: sidebands reach 33.3 %, the best AM can do.');
   });
   $('t3').addEventListener('click', function () {
-    apply(withState({ m: 1.3 }), 'Step 3 — m = 1.30: overmodulated; the envelope folds and the detector fails.');
+    apply(withState({ m: 1.3 }), 'Step 3 — m = 1.30: the envelope folds and the detector fails.');
   });
   $('t4').addEventListener('click', function () {
-    apply(withState({ sch: 'dsb', m: 1, phi: 60 }), 'Step 4 — DSBSC, 60° phase error: no carrier, but output falls by cos 60°.');
+    apply(withState({ sch: 'dsb', m: 1, phi: 60 }), 'Step 4 — DSBSC at 60° phase error: output falls by cos 60°.');
   });
   $('t5').addEventListener('click', function () {
-    apply(withState({ sch: 'ssb', m: 1, phi: 60, df: 100 }), 'Step 5 — SSB shrugs off phase error; the 100 Hz frequency error hurts instead.');
+    apply(withState({ sch: 'ssb', m: 1, phi: 60, df: 100 }), 'Step 5 — SSB shrugs off phase error; 100 Hz of frequency error hurts.');
   });
   $('t6').addEventListener('click', function () {
-    apply(withState({ sch: 'vsb', msg: 'two', m: 1, fv: 0.6 }), 'Step 6 — VSB keeps a vestige; drag f_v — the recovery stays flat.');
+    apply(withState({ sch: 'vsb', msg: 'two', m: 1, fv: 0.6 }), 'Step 6 — VSB keeps a vestige; drag it, the recovery stays flat.');
   });
   $('t0').addEventListener('click', function () {
     apply(withState({}), 'Back to full AM: m = 0.60, tone 1.00 kHz, carrier 20.0 kHz.');
@@ -1082,8 +1498,9 @@ details[open] summary { margin-bottom: 0.7rem; }
 
   window.addEventListener('resize', drawAll);
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  if (mq.addEventListener) mq.addEventListener('change', drawAll);
-  else if (mq.addListener) mq.addListener(drawAll);
+  var onTheme = function () { theme.clear(); drawAll(); };
+  if (mq.addEventListener) mq.addEventListener('change', onTheme);
+  else if (mq.addListener) mq.addListener(onTheme);
 
   readInputs();
   refresh();

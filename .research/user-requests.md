@@ -2,6 +2,65 @@
 
 These come directly from the repository owner. They override conflicting guidance elsewhere.
 
+## Every tool — nothing may spill out of its box (owner, 2026-07-29)
+
+"Make sure the words don't spill out of the box, proper spacing and aspect." See the
+NO OVERFLOW section of STYLE.md for the required mechanics: measure canvas text with
+fitText/clampX before drawing, ≥10px padding inside every canvas box, thin out colliding
+tick labels instead of overlapping or shrinking below 12px, flip leader labels near edges;
+in HTML use border-box, min-width:0 on every flex/grid child, overflow-wrap:anywhere,
+tabular-nums on values, no fixed widths. Run the overflow console check and screenshot at
+375 and 1920 before reporting done — a label crossing a border is a defect, not a nitpick.
+
+## Every tool — minimal marks, on canvas AND in navigation (owner, 2026-07-29)
+
+Read `.research/icons.md` (same folder as this file) — mandatory. It covers TWO things:
+1. The seven category glyphs used on the hub and category pages (nowhere else).
+2. **Canvas hardware marks** — the masts, dishes, handsets and obstacles drawn inside the
+   tools. These are what the owner meant by "looks like cartoon". Single thin stroke, no
+   fills, geometric and orthographic like a datasheet figure, hardware in text colour with
+   only the signal in a series colour, real dimensions labelled with dimension arrows, and
+   absolutely no people, vehicles, buildings-with-windows or cute scale props. Follow the
+   standard vocabulary table so a mast looks identical in every tool that draws one.
+
+## Every tool — MAXIMUM CUSTOMISATION, MINIMUM WORDS (owner, 2026-07-29, repeated twice)
+
+The owner has now said this twice. Treat it as the highest-priority rule in this file.
+"It's a visualisation tool — I want maximum customisation to play with. So far pretty
+decent but more will be better." And again: "less wordy."
+
+**More knobs.** Every physical quantity in a tool's model must be adjustable. If the code
+contains a hardcoded constant that a real engineer would vary, promote it to a control.
+Target 8–14 controls per tool, arranged as: 3–4 primary controls always visible, the rest
+inside the collapsed advanced `<details>`. Each control is a range PLUS a number input for
+exact entry. Add 3–5 preset buttons naming real cases ("FM broadcast", "GSM 900",
+"Wi-Fi 2.4 GHz", "Ka-band satellite") that set several controls at once.
+
+Also make things DRAGGABLE and CLICKABLE on the canvas wherever it makes physical sense —
+drag a site, an obstacle, an emitter, a marker — because direct manipulation teaches faster
+than a slider. Add a reset control. Where a comparison helps, add a "hold current as
+reference" ghost trace so the user can see what changed.
+
+Examples of constants that must become controls: path-loss exponent, antenna heights,
+noise figure and gain per stage, temperature, bandwidth, symbol rate, roll-off factor,
+number of elements, element spacing, taper level, cluster size, sector count, blocking
+target, code length, delay-spread taps, rain rate, k-factor, ionospheric critical
+frequency, clock error, bearing accuracy, modulation index, deviation, tone frequency.
+
+**Fewer words.** Enforce the WORD BUDGET in STYLE.md ruthlessly. The controls and the plot
+carry the teaching; prose is a fallback, not the medium. If a sentence explains what a
+label already says, delete the sentence. No paragraph anywhere outside a collapsed
+`<details>` except the 2-sentence intro.
+
+## Every tool — bigger, higher-contrast text (owner, 2026-07-29)
+
+"Make the text bigger, and not grey — white or black." Apply the TEXT LEGIBILITY table in
+STYLE.md at token level: 16px body, 28px h1, 14.5px controls, 26px card values, 14px
+legends, canvas text never below 12px and scaling with canvas width. Text colours go
+near-black on light / near-white on dark; --text-muted is reserved for incidental captions
+and must never carry a number or a name. Font family stays the system stack (already Segoe
+UI Variable on Windows) but declared explicitly everywhere.
+
 ## Every tool — naming and consistency sweep (owner, 2026-07-29)
 
 Catch and fix the small stale-naming bugs:

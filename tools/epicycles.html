@@ -6,133 +6,705 @@
 <title>Spinning circles draw your wave</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
-  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --series-1: #378ADD; --series-2: #D85A30;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
-    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
-    --series-1: #5AA6E8; --series-2: #EE7B52;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-h2 { font-size: 15px; font-weight: 500; margin: 2rem 0 0.35rem; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: flex; flex-direction: column; gap: 1rem; }
+.stage { display: flex; flex-direction: column; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
+  .wrap > .full { grid-column: 1 / -1; }
+  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+}
+
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
-.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back { font-size: 14px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-.hint { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; font-size: 13px; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--series-1); color: var(--series-1); }
-input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
-details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.85rem; margin: 1.25rem 0 0; }
-summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
-details[open] summary { margin-bottom: 0.7rem; }
-.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec { margin: 1.5rem 0 6px; font-size: 16px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-canvas { width: 100%; display: block; }
-ul.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 7px 0 0; padding: 0.6rem 0.9rem 0.65rem 1.9rem; background: var(--surface-1); border-radius: var(--radius); }
-ul.legend-note li { margin: 3px 0; }
-.steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.4rem 0 0; }
-.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0.6rem 0 0; }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; font-variant-numeric: tabular-nums; }
+.sec span { color: var(--text-secondary); font-size: 14px; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 14px; color: var(--text-secondary); }
+.hero .val { font-size: 36px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 18px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 13px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 14.5px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 13px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 14px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 14.5px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 340px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 260px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 14px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+.card .hd { font-size: 14px; color: var(--text-secondary); }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 14px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
 ol.work li { margin: 3px 0; }
-dl.glossary { font-size: 13px; margin: 0.4rem 0 0; }
-dl.glossary dt { font-weight: 500; margin-top: 9px; }
-dl.glossary dd { margin: 0; color: var(--text-secondary); }
+dl.glossary { font-size: 14px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Spinning circles draw your wave</h1>
-<p class="sub">One point riding a spinning circle traces a sine wave in time. Stack smaller, faster circles tip to tip and the last tip draws squares, triangles, sawtooths &mdash; the Fourier series, live.</p>
-<p class="hint">New here? Build the same idea with bars first, in the <a href="fourier-series.html">Fourier series builder</a>.</p>
+<div class="wrap">
 
-<div class="row">
-  <span class="lbl">Shape to draw</span>
-  <button id="bsi" class="on">Sine</button>
-  <button id="bsq">Square</button>
-  <button id="btr">Triangle</button>
-  <button id="bsw">Sawtooth</button>
-  <button id="pp" style="margin-left: auto;">Pause</button>
-</div>
-<div class="row" style="margin-bottom: 1.25rem;">
-  <label class="lbl" for="hn" style="min-width: 128px;">Circles in the stack</label>
-  <input type="range" id="hn" min="1" max="12" step="1" value="4" style="flex: 1;">
-  <span id="hnv" style="font-size: 14px; font-weight: 500; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums;">4</span>
-</div>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Spinning circles draw your wave</h1>
+  <p class="sub">One point riding a spinning circle traces a sine. Stack faster circles tip to tip and the pen draws square, triangle and sawtooth waves.</p>
+  <p class="prereq">New here? Build the same sum with bars in the <a href="fourier-series.html">Fourier series builder</a>.</p>
+</header>
 
-<h2>A guided tour</h2>
-<div class="steps">
-  <button class="tourbtn" id="t0">1 &middot; One circle</button>
-  <button class="tourbtn" id="t1">2 &middot; A harder target</button>
-  <button class="tourbtn" id="t2">3 &middot; Corners appear</button>
-  <button class="tourbtn" id="t3">4 &middot; Almost square</button>
-  <button class="tourbtn" id="t4">5 &middot; Every speed</button>
-</div>
-<p class="tour-note" id="tourNote">Press step 1 &mdash; the steps drive the controls for you.</p>
+<div class="rail">
 
-<p class="sec"><b>1 &middot; The circle stack and its trace</b> <span>&mdash; each tip carries the next circle</span></p>
-<canvas id="cv" style="height: 380px;"></canvas>
-<ul class="legend-note">
-  <li><b style="font-weight:500;color:var(--series-1)">blue arms</b> &mdash; the spinning radii</li>
-  <li><b style="font-weight:500">faint rings</b> &mdash; each circle's path</li>
-  <li><b style="font-weight:500;color:var(--series-2)">orange dot</b> &mdash; the pen tip</li>
-  <li><b style="font-weight:500;color:var(--series-2)">orange curve</b> &mdash; its height over time</li>
-</ul>
-
-<div class="cards">
-  <div class="card">
-    <div class="hd">Circles in the stack</div>
-    <div class="big" id="cN">&mdash;</div>
-    <div class="ft" id="cNn">&mdash;</div>
+  <div class="hero">
+    <div class="lbl">Error against the target shape</div>
+    <div class="val" id="heroVal">&mdash;<span class="u">%</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
   </div>
-  <div class="card">
-    <div class="hd">Smallest circle</div>
-    <div class="big" id="cS">&mdash;</div>
-    <div class="ft" id="cSn">&mdash;</div>
+
+  <div>
+    <div class="presets">
+      <span class="lbl">Shape</span>
+      <button type="button" id="bsi" class="on">Sine</button>
+      <button type="button" id="bsq">Square</button>
+      <button type="button" id="btr">Triangle</button>
+      <button type="button" id="bsw">Sawtooth</button>
+    </div>
+
+    <div class="ctl">
+      <label for="nc">Circles in the stack</label>
+      <div class="in">
+        <input type="range" id="nc" min="1" max="24" step="1" value="4">
+        <input type="number" id="ncN" min="1" max="24" step="1" aria-label="Circles in the stack">
+        <span class="unit">&nbsp;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="f1">Fundamental frequency <span class="var">f</span><sub>1</sub></label>
+      <div class="in">
+        <input type="range" id="f1" min="0.1" max="5" step="0.1" value="1">
+        <input type="number" id="f1N" min="0.1" max="5" step="0.1" aria-label="Fundamental frequency in hertz">
+        <span class="unit">Hz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="amp">Amplitude <span class="var">A</span></label>
+      <div class="in">
+        <input type="range" id="amp" min="0.2" max="5" step="0.1" value="1">
+        <input type="number" id="ampN" min="0.2" max="5" step="0.1" aria-label="Amplitude in volts">
+        <span class="unit">V</span>
+      </div>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="pTone">Pure tone</button>
+      <button type="button" id="pClock">Clock, square 9</button>
+      <button type="button" id="pRamp">Ramp generator</button>
+      <button type="button" id="pGibbs">Gibbs ringing</button>
+    </div>
   </div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="ctl">
+      <label for="win">Trace window</label>
+      <div class="in">
+        <input type="range" id="win" min="1" max="6" step="1" value="3">
+        <input type="number" id="winN" min="1" max="6" step="1" aria-label="Trace window in periods">
+        <span class="unit">T</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="ph">Start angle <span class="var">&phi;</span><sub>0</sub></label>
+      <div class="in">
+        <input type="range" id="ph" min="0" max="360" step="5" value="0">
+        <input type="number" id="phN" min="0" max="360" step="5" aria-label="Start angle in degrees">
+        <span class="unit">&deg;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="dc">DC offset</label>
+      <div class="in">
+        <input type="range" id="dc" min="-2" max="2" step="0.1" value="0">
+        <input type="number" id="dcN" min="-2" max="2" step="0.1" aria-label="DC offset in volts">
+        <span class="unit">V</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="spd">Playback rate</label>
+      <div class="in">
+        <input type="range" id="spd" min="0.1" max="2" step="0.05" value="0.5">
+        <input type="number" id="spdN" min="0.1" max="2" step="0.05" aria-label="Playback rate">
+        <span class="unit">&times;</span>
+      </div>
+    </div>
+    <div class="presets" style="margin-bottom:0">
+      <button type="button" id="bRing" class="on">Rings</button>
+      <button type="button" id="bTgt" class="on">Target</button>
+      <button type="button" id="bPlay">Pause</button>
+      <button type="button" id="bReset">Reset</button>
+    </div>
+  </details>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd">Period <span class="var">T</span></div>
+      <div class="big" id="cT">&mdash;</div>
+      <div class="ft">one turn of the big circle</div>
+    </div>
+    <div class="card">
+      <div class="hd">Fastest circle</div>
+      <div class="big" id="cFmax">&mdash;</div>
+      <div class="ft" id="cFmaxFt">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Smallest radius</div>
+      <div class="big" id="cSm">&mdash;</div>
+      <div class="ft" id="cSmFt">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Peak-to-peak reach</div>
+      <div class="big" id="cReach">&mdash;</div>
+      <div class="ft">all radii, tip to tip</div>
+    </div>
+  </div>
+
 </div>
 
-<details><summary>The recipe, with the current numbers</summary>
-<ol class="work" id="work"></ol>
-</details>
-<details><summary>Glossary</summary>
-<dl class="glossary">
-  <dt>Epicycle</dt><dd>A circle whose centre rides on the rim of another circle. Ancient astronomers used stacks of them to trace planet paths; here the stack traces a wave.</dd>
-  <dt>Fundamental</dt><dd>The biggest, slowest circle &mdash; one turn per repeat of the shape. Every other circle spins at a whole-number multiple of its speed.</dd>
-  <dt>Harmonic</dt><dd>A circle spinning at n times the fundamental's speed. The trace it adds is a sine wave at n times the base frequency.</dd>
-  <dt>Amplitude</dt><dd>A circle's radius. It says how much of that harmonic the target shape needs.</dd>
-  <dt>Phase</dt><dd>Where on its circle an arm starts. A negative recipe entry starts the arm half a turn round.</dd>
-  <dt>Fourier series</dt><dd>The recipe itself: the list of speeds and radii that rebuilds any repeating shape from plain sine waves. The bar chart in the builder tool and this circle stack are the same list drawn two ways.</dd>
-</dl>
-<p class="sub" style="margin-top: 1.5rem; margin-bottom: 0;">A sharp edge needs many fast circles &mdash; the square's come only in odd speeds (1&times;, 3&times;, 5&times;&hellip;), the sawtooth uses every speed, and a sharp edge in time always means a long tail in frequency.</p>
-<p class="hint" style="margin-top: 1rem; margin-bottom: 0;">Next: see what a receiver does with a wave it can only measure as numbers, in <a href="sampling-aliasing.html">Sampling and aliasing</a>.</p>
-</details>
+<div class="stage">
+
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="tour0">1 &middot; one circle</button>
+    <button type="button" id="tour1">2 &middot; harder target</button>
+    <button type="button" id="tour2">3 &middot; corners appear</button>
+    <button type="button" id="tour3">4 &middot; almost square</button>
+    <button type="button" id="tour4">5 &middot; every speed</button>
+  </div>
+  <p class="tour-note" id="tourNote">Press step 1 &mdash; each step drives the controls for you.</p>
+
+  <p class="sec"><b>1 &middot; The circle stack and its trace</b> <span>&mdash; each tip carries the next circle</span></p>
+  <canvas id="cvMain" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>spinning arms</li>
+    <li><span class="sw" style="background:var(--border-strong)"></span>each circle&rsquo;s path</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>pen tip and trace</li>
+    <li><span class="sw dash" style="color:var(--series-3)"></span>ideal target shape</li>
+  </ul>
+
+  <p class="sec"><b>2 &middot; Line spectrum</b> <span>&mdash; one line per circle, height is its radius</span></p>
+  <canvas id="cvSpec" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>harmonic amplitude</li>
+    <li><span class="sw" style="background:var(--series-4)"></span>DC offset</li>
+  </ul>
+
+  <details>
+    <summary>The recipe, with the current numbers</summary>
+    <ol class="work" id="work"></ol>
+  </details>
+
+  <details>
+    <summary>Glossary</summary>
+    <dl class="glossary">
+      <dt>Epicycle</dt><dd>A circle whose centre rides on the rim of another circle.</dd>
+      <dt>Fundamental</dt><dd>The biggest, slowest circle &mdash; one turn per repeat of the shape.</dd>
+      <dt>Harmonic</dt><dd>A circle spinning at <span class="var">n</span> times the fundamental speed.</dd>
+      <dt>Amplitude</dt><dd>A circle&rsquo;s radius: how much of that harmonic the shape needs.</dd>
+      <dt>Phase</dt><dd>Where on its circle an arm starts. A negative recipe entry starts it half a turn round.</dd>
+      <dt>Gibbs ringing</dt><dd>A fixed overshoot beside a jump that never shrinks, however many circles you add.</dd>
+      <dt>Fourier series</dt><dd>The list of speeds and radii that rebuilds any repeating shape from sines.</dd>
+    </dl>
+    <p class="sub" style="margin: 0.8rem 0 0;">A sharp edge in time always means a long tail in frequency: the square uses odd speeds only, the sawtooth uses every speed.</p>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: <a href="sampling-aliasing.html">Sampling and aliasing</a>.</p>
+
+</div>
+</div>
 
 <script>
 (function () {
-  const $ = id => document.getElementById(id);
-  const S = { type: 'si', N: 4, playing: true };
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { S.playing = false; }
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
+  /* ============================================================
+     engineering-viz shared canvas kit
+     ============================================================ */
 
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.text2;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ============================================================
+     tool code
+     ============================================================ */
+
+  const $ = id => document.getElementById(id);
+  const TAU = Math.PI * 2;
+  const DEF = { type: 'si', N: 4, f1: 1, A: 1, win: 3, ph: 0, dc: 0, rate: 0.5 };
+  const S = { type: 'si', N: 4, f1: 1, A: 1, win: 3, ph: 0, dc: 0, rate: 0.5,
+              rings: true, target: true, playing: true };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) S.playing = false;
+
+  /* --- Fourier coefficients: unchanged from the original tool ---- */
   function terms() {
     const out = [];
     if (S.type === 'si') { out.push({ n: 1, a: 1 }); return out; }
@@ -149,81 +721,205 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     return out;
   }
 
-  const hist = [];
+  let T = terms(), MET = { rms: 0, ov: 0 };
 
-  function fit(c) {
-    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * d), H = Math.round(r.height * d);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
-    return [r.width, r.height];
+  function target(th) {
+    if (S.type === 'si') return Math.sin(th);
+    if (S.type === 'sq') return Math.sin(th) >= 0 ? 1 : -1;
+    if (S.type === 'tr') return (2 / Math.PI) * Math.asin(Math.max(-1, Math.min(1, Math.sin(th))));
+    const x = ((th + Math.PI) % TAU + TAU) % TAU - Math.PI;
+    return x / Math.PI;
+  }
+  function unit(th) { let v = 0; for (let i = 0; i < T.length; i++) v += T[i].a * Math.sin(T[i].n * th); return v; }
+  function series(th) { return S.dc + S.A * unit(th); }
+
+  function metrics() {
+    const M = 1024;
+    let se = 0, st = 0, mx = -Infinity, mt = -Infinity;
+    for (let i = 0; i < M; i++) {
+      const th = TAU * i / M, s = unit(th), q = target(th);
+      se += (s - q) * (s - q); st += q * q;
+      if (s > mx) mx = s;
+      if (q > mt) mt = q;
+    }
+    const rms = st > 1e-12 ? Math.sqrt(se / st) * 100 : 0;
+    const ov = mt > 1e-9 ? (mx - mt) / mt * 100 : 0;
+    return { rms: isFinite(rms) ? rms : 0, ov: isFinite(ov) ? Math.max(0, ov) : 0 };
   }
 
-  function draw(theta) {
-    const c = $('cv'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const c1 = cvv('--series-1'), c2 = cvv('--series-2');
-    const yc = h / 2;
-    const cx = Math.min(160, w * 0.22);
-    const T = terms();
-    let maxR = 0;
-    T.forEach(tm => { maxR += Math.abs(tm.a); });
-    const scale = Math.min(cx - 14, w * 0.2, h / 2 - 28) / Math.max(maxR, 1e-9);
-    const waveL = cx * 2 + 20, waveR = w - 10;
-    window.__epiProbe = { w: w, h: h, cx: cx, reach: maxR * scale, terms: T.length };
+  function reach() { let r = 0; for (let i = 0; i < T.length; i++) r += Math.abs(T[i].a); return r * S.A; }
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.beginPath(); g.moveTo(waveL, yc); g.lineTo(waveR, yc); g.stroke();
+  /* --- canvas 1: circle stack + trace --------------------------- */
+  function drawMain(TH) {
+    const c = $('cvMain'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const FS = Math.max(12, Math.round(w / 78)), AN = Math.max(12, Math.round(w / 62));
+    const R = Math.max(1e-6, (reach() + Math.abs(S.dc)) * 1.15);
+    const vert = (w / h) < 1.6;
 
-    let px = cx, py = yc;
-    T.forEach(tm => {
-      const r = Math.abs(tm.a) * scale;
-      const ang = tm.n * theta + (tm.a < 0 ? Math.PI : 0);
-      g.strokeStyle = sub; g.globalAlpha = 0.35; g.lineWidth = 1;
-      g.beginPath(); g.arc(px, py, r, 0, 7); g.stroke();
-      g.globalAlpha = 1;
-      const nx = px + r * Math.cos(ang), ny = py - r * Math.sin(ang);
-      g.strokeStyle = c1; g.lineWidth = 1.4;
-      g.beginPath(); g.moveTo(px, py); g.lineTo(nx, ny); g.stroke();
-      px = nx; py = ny;
-    });
+    let bph, btr;
+    if (vert) {
+      const bh = h * 0.54, s = Math.min(w, bh * 1.5);
+      bph = { x: (w - s) / 2, y: 0, w: s, h: bh };
+      btr = { x: 0, y: bh, w: w, h: h - bh };
+    } else {
+      const bw = Math.min(w * 0.44, h * 1.3);
+      bph = { x: 0, y: 0, w: bw, h: h };
+      btr = { x: bw, y: 0, w: w - bw, h: h };
+    }
 
-    g.fillStyle = c2;
-    g.beginPath(); g.arc(px, py, 4.5, 0, 7); g.fill();
+    const pL = FS * 5, pR = FS * 1.4, pT = FS + 13, pB = FS * 2 + 15;
+    const cl = (v, m) => Math.min(v, m);
+    const iw = Math.max(12, bph.w - cl(pL, bph.w * 0.42) - cl(pR, bph.w * 0.22));
+    const ih = Math.max(12, bph.h - cl(pT, bph.h * 0.28) - cl(pB, bph.h * 0.38));
+    const Rx = R * iw / ih;
 
-    if (S.playing || hist.length === 0) hist.unshift(py);
-    const maxH = Math.floor(waveR - waveL);
-    if (hist.length > maxH) hist.length = maxH;
+    const Pp = graticule(g, bph,
+      { min: -Rx, max: Rx, unit: 'V', label: 'in phase' },
+      { min: -R, max: R, unit: 'V', label: 'quadrature' },
+      { padL: pL, padR: pR, padT: pT, padB: pB, fontSize: FS, title: 'circle stack' });
 
-    g.strokeStyle = sub; g.globalAlpha = 0.6; g.lineWidth = 1; g.setLineDash([3, 4]);
-    g.beginPath(); g.moveTo(px, py); g.lineTo(waveL, hist[0]); g.stroke();
-    g.setLineDash([]); g.globalAlpha = 1;
+    const Tp = 1 / Math.max(0.05, S.f1);
+    const Wsec = S.win * Tp;
+    const Ptr = graticule(g, btr,
+      { min: 0, max: Wsec, unit: 's', label: 'time before now' },
+      { min: -R, max: R, unit: 'V', label: 'amplitude' },
+      { padL: pL, padR: pR, padT: pT, padB: pB, fontSize: FS, title: 'what a scope would show' });
 
-    g.strokeStyle = c2; g.lineWidth = 2;
+    const ppu = Pp.X(1) - Pp.X(0);
+    const v0 = series(TH);
+
+    /* horizontal cursor at the pen's current height, in both plots */
+    g.save();
+    g.strokeStyle = t.muted; g.lineWidth = 1; g.setLineDash([4, 3]);
+    Pp.clip(g); g.beginPath(); g.moveTo(Pp.x0, Pp.Y(v0)); g.lineTo(Pp.x1, Pp.Y(v0)); g.stroke(); Pp.unclip(g);
+    Ptr.clip(g); g.beginPath(); g.moveTo(Ptr.x0, Ptr.Y(v0)); g.lineTo(Ptr.x1, Ptr.Y(v0)); g.stroke(); Ptr.unclip(g);
+    g.restore();
+
+    /* --- the stack --- */
+    Pp.clip(g);
+    let rx = 0, ry = S.dc;
+    for (let i = 0; i < T.length; i++) {
+      const rr = Math.abs(T[i].a) * S.A;
+      if (S.rings && rr * ppu > 1.5) {
+        g.strokeStyle = t.borderStrong; g.lineWidth = 1;
+        g.beginPath(); g.arc(Pp.X(rx), Pp.Y(ry), rr * ppu, 0, TAU); g.stroke();
+      }
+      const ang = T[i].n * TH + (T[i].a < 0 ? Math.PI : 0);
+      const nx = rx + rr * Math.cos(ang), ny = ry + rr * Math.sin(ang);
+      g.strokeStyle = t.s1; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(Pp.X(rx), Pp.Y(ry)); g.lineTo(Pp.X(nx), Pp.Y(ny)); g.stroke();
+      rx = nx; ry = ny;
+    }
+    const dotR = Math.max(2.5, Math.min(6, Pp.h * 0.016));
+    g.fillStyle = t.s2;
+    g.beginPath(); g.arc(Pp.X(rx), Pp.Y(ry), dotR, 0, TAU); g.fill();
+    Pp.unclip(g);
+
+    /* peak-to-peak span of the pen, dimensioned */
+    const spanX = Pp.x0 + Pp.w * 0.09;
+    dimension(g, spanX, Pp.Y(Math.min(R, S.dc + reach())), spanX, Pp.Y(Math.max(-R, S.dc - reach())),
+      fmtEng(2 * reach(), 'V', 2), { size: AN - 1 });
+
+    leader(g, Pp.X(rx), Pp.Y(ry), 'pen ' + fmtEng(v0, 'V', 2),
+      { box: Pp, colour: t.s2, size: AN, dx: -32, dy: -30 });
+
+    /* --- the trace --- */
+    Ptr.clip(g);
+    if (S.target) {
+      g.strokeStyle = t.s3; g.lineWidth = 1.4; g.setLineDash([6, 4]);
+      g.beginPath();
+      for (let p = Ptr.x0; p <= Ptr.x1; p++) {
+        const tau = (p - Ptr.x0) / Ptr.w * Wsec;
+        const y = Ptr.Y(S.dc + S.A * target(TH - TAU * S.f1 * tau));
+        if (p === Ptr.x0) g.moveTo(p, y); else g.lineTo(p, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    }
+    g.strokeStyle = t.s2; g.lineWidth = 2;
     g.beginPath();
-    for (let i = 0; i < hist.length; i++) {
-      const x = waveL + i;
-      if (i === 0) g.moveTo(x, hist[i]); else g.lineTo(x, hist[i]);
+    for (let p = Ptr.x0; p <= Ptr.x1; p++) {
+      const tau = (p - Ptr.x0) / Ptr.w * Wsec;
+      const y = Ptr.Y(series(TH - TAU * S.f1 * tau));
+      if (p === Ptr.x0) g.moveTo(p, y); else g.lineTo(p, y);
     }
     g.stroke();
+    g.fillStyle = t.s2;
+    g.beginPath(); g.arc(Ptr.x0, Ptr.Y(v0), dotR, 0, TAU); g.fill();
+    Ptr.unclip(g);
 
-    g.fillStyle = sub; g.font = fnt(11);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('the circle stack', cx, h - 20);
-    g.textAlign = 'right';
-    g.fillText('time →  (what a scope would show)', waveR, h - 20);
+    const perY = Ptr.y0 + Ptr.h * 0.085;
+    dimension(g, Ptr.X(0), perY, Ptr.X(Math.min(Tp, Wsec)), perY,
+      'T = ' + fmtEng(Tp, 's', 1), { size: AN - 1 });
+    leader(g, Ptr.x0, Ptr.Y(v0), 'now', { box: Ptr, colour: t.s2, size: AN, dx: 34, dy: 32 });
+
+    window.__epiProbe = { w: w, h: h, terms: T.length, reach: reach(), R: R, vert: vert, v0: v0 };
   }
 
+  /* --- canvas 2: line spectrum ---------------------------------- */
+  function drawSpec() {
+    const c = $('cvSpec'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const FS = Math.max(12, Math.round(w / 78)), AN = Math.max(12, Math.round(w / 62));
+
+    const nMax = T[T.length - 1].n;
+    const fMax = Math.max(1e-6, (nMax + 1) * S.f1);
+    let aMax = 0;
+    for (let i = 0; i < T.length; i++) aMax = Math.max(aMax, Math.abs(T[i].a) * S.A);
+    aMax = Math.max(aMax, Math.abs(S.dc), 1e-6) * 1.2;
+
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: fMax, unit: 'Hz', label: 'frequency' },
+      { min: 0, max: aMax, unit: 'V', label: 'radius of the circle' },
+      { fontSize: FS, title: 'one line per circle' });
+
+    P.clip(g);
+    const y00 = P.Y(0);
+    if (Math.abs(S.dc) > 1e-9) {
+      g.strokeStyle = t.s4; g.lineWidth = 2.5;
+      g.beginPath(); g.moveTo(P.X(0), y00); g.lineTo(P.X(0), P.Y(Math.abs(S.dc))); g.stroke();
+    }
+    g.strokeStyle = t.s1; g.fillStyle = t.s1; g.lineWidth = 2;
+    const r = Math.max(2, Math.min(4.5, P.h * 0.014));
+    for (let i = 0; i < T.length; i++) {
+      const x = P.X(T[i].n * S.f1), y = P.Y(Math.abs(T[i].a) * S.A);
+      g.beginPath(); g.moveTo(x, y00); g.lineTo(x, y); g.stroke();
+      g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    }
+    P.unclip(g);
+
+    const f0 = T[0], fl = T[T.length - 1];
+    leader(g, P.X(f0.n * S.f1), P.Y(Math.abs(f0.a) * S.A),
+      'fundamental ' + fmtEng(f0.n * S.f1, 'Hz', 2), { box: P, colour: t.s1, size: AN, dx: 34, dy: -18 });
+    if (T.length > 1) {
+      leader(g, P.X(fl.n * S.f1), P.Y(Math.abs(fl.a) * S.A),
+        fl.n.toFixed(0) + '× speed, ' + fmtEng(Math.abs(fl.a) * S.A, 'V', 2),
+        { box: P, colour: t.s1, size: AN, dx: -34, dy: -34 });
+    }
+  }
+
+  /* --- readouts -------------------------------------------------- */
   function updateUI() {
-    const T = terms();
-    $('cN').textContent = T.length.toFixed(0);
-    const sp = T.map(tm => tm.n.toFixed(0) + '×');
-    $('cNn').textContent = 'speeds ' + (sp.length <= 6 ? sp.join(', ') : sp.slice(0, 4).join(', ') + ', … ' + sp[sp.length - 1]);
-    const first = T[0], last = T[T.length - 1];
-    const pct = Math.abs(last.a / first.a) * 100;
-    $('cS').textContent = pct.toFixed(1) + ' %';
-    $('cSn').textContent = 'of the largest; spins ' + last.n.toFixed(0) + '× the base';
+    T = terms();
+    MET = metrics();
+
+    const hv = $('heroVal'), hb = $('heroBadge');
+    hv.innerHTML = fmtNum(MET.rms, MET.rms < 10 ? 2 : 1) + '<span class="u">%</span>';
+    let cls = 'badge good', txt = 'matches the target';
+    if (MET.rms > 5) { cls = 'badge bad'; txt = 'far from the target'; }
+    else if (MET.rms > 0.5) { cls = 'badge warn'; txt = 'visible ripple'; }
+    hb.className = cls; hb.textContent = txt;
+    $('heroFt').textContent = 'RMS against the ideal shape; edge overshoot ' + MET.ov.toFixed(1) + ' %';
+
+    const Tp = 1 / Math.max(0.05, S.f1);
+    $('cT').textContent = fmtEng(Tp, 's', 1);
+    const nMax = T[T.length - 1].n;
+    $('cFmax').textContent = fmtEng(nMax * S.f1, 'Hz', 2);
+    $('cFmaxFt').textContent = nMax.toFixed(0) + '× the fundamental';
+    const pct = Math.abs(T[T.length - 1].a / T[0].a) * 100;
+    $('cSm').textContent = pct.toFixed(1) + ' %';
+    $('cSmFt').textContent = fmtEng(Math.abs(T[T.length - 1].a) * S.A, 'V', 2) + ' of radius';
+    $('cReach').textContent = fmtEng(2 * reach(), 'V', 2);
 
     const head = {
       si: 'A sine needs exactly one circle: speed 1×, radius 1.000.',
@@ -236,16 +932,20 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     show.forEach((tm, i) => {
       if (T.length > 4 && i === 3) lines.push('…');
       lines.push('Circle at ' + tm.n.toFixed(0) + '× speed: radius ' + Math.abs(tm.a).toFixed(3)
+        + ' · A = ' + fmtEng(Math.abs(tm.a) * S.A, 'V', 2)
         + (tm.a < 0 ? ', started half a turn round.' : '.'));
     });
+    lines.push('RMS error against the ideal shape: ' + MET.rms.toFixed(2) + ' %.');
     $('work').innerHTML = lines.map(s => '<li>' + s + '</li>').join('');
   }
+
+  /* --- controls -------------------------------------------------- */
+  function setPair(id, v) { $(id).value = v; $(id + 'N').value = $(id).value; }
 
   function setType(ty) {
     S.type = ty;
     const map = { si: 'bsi', sq: 'bsq', tr: 'btr', sw: 'bsw' };
     Object.keys(map).forEach(k => $(map[k]).classList.toggle('on', k === ty));
-    hist.length = 0;
     updateUI();
   }
 
@@ -253,12 +953,52 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
   $('bsq').addEventListener('click', () => setType('sq'));
   $('btr').addEventListener('click', () => setType('tr'));
   $('bsw').addEventListener('click', () => setType('sw'));
-  $('hn').addEventListener('input', () => { S.N = +$('hn').value; $('hnv').textContent = S.N.toFixed(0); hist.length = 0; updateUI(); });
-  $('pp').addEventListener('click', () => {
+
+  bindPair($('nc'), $('ncN'), v => { S.N = v; updateUI(); });
+  bindPair($('f1'), $('f1N'), v => { S.f1 = v; updateUI(); });
+  bindPair($('amp'), $('ampN'), v => { S.A = v; updateUI(); });
+  bindPair($('win'), $('winN'), v => { S.win = v; });
+  bindPair($('ph'), $('phN'), v => { S.ph = v; });
+  bindPair($('dc'), $('dcN'), v => { S.dc = v; updateUI(); });
+  bindPair($('spd'), $('spdN'), v => { S.rate = v; });
+
+  $('bRing').addEventListener('click', () => { S.rings = !S.rings; $('bRing').classList.toggle('on', S.rings); });
+  $('bTgt').addEventListener('click', () => { S.target = !S.target; $('bTgt').classList.toggle('on', S.target); });
+  $('bPlay').addEventListener('click', () => {
     S.playing = !S.playing;
-    $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+    $('bPlay').textContent = S.playing ? 'Pause' : 'Continue';
   });
-  $('pp').textContent = S.playing ? 'Pause' : 'Continue';
+  $('bPlay').textContent = S.playing ? 'Pause' : 'Continue';
+
+  function applyAll(o) {
+    Object.keys(o).forEach(k => {
+      if (k === 'type') return;
+      S[k] = o[k];
+    });
+    setPair('nc', S.N); setPair('f1', S.f1); setPair('amp', S.A);
+    setPair('win', S.win); setPair('ph', S.ph); setPair('dc', S.dc); setPair('spd', S.rate);
+    setType(o.type || S.type);
+  }
+
+  const PRESETS = {
+    pTone: { type: 'si', N: 1, f1: 1, A: 1, dc: 0 },
+    pClock: { type: 'sq', N: 9, f1: 2, A: 1, dc: 0 },
+    pRamp: { type: 'sw', N: 12, f1: 1, A: 2, dc: 0 },
+    pGibbs: { type: 'sq', N: 24, f1: 0.5, A: 1, dc: 0 }
+  };
+  Object.keys(PRESETS).forEach(id => {
+    $(id).addEventListener('click', () => {
+      applyAll(PRESETS[id]);
+      Object.keys(PRESETS).forEach(k => $(k).classList.toggle('on', k === id));
+    });
+  });
+
+  $('bReset').addEventListener('click', () => {
+    applyAll(DEF);
+    Object.keys(PRESETS).forEach(k => $(k).classList.remove('on'));
+    $('tourNote').textContent = 'Press step 1 — each step drives the controls for you.';
+    for (let j = 0; j < TOUR.length; j++) $('tour' + j).classList.remove('on');
+  });
 
   const TOUR = [
     { ty: 'si', N: 1, msg: 'Step 1 — one circle: its tip traces a perfect sine.' },
@@ -268,21 +1008,26 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     { ty: 'sw', N: 12, msg: 'Step 5 — the sawtooth uses every speed, even and odd.' }
   ];
   TOUR.forEach((st, i) => {
-    $('t' + i).addEventListener('click', () => {
-      $('hn').value = st.N; S.N = st.N; $('hnv').textContent = st.N.toFixed(0);
+    $('tour' + i).addEventListener('click', () => {
+      S.N = st.N; setPair('nc', st.N);
       setType(st.ty);
       $('tourNote').textContent = st.msg;
-      for (let j = 0; j < TOUR.length; j++) $('t' + j).classList.toggle('on', j === i);
+      for (let j = 0; j < TOUR.length; j++) $('tour' + j).classList.toggle('on', j === i);
     });
   });
 
-  updateUI();
+  applyAll(DEF);
+
   let theta = 0, last = null;
   function frame(ts) {
     if (last === null) last = ts;
-    if (S.playing) theta += Math.min(ts - last, 50) * 0.0016;
+    const dt = Math.min(ts - last, 50) / 1000;
+    if (S.playing) theta += TAU * S.f1 * S.rate * dt;
+    if (theta > 1e7) theta = theta % TAU;
     last = ts;
-    draw(theta);
+    const TH = theta + S.ph * Math.PI / 180;
+    drawMain(TH);
+    drawSpec();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

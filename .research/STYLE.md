@@ -155,6 +155,143 @@ ratios." A fixed narrow centred column is a defect. Rules:
 - Numbers: tabular numerals, thousands separated with a thin space (1 500 km), one
   consistent decimal precision per quantity.
 
+## NO OVERFLOW — owner ruling, 2026-07-29. Text must never escape its box.
+
+"Make sure the words don't spill out of the box, and have proper spacing and aspect."
+Nothing may render outside its container at ANY viewport width or control value. This is a
+correctness requirement, not a polish item — a label crossing its border is a defect.
+
+### On canvas
+
+Never call `fillText` without knowing the box it must fit. Add these kit helpers and use
+them for every string that is not a short axis tick:
+
+```js
+// Shrink to fit, then ellipsise as a last resort. Returns the font size used.
+function fitText(g, text, maxW, baseSize, minSize) {
+  let s = baseSize;
+  g.font = fnt(s);
+  while (g.measureText(text).width > maxW && s > minSize) { s -= 0.5; g.font = fnt(s); }
+  if (g.measureText(text).width > maxW) {
+    let t = text;
+    while (t.length > 1 && g.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return { text: t + '…', size: s };
+  }
+  return { text: text, size: s };
+}
+
+// Word-wrap into a box, vertically centred, never exceeding maxLines.
+function textInBox(g, text, x, y, w, h, opts) { /* measure per word, break, clamp */ }
+
+// Clamp a draw position so the drawn string stays inside [pad, w-pad] for any textAlign.
+function clampX(g, x, text, align, w, pad) {
+  const tw = g.measureText(text).width;
+  const half = align === 'center' ? tw / 2 : align === 'right' ? tw : 0;
+  return Math.min(Math.max(x, pad + (align === 'right' ? tw : align === 'center' ? tw / 2 : 0)),
+                  w - pad - (align === 'left' ? tw : align === 'center' ? tw / 2 : 0));
+}
+```
+
+Hard rules:
+- Every canvas box gets **≥ 10px internal padding**; text never touches a border or an axis.
+- Axis tick labels: if adjacent labels would collide, thin them out (draw every 2nd or 5th)
+  rather than shrinking below the 12px floor or letting them overlap.
+- `leader()` labels flip to the opposite side of the feature when within 1 label-width of an
+  edge, and stack vertically if two would occupy the same spot.
+- The last tick label on an axis must not be clipped by the canvas edge — reserve room for
+  half its width in the plot box.
+- Rotated axis titles use `translate`+`rotate`, and the rotated extent counts toward the
+  margin reservation.
+- After any change to a drawing, re-check at the **narrowest** supported canvas: text that
+  fits at 1400px often collides at 360px.
+
+### In HTML
+
+- `*, *::before, *::after { box-sizing: border-box; }` — non-negotiable.
+- Every grid and flex child that contains text carries `min-width: 0;` — without it a long
+  word forces the track wider than its container. This is the single most common cause of
+  the horizontal scrollbar.
+- Text containers get `overflow-wrap: anywhere;`. Card values additionally get
+  `font-variant-numeric: tabular-nums;` so a changing number does not resize its box.
+- Never a fixed `width` on anything holding text; use `min-width`/`max-width` so it can
+  shrink.
+- Buttons and labels: `white-space: nowrap` ONLY where the string is short and fixed;
+  otherwise let it wrap.
+- Consistent internal padding: cards `1rem 1.25rem`, control rows `0.5rem 0`, details
+  blocks `0.75rem 1rem`. Do not vary these per tool.
+- The page must never scroll horizontally. Verify with
+  `document.documentElement.scrollWidth <= window.innerWidth` at 375, 768, 1366 and 1920.
+
+### Verification, required before any agent reports done
+
+```js
+// paste in the console; must return an empty array
+[...document.querySelectorAll('*')].filter(e => {
+  const r = e.getBoundingClientRect();
+  return r.width && (r.right > document.documentElement.clientWidth + 1 || r.left < -1);
+}).map(e => e.tagName + '.' + e.className);
+```
+Plus: screenshot at 375 and 1920 and LOOK for text crossing a border, colliding labels, or a
+value pushed outside its card.
+
+## TEXT LEGIBILITY — owner ruling, 2026-07-29. Overrides the kit if they disagree.
+
+The owner: "make the text bigger, and not grey — white or black." Current pages use 13–14px
+body text and grey secondary text; both are too small and too washed out. Fix at the token
+level so every tool inherits it.
+
+**Font family.** Keep the system stack — on Windows it already resolves to Segoe UI
+Variable, the same family as the surrounding app, so the family was never the problem.
+Declare it explicitly and identically everywhere:
+
+```css
+--font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+             "Helvetica Neue", Arial, sans-serif;
+--font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+```
+
+**Sizes — these are minimums, not suggestions.**
+
+| Role | Old | Required |
+|---|---|---|
+| Body / prose | 14px | **16px**, `line-height: 1.65` |
+| Intro `.sub`, prose under headings | 14px | **15.5px** |
+| h1 | 22px | **28px** |
+| Section heading `.sec` | 14px | **16px** |
+| Control labels, buttons, inputs | 13px | **14.5px** |
+| Card label `.hd` | 13px | **14px** |
+| Card value `.big` | 21–22px | **26px** |
+| Card footnote `.ft` | 12px | **13px** |
+| Legend line | 12.5px | **14px** |
+| Hero value | — | **36px** |
+| Canvas: axis tick labels | 10–11px | **12px** |
+| Canvas: annotations, series labels | 10.5–11px | **13px** |
+| Canvas: absolute floor | — | **12px, never smaller** |
+
+Canvas text scales with the canvas: use `Math.max(12, Math.round(w / 62))` for annotations
+and `Math.max(12, Math.round(w / 78))` for tick labels, so a wide plot gets larger type
+rather than the same small type in more space.
+
+**Colour — kill the grey.** Body and every label a reader needs are near-black on light and
+near-white on dark. `--text-muted` is reserved for genuinely incidental text (a units suffix,
+a "schematic" caption) and must never carry meaning. Replace the palette's text tokens with:
+
+```css
+/* light */
+--text-primary:   #14181d;   /* near black — body, labels, card values */
+--text-secondary: #2f3742;   /* dark slate, NOT grey — prose, axis labels */
+--text-muted:     #5c6672;   /* incidental only */
+/* dark */
+--text-primary:   #f2f5f8;   /* near white */
+--text-secondary: #d4dae1;
+--text-muted:     #9aa5b1;
+```
+
+Canvas rule: axis tick labels, series labels and annotations use `--text-primary` or
+`--text-secondary`. Never `--text-muted` for anything that carries a number or a name.
+Contrast must clear 7:1 for body text and 4.5:1 for the smallest canvas label, in both
+themes. If a label is hard to read on a screenshot, it is a defect.
+
 ## Theme and palette — MANDATORY, replaces any earlier palette
 
 The suite follows the operating system setting automatically through

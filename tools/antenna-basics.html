@@ -6,204 +6,772 @@
 <title>Antenna patterns, gain and beamwidth</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --accent: #378ADD; --accent-2: #D85A30;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #1a1f26; --text-secondary: #55606c; --text-muted: #869099;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
-    --accent: #6FB0F0; --accent-2: #FF9366;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #e9edf1; --text-secondary: #b0bac4; --text-muted: #7d8791;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
-.pre { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: flex; flex-direction: column; gap: 1rem; }
+.stage { display: flex; flex-direction: column; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
+  .wrap > .full { grid-column: 1 / -1; }
+  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+}
+
+h1 { font-size: 23px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 13px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
-  padding: 5px 11px; cursor: pointer; font-size: 13px; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--accent); color: var(--accent); }
-button[disabled] { opacity: 0.45; cursor: default; }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 13px; color: var(--text-secondary); }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 120px; }
-.ctl input[type=range] { flex: 1; min-width: 90px; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums; }
-.ctl.off label, .ctl.off .v { opacity: 0.4; }
-.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px;
-  color: var(--text-secondary); margin-top: 1.25rem; }
-.note b { color: var(--text-primary); font-weight: 500; }
-.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 1.1rem; }
-.legend-note li { margin: 2px 0; }
-.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
-canvas { width: 100%; display: block; }
-details { margin-top: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.9rem; }
-details summary { cursor: pointer; font-size: 13.5px; color: var(--text-secondary); }
-details p, details li { font-size: 13px; color: var(--text-secondary); }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.2rem; }
-ol.work li { margin: 4px 0; }
+.sec span { color: var(--text-secondary); font-size: 12.5px; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 13px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 12.5px; color: var(--text-secondary); }
+.hero .val { font-size: 34px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 13px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 13px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 12.5px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+.card .hd { font-size: 12.5px; color: var(--text-secondary); }
+.card .big { font-size: 21px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+details p { font-size: 13px; color: var(--text-secondary); margin: 0.4rem 0; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
 ol.work b { color: var(--text-primary); font-weight: 500; }
-.glossary { font-size: 13px; margin: 0.5rem 0 0; }
-.glossary dt { font-weight: 500; margin-top: 8px; }
-.glossary dd { margin: 2px 0 0; color: var(--text-secondary); }
-.tour { font-size: 13px; color: var(--text-secondary); background: var(--surface-1); border-radius: var(--radius);
-  padding: 0.7rem 0.9rem; margin: 0 0 1.25rem; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.ctl.off label, .ctl.off .unit { opacity: 0.42; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Antenna patterns, gain and beamwidth</h1>
-<p class="sub">The map of where an antenna sends its energy is its radiation pattern. Gain, beamwidth, sidelobes and front-to-back ratio are four numbers read off that one map.</p>
-<p class="pre">If decibels, dBi or boresight are new words, start with <a href="link-budget.html">link budget</a>, which introduces the decibel bookkeeping this tool feeds.</p>
+<div class="wrap">
 
-<div class="row">
-  <span class="lbl">Antenna</span>
-  <button id="t0" class="on">Half-wave dipole</button>
-  <button id="t1">Quarter-wave monopole</button>
-  <button id="t2">Uniform line source</button>
-  <button id="t3">Uniform array</button>
-  <button id="t4">Circular aperture</button>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Antenna patterns, gain and beamwidth</h1>
+  <p class="sub">An antenna's radiation pattern is the map of where its energy goes. Gain, beamwidth, sidelobes and front-to-back ratio are four numbers read off that one map.</p>
+  <p class="prereq">New to decibels or dBi? Start with <a href="link-budget.html">link budget</a>.</p>
+</header>
+
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Gain</div>
+    <div class="val" id="heroVal">&mdash;<span class="u">dBi</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div>
+    <div class="presets">
+      <span class="lbl">Antenna</span>
+      <button type="button" id="t0" class="on">Half-wave dipole</button>
+      <button type="button" id="t1">Quarter-wave monopole</button>
+      <button type="button" id="t2">Uniform line source</button>
+      <button type="button" id="t3">Uniform array</button>
+      <button type="button" id="t4">Circular aperture</button>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="p0">Wi-Fi 2.4 GHz dipole</button>
+      <button type="button" id="p1">GSM 900 whip</button>
+      <button type="button" id="p2">8-element panel</button>
+      <button type="button" id="p3">Ku-band 1.2 m dish</button>
+    </div>
+
+    <div class="ctl" id="cD">
+      <label for="ap">Aperture size</label>
+      <div class="in">
+        <input type="range" id="ap" min="1" max="60" step="0.5" value="6">
+        <input type="number" id="apN" min="1" max="60" step="0.5" aria-label="Aperture size in wavelengths">
+        <span class="unit">&lambda;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fq">Frequency</label>
+      <div class="in">
+        <input type="range" id="fq" min="0.3" max="30" step="0.1" value="2.4">
+        <input type="number" id="fqN" min="0.3" max="30" step="0.1" aria-label="Frequency in gigahertz">
+        <span class="unit">GHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="mb">Mechanical boresight</label>
+      <div class="in">
+        <input type="range" id="mb" min="-90" max="90" step="1" value="0">
+        <input type="number" id="mbN" min="-90" max="90" step="1" aria-label="Mechanical boresight in degrees">
+        <span class="unit">&deg;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="lk">Look direction</label>
+      <div class="in">
+        <input type="range" id="lk" min="-180" max="180" step="0.5" value="0">
+        <input type="number" id="lkN" min="-180" max="180" step="0.5" aria-label="Look direction in degrees">
+        <span class="unit">&deg;</span>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="ctl">
+      <label for="ef">Radiation efficiency</label>
+      <div class="in">
+        <input type="range" id="ef" min="40" max="100" step="1" value="60">
+        <input type="number" id="efN" min="40" max="100" step="1" aria-label="Radiation efficiency in percent">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fl">Plot floor</label>
+      <div class="in">
+        <input type="range" id="fl" min="20" max="60" step="5" value="40">
+        <input type="number" id="flN" min="20" max="60" step="5" aria-label="Plot floor in decibels below peak">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="zm">Angle zoom</label>
+      <div class="in">
+        <input type="range" id="zm" min="0.25" max="6" step="0.05" value="1">
+        <input type="number" id="zmN" min="0.25" max="6" step="0.05" aria-label="Angle zoom factor">
+        <span class="unit">&times;</span>
+      </div>
+    </div>
+  </details>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd">Directivity</div>
+      <div class="big" id="cD1">&mdash;</div>
+      <div class="ft" id="cD1n">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Half-power beamwidth</div>
+      <div class="big" id="cB">&mdash;</div>
+      <div class="ft" id="cBn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">First sidelobe</div>
+      <div class="big" id="cS">&mdash;</div>
+      <div class="ft" id="cSn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Front-to-back ratio</div>
+      <div class="big" id="cF">&mdash;</div>
+      <div class="ft" id="cFn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Effective aperture</div>
+      <div class="big" id="cA">&mdash;</div>
+      <div class="ft" id="cAn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Gain toward look</div>
+      <div class="big" id="cL">&mdash;</div>
+      <div class="ft" id="cLn">&mdash;</div>
+    </div>
+  </div>
+
 </div>
 
-<div class="grid2">
-  <div class="ctl" id="cD"><label for="ap">Aperture size</label><input type="range" id="ap" min="1" max="30" step="0.5" value="6"><span class="v" id="apv">6.0 &lambda;</span></div>
-  <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0.3" max="30" step="0.1" value="2.4"><span class="v" id="fqv">2.4 GHz</span></div>
-  <div class="ctl"><label for="ef">Radiation efficiency</label><input type="range" id="ef" min="40" max="100" step="1" value="60"><span class="v" id="efv">60 %</span></div>
-  <div class="ctl"><label for="mb">Mechanical boresight</label><input type="range" id="mb" min="-90" max="90" step="1" value="0"><span class="v" id="mbv">0&deg;</span></div>
+<div class="stage">
+
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="s1">1 &middot; dipole</button>
+    <button type="button" id="s2">2 &middot; monopole</button>
+    <button type="button" id="s3">3 &middot; line source</button>
+    <button type="button" id="s4">4 &middot; array</button>
+    <button type="button" id="s5">5 &middot; dish</button>
+  </div>
+  <p class="tour-note" id="tourTxt">Press the steps in order; each one moves the controls.</p>
+
+  <p class="sec"><b>1 &middot; The hardware</b> <span>&mdash; drawn to scale, in metres</span></p>
+  <canvas id="phys" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--axis)"></span>the metal itself</li>
+    <li><span class="sw dash" style="color:var(--series-2)"></span>mechanical boresight</li>
+    <li><span class="sw" style="background:var(--series-1)"></span>half-power wedge</li>
+  </ul>
+
+  <p class="sec"><b>2 &middot; Polar pattern cut</b> <span>&mdash; rings are decibels below the peak</span></p>
+  <canvas id="pol" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>pattern, dB below peak</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>beam peak</li>
+    <li><span class="sw" style="background:var(--series-3)"></span>look direction</li>
+    <li><span class="sw" style="background:var(--text-secondary)"></span>outward ticks &mdash; nulls</li>
+  </ul>
+
+  <p class="sec"><b>3 &middot; The same cut, unrolled</b> <span>&mdash; how sidelobes are actually read</span></p>
+  <canvas id="rect" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>pattern cut</li>
+    <li><span class="sw dash" style="color:var(--warn)"></span>&minus;3 dB, half power</li>
+    <li><span class="sw dash" style="color:var(--series-4)"></span>first sidelobe</li>
+    <li><span class="sw" style="background:var(--series-3)"></span>look direction</li>
+  </ul>
+
+  <details>
+    <summary>What this antenna is</summary>
+    <p id="note">&mdash;</p>
+  </details>
+
+  <details>
+    <summary>The arithmetic, with this state's numbers</summary>
+    <ol class="work" id="work"></ol>
+  </details>
+
+  <details>
+    <summary>Model assumptions and the rules of thumb</summary>
+    <p id="assume">&mdash;</p>
+    <p id="thumb">&mdash;</p>
+    <p>Directivity is a numerical integral of the plotted pattern, <b>D = 2 / &int;<sub>0</sub><sup>&pi;</sup> |F(&theta;)|<sup>2</sup> sin&thinsp;&theta; d&theta;</b>, by Simpson's rule over 20&thinsp;000 intervals. Nothing here is read from a table of typical gains.</p>
+    <p>Three trades live in the five buttons. Concentration is the only source of gain: a dipole spreads power over nearly the whole sky for 2.15 dBi, a 6&lambda; aperture squeezes it into ten degrees. Aperture in wavelengths is what counts &mdash; hold 6&lambda; and sweep the frequency: the pattern never moves, only the metal shrinks. And sidelobes are the price of a hard-edged aperture: a uniform line or array leaks at &minus;13.26 dB however large it is, a round aperture reaches &minus;17.57 dB for free, and anything better costs gain and beamwidth through tapering.</p>
+  </details>
+
+  <details>
+    <summary>Words used here</summary>
+    <dl class="glossary">
+      <dt>Wavelength &lambda;</dt><dd>Distance from one wave peak to the next, &lambda; = c/f. At 2.4 GHz it is 12.5 cm. Antenna behaviour depends on size in wavelengths, never on size in metres alone.</dd>
+      <dt>Radiation pattern</dt><dd>How much power the antenna sends in each direction, relative to its own strongest direction.</dd>
+      <dt>Isotropic radiator</dt><dd>An imaginary antenna radiating equally in every direction. It cannot be built, but it is the yardstick for gain.</dd>
+      <dt>Directivity D</dt><dd>Peak power density divided by the average over all directions. A pure shape number, ignoring heat lost in the antenna.</dd>
+      <dt>Radiation efficiency &eta;</dt><dd>The fraction of the fed power that leaves as radio waves. The rest becomes heat in the conductor, dielectric and matching network.</dd>
+      <dt>Gain G, in dBi</dt><dd>G = &eta;D, in decibels relative to the isotropic radiator. The "i" means isotropic. A link budget uses gain, because it counts the losses.</dd>
+      <dt>Half-power beamwidth, HPBW</dt><dd>The angle across the main lobe between the two directions where the power has fallen 3 dB below the peak.</dd>
+      <dt>Sidelobe</dt><dd>Any lobe other than the main one, quoted in decibels below the peak. The main cause of interference into neighbouring links.</dd>
+      <dt>Null</dt><dd>A direction of zero radiation between lobes. Point a null at an interferer and it disappears.</dd>
+      <dt>Boresight</dt><dd>Mechanical boresight is the direction the structure is built to point; electrical boresight is where the beam actually peaks. The angle between them is boresight error.</dd>
+      <dt>Effective aperture A<sub>e</sub></dt><dd>The area of wavefront the antenna effectively collects, A<sub>e</sub> = G&lambda;<sup>2</sup>/4&pi;. Even a wire has one.</dd>
+      <dt>Array factor</dt><dd>The pattern a set of point sources makes purely by interference of their feeds. The real pattern is the array factor times the element pattern.</dd>
+    </dl>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: <a href="phased-array.html">phased array</a> &mdash; the same array, steered by phase.</p>
+
 </div>
-
-<div class="row">
-  <span class="lbl">Guided tour</span>
-  <button id="s1">1</button>
-  <button id="s2">2</button>
-  <button id="s3">3</button>
-  <button id="s4">4</button>
-  <button id="s5">5</button>
-  <button id="pp">Pause motion</button>
 </div>
-<p class="tour" id="tourTxt">Step through the five buttons above and the sliders move for you. Step 1 is the half-wave dipole, the reference every wire antenna is compared against.</p>
-
-<p class="sec"><b>1 &middot; The hardware, drawn to human scale</b> <span>&mdash; the metal itself on a mast, with the beam it makes coming out of it</span></p>
-<canvas id="phys" style="height: 340px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background: var(--accent)"></span>shaded shape &mdash; where radiation goes</li>
-  <li>everything drawn to the same metre scale</li>
-  <li>dashed line &mdash; mechanical boresight, 0&deg; right</li>
-</ul>
-
-<p class="sec"><b>2 &middot; The pattern as a polar cut</b> <span>&mdash; the same beam seen from the side; rings are decibels below the peak</span></p>
-<canvas id="pol" style="height: 400px;"></canvas>
-<ul class="legend-note">
-  <li>distance from the centre is power relative to the peak: the outer ring is the peak, the centre is 40 dB down (one ten-thousandth of the power)</li>
-  <li>the shaded wedge is the half-power beamwidth, the angular width over which at least half the peak power is delivered</li>
-  <li>ticks outside the circle mark nulls &mdash; directions in which this antenna radiates nothing at all</li>
-</ul>
-
-<p class="sec"><b>3 &middot; The same cut on a decibel scale</b> <span>&mdash; unrolled into a straight axis, which is how sidelobes are actually read</span></p>
-<canvas id="rect" style="height: 300px;"></canvas>
-<ul class="legend-note">
-  <li>the horizontal axis is direction in degrees, using the same zero as the pictures above; the window narrows automatically as the beam does</li>
-  <li>the upper dashed line is 3 dB below the peak; the width of the curve at that line is the half-power beamwidth</li>
-  <li>the lower dashed line sits on the tallest sidelobe &mdash; the leak that lands on somebody else's receiver</li>
-</ul>
-
-<div class="cards">
-  <div class="card">
-    <div class="hd">Directivity</div>
-    <div class="big" id="cD1">&mdash;</div>
-    <div class="ft" id="cD1n">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Gain</div>
-    <div class="big" id="cG">&mdash;</div>
-    <div class="ft" id="cGn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Half-power beamwidth</div>
-    <div class="big" id="cB">&mdash;</div>
-    <div class="ft" id="cBn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">First sidelobe</div>
-    <div class="big" id="cS">&mdash;</div>
-    <div class="ft" id="cSn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Front-to-back ratio</div>
-    <div class="big" id="cF">&mdash;</div>
-    <div class="ft" id="cFn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Effective aperture</div>
-    <div class="big" id="cA">&mdash;</div>
-    <div class="ft" id="cAn">&mdash;</div>
-  </div>
-</div>
-
-<div class="note" id="note">&mdash;</div>
-
-<details><summary>The arithmetic, with this state's numbers</summary>
-<ol class="work" id="work"></ol>
-</details>
-
-<details>
-  <summary>What the models assume, and how they compare with the rules of thumb engineers quote</summary>
-  <p id="assume">&mdash;</p>
-  <p id="thumb">&mdash;</p>
-  <p>Directivity here is a genuine numerical integral of the plotted field pattern, <b>D = 2 / &int;<sub>0</sub><sup>&pi;</sup> |F(&theta;)|<sup>2</sup> sin&thinsp;&theta; d&theta;</b>, evaluated with Simpson's rule over 20&thinsp;000 intervals. Nothing on this page is read from a table of typical antenna gains.</p>
-  <p>Three trades live in the five buttons. First, concentration is the only way to get gain: a dipole spreads power over almost the whole sky and manages 2.15 dBi, while a 6&lambda; dish squeezes it into ten degrees and reaches 25 dBi, and the only thing that changed was the shape of the map. Second, aperture in wavelengths is what counts &mdash; hold the dish at 6&lambda; and slide the frequency from 0.3 to 30 GHz: the pattern never moves, only the hardware shrinks from three metres to three centimetres. Third, sidelobes are the price of a hard-edged aperture: a uniformly illuminated line or array always leaks at &minus;13.3 dB no matter how large it is, a round aperture improves that to &minus;17.6 dB for free, and buying anything better means tapering the illumination, which costs both gain and beamwidth.</p>
-</details>
-
-<details><summary>Words used here</summary>
-<dl class="glossary">
-  <dt>Wavelength &lambda;</dt><dd>The distance from one wave peak to the next, &lambda; = c/f. At 2.4 GHz it is 12.5 cm. Antenna behaviour depends on size measured in wavelengths, never on size in metres alone.</dd>
-  <dt>Radiation pattern</dt><dd>How much power the antenna sends in each direction, drawn relative to its own strongest direction.</dd>
-  <dt>Isotropic radiator</dt><dd>An imaginary antenna that radiates equally in every direction. It cannot be built, but it is the yardstick for gain.</dd>
-  <dt>Directivity D</dt><dd>Peak power density divided by the average over all directions. A pure shape number: it says how tightly the energy is concentrated, ignoring any heat lost in the antenna.</dd>
-  <dt>Radiation efficiency &eta;</dt><dd>The fraction of the power fed in that actually leaves as radio waves. The rest becomes heat in the conductor, the dielectric and the matching network.</dd>
-  <dt>Gain G, in dBi</dt><dd>G = &eta;D, quoted in decibels relative to the isotropic radiator. The "i" means isotropic. Gain is what a link budget uses, because it counts the losses.</dd>
-  <dt>Half-power beamwidth, HPBW</dt><dd>The angle across the main lobe between the two directions where the power has fallen to half, that is 3 dB below, the peak.</dd>
-  <dt>Sidelobe</dt><dd>Any lobe other than the main one. Quoted in decibels below the peak; it is the main cause of interference into neighbouring links.</dd>
-  <dt>Null</dt><dd>A direction of zero radiation between lobes. Useful: point a null at an interferer and it disappears.</dd>
-  <dt>Boresight</dt><dd>Mechanical boresight is the direction the structure is built to point. Electrical boresight is where the beam actually peaks. The angle between them is the boresight error, and calibrating it out is a real production step.</dd>
-  <dt>Effective aperture A<sub>e</sub></dt><dd>The area of the incoming wavefront the antenna effectively collects, A<sub>e</sub> = G&lambda;<sup>2</sup>/4&pi;. Even a wire has one.</dd>
-  <dt>Array factor</dt><dd>The pattern a set of point sources makes purely by interference of their feeds. The real pattern is the array factor multiplied by the pattern of one element.</dd>
-</dl>
-</details>
-
-<p class="sub" style="margin-top: 2rem;">Next: <a href="phased-array.html">phased array</a> &mdash; the same array, steered by phase.</p>
 
 <script>
 (function () {
-  const $ = id => document.getElementById(id);
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
-  const RAD = Math.PI / 180, DEG = 180 / Math.PI, C0 = 299792458;
-  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
-  const fx = (v, n) => isFinite(v) ? v.toFixed(n) : '—';
-  const wrap = a => { let x = a; while (x <= -180) x += 360; while (x > 180) x -= 360; return x; };
+  /* ============================================================
+     engineering-viz shared canvas kit
+     ============================================================ */
 
-  const S = { t: 0, D: 6, f: 2.4, eta: 60, mech: 0, playing: true };
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 7. technical hardware ------------------------------------ */
+  function dish(g, x, y, r, angle, opts) {
+    opts = opts || {};
+    const t = theme();
+    r = Math.max(4, r);
+    const back = angle + Math.PI, spread = 1.05;
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.setLineDash([]);
+    g.lineWidth = Math.max(1, Math.min(1.6, r * 0.06));
+    g.beginPath(); g.arc(x, y, r, back - spread, back + spread); g.stroke();
+    const e0x = x + Math.cos(back - spread) * r, e0y = y + Math.sin(back - spread) * r;
+    const e1x = x + Math.cos(back + spread) * r, e1y = y + Math.sin(back + spread) * r;
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(e0x, e0y); g.lineTo(x, y); g.moveTo(e1x, e1y); g.lineTo(x, y);
+    g.stroke();
+    const f = Math.max(1.6, r * 0.13);
+    g.lineWidth = 1.1;
+    g.strokeRect(x - f, y - f, f * 2, f * 2);
+    const bx = x + Math.cos(back) * r, by = y + Math.sin(back) * r;
+    g.beginPath();
+    g.moveTo(bx, by); g.lineTo(bx + Math.cos(back) * r * 0.45, by + Math.sin(back) * r * 0.45);
+    g.stroke();
+    if (opts.axisLine !== false && r > 8) {
+      g.strokeStyle = t.muted; g.lineWidth = 0.7; g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(angle) * r * 1.1, y + Math.sin(angle) * r * 1.1); g.stroke();
+      g.setLineDash([]);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ============================================================
+     tool code
+     ============================================================ */
+
+  const $ = id => document.getElementById(id);
+  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  const RAD = Math.PI / 180, C0 = 299792458;
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const fx = (v, n) => isFinite(v) ? v.toFixed(n).replace('-', MINUS) : '—';
+  const wrap = a => { let x = a; while (x <= -180) x += 360; while (x > 180) x -= 360; return x; };
+  const DEGS = NB + '°';
+
+  const S = { t: 0, D: 6, f: 2.4, eta: 60, mech: 0, look: 0, floor: 40, zoom: 1 };
 
   const TYPES = [
     { k: 'dip', name: 'Half-wave dipole', usesD: false,
@@ -365,16 +933,10 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
     while (x > 180) x -= 360;
     return M.samp[clamp(Math.round((x + 180) / STEP), 0, NS - 1)];
   };
+  /* pattern level in dB below the peak, at an absolute look angle */
+  const dbAt = a => 20 * L10(Math.max(patAt(a - S.mech) / M.q.pk, 1e-9));
 
-  function fit(c) {
-    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    const W = Math.max(1, Math.round(r.width * d)), H = Math.max(1, Math.round(r.height * d));
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
-    return [Math.max(1, r.width), Math.max(1, r.height)];
-  }
-
-  const lenTxt = v => v >= 1 ? v.toFixed(2) + ' m' : v >= 0.01 ? (v * 100).toFixed(1) + ' cm' : (v * 1000).toFixed(1) + ' mm';
+  const lenTxt = v => v >= 1 ? v.toFixed(2) + NB + 'm' : v >= 0.01 ? (v * 100).toFixed(1) + NB + 'cm' : (v * 1000).toFixed(1) + NB + 'mm';
 
   function antSize() {
     const L = lam(), k = TYPES[S.t].k;
@@ -391,244 +953,204 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
     if (k === 'arr') return Nel() + ' elements at λ/2, ' + lenTxt((Nel() - 1) * L / 2) + ' overall';
     return S.D.toFixed(1) + 'λ = ' + lenTxt(S.D * L) + ' across';
   }
+  /* the dimension the drawing labels, in metres */
+  function dimSize() {
+    const L = lam(), k = TYPES[S.t].k;
+    if (k === 'dip') return L / 2;
+    if (k === 'mon') return L / 4;
+    if (k === 'arr') return (Nel() - 1) * L / 2;
+    return S.D * L;
+  }
 
-  function drawHardware(g, s) {
+  /* --- hardware, thin stroke, local metres → pixels via s -------- */
+  function drawHardware(g, s, t) {
     const k = TYPES[S.t].k, L = lam() * s;
-    g.lineCap = 'round';
+    g.lineCap = 'butt';
+    g.strokeStyle = t.axis; g.fillStyle = t.axis;
     if (k === 'dip') {
       const hl = L / 4, gap = Math.max(1.5, hl * 0.08);
-      g.lineWidth = Math.max(1.6, L * 0.02);
+      g.lineWidth = 1.4;
       g.beginPath(); g.moveTo(0, -hl); g.lineTo(0, -gap); g.moveTo(0, gap); g.lineTo(0, hl); g.stroke();
-      g.lineWidth = Math.max(1, L * 0.012);
+      g.lineWidth = 0.9;
       g.beginPath(); g.moveTo(0, -gap); g.lineTo(-hl * 0.42, 0); g.moveTo(0, gap); g.lineTo(-hl * 0.42, 0); g.stroke();
     } else if (k === 'mon') {
       const rod = L / 4, gp = L * 0.75;
-      g.lineWidth = Math.max(1.6, L * 0.02);
+      g.lineWidth = 1.4;
       g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -rod); g.stroke();
-      g.lineWidth = Math.max(1.4, L * 0.016);
+      g.lineWidth = 1.1;
       g.beginPath(); g.moveTo(-gp, 0); g.lineTo(gp, 0); g.stroke();
-      g.lineWidth = Math.max(0.8, L * 0.008); g.globalAlpha = 0.55;
+      g.lineWidth = 0.7;
       for (let i = -4; i <= 4; i++) {
         const x = i * gp / 4.2;
         g.beginPath(); g.moveTo(x, 0); g.lineTo(x - gp * 0.07, gp * 0.09); g.stroke();
       }
-      g.globalAlpha = 1;
     } else if (k === 'lin') {
-      const hl = S.D * L / 2, t = Math.max(2, hl * 0.09);
-      g.lineWidth = Math.max(1.6, hl * 0.03);
+      const hl = S.D * L / 2, th = Math.max(2, hl * 0.09);
+      g.lineWidth = 1.4;
       g.beginPath(); g.moveTo(0, -hl); g.lineTo(0, hl); g.stroke();
-      g.globalAlpha = 0.2; g.fillRect(-t, -hl, t, 2 * hl); g.globalAlpha = 1;
-      g.lineWidth = Math.max(1, hl * 0.02);
-      g.beginPath(); g.moveTo(-t, -hl); g.lineTo(-t, hl); g.stroke();
-      g.beginPath(); g.moveTo(-t - Math.max(4, hl * 0.16), 0); g.lineTo(-t, 0); g.stroke();
+      g.lineWidth = 1;
+      g.beginPath(); g.moveTo(-th, -hl); g.lineTo(-th, hl); g.stroke();
+      g.beginPath(); g.moveTo(-th, -hl); g.lineTo(0, -hl); g.moveTo(-th, hl); g.lineTo(0, hl); g.stroke();
+      g.beginPath(); g.moveTo(-th - Math.max(4, hl * 0.16), 0); g.lineTo(-th, 0); g.stroke();
     } else if (k === 'arr') {
       const N = Nel(), d = L / 2, hl = (N - 1) * d / 2;
-      const dot = clamp(d * 0.22, 0.8, 3.4);
-      g.lineWidth = Math.max(1, hl * 0.02);
-      g.beginPath(); g.moveTo(-Math.max(4, hl * 0.14), -hl); g.lineTo(-Math.max(4, hl * 0.14), hl); g.stroke();
+      const dot = clamp(d * 0.22, 0.9, 3.4);
+      const fx0 = -Math.max(4, hl * 0.14);
+      g.lineWidth = 1;
+      g.beginPath(); g.moveTo(fx0, -hl); g.lineTo(fx0, hl); g.stroke();
       for (let i = 0; i < N; i++) {
         const y = -hl + i * d;
-        g.beginPath(); g.moveTo(-Math.max(4, hl * 0.14), y); g.lineTo(0, y); g.stroke();
-        g.beginPath(); g.arc(0, y, dot, 0, 7); g.fill();
+        g.beginPath(); g.moveTo(fx0, y); g.lineTo(0, y); g.stroke();
+        g.beginPath(); g.arc(0, y, dot, 0, Math.PI * 2); g.fill();
       }
     } else {
-      const hl = S.D * L / 2, foc = 0.4 * S.D * L, dep = hl * hl / (4 * foc);
-      g.lineWidth = Math.max(1.8, hl * 0.05);
-      g.beginPath();
-      for (let i = 0; i <= 40; i++) {
-        const y = -hl + 2 * hl * i / 40, x = -dep + y * y / (4 * foc);
-        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.stroke();
-      g.lineWidth = Math.max(1, hl * 0.025);
-      g.beginPath(); g.moveTo(-dep, 0); g.lineTo(foc - dep, 0); g.stroke();
-      g.beginPath(); g.arc(foc - dep, 0, Math.max(1.6, hl * 0.07), 0, 7); g.stroke();
+      dish(g, 0, 0, S.D * L / (2 * Math.sin(1.05)), 0, { axisLine: false });
     }
   }
 
-  function drawPerson(g, x, gy, hpx) {
-    const hr = Math.max(1, hpx * 0.075);
-    g.lineWidth = Math.max(1, hpx * 0.045);
-    g.beginPath(); g.arc(x, gy - hpx + hr, hr, 0, 7); g.stroke();
-    g.beginPath();
-    g.moveTo(x, gy - hpx + 2 * hr); g.lineTo(x, gy - hpx * 0.45);
-    g.moveTo(x, gy - hpx * 0.45); g.lineTo(x - hpx * 0.13, gy);
-    g.moveTo(x, gy - hpx * 0.45); g.lineTo(x + hpx * 0.13, gy);
-    g.moveTo(x - hpx * 0.16, gy - hpx * 0.62); g.lineTo(x + hpx * 0.16, gy - hpx * 0.62);
-    g.stroke();
+  /* where the size dimension line sits, in local pixels */
+  function dimLine(s) {
+    const k = TYPES[S.t].k, L = lam() * s;
+    if (k === 'dip') return { x: -L * 0.16, y1: -L / 4, y2: L / 4 };
+    if (k === 'mon') return { x: -L * 0.12, y1: 0, y2: -L / 4 };
+    if (k === 'lin') { const hl = S.D * L / 2; return { x: -hl * 0.09 - Math.max(9, hl * 0.2), y1: -hl, y2: hl }; }
+    if (k === 'arr') { const hl = (Nel() - 1) * (L / 2) / 2; return { x: -Math.max(4, hl * 0.14) - Math.max(9, hl * 0.16), y1: -hl, y2: hl }; }
+    const r = S.D * L / (2 * Math.sin(1.05));
+    return { x: -r * Math.cos(1.05) - Math.max(9, r * 0.12), y1: -r * Math.sin(1.05), y2: r * Math.sin(1.05) };
   }
 
-  let phase = 0;
   function drawScene() {
-    const c = $('phys'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
+    const c = $('phys'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = clamp(Math.round(w / 78), 11, 14);
+    const ext = Math.max(antSize(), 1e-4);
+    const yMax = ext * 1.9;
+
+    /* two passes: the first measures the plot rectangle so the metre
+       scale can be made identical on both axes (a scale drawing must
+       not stretch), the second draws it. */
+    let P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -yMax / 2, max: yMax / 2, unit: 'm', label: 'across' },
+      { min: -yMax / 2, max: yMax / 2, unit: 'm', label: 'along' }, { fontSize: fs });
+    const aspect = P.w / Math.max(P.h, 1);
+    const xMax = yMax * aspect;
     g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), mut = cvv('--text-muted');
-    const acc = cvv('--accent'), bd = cvv('--border-strong');
-    const top = 14, gy = h - 34;
-    const size = antSize();
-    const worldH = Math.max(3.6, size * 1.55);
-    const pxm = (gy - top) / worldH;
-    const hubY = gy - worldH * 0.6 * pxm;
-    const hubX = w * 0.37;
-    const lobeR = Math.min(w * 0.30, (gy - top) * 0.40);
-    let hs = pxm;
-    let mag = 1;
-    if (size * pxm < 34) { mag = 34 / Math.max(size * pxm, 1e-9); hs = pxm * mag; }
+    P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -xMax / 2, max: xMax / 2, unit: 'm', label: 'across' },
+      { min: -yMax / 2, max: yMax / 2, unit: 'm', label: 'along' }, { fontSize: fs });
 
-    g.save();
-    g.translate(hubX, hubY);
-    g.fillStyle = acc; g.strokeStyle = acc;
-    g.globalAlpha = 0.18;
-    const lobeAt = a => {
-      const db = 20 * L10(Math.max(patAt(a - S.mech) / M.q.pk, 1e-9));
-      return Math.max(0, (db + 40) / 40) * lobeR;
-    };
-    g.beginPath();
-    for (let a = -180; a <= 180; a += 0.4) {
-      const r = lobeAt(a);
-      const x = r * Math.cos(a * RAD), y = -r * Math.sin(a * RAD);
-      if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
+    const cx = P.x0 + P.w / 2, cy = P.y0 + P.h / 2;
+    const s = P.h / Math.max(yMax, 1e-9);           /* pixels per metre */
+    const ray = Math.min(P.w, P.h) * 0.46;
+
+    /* half-power wedge, drawn from the antenna in the boresight direction */
+    P.clip(g);
+    if (M.q.hpbw < 359) {
+      const a0 = (M.q.aLo + S.mech) * RAD, a1 = (M.q.aHi + S.mech) * RAD;
+      g.save();
+      g.globalAlpha = 0.12; g.fillStyle = t.s1;
+      g.beginPath(); g.moveTo(cx, cy);
+      const stp = Math.max(0.004, (a1 - a0) / 48);
+      for (let a = a0; a <= a1 + 1e-9; a += stp) g.lineTo(cx + Math.cos(a) * ray * 2, cy - Math.sin(a) * ray * 2);
+      g.lineTo(cx + Math.cos(a1) * ray * 2, cy - Math.sin(a1) * ray * 2);
+      g.closePath(); g.fill();
+      g.globalAlpha = 1; g.strokeStyle = t.s1; g.lineWidth = 1; g.setLineDash([4, 3]);
+      [a0, a1].forEach(a => {
+        g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * ray, cy - Math.sin(a) * ray); g.stroke();
+      });
+      g.setLineDash([]); g.restore();
     }
-    g.closePath(); g.fill();
-    g.globalAlpha = 0.75; g.lineWidth = 1.6; g.stroke();
-    for (let ring = 0; ring < 3; ring++) {
-      const ph = (phase + ring / 3) % 1;
-      g.globalAlpha = 0.5 * (1 - ph);
-      g.lineWidth = 1.2;
-      g.beginPath();
-      for (let a = -180; a <= 180; a += 0.8) {
-        const r = lobeAt(a) * (0.25 + ph * 0.9);
-        const x = r * Math.cos(a * RAD), y = -r * Math.sin(a * RAD);
-        if (a === -180) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.closePath(); g.stroke();
+
+    /* mechanical boresight */
+    g.save();
+    g.strokeStyle = t.s2; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(S.mech * RAD) * ray, cy - Math.sin(S.mech * RAD) * ray);
+    g.stroke(); g.setLineDash([]); g.restore();
+
+    /* the metal */
+    g.save();
+    g.translate(cx, cy); g.rotate(-S.mech * RAD);
+    drawHardware(g, s, t);
+    const dl = dimLine(s);
+    dimension(g, dl.x, dl.y1, dl.x, dl.y2, lenTxt(dimSize()), { size: fs - 1 });
+    g.restore();
+    P.unclip(g);
+
+    const bx = cx + Math.cos(S.mech * RAD) * ray, by = cy - Math.sin(S.mech * RAD) * ray;
+    leader(g, bx, by, 'boresight ' + fx(S.mech, 0) + '°', { box: P, colour: t.s2, size: fs, dx: -30, dy: -20 });
+    if (M.q.hpbw < 359) {
+      const am = (M.q.aHi + S.mech) * RAD;
+      leader(g, cx + Math.cos(am) * ray * 0.72, cy - Math.sin(am) * ray * 0.72,
+        'half power ' + fx(M.q.hpbw, 2) + '°', { box: P, colour: t.s1, size: fs, dx: 26, dy: -22 });
     }
-    g.globalAlpha = 1;
-    g.restore();
-
-    g.fillStyle = cvv('--surface-1');
-    g.fillRect(0, gy, w, h - gy);
-    g.strokeStyle = bd; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(0, gy + 0.5); g.lineTo(w, gy + 0.5); g.stroke();
-
-    const halfV = Math.max(6, size * hs / 2);
-    const mastTop = Math.min(gy - 2, hubY + halfV + 7);
-    g.strokeStyle = bd; g.lineWidth = 3;
-    g.beginPath(); g.moveTo(hubX, gy); g.lineTo(hubX, mastTop); g.stroke();
-    g.lineWidth = 2;
-    g.beginPath(); g.moveTo(hubX - 6, mastTop); g.lineTo(hubX + 6, mastTop); g.stroke();
-
-    g.strokeStyle = mut;
-    drawPerson(g, hubX - Math.max(40, w * 0.12), gy, 1.75 * pxm);
-
-    g.save();
-    g.translate(hubX, hubY);
-    g.strokeStyle = sub; g.globalAlpha = 0.85; g.lineWidth = 1.2; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(0, 0);
-    g.lineTo(Math.cos(S.mech * RAD) * lobeR * 1.12, -Math.sin(S.mech * RAD) * lobeR * 1.12);
-    g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
-    g.restore();
-
-    g.save();
-    g.translate(hubX, hubY);
-    g.rotate(-S.mech * RAD);
-    g.strokeStyle = ink; g.fillStyle = ink;
-    g.shadowColor = cvv('--bg'); g.shadowBlur = 6;
-    drawHardware(g, hs);
-    g.shadowBlur = 0;
-    g.restore();
-
-    const ly = clamp(hubY - halfV - 6, 48, gy - 10);
-    g.strokeStyle = mut; g.lineWidth = 0.8;
-    g.beginPath();
-    g.moveTo(96, 46);
-    g.lineTo(hubX - 44, 46);
-    g.lineTo(hubX - 7, ly);
-    g.stroke();
-
-    const bx = Math.cos(S.mech * RAD) * lobeR * 1.14 + hubX;
-    const by = -Math.sin(S.mech * RAD) * lobeR * 1.14 + hubY;
-    g.fillStyle = sub; g.font = fnt(11);
-    g.textAlign = bx > w - 120 ? 'right' : 'left'; g.textBaseline = 'middle';
-    g.fillText('mechanical boresight ' + fx(S.mech, 0) + '°', clamp(bx + (bx > w - 120 ? -4 : 4), 4, w - 4), clamp(by, 12, gy - 8));
-
-    g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillStyle = ink; g.font = fnt(12);
-    g.fillText(TYPES[S.t].name, 8, 6);
-    g.fillStyle = sub; g.font = fnt(11);
-    g.fillText(sizeTxt() + ' at ' + fx(S.f, 1) + ' GHz (λ = ' + lenTxt(lam()) + ')', 8, 22);
-    if (mag > 1.05) g.fillText('hardware drawn ' + fx(mag, 0) + '× larger than true scale to stay visible', 8, 37);
-
-    let bar = 0.001;
-    const nice = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
-    for (let i = 0; i < nice.length; i++) if (nice[i] * pxm <= w * 0.26) bar = nice[i];
-    g.strokeStyle = mut; g.fillStyle = mut; g.lineWidth = 1.4;
-    const bx0 = 10, by0 = h - 14;
-    g.beginPath();
-    g.moveTo(bx0, by0 - 4); g.lineTo(bx0, by0); g.lineTo(bx0 + bar * pxm, by0); g.lineTo(bx0 + bar * pxm, by0 - 4);
-    g.stroke();
-    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText(lenTxt(bar) + ' (person is 1.75 m)', bx0 + bar * pxm + 6, by0 + 3);
+    leader(g, cx, cy, TYPES[S.t].name + ', ' + lenTxt(dimSize()),
+      { box: P, colour: t.text, size: fs, dx: -34, dy: 30 });
   }
 
   function drawPolar() {
-    const c = $('pol'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    const bds = cvv('--border-strong'), acc = cvv('--accent'), acc2 = cvv('--accent-2'), warn = cvv('--text-warning');
-    const cx = w / 2, cy = h / 2 + 4;
-    const R = Math.max(30, Math.min(w / 2 - 54, h / 2 - 34));
-    const FLOOR = -40;
-    const rOf = v => {
-      const db = 20 * L10(Math.max(v / M.q.pk, 1e-9));
-      return Math.max(0, (db - FLOOR) / -FLOOR) * R;
-    };
+    const c = $('pol'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = clamp(Math.round(w / 78), 11, 14);
+    const FLOOR = -S.floor;
+    const cx = w / 2, cy = h / 2 + fs * 0.3;
+    const R = Math.max(20, Math.min(w / 2 - fs * 4.6, h / 2 - fs * 2.6));
+    const rOf = v => Math.max(0, (20 * L10(Math.max(v / M.q.pk, 1e-9)) - FLOOR) / -FLOOR) * R;
+    const rDb = db => Math.max(0, (clamp(db, FLOOR, 0) - FLOOR) / -FLOOR) * R;
 
-    g.font = fnt(11);
-    [[-3, '−3 dB'], [-10, '−10'], [-20, '−20'], [-30, '−30']].forEach(ring => {
-      const rr = (ring[0] - FLOOR) / -FLOOR * R;
-      g.strokeStyle = ring[0] === -3 ? bds : bd;
-      g.lineWidth = ring[0] === -3 ? 1 : 0.5;
-      g.setLineDash(ring[0] === -3 ? [4, 4] : []);
-      g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.stroke();
-      g.setLineDash([]);
-      g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'middle';
-      g.fillText(ring[1], cx + 3, cy - rr);
+    g.font = t.font(fs);
+
+    /* rings: every 10 dB, plus the −3 dB circle */
+    const rings = [];
+    for (let v = -10; v > FLOOR; v -= 10) rings.push(v);
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    rings.forEach(v => {
+      g.beginPath(); g.arc(cx, cy, rDb(v), 0, Math.PI * 2); g.stroke();
     });
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
-    g.fillStyle = mut;
+    g.strokeStyle = t.gridStrong; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.arc(cx, cy, rDb(-3), 0, Math.PI * 2); g.stroke();
+    g.setLineDash([]);
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+
+    /* radial spokes every 30°, labelled outside the circle */
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
     for (let a = 0; a < 360; a += 30) {
       const x = cx + Math.cos(a * RAD) * R, y = cy - Math.sin(a * RAD) * R;
-      g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(cx, cy); g.lineTo(x, y); g.stroke();
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText((a > 180 ? a - 360 : a).toFixed(0) + '°', cx + Math.cos(a * RAD) * (R + 20), cy - Math.sin(a * RAD) * (R + 20));
     }
+    g.fillStyle = t.text2; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (let a = 0; a < 360; a += 30) {
+      const lx = cx + Math.cos(a * RAD) * (R + fs * 1.5);
+      const ly = cy - Math.sin(a * RAD) * (R + fs * 1.5);
+      g.fillText(fmtNum(a > 180 ? a - 360 : a, 0) + '°', clamp(lx, fs, w - fs), clamp(ly, fs * 0.8, h - fs * 0.6));
+    }
+    /* ring labels along the 90° spoke */
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    rings.concat([-3]).forEach(v => {
+      g.fillStyle = v === -3 ? t.text2 : t.muted;
+      g.fillText(fmtNum(v, 0) + (v === -3 ? NB + 'dB' : ''), cx + 3, cy - rDb(v));
+    });
+    g.fillStyle = t.muted; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('relative power (dB below peak)', 4, 3);
 
+    /* half-power wedge */
     if (M.q.hpbw < 359) {
-      g.fillStyle = warn; g.globalAlpha = 0.16;
+      g.save();
+      g.globalAlpha = 0.12; g.fillStyle = t.warn;
       g.beginPath(); g.moveTo(cx, cy);
-      const st = Math.max(0.05, M.q.hpbw / 60);
+      const st = Math.max(0.05, M.q.hpbw / 64);
       for (let a = M.q.aLo; a <= M.q.aHi + 1e-9; a += st) {
         const aa = (a + S.mech) * RAD;
         g.lineTo(cx + Math.cos(aa) * R, cy - Math.sin(aa) * R);
       }
       const ae = (M.q.aHi + S.mech) * RAD;
       g.lineTo(cx + Math.cos(ae) * R, cy - Math.sin(ae) * R);
-      g.closePath(); g.fill(); g.globalAlpha = 1;
+      g.closePath(); g.fill(); g.restore();
     }
 
-    g.fillStyle = acc; g.strokeStyle = acc;
-    g.globalAlpha = 0.18;
-    g.beginPath();
-    for (let i = 0; i < NS; i += 4) {
-      const a = (angOf(i) + S.mech) * RAD, r = rOf(M.samp[i]);
-      const x = cx + Math.cos(a) * r, y = cy - Math.sin(a) * r;
-      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
-    }
-    g.closePath(); g.fill();
-    g.globalAlpha = 1; g.lineWidth = 2;
+    /* the pattern */
+    g.strokeStyle = t.s1; g.lineWidth = 2;
     g.beginPath();
     for (let i = 0; i < NS; i += 4) {
       const a = (angOf(i) + S.mech) * RAD, r = rOf(M.samp[i]);
@@ -637,107 +1159,98 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
     }
     g.closePath(); g.stroke();
 
-    g.strokeStyle = mut; g.lineWidth = 1.4;
+    /* nulls, as outward ticks */
+    g.strokeStyle = t.text2; g.lineWidth = 1;
     M.q.nulls.forEach(n => {
       const a = (n + S.mech) * RAD;
       g.beginPath();
       g.moveTo(cx + Math.cos(a) * (R + 2), cy - Math.sin(a) * (R + 2));
-      g.lineTo(cx + Math.cos(a) * (R + 9), cy - Math.sin(a) * (R + 9));
+      g.lineTo(cx + Math.cos(a) * (R + 8), cy - Math.sin(a) * (R + 8));
       g.stroke();
     });
+
+    /* beam peak and look direction */
+    const pa = S.mech * RAD;
+    g.strokeStyle = t.s2; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(pa) * R, cy - Math.sin(pa) * R); g.stroke();
+    const la = S.look * RAD, lr = rDb(dbAt(S.look));
+    g.strokeStyle = t.s3; g.lineWidth = 1.2; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(la) * R, cy - Math.sin(la) * R); g.stroke();
+    g.setLineDash([]);
+
+    const box = { x: 0, y: 0, w: w, h: h };
+    leader(g, cx + Math.cos(la) * lr, cy - Math.sin(la) * lr,
+      'look ' + fx(S.look, 0) + '°, ' + fx(dbAt(S.look), 1) + NB + 'dB', { box: box, colour: t.s3, size: fs });
     if (M.q.nulls.length) {
       const a = (M.q.nulls[0] + S.mech) * RAD;
-      g.fillStyle = mut; g.font = fnt(10);
-      g.textAlign = Math.cos(a) < 0 ? 'right' : 'left'; g.textBaseline = 'middle';
-      g.fillText('null', cx + Math.cos(a) * (R + 12), cy - Math.sin(a) * (R + 12));
+      leader(g, cx + Math.cos(a) * (R + 8), cy - Math.sin(a) * (R + 8), 'null ' + fx(wrap(M.q.nulls[0] + S.mech), 1) + '°',
+        { box: box, colour: t.text2, size: fs, dx: Math.cos(a) < 0 ? -24 : 24, dy: -18 });
     }
-
-    g.strokeStyle = acc2; g.lineWidth = 1.6;
-    const pa = S.mech * RAD;
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(pa) * R, cy - Math.sin(pa) * R); g.stroke();
-
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('shaded wedge = half-power beamwidth ' + fx(M.q.hpbw, 2) + '°', 6, 4);
-    g.fillStyle = acc2;
-    g.fillText('solid radial line = beam peak, at ' + fx(S.mech, 0) + '°', 6, 20);
-    g.fillStyle = mut; g.textBaseline = 'bottom';
-    g.fillText('0° is straight to the right, the same as on the picture above', 6, h - 4);
   }
 
   function drawRect() {
-    const c = $('rect'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    const acc = cvv('--accent'), acc2 = cvv('--accent-2'), warn = cvv('--text-warning');
-    const l = 46, r = 12, t = 16, b = 40;
-    const span = clamp(6 * M.q.hpbw, 20, 180);
+    const c = $('rect'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = clamp(Math.round(w / 78), 11, 14);
+    const FLOOR = -S.floor;
+    const span = clamp(6 * M.q.hpbw / S.zoom, 0.5, 180);
     const lo = S.mech - span, hi = S.mech + span;
-    const FLOOR = -40;
-    const X = a => l + (a - lo) / (hi - lo) * (w - l - r);
-    const Y = v => t + (0 - clamp(v, FLOOR, 0)) / -FLOOR * (h - t - b);
 
-    g.font = fnt(11); g.fillStyle = mut;
-    for (let v = 0; v >= FLOOR; v -= 10) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText((v === 0 ? '0' : '−' + Math.abs(v).toFixed(0)), l - 6, Y(v));
-    }
-    g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('dB below peak', 6, 2);
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: lo, max: hi, unit: '°', label: 'direction', fmt: v => fmtNum(wrap(v), span < 4 ? 1 : 0) },
+      { min: FLOOR, max: 0, unit: 'dB', label: 'relative power' }, { fontSize: fs });
 
-    const tickStep = span <= 25 ? 5 : span <= 60 ? 15 : 45;
-    const first = Math.ceil(lo / tickStep) * tickStep;
-    for (let a = first; a <= hi + 1e-9; a += tickStep) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
-      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(wrap(a).toFixed(0) + '°', X(a), h - b + 6);
-    }
-    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('direction, degrees (0° = straight right, same as the pictures above)', (l + w - r) / 2, h - 6);
+    /* the region below the tallest sidelobe is where nothing useful lives */
+    if (M.q.sllDb > FLOOR + 0.5 && M.q.sllDb < -0.2) band(g, P, P.Y(FLOOR), P.Y(M.q.sllDb), t.s4, 'y');
 
-    g.strokeStyle = warn; g.lineWidth = 1; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(l, Y(-3)); g.lineTo(w - r, Y(-3)); g.stroke();
+    P.clip(g);
+    g.strokeStyle = t.warn; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P.x0, P.Y(-3)); g.lineTo(P.x1, P.Y(-3)); g.stroke();
     if (M.q.sllDb > FLOOR + 0.5 && M.q.sllDb < -0.2) {
-      g.strokeStyle = acc2;
-      g.beginPath(); g.moveTo(l, Y(M.q.sllDb)); g.lineTo(w - r, Y(M.q.sllDb)); g.stroke();
+      g.strokeStyle = t.s4;
+      g.beginPath(); g.moveTo(P.x0, P.Y(M.q.sllDb)); g.lineTo(P.x1, P.Y(M.q.sllDb)); g.stroke();
     }
     g.setLineDash([]);
 
-    g.strokeStyle = acc; g.lineWidth = 2;
+    g.strokeStyle = t.s1; g.lineWidth = 2;
     g.beginPath();
-    for (let px = l; px <= w - r; px += 1) {
-      const a = lo + (px - l) / (w - l - r) * (hi - lo);
-      const db = 20 * L10(Math.max(patAt(a - S.mech) / M.q.pk, 1e-9));
-      const y = Y(db);
-      if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+    for (let px = P.x0; px <= P.x1; px += 1) {
+      const a = lo + (px - P.x0) / Math.max(P.w, 1) * (hi - lo);
+      const y = P.Y(clamp(dbAt(a), FLOOR, 0));
+      if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
     }
     g.stroke();
 
-    g.strokeStyle = mut; g.lineWidth = 1;
+    /* nulls as ticks on the baseline */
+    g.strokeStyle = t.text2; g.lineWidth = 1;
     M.q.nulls.forEach(n => {
-      const x = X(n + S.mech);
-      if (x < l || x > w - r) return;
-      g.beginPath(); g.moveTo(x, h - b); g.lineTo(x, h - b - 6); g.stroke();
+      const x = P.X(n + S.mech);
+      if (x < P.x0 || x > P.x1) return;
+      g.beginPath(); g.moveTo(x, P.y1); g.lineTo(x, P.y1 - Math.max(4, P.h * 0.03)); g.stroke();
     });
 
-    const xA = X(M.q.aLo + S.mech), xB = X(M.q.aHi + S.mech);
-    if (xB - xA > 6 && xA > l && xB < w - r) {
-      g.strokeStyle = warn; g.lineWidth = 1.2;
-      g.beginPath(); g.moveTo(xA, Y(-3)); g.lineTo(xB, Y(-3)); g.stroke();
-      [[xA, 1], [xB, -1]].forEach(p => {
-        g.beginPath();
-        g.moveTo(p[0], Y(-3)); g.lineTo(p[0] + p[1] * 5, Y(-3) - 4);
-        g.moveTo(p[0], Y(-3)); g.lineTo(p[0] + p[1] * 5, Y(-3) + 4);
-        g.stroke();
-      });
+    /* look direction */
+    const lx = P.X(S.look);
+    if (lx >= P.x0 && lx <= P.x1) {
+      g.strokeStyle = t.s3; g.lineWidth = 1.2; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(lx, P.y0); g.lineTo(lx, P.y1); g.stroke();
+      g.setLineDash([]);
     }
-    g.fillStyle = warn; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('−3 dB, width ' + fx(M.q.hpbw, 2) + '°', l + 4, Y(-3) - 4);
+    P.unclip(g);
+
+    /* half-power width, as a dimension line on the −3 dB level */
+    const xA = P.X(M.q.aLo + S.mech), xB = P.X(M.q.aHi + S.mech);
+    if (M.q.hpbw < 359 && xB - xA > 8 && xA > P.x0 && xB < P.x1) {
+      dimension(g, xA, P.Y(-3), xB, P.Y(-3), fx(M.q.hpbw, 2) + '°', { colour: t.warn, size: fs - 1 });
+    }
     if (M.q.sllDb > FLOOR + 0.5 && M.q.sllDb < -0.2) {
-      g.fillStyle = acc2; g.textAlign = 'right'; g.textBaseline = 'bottom';
-      g.fillText('first sidelobe ' + fx(M.q.sllDb, 2) + ' dB', w - r - 4, Y(M.q.sllDb) - 3);
+      const sx = clamp(P.X(M.q.sllAt + S.mech), P.x0 + 1, P.x1 - 1);
+      leader(g, sx, P.Y(M.q.sllDb), 'first sidelobe ' + fx(M.q.sllDb, 2) + NB + 'dB',
+        { box: P, colour: t.s4, size: fs, dx: 28, dy: 24 });
+    }
+    if (lx >= P.x0 && lx <= P.x1) {
+      leader(g, lx, P.Y(clamp(dbAt(S.look), FLOOR, 0)), 'look ' + fx(dbAt(S.look), 1) + NB + 'dB',
+        { box: P, colour: t.s3, size: fs, dx: -30, dy: 26 });
     }
   }
 
@@ -761,34 +1274,42 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
 
   function updateUI() {
     const T = TYPES[S.t];
-    $('apv').textContent = fx(S.D, 1) + ' λ';
-    $('fqv').textContent = fx(S.f, 1) + ' GHz';
-    $('efv').textContent = fx(S.eta, 0) + ' %';
-    $('mbv').textContent = fx(S.mech, 0) + '°';
     $('ap').disabled = !T.usesD;
+    $('apN').disabled = !T.usesD;
     $('cD').classList.toggle('off', !T.usesD);
 
     const q = M.q, lm = M.lam;
-    $('cD1').textContent = fx(M.Dd, 2) + ' dBi';
-    $('cD1n').textContent = 'D = ' + fx(M.D, 3) + ', integrated over the whole sphere';
-    $('cG').textContent = fx(M.Gd, 2) + ' dBi';
-    $('cGn').textContent = 'G = ηD with η = ' + fx(S.eta, 0) + ' %, costing ' + fx(-10 * L10(S.eta / 100), 2) + ' dB';
+
+    $('heroVal').innerHTML = fx(M.Gd, 2) + '<span class="u">dBi</span>';
+    const bd = $('heroBadge');
+    bd.className = 'badge';
+    if (q.hpbw >= 359) bd.textContent = 'no main lobe in this cut';
+    else if (q.hpbw <= 10) { bd.classList.add('good'); bd.textContent = 'pencil beam'; }
+    else if (q.hpbw > 60) { bd.classList.add('warn'); bd.textContent = 'broad beam'; }
+    else bd.textContent = 'directional';
+    $('heroFt').textContent = 'D = ' + fx(M.D, 3) + ' · η = ' + fx(S.eta, 0) + ' % · ' + sizeTxt();
+
+    $('cD1').textContent = fx(M.Dd, 2) + NB + 'dBi';
+    $('cD1n').textContent = 'D = ' + fx(M.D, 3) + ', integrated over the sphere';
     $('cB').textContent = q.hpbw >= 359 ? '—' : fx(q.hpbw, 2) + '°';
-    $('cBn').textContent = q.hpbw >= 359 ? 'no half-power edge in this cut'
-      : 'from ' + fx(wrap(q.aLo + S.mech), 2) + '° to ' + fx(wrap(q.aHi + S.mech), 2) + '°';
+    $('cBn').textContent = q.hpbw >= 359 ? 'no half-power edge here'
+      : fx(wrap(q.aLo + S.mech), 2) + '° to ' + fx(wrap(q.aHi + S.mech), 2) + '°';
     if (q.sllDb <= -98) {
       $('cS').textContent = 'none';
-      $('cSn').textContent = 'this cut has no lobe outside the main beam';
+      $('cSn').textContent = 'no lobe outside the main beam';
     } else {
-      $('cS').textContent = fx(q.sllDb, 2) + ' dB';
-      $('cSn').textContent = 'tallest lobe outside the main beam, at ' + fx(wrap(q.sllAt + S.mech), 1) + '°';
+      $('cS').textContent = fx(q.sllDb, 2) + NB + 'dB';
+      $('cSn').textContent = 'tallest outside lobe, at ' + fx(wrap(q.sllAt + S.mech), 1) + '°';
     }
-    $('cF').textContent = q.ftbDb > 60 ? '> 60 dB' : fx(q.ftbDb, 2) + ' dB';
+    $('cF').textContent = q.ftbDb > 60 ? '> 60' + NB + 'dB' : fx(q.ftbDb, 2) + NB + 'dB';
     $('cFn').textContent = q.ftbDb < 0.05
-      ? 'this pattern is bidirectional: the rear lobe matches the front'
-      : 'peak over the strongest direction behind, at ' + fx(wrap(q.backAt + S.mech), 0) + '°';
-    $('cA').textContent = areaTxt(M.Ae) + ' m²';
-    $('cAn').textContent = 'Aₑ = Gλ²/4π at ' + fx(S.f, 1) + ' GHz, λ = ' + lenTxt(lm);
+      ? 'bidirectional: rear lobe matches front'
+      : 'against the strongest rear direction, ' + fx(wrap(q.backAt + S.mech), 0) + '°';
+    $('cA').textContent = areaTxt(M.Ae) + NB + 'm²';
+    $('cAn').textContent = 'Aₑ = Gλ²/4π, λ = ' + lenTxt(lm);
+    const dLook = dbAt(S.look);
+    $('cL').textContent = fx(M.Gd + dLook, 2) + NB + 'dBi';
+    $('cLn').textContent = fx(dLook, 2) + NB + 'dB relative to the peak';
 
     const cf = closedForm();
     $('note').innerHTML = '<b>' + T.name + '.</b> ' + T.note +
@@ -802,12 +1323,13 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
       'Directivity: <b>D = 2 / ∫|F|² sinθ dθ = ' + fx(M.D, 3) + '</b>, which is 10·log₁₀(' + fx(M.D, 3) + ') = <b>' + fx(M.Dd, 2) + ' dBi</b>.',
       'Gain: <b>G = ηD = ' + fx(S.eta / 100, 2) + ' × ' + fx(M.D, 3) + ' = ' + fx(M.G, 3) + '</b> = <b>' + fx(M.Gd, 2) + ' dBi</b>.',
       'Beamwidth read off the curve at half power: <b>' + (M.q.hpbw >= 359 ? 'not defined in this cut' : fx(M.q.hpbw, 2) + '°') + '</b>.',
-      'Effective aperture: <b>Aₑ = Gλ²/4π = ' + fx(M.G, 3) + ' × (' + fx(lm, 4) + ' m)² / 4π = ' + areaTxt(M.Ae) + ' m²</b>.'
+      'Effective aperture: <b>Aₑ = Gλ²/4π = ' + fx(M.G, 3) + ' × (' + fx(lm, 4) + ' m)² / 4π = ' + areaTxt(M.Ae) + ' m²</b>.',
+      'Toward the look direction ' + fx(S.look, 1) + '°: <b>' + fx(M.Gd, 2) + ' dBi ' + (dLook < 0 ? '−' : '+') + ' ' + fx(Math.abs(dLook), 2) + ' dB = ' + fx(M.Gd + dLook, 2) + ' dBi</b>.'
     ].map(s => '<li>' + s + '</li>').join('');
 
     $('assume').textContent = T.assume;
     if (T.k === 'cir') {
-      $('thumb').innerHTML = 'For this ' + fx(S.D, 1) + 'λ aperture the integral of the drawn curve gives a beamwidth of <b>' +
+      $('thumb').innerHTML = 'For this ' + fx(S.D, 1) + 'λ aperture the drawn curve gives a beamwidth of <b>' +
         fx(M.q.hpbw, 2) + '°</b>. The two rules of thumb engineers quote for a real dish are wider, because they already include the feed taper: <b>70λ/D = ' +
         fx(70 / S.D, 2) + '°</b> and the microwave-link form <b>22/(f<sub>GHz</sub>·D<sub>m</sub>) = ' + fx(22 / (S.f * S.D * lm), 2) +
         '°</b>. Those two differ from each other by a fixed 4.8 %, and both are wider than the uniform-illumination floor of 58.96λ/D = ' +
@@ -823,59 +1345,61 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
   function redraw() { drawScene(); drawPolar(); drawRect(); }
   function refresh() { recompute(); updateUI(); redraw(); }
 
+  const setPair = (id, v) => { $(id).value = v; $(id + 'N').value = $(id).value; };
+  function setType(i) {
+    S.t = i;
+    TYPES.forEach((_, k) => $('t' + k).classList.toggle('on', k === i));
+  }
+
   TYPES.forEach((T, i) => {
-    $('t' + i).addEventListener('click', () => {
-      S.t = i;
-      TYPES.forEach((_, k) => $('t' + k).classList.toggle('on', k === i));
-      refresh();
-    });
+    $('t' + i).addEventListener('click', () => { setType(i); refresh(); });
   });
-  const bind = (id, key, scale) => $(id).addEventListener('input', () => {
-    S[key] = +$(id).value * (scale || 1);
+
+  bindPair($('ap'), $('apN'), v => { S.D = v; refresh(); });
+  bindPair($('fq'), $('fqN'), v => { S.f = v; refresh(); });
+  bindPair($('mb'), $('mbN'), v => { S.mech = v; refresh(); });
+  bindPair($('lk'), $('lkN'), v => { S.look = v; updateUI(); redraw(); });
+  bindPair($('ef'), $('efN'), v => { S.eta = v; refresh(); });
+  bindPair($('fl'), $('flN'), v => { S.floor = v; redraw(); });
+  bindPair($('zm'), $('zmN'), v => { S.zoom = v; redraw(); });
+
+  function apply(st) {
+    setType(st.t);
+    S.D = st.D; S.f = st.f; S.eta = st.eta; S.mech = st.mech; S.look = st.look == null ? 0 : st.look;
+    setPair('ap', S.D); setPair('fq', S.f); setPair('ef', S.eta);
+    setPair('mb', S.mech); setPair('lk', S.look);
     refresh();
-  });
-  bind('ap', 'D'); bind('fq', 'f'); bind('ef', 'eta'); bind('mb', 'mech');
+  }
+
+  const PRESETS = [
+    { t: 0, D: 6, f: 2.4, eta: 85, mech: 0 },
+    { t: 1, D: 6, f: 0.9, eta: 75, mech: 0 },
+    { t: 3, D: 4, f: 1.8, eta: 90, mech: 0 },
+    { t: 4, D: 48, f: 12, eta: 65, mech: 0 }
+  ];
+  PRESETS.forEach((st, i) => $('p' + i).addEventListener('click', () => apply(st)));
 
   const TOUR = [
     { t: 0, D: 6, f: 2.4, eta: 60, mech: 0,
-      txt: 'Step 1 — the half-wave dipole: 2.15 dBi, 78.08° wide, no front.' },
+      txt: 'Step 1 — half-wave dipole: 2.15 dBi, 78.08° wide, no front.' },
     { t: 1, D: 6, f: 2.4, eta: 60, mech: 0,
       txt: 'Step 2 — monopole on a ground plane: same field above, +3.01 dB.' },
     { t: 2, D: 6, f: 2.4, eta: 60, mech: 0,
       txt: 'Step 3 — a 6λ line source: 8.47° beam, sidelobes at −13.26 dB.' },
     { t: 3, D: 6, f: 2.4, eta: 60, mech: 0,
-      txt: 'Step 4 — twelve elements at λ/2: nearly the same beam; directivity ≈ N.' },
-    { t: 4, D: 6, f: 12, eta: 60, mech: 25,
+      txt: 'Step 4 — twelve elements at λ/2: nearly the same beam, directivity ≈ N.' },
+    { t: 4, D: 6, f: 12, eta: 60, mech: 25, look: 10,
       txt: 'Step 5 — the same 6λ made round: first sidelobe drops to −17.57 dB.' }
   ];
   TOUR.forEach((st, i) => {
     $('s' + (i + 1)).addEventListener('click', () => {
-      S.t = st.t; S.D = st.D; S.f = st.f; S.eta = st.eta; S.mech = st.mech;
-      $('ap').value = st.D; $('fq').value = st.f; $('ef').value = st.eta; $('mb').value = st.mech;
-      TYPES.forEach((_, k) => $('t' + k).classList.toggle('on', k === st.t));
+      apply(st);
       $('tourTxt').textContent = st.txt;
-      refresh();
     });
   });
 
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  S.playing = !reduce;
-  $('pp').textContent = S.playing ? 'Pause motion' : 'Play motion';
-  $('pp').addEventListener('click', () => {
-    S.playing = !S.playing;
-    $('pp').textContent = S.playing ? 'Pause motion' : 'Play motion';
-    if (S.playing) requestAnimationFrame(frame);
-  });
-
-  let last = 0;
-  function frame(ts) {
-    if (!S.playing) { last = 0; return; }
-    const dt = last ? Math.min(ts - last, 50) : 16;
-    last = ts;
-    phase = (phase + dt * 0.0004) % 1;
-    drawScene();
-    requestAnimationFrame(frame);
-  }
+  const mqd = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (mqd && mqd.addEventListener) mqd.addEventListener('change', () => { theme.clear(); redraw(); });
 
   let rt = 0;
   window.addEventListener('resize', () => {
@@ -884,7 +1408,6 @@ ol.work b { color: var(--text-primary); font-weight: 500; }
   });
 
   refresh();
-  if (S.playing) requestAnimationFrame(frame);
 })();
 </script>
 </body>
