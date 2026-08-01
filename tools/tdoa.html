@@ -6,8 +6,8 @@
 :root {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-secondary: #3f3d39;
+  --text-muted: #6b6a64;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -19,8 +19,8 @@
   :root {
     --bg: #1b1b19;
     --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
+    --text-secondary: #d8d5cc;
+    --text-muted: #a5a39b;
     --text-warning: #FAC775;
     --border: #34342f;
     --border-strong: #56554e;
@@ -30,8 +30,8 @@
 :root[data-theme="light"] {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-secondary: #3f3d39;
+  --text-muted: #6b6a64;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -40,8 +40,8 @@
 :root[data-theme="dark"] {
   --bg: #1b1b19;
   --text-primary: #ececea;
-  --text-secondary: #b4b2a9;
-  --text-muted: #888780;
+  --text-secondary: #d8d5cc;
+  --text-muted: #a5a39b;
   --text-warning: #FAC775;
   --border: #34342f;
   --border-strong: #56554e;
@@ -55,6 +55,7 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
   line-height: 1.5;
+  font-weight: 450;
 }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
 h2 { font-size: 17px; font-weight: 500; margin: 3rem 0 4px; }
@@ -116,31 +117,31 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 <p class="sec"><b>1 &middot; The map</b> <span>&mdash; one curve per site pair; where they cross is the emitter; 12 &times; 8 km</span></p>
 <canvas id="map" style="height: 380px;"></canvas>
 <div class="legend">
-  <span><span class="dot" style="background:#C0504D"></span>emitter, drag it</span>
-  <span><span class="dot" style="background:#94B6D2"></span>a receiver site</span>
-  <span><span class="dot" style="background:#8a8985"></span>fix from the crossing curves</span>
+  <span><span class="dot" style="background:#C0504D"></span>Emitter, drag it</span>
+  <span><span class="dot" style="background:#94B6D2"></span>A receiver site</span>
+  <span><span class="dot" style="background:#8a8985"></span>Fix from the crossing curves</span>
 </div>
 
 <p class="sec"><b>2 &middot; When each site heard it</b> <span>&mdash; arrival time against site 1; below the line means it heard the pulse earlier</span></p>
 <canvas id="toa" style="height: 260px;"></canvas>
 <div class="legend">
-  <span><span class="dot" style="background:#94B6D2"></span>arrival, relative to site 1</span>
-  <span><span class="dot" style="background:#8a8985"></span>site 1, the reference</span>
+  <span><span class="dot" style="background:#94B6D2"></span>Arrival, relative to site 1</span>
+  <span><span class="dot" style="background:#8a8985"></span>Site 1, the reference</span>
 </div>
 <div class="cards" id="cards" style="margin-top: 1rem;"></div>
 
 <p class="sec"><b>3 &middot; Clock error becomes distance error</b> <span>&mdash; light travels 300 m in one microsecond, so that is the exchange rate</span></p>
 <canvas id="err" style="height: 260px;"></canvas>
 <div class="legend">
-  <span><span class="dot" style="background:#94B6D2"></span>position error = c &middot; &Delta;t</span>
-  <span><span class="dot" style="background:#C0504D"></span>your current clock error</span>
+  <span><span class="dot" style="background:#94B6D2"></span>Position error = c &middot; &Delta;t</span>
+  <span><span class="dot" style="background:#C0504D"></span>Your current clock error</span>
 </div>
 
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var fnt = function (s) { return '500 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
   var KMX = 12, KMY = 8;
   var C = 0.299792458;                 // km per microsecond
   // Office "Median" palette
@@ -266,7 +267,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.moveTo(fx2, fy2 - 7); g.lineTo(fx2, fy2 + 7); g.stroke();
       var miss = Math.hypot(f.x - S.ex, f.y - S.ey) * 1000;
       g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-      g.fillText('fix, ' + miss.toFixed(0) + ' m out', fx2 + 10, fy2 + 10);
+      g.fillText('Fix, ' + miss.toFixed(0) + ' m out', fx2 + 10, fy2 + 10);
     }
 
     for (var j = 0; j < S.n; j++) {
@@ -274,14 +275,14 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.fillStyle = COL[j];
       g.beginPath(); g.arc(sx, sy, 5.5, 0, 7); g.fill();
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('site ' + (j + 1), sx, sy + 9);
+      g.fillText('Site ' + (j + 1), sx, sy + 9);
     }
 
     var ex = X(S.ex), ey = Y(S.ey);
     g.fillStyle = EMIT;
     g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
     g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('emitter', ex, ey - 11);
+    g.fillText('Emitter', ex, ey - 11);
   }
 
   function drawErr() {
@@ -306,10 +307,10 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.fillText(ns, X(ns), h - b + 5);
     }
     g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('clock error (ns rms)', l + (w - l - r) / 2, h - 6);
+    g.fillText('Clock error (ns rms)', l + (w - l - r) / 2, h - 6);
     g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
     g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('position error (m)', 0, 0); g.restore();
+    g.fillText('Position error (m)', 0, 0); g.restore();
 
     g.strokeStyle = COL[0]; g.lineWidth = 1.8;
     g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(NMAX), Y(EMAX)); g.stroke();
@@ -360,14 +361,13 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     // the zero line is site 1 itself
     g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
-    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
-    g.fillText('site 1 hears it here', w - r - 2, Y(0) - 5);
+    g.fillText('Site 1 hears it here', w - r - 2, Y(0) - 5);
 
     g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('receiver site', l + (w - l - r) / 2, h - 6);
+    g.fillText('Receiver site', l + (w - l - r) / 2, h - 6);
     g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
     g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('arrival after site 1 (µs)', 0, 0); g.restore();
+    g.fillText('Arrival after site 1 (µs)', 0, 0); g.restore();
 
     for (var j = 0; j < S.n; j++) {
       var x = X(j), y = Y(dts[j]);
@@ -382,7 +382,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.fillText((dts[j] >= 0 ? '+' : '') + dts[j].toFixed(2) + ' µs', x, y + (above ? -9 : 9));
 
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('site ' + (j + 1), x, h - b + 6);
+      g.fillText('Site ' + (j + 1), x, h - b + 6);
     }
   }
 
@@ -396,7 +396,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       el.innerHTML = '<div class="hd"><span class="dot" style="background:' + COL[i] + '"></span>Site ' + (i + 1) + ' &minus; site 1</div>' +
         '<div class="big" style="color:' + COL[i] + '">' + (dt >= 0 ? '+' : '') + dt.toFixed(2) + ' &micro;s</div>' +
         '<div class="ft">' + (dd >= 0 ? '+' : '') + dd.toFixed(0) + ' m of path &middot; ' +
-        (dt >= 0 ? 'site 1 hears it first' : 'site ' + (i + 1) + ' hears it first') + '</div>';
+        (dt >= 0 ? 'site 1 hears it first' : 'Site ' + (i + 1) + ' hears it first') + '</div>';
       box.appendChild(el);
     }
   }

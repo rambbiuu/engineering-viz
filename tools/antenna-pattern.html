@@ -6,8 +6,8 @@
 :root {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-secondary: #3f3d39;
+  --text-muted: #6b6a64;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -19,8 +19,8 @@
   :root {
     --bg: #1b1b19;
     --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
+    --text-secondary: #d8d5cc;
+    --text-muted: #a5a39b;
     --text-warning: #FAC775;
     --border: #34342f;
     --border-strong: #56554e;
@@ -30,8 +30,8 @@
 :root[data-theme="light"] {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-secondary: #3f3d39;
+  --text-muted: #6b6a64;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -40,8 +40,8 @@
 :root[data-theme="dark"] {
   --bg: #1b1b19;
   --text-primary: #ececea;
-  --text-secondary: #b4b2a9;
-  --text-muted: #888780;
+  --text-secondary: #d8d5cc;
+  --text-muted: #a5a39b;
   --text-warning: #FAC775;
   --border: #34342f;
   --border-strong: #56554e;
@@ -55,6 +55,7 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
   line-height: 1.5;
+  font-weight: 450;
 }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
 .sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
@@ -119,9 +120,9 @@ canvas { width: 100%; display: block; }
 <p class="sec"><b>1 &middot; The pattern</b> <span>&mdash; a cut through the beam, rings are decibels below the peak</span></p>
 <canvas id="pol" style="height: 340px;"></canvas>
 <div class="legend">
-  <span><span class="dot" style="background:#4472C4"></span>radiated power</span>
-  <span><span class="dot" style="background:#ED7D31"></span>half-power (&minus;3 dB) edges</span>
-  <span><span class="dot" style="background:#C0504D"></span>boresight, the aiming direction</span>
+  <span><span class="dot" style="background:#4472C4"></span>Radiated power</span>
+  <span><span class="dot" style="background:#ED7D31"></span>Half-power (&minus;3 dB) edges</span>
+  <span><span class="dot" style="background:#C0504D"></span>Boresight, the aiming direction</span>
 </div>
 
 <p class="sec"><b>2 &middot; Read off the curve</b> <span>&mdash; every number below is measured from the pattern you are looking at</span></p>
@@ -134,7 +135,7 @@ canvas { width: 100%; display: block; }
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var fnt = function (s) { return '500 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
   var D2R = Math.PI / 180;
   var BLUE = '#4472C4', ORANGE = '#ED7D31', RED = '#C0504D', GREY = '#A5A5A5';
 
@@ -282,7 +283,7 @@ canvas { width: 100%; display: block; }
     g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, cy - R - 8); g.stroke();
     g.setLineDash([]);
     g.fillStyle = RED; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.fillText('boresight', cx + 8, cy - R - 6);
+    g.fillText('Boresight', cx + 8, cy - R - 6);
 
     // half-power edges
     var bw = hpbw();
@@ -319,7 +320,7 @@ canvas { width: 100%; display: block; }
       g.fillText(a + '°', X(a), h - b + 5);
     }
     g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('angle from boresight', l + (w - l - r) / 2, h - 6);
+    g.fillText('Angle from boresight', l + (w - l - r) / 2, h - 6);
     g.save(); g.translate(13, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
     g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText('dB below peak', 0, 0); g.restore();
 

@@ -6,8 +6,8 @@
 :root {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-secondary: #3f3d39;
+  --text-muted: #6b6a64;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -19,8 +19,8 @@
   :root {
     --bg: #1b1b19;
     --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
+    --text-secondary: #d8d5cc;
+    --text-muted: #a5a39b;
     --text-warning: #FAC775;
     --border: #34342f;
     --border-strong: #56554e;
@@ -30,8 +30,8 @@
 :root[data-theme="light"] {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-secondary: #3f3d39;
+  --text-muted: #6b6a64;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -40,8 +40,8 @@
 :root[data-theme="dark"] {
   --bg: #1b1b19;
   --text-primary: #ececea;
-  --text-secondary: #b4b2a9;
-  --text-muted: #888780;
+  --text-secondary: #d8d5cc;
+  --text-muted: #a5a39b;
   --text-warning: #FAC775;
   --border: #34342f;
   --border-strong: #56554e;
@@ -55,6 +55,7 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
   line-height: 1.5;
+  font-weight: 450;
 }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
 h2 { font-size: 17px; font-weight: 500; margin: 3rem 0 4px; }
@@ -258,7 +259,7 @@ canvas { width: 100%; display: block; }
     g.fillStyle = '#C0504D';
     g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
     g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('emitter', ex, ey - 11);
+    g.fillText('Emitter', ex, ey - 11);
 
     g.strokeStyle = bd; g.lineWidth = 1;
     g.beginPath(); g.moveTo(ml - 14, cy); g.lineTo(w - mr + 14, cy); g.stroke();
@@ -337,7 +338,7 @@ canvas { width: 100%; display: block; }
     }
 
     g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('time →', lx + (rx - lx) / 2, h - 6);
+    g.fillText('Time →', lx + (rx - lx) / 2, h - 6);
   }
 
   function drawChart() {
