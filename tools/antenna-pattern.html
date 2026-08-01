@@ -124,7 +124,13 @@ canvas { width: 100%; display: block; }
   <span class="sm" id="apNote" style="margin-left: auto;"></span>
 </div>
 
-<p class="sec"><b>1 &middot; The pattern</b> <span>The two cuts a datasheet gives you; rings are decibels below the peak</span></p>
+<p class="sec"><b>1 &middot; The antenna</b> <span>Drawn with its elements vertical, so this is a vertically polarised mounting</span></p>
+<div class="planes">
+  <div><canvas id="antS" style="height: 210px;"></canvas><p class="plane">Side view</p></div>
+  <div><canvas id="antT" style="height: 210px;"></canvas><p class="plane">Top view</p></div>
+</div>
+
+<p class="sec"><b>2 &middot; The pattern</b> <span>The side view gives the vertical cut, the top view the horizontal one</span></p>
 <div class="planes">
   <div><canvas id="polV" style="height: 320px;"></canvas><p class="plane">Vertical plane</p></div>
   <div><canvas id="polH" style="height: 320px;"></canvas><p class="plane">Horizontal plane</p></div>
@@ -136,10 +142,10 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#C0504D"></span>Boresight</span>
 </div>
 
-<p class="sec"><b>2 &middot; Read off the curve</b> <span>Every number below is measured from the pattern you are looking at</span></p>
+<p class="sec"><b>3 &middot; Read off the curve</b> <span>Every number below is measured from the pattern you are looking at</span></p>
 <div class="cards" id="cards"></div>
 
-<p class="sec"><b>3 &middot; Both cuts, unrolled</b> <span>How a datasheet prints it: decibels against angle</span></p>
+<p class="sec"><b>4 &middot; Both cuts, unrolled</b> <span>How a datasheet prints it: decibels against angle</span></p>
 <canvas id="rect" style="height: 260px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#4472C4"></span>Vertical plane</span>
@@ -367,6 +373,155 @@ canvas { width: 100%; display: block; }
     }
   }
 
+  // Schematic of the antenna itself. u runs along boresight, v across it in
+  // whichever plane the view shows, so one set of dimensions serves both views.
+  function drawAnt(id, top) {
+    var cv = $(id), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted');
+    var cx = w / 2, cy = h / 2;
+    var span = Math.min(w, h) * 0.40;
+    var P = top ? function (u, v) { return [cx + v * span, cy - u * span]; }
+                : function (u, v) { return [cx + u * span, cy - v * span]; };
+    function line(u1, v1, u2, v2, lw, col) {
+      var a = P(u1, v1), b = P(u2, v2);
+      g.strokeStyle = col || sub; g.lineWidth = lw || 1.8;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+    }
+    function dot(u, v, r, col) {
+      var a = P(u, v);
+      g.fillStyle = col || sub;
+      g.beginPath(); g.arc(a[0], a[1], r, 0, 7); g.fill();
+    }
+    // a vertical element: a rod in the side view, seen end-on in the top view
+    function element(u, len, col, lw) {
+      if (top) dot(u, 0, 3, col);
+      else line(u, -len / 2, u, len / 2, lw || 2.2, col);
+    }
+    function arrow(u, v, len) {                    // boresight, pointing along +u
+      var a = P(u, v), b = P(u + len, v);
+      g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      g.setLineDash([]);
+      var back = P(u + len - 0.11, v), side = 0.055 * span;
+      var dx = b[0] - back[0], dy = b[1] - back[1];
+      var nx = -dy / Math.hypot(dx, dy) * side, ny = dx / Math.hypot(dx, dy) * side;
+      g.beginPath(); g.moveTo(b[0], b[1]);
+      g.lineTo(back[0] + nx, back[1] + ny); g.lineTo(back[0] - nx, back[1] - ny);
+      g.closePath(); g.fillStyle = RED; g.fill();
+    }
+    function scaleBar(nLam) {                      // how many wavelengths across
+      var px = span * 1.6 / nLam;
+      if (px < 6) return;
+      var y = h - 10, x1 = 8;
+      g.strokeStyle = mut; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(x1, y); g.lineTo(x1 + px, y);
+      g.moveTo(x1, y - 4); g.lineTo(x1, y + 4);
+      g.moveTo(x1 + px, y - 4); g.lineTo(x1 + px, y + 4); g.stroke();
+      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText('\u03bb', x1 + px + 5, y + 5);
+    }
+
+    var i, n;
+    switch (S.kind) {
+      case 0:                                      // isotropic: a bare point source
+        for (i = 0; i < 12; i++) {
+          var a0 = i * 30 * D2R;
+          line(0.18 * Math.cos(a0), 0.18 * Math.sin(a0), 0.42 * Math.cos(a0), 0.42 * Math.sin(a0), 1.2, mut);
+        }
+        dot(0, 0, 6, ORANGE);
+        break;
+      case 1:                                      // collinear: elements stacked up the mast
+        if (top) {                                 // a vertical stack, seen end on
+          var c1 = P(0, 0); g.strokeStyle = mut; g.lineWidth = 1;
+          g.beginPath(); g.arc(c1[0], c1[1], 0.12 * span, 0, 7); g.stroke();
+          dot(0, 0, 5, ORANGE);
+        } else {
+          line(0, -0.95, 0, 0.95, 1, mut);         // mast
+          for (i = 0; i < 4; i++) {
+            var vc = -0.72 + i * 0.48;
+            line(0, vc - 0.17, 0, vc + 0.17, 3.4, i === 1 ? ORANGE : sub);
+            if (i < 3) dot(0, vc + 0.24, 3, mut);  // phasing section between elements
+          }
+        }
+        arrow(0.34, 0, 0.5);
+        break;
+      case 2:                                      // half-wave dipole, fed at the centre
+        if (top) dot(0, 0, 5, ORANGE);
+        else {
+          line(0, 0.035, 0, 0.62, 3, ORANGE);
+          line(0, -0.035, 0, -0.62, 3, ORANGE);
+          line(-0.16, 0.03, -0.02, 0.03, 1.2, mut); line(-0.16, -0.03, -0.02, -0.03, 1.2, mut);
+        }
+        arrow(0.30, 0, 0.5);
+        break;
+      case 3:                                      // monopole standing on its ground plane
+        if (top) {
+          var c2 = P(0, 0); g.strokeStyle = mut; g.lineWidth = 1.4;
+          g.beginPath(); g.arc(c2[0], c2[1], 0.62 * span, 0, 7); g.stroke();
+          dot(0, 0, 5, ORANGE);
+        } else {
+          line(-0.62, 0, 0.62, 0, 1.8, mut);       // ground plane, edge on
+          for (i = -3; i <= 3; i++) line(i * 0.2, 0, i * 0.2 - 0.06, -0.09, 1, mut);
+          line(0, 0.02, 0, 0.62, 3, ORANGE);
+        }
+        arrow(0.30, top ? 0 : 0.30, 0.5);
+        break;
+      case 4: {                                    // patch: board edge on, radiating forwards
+        var e4 = top ? 0.70 : 0.56;                // wider than it is tall
+        line(0, -e4 - 0.08, 0, e4 + 0.08, 2, mut); // ground plane
+        line(0.07, -e4 - 0.08, 0.07, e4 + 0.08, 1, mut);
+        line(0.07, -e4, 0.07, e4, 4.5, ORANGE);    // the patch itself
+        for (i = -2; i <= 2; i++) line(0, i * 0.3, 0.07, i * 0.3, 1, mut);
+        arrow(0.24, 0, 0.5);
+        break;
+      }
+      case 5:                                      // Yagi: reflector, driven, directors
+        line(-0.42, 0, 0.92, 0, 1.6, mut);         // boom
+        element(-0.42, 1.16, sub, 2.2);            // reflector, the long one at the back
+        element(-0.18, 1.04, ORANGE, 3);           // driven
+        for (i = 0; i < 4; i++) element(0.08 + i * 0.28, 0.94 - i * 0.06, sub, 2.2);
+        arrow(1.02, 0, 0.42);
+        break;
+      case 6:                                      // log-periodic: the taper, fed at the nose
+        line(-0.92, 0, 0.96, 0, 1.6, mut);
+        n = 9;
+        for (i = 0; i < n; i++) {
+          var f = i / (n - 1);
+          var u6 = -0.88 + f * 1.74, len6 = 1.24 * Math.pow(0.80, i);
+          element(u6, len6, i === n - 1 ? ORANGE : (i % 2 ? mut : sub), 2.4);
+        }
+        arrow(1.06, 0, 0.36);
+        break;
+      case 7:                                      // horn: waveguide flaring to its mouth
+        line(-0.86, -0.16, -0.28, -0.16, 2, sub);  // guide
+        line(-0.86, 0.16, -0.28, 0.16, 2, sub);
+        line(-0.86, -0.16, -0.86, 0.16, 2, sub);
+        line(-0.28, -0.16, 0.34, -0.62, 2, sub);   // flare
+        line(-0.28, 0.16, 0.34, 0.62, 2, sub);
+        line(0.34, -0.62, 0.34, 0.62, 2.4, ORANGE);  // the aperture
+        arrow(0.42, 0, 0.46);
+        scaleBar(S.ap);
+        break;
+      case 8:                                      // dish with a feed at the focus
+        var pts = [];
+        for (i = -22; i <= 22; i++) {
+          var vv = i / 22 * 0.72;
+          pts.push(P(vv * vv * 0.62 - 0.34, vv));  // parabola opening along +u
+        }
+        g.strokeStyle = sub; g.lineWidth = 2.6;
+        g.beginPath();
+        pts.forEach(function (q, k) { if (k === 0) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]); });
+        g.stroke();
+        line(-0.34, 0, 0.15, 0, 1, mut);           // feed support
+        line(0.15, -0.1, 0.15, 0.1, 1, mut);
+        dot(0.15, 0, 5, ORANGE);                   // feed at the focus
+        arrow(0.34, 0, 0.46);
+        scaleBar(S.ap);
+        break;
+    }
+  }
+
   function drawRect() {
     var cv = $('rect'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
@@ -456,6 +611,8 @@ canvas { width: 100%; display: block; }
 
   function redraw() {
     syncControls();
+    drawAnt('antS', false);
+    drawAnt('antT', true);
     drawPolar('polV', fieldV, BLUE, true);
     drawPolar('polH', fieldH, GREEN, false);
     drawRect(); cards();
