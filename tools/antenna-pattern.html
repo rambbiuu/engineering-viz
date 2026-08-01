@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antenna beam pattern</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19;
+  --text-primary: #ececea;
+  --text-secondary: #b4b2a9;
+  --text-muted: #888780;
+  --text-warning: #FAC775;
+  --border: #34342f;
+  --border-strong: #56554e;
+  --surface-1: #262624;
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 13px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #4472C4; color: #4472C4; }
+input:focus-visible, button:focus-visible { outline: 2px solid #4472C4; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.sm { font-size: 13px; color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+canvas { width: 100%; display: block; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>Antenna beam pattern</h1>
+<p class="sub">Every antenna sends more energy in some directions than others. That map is its radiation pattern, and gain, beamwidth, sidelobes and front-to-back are all read off it.</p>
+
+<div class="row">
+  <span class="lbl">Antenna</span>
+  <button id="a0">Isotropic</button>
+  <button id="a1" class="on">Half-wave dipole</button>
+  <button id="a2">&frac14;-wave monopole</button>
+  <button id="a3">Horn</button>
+  <button id="a4">Dish</button>
+</div>
+<div class="row" id="szRow" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="ap" style="min-width: 132px;">Aperture width</label>
+  <input type="range" id="ap" min="0.5" max="20" step="0.1" value="5" style="flex: 1;">
+  <input type="number" id="apn" min="0.5" max="20" step="0.1" value="5" style="width: 76px;">
+  <span class="sm">&lambda;</span>
+  <span class="sm" id="apNote" style="margin-left: auto;"></span>
+</div>
+
+<p class="sec"><b>1 &middot; The pattern</b> <span>&mdash; a cut through the beam, rings are decibels below the peak</span></p>
+<canvas id="pol" style="height: 340px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#4472C4"></span>radiated power</span>
+  <span><span class="dot" style="background:#ED7D31"></span>half-power (&minus;3 dB) edges</span>
+  <span><span class="dot" style="background:#C0504D"></span>boresight, the aiming direction</span>
+</div>
+
+<p class="sec"><b>2 &middot; Read off the curve</b> <span>&mdash; every number below is measured from the pattern you are looking at</span></p>
+<div class="cards" id="cards"></div>
+
+<p class="sec"><b>3 &middot; The same pattern, unrolled</b> <span>&mdash; how a datasheet prints it: decibels against angle</span></p>
+<canvas id="rect" style="height: 260px;"></canvas>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var D2R = Math.PI / 180;
+  var BLUE = '#4472C4', ORANGE = '#ED7D31', RED = '#C0504D', GREY = '#A5A5A5';
+
+  var S = { kind: 1, ap: 5 };
+  var NAMES = ['Isotropic', 'Half-wave dipole', 'Quarter-wave monopole', 'Horn', 'Parabolic dish'];
+
+  // normalised FIELD pattern, theta measured from boresight (0 = straight ahead)
+  function field(th) {
+    var t = th * D2R;
+    if (S.kind === 0) return 1;
+    if (S.kind === 1) {                       // half-wave dipole, pattern across the wire
+      var c = Math.cos(t);                    // boresight = broadside
+      var s = Math.sin(t);
+      var den = Math.abs(c);
+      if (den < 1e-6) return 0;               // along the wire: a true null
+      return Math.abs(Math.cos(Math.PI / 2 * s) / den);
+    }
+    if (S.kind === 2) {                       // quarter-wave monopole over ground
+      var c2 = Math.cos(t), s2 = Math.sin(t);
+      var den2 = Math.abs(c2);
+      if (den2 < 1e-6) return 0;
+      var f = Math.abs(Math.cos(Math.PI / 2 * s2) / den2);
+      return Math.abs(t) > Math.PI / 2 ? 0 : f;   // ground plane kills the lower half
+    }
+    // horn and dish: uniform line source of width ap wavelengths -> sinc
+    var u = Math.PI * S.ap * Math.sin(t);
+    var base = Math.abs(u) < 1e-9 ? 1 : Math.abs(Math.sin(u) / u);
+    if (S.kind === 4) {                       // dish: circular aperture tapers the sidelobes
+      var v = Math.PI * S.ap * Math.sin(t);
+      base = Math.abs(v) < 1e-9 ? 1 : Math.abs(2 * j1(v) / v);
+    }
+    return base;
+  }
+  // first-order Bessel, enough accuracy for a pattern plot
+  function j1(x) {
+    var ax = Math.abs(x), y, ans1, ans2, ans;
+    if (ax < 8) {
+      y = x * x;
+      ans1 = x * (72362614232.0 + y * (-7895059235.0 + y * (242396853.1 + y * (-2972611.439 +
+            y * (15704.48260 + y * (-30.16036606))))));
+      ans2 = 144725228442.0 + y * (2300535178.0 + y * (18583304.74 + y * (99447.43394 +
+            y * (376.9991397 + y))));
+      ans = ans1 / ans2;
+    } else {
+      var z = 8 / ax, y2 = z * z, xx = ax - 2.356194491;
+      ans1 = 1 + y2 * (0.183105e-2 + y2 * (-0.3516396496e-4 + y2 * (0.2457520174e-5 + y2 * (-0.240337019e-6))));
+      ans2 = 0.04687499995 + y2 * (-0.2002690873e-3 + y2 * (0.8449199096e-5 + y2 * (-0.88228987e-6 + y2 * 0.105787412e-6)));
+      ans = Math.sqrt(0.636619772 / ax) * (Math.cos(xx) * ans1 - z * Math.sin(xx) * ans2);
+      if (x < 0) ans = -ans;
+    }
+    return ans;
+  }
+  function dB(th) {
+    var f = field(th);
+    return 20 * Math.log10(Math.max(f, 1e-6));
+  }
+
+  // directivity by numerically integrating the power pattern over a sphere
+  function gainDbi() {
+    if (S.kind === 0) return 0;
+    var num = 0, den = 0, N = 2000;
+    for (var i = 0; i < N; i++) {
+      var th = (i + 0.5) / N * 180 - 90;         // -90..90 about boresight
+      var f = field(th), p = f * f;
+      var w = Math.cos(th * D2R);                // solid-angle weight for this cut
+      den += p * Math.abs(w);
+      num += Math.abs(w);
+    }
+    if (den <= 0) return 0;
+    var d = num / den;
+    if (S.kind === 2) d *= 2;                    // monopole radiates into a half-space
+    return 10 * Math.log10(d);
+  }
+
+  function hpbw() {
+    var step = 0.02;
+    for (var th = 0; th <= 180; th += step) {
+      if (dB(th) <= -3) return 2 * th;
+    }
+    return null;                                  // never drops 3 dB in this cut
+  }
+
+  function firstSidelobe() {
+    var prev = dB(0), rising = false, peakAfterNull = null;
+    for (var th = 0.2; th <= 180; th += 0.2) {
+      var v = dB(th);
+      if (!rising && v > prev) rising = true;
+      if (rising && v < prev) { peakAfterNull = prev; break; }
+      prev = v;
+    }
+    return peakAfterNull;
+  }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  var FLOOR = -40;                                // dB shown at the centre of the polar plot
+  function rad(db, R) { return Math.max(0, (db - FLOOR) / (0 - FLOOR)) * R; }
+
+  function drawPolar() {
+    var cv = $('pol'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var cx = w / 2, cy = h / 2, R = Math.min(w / 2 - 62, h / 2 - 40);
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.font = fnt(11); g.fillStyle = mut;
+    [0, -10, -20, -30].forEach(function (dbv) {
+      var rr = rad(dbv, R);
+      g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.stroke();
+      if (dbv !== 0) {
+        var la = 145 * D2R;
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(dbv + ' dB', cx + Math.cos(la) * rr, cy + Math.sin(la) * rr);
+      }
+    });
+    for (var a = 0; a < 360; a += 30) {
+      var ar = (a - 90) * D2R;
+      g.beginPath(); g.moveTo(cx, cy);
+      g.lineTo(cx + Math.cos(ar) * R, cy + Math.sin(ar) * R); g.stroke();
+      var lx = cx + Math.cos(ar) * (R + 20), ly = cy + Math.sin(ar) * (R + 20);
+      var deg = a > 180 ? a - 360 : a;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(deg + '°', lx, ly);
+    }
+
+    // the pattern itself
+    g.strokeStyle = BLUE; g.lineWidth = 2; g.fillStyle = BLUE;
+    g.globalAlpha = 0.14;
+    g.beginPath();
+    for (var t = -180; t <= 180; t += 0.5) {
+      var rr2 = rad(dB(t), R), ar2 = (t - 90) * D2R;
+      var px = cx + Math.cos(ar2) * rr2, py = cy + Math.sin(ar2) * rr2;
+      if (t === -180) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.closePath(); g.fill(); g.globalAlpha = 1; g.stroke();
+
+    // boresight
+    g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, cy - R - 8); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = RED; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText('boresight', cx + 8, cy - R - 6);
+
+    // half-power edges
+    var bw = hpbw();
+    if (bw !== null) {
+      g.strokeStyle = ORANGE; g.lineWidth = 1.4;
+      [-bw / 2, bw / 2].forEach(function (t2) {
+        var ar3 = (t2 - 90) * D2R, rr3 = rad(-3, R);
+        g.beginPath(); g.moveTo(cx, cy);
+        g.lineTo(cx + Math.cos(ar3) * rr3, cy + Math.sin(ar3) * rr3); g.stroke();
+      });
+      g.fillStyle = ORANGE; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
+      var ar4 = (bw / 2 - 90) * D2R, rr4 = rad(-3, R);
+      g.fillText(bw.toFixed(1) + '° wide', cx + Math.cos(ar4) * rr4 + 6, cy + Math.sin(ar4) * rr4);
+    }
+  }
+
+  function drawRect() {
+    var cv = $('rect'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 48, r = 14, t = 14, b = 34;
+    var X = function (deg) { return l + (deg + 180) / 360 * (w - l - r); };
+    var Y = function (db) { return t + (0 - db) / (0 - FLOOR) * (h - t - b); };
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.font = fnt(11); g.fillStyle = mut;
+    [0, -10, -20, -30, -40].forEach(function (dbv) {
+      g.beginPath(); g.moveTo(l, Y(dbv)); g.lineTo(w - r, Y(dbv)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(dbv, l - 6, Y(dbv));
+    });
+    for (var a = -180; a <= 180; a += 60) {
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(a + '°', X(a), h - b + 5);
+    }
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('angle from boresight', l + (w - l - r) / 2, h - 6);
+    g.save(); g.translate(13, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText('dB below peak', 0, 0); g.restore();
+
+    var bw = hpbw();
+    if (bw !== null) {
+      g.fillStyle = ORANGE; g.globalAlpha = 0.12;
+      g.fillRect(X(-bw / 2), t, X(bw / 2) - X(-bw / 2), h - t - b);
+      g.globalAlpha = 1;
+    }
+
+    g.strokeStyle = BLUE; g.lineWidth = 1.8;
+    g.beginPath();
+    for (var d2 = -180; d2 <= 180; d2 += 0.4) {
+      var v = Math.max(dB(d2), FLOOR);
+      var px = X(d2), py = Y(v);
+      if (d2 === -180) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.stroke();
+
+    var sl = firstSidelobe();
+    if (sl !== null && sl > FLOOR) {
+      g.strokeStyle = GREY; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(l, Y(sl)); g.lineTo(w - r, Y(sl)); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.fillText('first sidelobe ' + sl.toFixed(1) + ' dB', w - r - 2, Y(sl) - 3);
+    }
+  }
+
+  function cards() {
+    var bw = hpbw(), sl = firstSidelobe(), fb = dB(180);
+    var rows = [
+      ['Gain', gainDbi().toFixed(1) + ' dBi', 'against an isotropic radiator'],
+      ['Half-power beamwidth', bw === null ? 'no 3 dB point' : bw.toFixed(1) + '°', 'the &minus;3 dB width of the main lobe'],
+      ['First sidelobe', sl === null || sl <= FLOOR ? 'none' : sl.toFixed(1) + ' dB', 'relative to the peak'],
+      ['Front-to-back', (fb <= FLOOR ? '&gt; 40' : (-fb).toFixed(1)) + ' dB', 'peak versus straight behind']
+    ];
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (r) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd">' + r[0] + '</div><div class="big">' + r[1] + '</div><div class="ft">' + r[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  function syncControls() {
+    var needsSize = S.kind === 3 || S.kind === 4;
+    $('szRow').style.display = needsSize ? 'flex' : 'none';
+    $('apNote').textContent = needsSize
+      ? (S.kind === 4 ? 'a dish this many wavelengths across' : 'a horn mouth this many wavelengths wide')
+      : '';
+  }
+
+  function redraw() { syncControls(); drawPolar(); drawRect(); cards(); }
+
+  ['a0', 'a1', 'a2', 'a3', 'a4'].forEach(function (id, k) {
+    $(id).addEventListener('click', function () {
+      S.kind = k;
+      ['a0', 'a1', 'a2', 'a3', 'a4'].forEach(function (o) { $(o).classList.remove('on'); });
+      $(id).classList.add('on');
+      redraw();
+    });
+  });
+  function setAp(v) {
+    S.ap = Math.min(20, Math.max(0.5, isFinite(v) ? v : 5));
+    $('ap').value = S.ap; $('apn').value = S.ap;
+    redraw();
+  }
+  $('ap').addEventListener('input', function () { setAp(parseFloat($('ap').value)); });
+  $('apn').addEventListener('change', function () { setAp(parseFloat($('apn').value)); });
+  window.addEventListener('resize', redraw);
+
+  redraw();
+})();
+</script>
