@@ -6,7 +6,8 @@ Small, self-contained interactive simulators for building engineering intuition.
 
 | Tool | What it teaches |
 |---|---|
-| [4-antenna phase interferometry](tools/phase-interferometry.html) | Direction finding with an unequally spaced array: phase differences, wrapping, ambiguity resolution, and a working phases-to-angle solver |
+| [Phase interferometry](tools/phase-interferometry.html) | Geolocation with an unequally spaced array: phase differences, wrapping, ambiguity resolution, and a working phases-to-angle solver |
+| [AoA triangulation](tools/aoa-triangulation.html) | Crossing bearings from 2–5 sites, and how bearing error becomes position error with range |
 | [Phased-array beam pattern](tools/phased-array.html) | The reverse direction: phase-steering a beam, beamwidth vs aperture, sidelobes and grating lobes |
 
 ## Run locally
