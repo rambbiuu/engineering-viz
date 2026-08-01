@@ -246,12 +246,6 @@ canvas { width: 100%; display: block; }
     g.setLineDash([]);
     arrow(g, cx - px * 30, cy - py * 30, px, py, 9);
 
-    g.strokeStyle = sub; g.globalAlpha = 0.7; g.lineWidth = 1; g.setLineDash([3, 5]);
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, Math.max(12, cy - R2 - 8)); g.stroke();
-    g.setLineDash([]); g.globalAlpha = 1;
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('0° (straight ahead)', cx, Math.max(12, cy - R2 - 12));
-
     if (Math.abs(S.th) > 1) {
       const a = Math.atan2(-Math.cos(th), Math.sin(th));
       g.strokeStyle = sub;
@@ -277,7 +271,7 @@ canvas { width: 100%; display: block; }
     });
 
     g.fillStyle = '#378ADD'; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('blue lines = wave peaks, ' + lam.toFixed(1) + ' cm apart — that gap is one wavelength (λ)', 12, 10);
+    g.fillText('λ = ' + lam.toFixed(1) + ' cm · each blue line = one crest seen from above', 12, 10);
   }
 
   function drawScope(time) {
@@ -297,14 +291,6 @@ canvas { width: 100%; display: block; }
     g.beginPath(); g.moveTo(x0, t); g.lineTo(x0, h - b); g.stroke();
     g.setLineDash([]);
 
-    g.globalAlpha = 0.3; g.setLineDash([2, 6]);
-    for (let k = Math.ceil((lx - x0) / lp); x0 + k * lp <= rx; k++) {
-      const xk = x0 + k * lp;
-      if (k === 0 || xk < lx) continue;
-      g.beginPath(); g.moveTo(xk, t); g.lineTo(xk, h - b); g.stroke();
-    }
-    g.setLineDash([]); g.globalAlpha = 1;
-
     for (let i = 0; i < 4; i++) {
       const yc = t + rh * i + rh / 2;
       g.strokeStyle = bd; g.lineWidth = 0.5;
@@ -318,13 +304,6 @@ canvas { width: 100%; display: block; }
       }
       g.stroke();
 
-      const xm = x0 - ph[i] / 360 * lp;
-      g.globalAlpha = 0.7; g.fillStyle = cols[i];
-      for (let k = Math.ceil((lx - xm) / lp); xm + k * lp <= rx; k++) {
-        const cxk = xm + k * lp;
-        if (cxk >= lx) { g.beginPath(); g.arc(cxk, yc - amp, 3.5, 0, 7); g.fill(); }
-      }
-      g.globalAlpha = 1;
       const xc = x0 - wrap(ph[i]) / 360 * lp;
       g.fillStyle = cols[i];
       g.beginPath(); g.arc(xc, yc - amp, 4.5, 0, 7); g.fill();
@@ -354,10 +333,6 @@ canvas { width: 100%; display: block; }
       if (turns !== 0) {
         g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(11);
         g.fillText((turns > 0 ? '+' : '') + turns + ' turn hidden', 12, yc + 26);
-        if (xm >= lx && xm <= rx) {
-          g.strokeStyle = cvv('--text-warning') || sub; g.lineWidth = 1.5;
-          g.beginPath(); g.arc(xm, yc - amp, 8.5, 0, 7); g.stroke();
-        }
       }
     }
 

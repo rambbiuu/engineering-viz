@@ -1,27 +1,14 @@
 # Engineering visualisation tools
 
-Interactive simulators for RF and wireless communications. Every tool is a single
-self-contained HTML file — no installs, no build, works offline. Start at
-[index.html](index.html) or the hosted site.
+Small, self-contained interactive simulators for building engineering intuition. Each tool is a single HTML file with no dependencies — open it in any browser, or visit the hosted version via GitHub Pages.
 
-## Categories
+## Tools
 
-| Category | Tools |
+| Tool | What it teaches |
 |---|---|
-| [Signals](signals.html) | Fourier series, epicycles, sampling and aliasing |
-| [Modulation](modulation.html) | Modulation playground, AM/DSBSC/SSB, FM Bessel spectrum, IQ constellations, eye diagram, BER vs Eb/N0, OFDM |
-| [Antennas and arrays](antennas.html) | Antenna basics, phased arrays, polarisation, impedance and VSWR |
-| [Propagation](propagation.html) | The whole spectrum end to end, Fresnel zones and clearance, multipath fading |
-| [Receivers and links](receivers.html) | Link budget, noise figure and sensitivity, superheterodyne image |
-| [Geolocation](geolocation.html) | Phase interferometry, AoA triangulation, TDoA |
-| [Cellular networks](cellular.html) | Frequency reuse and SIR, multiple access, CDMA spreading, Erlang trunking, handover and power control |
+| [4-antenna phase interferometry](tools/phase-interferometry.html) | Direction finding with an unequally spaced array: phase differences, wrapping, ambiguity resolution, and a working phases-to-angle solver |
+| [Phased-array beam pattern](tools/phased-array.html) | The reverse direction: phase-steering a beam, beamwidth vs aperture, sidelobes and grating lobes |
 
 ## Run locally
 
-Open `index.html` in a browser. That's it.
-
-## Notes
-
-Formulas follow the referenced course material and public ITU-R recommendations; where a
-model is simplified for clarity, the page says so. Research notes and style rules live in
-`.research/`.
+Open `index.html` (or any file in `tools/`) in a browser. That's it.
