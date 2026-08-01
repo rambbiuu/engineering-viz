@@ -124,8 +124,7 @@ canvas { width: 100%; display: block; }
 <p class="sec"><b>1 &middot; Sky view</b> <span>Looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, red dot = emitter</span></p>
 <canvas id="geo" style="height: 290px;"></canvas>
 
-<p class="sec"><b>2 &middot; Measured phase differences</b> <span>The numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
-<div class="cards">
+<div class="cards" style="margin-top: 1rem;">
   <div class="card">
     <div class="hd"><span class="dot" style="background: #ED7D31;"></span>A2 &minus; A1</div>
     <div class="big" id="w2">&mdash;</div>
@@ -143,10 +142,10 @@ canvas { width: 100%; display: block; }
   </div>
 </div>
 
-<p class="sec"><b>3 &middot; Scope view</b> <span>Voltage out of each antenna cable vs time; the slide between traces is the phase difference (dashed line tracks one crest of A1)</span></p>
+<p class="sec"><b>2 &middot; Scope view</b> <span>Voltage out of each antenna cable vs time; the slide between traces is the phase difference (dashed line tracks one crest of A1)</span></p>
 <canvas id="scope" style="height: 310px;"></canvas>
 
-<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>Sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
+<p class="sec"><b>3 &middot; Phase difference vs emitter angle</b> <span>Sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
 <canvas id="ch" style="height: 230px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background: #ED7D31;"></span><span id="lg2">A2 &minus; A1</span></span>
@@ -420,182 +419,6 @@ canvas { width: 100%; display: block; }
     drawChart();
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
-})();
-</script>
-
-<h2>5 &middot; DF mode &mdash; phases in, angle out</h2>
-<p class="sub" style="margin-bottom: 1rem;">The inverse direction, the one a real receiver runs: type the phase readings and the measured frequency, and the algorithm recovers the angle of arrival.</p>
-
-<div class="row">
-  <span class="lbl">Measured frequency</span>
-  <input type="number" id="f2" min="0.5" max="18" step="0.1" value="2" style="width: 74px;">
-  <span class="sm">GHz</span>
-  <span class="lbl" style="margin-left: 16px;">Positions (cm)</span>
-  <span class="pair"><label class="sm" for="e2">A2</label><input type="number" id="e2" value="2.4" step="0.1" min="0.1" max="200" style="width: 58px;"></span>
-  <span class="pair"><label class="sm" for="e3">A3</label><input type="number" id="e3" value="10" step="0.1" min="0.1" max="200" style="width: 58px;"></span>
-  <span class="pair"><label class="sm" for="e4">A4</label><input type="number" id="e4" value="30" step="0.1" min="0.1" max="200" style="width: 58px;"></span>
-</div>
-<div class="row">
-  <span class="lbl">Phase readings (&deg;)</span>
-  <span class="pair"><label style="font-size: 13px; color: #ED7D31;" for="q2">A2&minus;A1</label><input type="number" id="q2" value="29" step="1" min="-180" max="180" style="width: 68px;"></span>
-  <span class="pair"><label style="font-size: 13px; color: #70AD47;" for="q3">A3&minus;A1</label><input type="number" id="q3" value="120" step="1" min="-180" max="180" style="width: 68px;"></span>
-  <span class="pair"><label style="font-size: 13px; color: #FFC000;" for="q4">A4&minus;A1</label><input type="number" id="q4" value="0" step="1" min="-180" max="180" style="width: 68px;"></span>
-</div>
-<div class="row" style="margin-bottom: 1.25rem;">
-  <span style="font-size: 13px; color: var(--text-muted);">or simulate a reading:</span>
-  <input type="range" id="ta" min="-90" max="90" step="1" value="30" style="flex: 1; max-width: 220px;">
-  <span id="tav" style="font-size: 13px; font-weight: 500; min-width: 38px; font-variant-numeric: tabular-nums;">30&deg;</span>
-  <button id="fill">Fill readings from this emitter</button>
-</div>
-<div class="cards">
-  <div class="card">
-    <div class="hd">Step 1 &middot; coarse from A2</div>
-    <div class="big" id="st1" style="font-size: 15px;">&mdash;</div>
-    <div class="ft" id="sb1">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Step 2 &middot; refine with A3</div>
-    <div class="big" id="st2" style="font-size: 15px;">&mdash;</div>
-    <div class="ft" id="sb2">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Step 3 &middot; refine with A4</div>
-    <div class="big" id="st3" style="font-size: 15px;">&mdash;</div>
-    <div class="ft" id="sb3">&mdash;</div>
-  </div>
-</div>
-<p class="sec"><b>Candidate angles per pair</b> <span>Hollow dots = every angle that pair's reading could mean; filled dot = the lap the algorithm picked; they only line up in one column</span></p>
-<canvas id="cand" style="height: 190px;"></canvas>
-<div style="display: flex; align-items: baseline; gap: 14px; margin-top: 1.25rem; flex-wrap: wrap;">
-  <span class="lbl">Estimated angle of arrival</span>
-  <span id="res" style="font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums;">&mdash;</span>
-  <span id="fitn" style="font-size: 13px; color: var(--text-muted);">&mdash;</span>
-</div>
-
-<script>
-(function () {
-  const $ = id => document.getElementById(id);
-  const PC = ['#ED7D31', '#70AD47', '#FFC000'];
-  const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const D = { d: [2.4, 10, 30], q: [29, 120, 0], f: 2, sol: null };
-
-  function readState() {
-    D.f = Math.min(18, Math.max(0.5, +$('f2').value || 2));
-    D.d = [+$('e2').value || 2.4, +$('e3').value || 10, +$('e4').value || 30];
-    D.q = [wrap(+$('q2').value || 0), wrap(+$('q3').value || 0), wrap(+$('q4').value || 0)];
-  }
-
-  function solve() {
-    const lam = 30 / D.f;
-    const asinDeg = s => Math.asin(Math.max(-1, Math.min(1, s))) * 180 / Math.PI;
-    let sin1 = D.q[0] * lam / (360 * D.d[0]);
-    const clamped = Math.abs(sin1) > 1;
-    sin1 = Math.max(-1, Math.min(1, sin1));
-    const steps = [{ th: asinDeg(sin1), k: 0, clamped: clamped }];
-    let sinEst = sin1;
-    for (let i = 1; i < 3; i++) {
-      const predicted = 360 * D.d[i] * sinEst / lam;
-      const k = Math.round((predicted - D.q[i]) / 360);
-      const truePhi = D.q[i] + 360 * k;
-      sinEst = Math.max(-1, Math.min(1, truePhi * lam / (360 * D.d[i])));
-      steps.push({ th: asinDeg(sinEst), k: k });
-    }
-    const cands = D.d.map((d, i) => {
-      const list = [];
-      const kmax = Math.ceil(d / lam) + 1;
-      for (let k = -kmax; k <= kmax; k++) {
-        const s = (D.q[i] + 360 * k) * lam / (360 * d);
-        if (Math.abs(s) <= 1) list.push({ th: asinDeg(s), k: k });
-      }
-      return list;
-    });
-    const thF = steps[2].th;
-    let fit = 0;
-    D.d.forEach((d, i) => {
-      const exp = wrap(360 * d * Math.sin(thF * Math.PI / 180) / lam);
-      fit = Math.max(fit, Math.abs(wrap(D.q[i] - exp)));
-    });
-    D.sol = { steps: steps, cands: cands, thF: thF, fit: fit, lam: lam };
-  }
-
-  function updateUI() {
-    const s = D.sol;
-    $('st1').textContent = s.steps[0].th.toFixed(1) + '° (rough)';
-    $('sb1').textContent = D.q[0] + '° on ' + D.d[0].toFixed(1) + ' cm' + (s.steps[0].clamped ? ' · impossible reading, clamped' : ' · ' + s.cands[0].length + ' candidate' + (s.cands[0].length > 1 ? 's' : ''));
-    for (let i = 1; i < 3; i++) {
-      $('st' + (i + 1)).textContent = s.steps[i].th.toFixed(1) + '°';
-      $('sb' + (i + 1)).textContent = 'laps added back k = ' + (s.steps[i].k > 0 ? '+' : '') + s.steps[i].k + ' · ' + s.cands[i].length + ' candidates';
-    }
-    $('res').textContent = s.thF.toFixed(1) + '°';
-    $('fitn').textContent = s.fit <= 15 ? 'fit error ' + s.fit.toFixed(1) + '° — readings consistent' : 'fit error ' + s.fit.toFixed(0) + '° — readings do not agree on one angle';
-    $('fitn').style.color = s.fit <= 15 ? 'var(--text-muted)' : 'var(--text-warning)';
-  }
-
-  function drawCand() {
-    const c = $('cand'), r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    const g = c.getContext('2d');
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const w = r.width, h = r.height;
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const l = 96, rt = 20, t = 14, b = 44;
-    const X = a => l + (a + 90) / 180 * (w - l - rt);
-    const s = D.sol;
-
-    g.font = fnt(12); g.fillStyle = sub;
-    [-90, -45, 0, 45, 90].forEach(a => {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
-      g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(a + '°', X(a), h - b + 10);
-    });
-
-    g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([4, 4]);
-    g.beginPath(); g.moveTo(X(s.thF), t); g.lineTo(X(s.thF), h - b); g.stroke();
-    g.setLineDash([]);
-
-    const rh = (h - t - b) / 3;
-    for (let i = 0; i < 3; i++) {
-      const yc = t + rh * i + rh / 2;
-      g.fillStyle = PC[i]; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
-      g.fillText('A' + (i + 2) + '−A1 (' + D.d[i].toFixed(1) + ')', 10, yc);
-      const pick = s.steps[i].k;
-      s.cands[i].forEach(cd => {
-        const x = X(cd.th);
-        if (cd.k === pick) {
-          g.fillStyle = PC[i];
-          g.beginPath(); g.arc(x, yc, 6, 0, 7); g.fill();
-        } else {
-          g.strokeStyle = PC[i]; g.lineWidth = 1.2;
-          g.beginPath(); g.arc(x, yc, 5.5, 0, 7); g.stroke();
-        }
-      });
-    }
-    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('Angle', l + (w - l - rt) / 2, h - 8);
-  }
-
-  function recalc() { readState(); solve(); updateUI(); }
-
-  ['f2', 'e2', 'e3', 'e4', 'q2', 'q3', 'q4'].forEach(id => $(id).addEventListener('input', recalc));
-  $('ta').addEventListener('input', () => { $('tav').textContent = $('ta').value + '°'; });
-  $('fill').addEventListener('click', () => {
-    readState();
-    const lam = 30 / D.f;
-    const th = +$('ta').value * Math.PI / 180;
-    ['q2', 'q3', 'q4'].forEach((id, i) => {
-      $(id).value = wrap(360 * D.d[i] * Math.sin(th) / lam).toFixed(0);
-    });
-    recalc();
-  });
-
-  recalc();
-  function frame() { drawCand(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 })();
 </script>
