@@ -228,7 +228,7 @@ canvas { width: 100%; display: block; }
 
     g.save();
     g.beginPath(); g.rect(0, 0, w, cy); g.clip();
-    g.strokeStyle = '#4472C4'; g.globalAlpha = 0.4; g.lineWidth = 1.5;
+    g.strokeStyle = '#4472C4'; g.globalAlpha = 0.4; g.lineWidth = 1.4;
     const off = (time * 0.05) % lp;
     for (let k = -2; k * lp < R * 1.2; k++) {
       const s = k * lp - off;
@@ -243,7 +243,7 @@ canvas { width: 100%; display: block; }
 
     const R2 = Math.min(w / 2 - 46, cy - 46);
     const ex = cx + Math.sin(th) * R2, ey = cy - Math.cos(th) * R2;
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([5, 5]);
+    g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([5, 5]);
     g.beginPath(); g.moveTo(ex, ey); g.lineTo(cx, cy); g.stroke();
     g.setLineDash([]);
     arrow(g, cx - px * 30, cy - py * 30, px, py, 9);
@@ -267,7 +267,7 @@ canvas { width: 100%; display: block; }
     const dotCol = [ink, PC[0], PC[1], PC[2]];
     ax.forEach((x, i) => {
       g.fillStyle = dotCol[i];
-      g.beginPath(); g.arc(x, cy, 5, 0, 7); g.fill();
+      g.beginPath(); g.arc(x, cy, 5.5, 0, 7); g.fill();
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText('A' + (i + 1), x, cy + 12);
     });
@@ -289,7 +289,7 @@ canvas { width: 100%; display: block; }
     const scroll = (time * 0.04) % lp;
     const x0 = lx + lp + ((0.25 * lp + scroll) % lp + lp) % lp;
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(x0, t); g.lineTo(x0, h - b); g.stroke();
     g.setLineDash([]);
 
@@ -308,9 +308,9 @@ canvas { width: 100%; display: block; }
 
       const xc = x0 - wrap(ph[i]) / 360 * lp;
       g.fillStyle = cols[i];
-      g.beginPath(); g.arc(xc, yc - amp, 4.5, 0, 7); g.fill();
+      g.beginPath(); g.arc(xc, yc - amp, 5.5, 0, 7); g.fill();
       if (i === 0) {
-        g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+        g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
         g.fillText('Crest (top of the bump)', xc + 9, yc - amp - 3);
       }
 
@@ -333,37 +333,40 @@ canvas { width: 100%; display: block; }
       g.fillText(i === 0 ? 'ref' : wrap(ph[i]).toFixed(0) + '°', 12, yc + 10);
       const turns = Math.round((ph[i] - wrap(ph[i])) / 360);
       if (turns !== 0) {
-        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(11);
+        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(12);
         g.fillText((turns > 0 ? '+' : '') + turns + ' turn hidden', 12, yc + 26);
       }
     }
 
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('Time →', lx + (rx - lx) / 2, h - 6);
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Time →', lx + (rx - lx) / 2, h - 8);
   }
 
   function drawChart() {
     const c = $('ch'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
     const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const l = 56, r = 14, t = 12, b = 34;
+    const l = 74, r = 20, t = 18, b = 48;
     const X = a => l + (a + 90) / 180 * (w - l - r);
     const Y = v => t + (180 - v) / 360 * (h - t - b);
     const lam = 30 / S.f;
 
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(12); g.fillStyle = sub;
     [-180, -90, 0, 90, 180].forEach(v => {
       g.strokeStyle = bd; g.lineWidth = v === 0 ? 1 : 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
       g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v + '°', l - 8, Y(v));
+      g.fillText(v + '°', l - 10, Y(v));
     });
     [-90, -45, 0, 45, 90].forEach(a => {
       g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(a + '°', X(a), h - b + 8);
+      g.fillText(a + '°', X(a), h - b + 10);
     });
-    g.textAlign = 'center';
-    g.fillText('Emitter angle', l + (w - l - r) / 2, h - 13);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Emitter angle', l + (w - l - r) / 2, h - 8);
+    g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Phase difference', 0, 0); g.restore();
 
     for (let j = 0; j < 3; j++) {
       const d = S.pos[j + 1];
@@ -379,12 +382,12 @@ canvas { width: 100%; display: block; }
       g.stroke();
     }
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(X(S.th), t); g.lineTo(X(S.th), h - b); g.stroke();
     g.setLineDash([]);
     truePhases().forEach((tp, j) => {
       g.fillStyle = PC[j];
-      g.beginPath(); g.arc(X(S.th), Y(wrap(tp)), 4, 0, 7); g.fill();
+      g.beginPath(); g.arc(X(S.th), Y(wrap(tp)), 5.5, 0, 7); g.fill();
     });
   }
 
@@ -532,19 +535,19 @@ canvas { width: 100%; display: block; }
     const w = r.width, h = r.height;
     g.clearRect(0, 0, w, h);
     const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const l = 96, rt = 14, t = 10, b = 30;
+    const l = 96, rt = 20, t = 14, b = 44;
     const X = a => l + (a + 90) / 180 * (w - l - rt);
     const s = D.sol;
 
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(12); g.fillStyle = sub;
     [-90, -45, 0, 45, 90].forEach(a => {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
       g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(a + '°', X(a), h - b + 8);
+      g.fillText(a + '°', X(a), h - b + 10);
     });
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(X(s.thF), t); g.lineTo(X(s.thF), h - b); g.stroke();
     g.setLineDash([]);
 
@@ -560,13 +563,13 @@ canvas { width: 100%; display: block; }
           g.fillStyle = PC[i];
           g.beginPath(); g.arc(x, yc, 6, 0, 7); g.fill();
         } else {
-          g.strokeStyle = PC[i]; g.lineWidth = 1.5;
-          g.beginPath(); g.arc(x, yc, 5, 0, 7); g.stroke();
+          g.strokeStyle = PC[i]; g.lineWidth = 1.2;
+          g.beginPath(); g.arc(x, yc, 5.5, 0, 7); g.stroke();
         }
       });
     }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('Angle', l + (w - l - rt) / 2, h - 4);
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Angle', l + (w - l - rt) / 2, h - 8);
   }
 
   function recalc() { readState(); solve(); updateUI(); }

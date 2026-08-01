@@ -226,7 +226,7 @@ canvas { width: 100%; display: block; }
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.arc(cx, cy, R * r, Math.PI, 2 * Math.PI); g.stroke();
     });
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(12); g.fillStyle = sub;
     [-90, -60, -30, 0, 30, 60, 90].forEach(a => {
       const x = cx + R * Math.sin(rad(a)), y = cy - R * Math.cos(rad(a));
       g.strokeStyle = bd; g.lineWidth = 0.5;
@@ -237,7 +237,7 @@ canvas { width: 100%; display: block; }
     g.strokeStyle = bds; g.lineWidth = 1;
     g.beginPath(); g.moveTo(cx - R - 8, cy); g.lineTo(cx + R + 8, cy); g.stroke();
 
-    g.strokeStyle = '#809EC2'; g.lineWidth = 2; g.fillStyle = '#809EC2';
+    g.strokeStyle = '#809EC2'; g.lineWidth = 1.8; g.fillStyle = '#809EC2';
     g.globalAlpha = 0.15;
     g.beginPath();
     g.moveTo(cx, cy);
@@ -255,7 +255,7 @@ canvas { width: 100%; display: block; }
     }
     g.stroke();
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([5, 5]);
+    g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([5, 5]);
     g.beginPath(); g.moveTo(cx, cy);
     g.lineTo(cx + R * Math.sin(rad(S.st)), cy - R * Math.cos(rad(S.st)));
     g.stroke(); g.setLineDash([]);
@@ -265,33 +265,37 @@ canvas { width: 100%; display: block; }
     S.pos.forEach((p, i) => {
       const x = cx + ((p - mn) / span - 0.5) * R * 0.7;
       g.fillStyle = COLS[i];
-      g.beginPath(); g.arc(x, cy + 12, 4.5, 0, 7); g.fill();
+      g.beginPath(); g.arc(x, cy + 12, 5.5, 0, 7); g.fill();
     });
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('The four elements', cx, cy + 21);
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('The four elements', cx, cy + 22);
   }
 
   function drawRect() {
     const c = $('rc'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
     const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const l = 46, r = 14, t = 12, b = 34;
+    const l = 66, r = 20, t = 18, b = 48;
     const X = a => l + (a + 90) / 180 * (w - l - r);
     const Y = v => t + (1 - v) * (h - t - b);
 
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(12); g.fillStyle = sub;
     [0, 0.25, 0.5, 0.75, 1].forEach(v => {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
       g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(2), l - 8, Y(v));
+      g.fillText(v.toFixed(2), l - 10, Y(v));
     });
     [-90, -45, 0, 45, 90].forEach(a => {
       g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(a + '°', X(a), h - b + 8);
+      g.fillText(a + '°', X(a), h - b + 10);
     });
-    g.textAlign = 'center';
-    g.fillText('Direction', l + (w - l - r) / 2, h - 13);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Direction', l + (w - l - r) / 2, h - 8);
+    g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Relative strength', 0, 0); g.restore();
+    g.font = fnt(12);
 
     g.strokeStyle = '#809EC2'; g.lineWidth = 1.8;
     g.beginPath();
@@ -301,7 +305,7 @@ canvas { width: 100%; display: block; }
     }
     g.stroke();
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(X(S.st), t); g.lineTo(X(S.st), h - b); g.stroke();
     g.setLineDash([]);
   }
