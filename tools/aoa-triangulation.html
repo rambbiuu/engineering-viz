@@ -87,7 +87,7 @@ input:focus-visible, button:focus-visible { outline: 2px solid #4F81BD; outline-
 .sec { margin: 1.5rem 0 6px; font-size: 14px; }
 .sec b { font-weight: 700; }
 .sec b::after { content: ':'; }
-.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 6px; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-primary); }
@@ -136,7 +136,6 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 <canvas id="brg" style="height: 330px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#4F81BD"></span>How far that site's reading was off</span>
-  <span><span class="dot" style="background:#8a8985; opacity:0.35"></span>The &plusmn;&sigma; it is specified to</span>
 </div>
 <div class="cards" id="cards" style="margin-top: 1rem;"></div>
 
@@ -206,9 +205,9 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     var cv = $('map'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var pad = 26;
-    var X = function (kx) { return pad + kx / KMX * (w - 2 * pad); };
-    var Y = function (ky) { return h - pad - ky / KMY * (h - 2 * pad); };
+    var pL = 50, pR = 20, pT = 16, pB = 48;
+    var X = function (kx) { return pL + kx / KMX * (w - pL - pR); };
+    var Y = function (ky) { return h - pB - ky / KMY * (h - pT - pB); };
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
     for (var kx = 2; kx < KMX; kx += 2) { g.beginPath(); g.moveTo(X(kx), Y(0)); g.lineTo(X(kx), Y(KMY)); g.stroke(); }
@@ -216,13 +215,13 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
     g.strokeRect(X(0), Y(KMY), X(KMX) - X(0), Y(0) - Y(KMY));
 
-    g.font = fnt(11); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
     for (var t = 0; t <= KMX; t += 4) g.fillText(t, X(t), Y(0) + 5);
     g.textAlign = 'right'; g.textBaseline = 'middle';
     for (var u = 0; u <= KMY; u += 4) g.fillText(u, X(0) - 5, Y(u));
     g.textAlign = 'right'; g.textBaseline = 'top';
     g.fillText('km east', X(KMX), Y(0) + 19);
-    g.save(); g.translate(X(0) - 16, Y(KMY) + (Y(0) - Y(KMY)) / 2); g.rotate(-Math.PI / 2);
+    g.save(); g.translate(X(0) - 34, Y(KMY) + (Y(0) - Y(KMY)) / 2); g.rotate(-Math.PI / 2);
     g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText('km north', 0, 0); g.restore();
 
     var L = 40;   // km, long enough to leave the frame
@@ -254,9 +253,6 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.strokeStyle = mut; g.lineWidth = 1.4;
       g.beginPath(); g.moveTo(fx - 7, fy); g.lineTo(fx + 7, fy);
       g.moveTo(fx, fy - 7); g.lineTo(fx, fy + 7); g.stroke();
-      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
-      var miss = Math.hypot(f.x - S.ex, f.y - S.ey) * 1000;
-      g.fillText('Fix, ' + miss.toFixed(0) + ' m out', fx + 10, fy + 10);
     }
 
     for (var j = 0; j < S.n; j++) {
@@ -278,25 +274,25 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     var cv = $('rng'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var l = 52, r = 14, t = 16, b = 34;
+    var l = 66, r = 20, t = 18, b = 48;
     var RMAX = 14, EMAX = Math.max(400, 2 * RMAX * Math.tan(S.sig * D2R) * 1000);
     var X = function (km) { return l + km / RMAX * (w - l - r); };
     var Y = function (m) { return h - b - m / EMAX * (h - t - b); };
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.font = fnt(11); g.fillStyle = mut;
+    g.font = fnt(12); g.fillStyle = mut;
     for (var k = 0; k <= 4; k++) {
       var yv = EMAX * k / 4;
       g.beginPath(); g.moveTo(l, Y(yv)); g.lineTo(w - r, Y(yv)); g.stroke();
       g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(Math.round(yv), l - 6, Y(yv));
+      g.fillText(Math.round(yv), l - 10, Y(yv));
     }
     for (var km = 0; km <= RMAX; km += 2) {
       g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(km, X(km), h - b + 5);
+      g.fillText(km, X(km), h - b + 10);
     }
     g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('Range from the site (km)', l + (w - l - r) / 2, h - 6);
+    g.fillText('Range from the site (km)', l + (w - l - r) / 2, h - 8);
     g.save(); g.translate(12, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
     g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('Cross-range miss (m)', 0, 0); g.restore();
@@ -316,10 +312,8 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     var em = Math.min(2 * nearest * Math.tan(S.sig * D2R) * 1000, EMAX);
     g.fillStyle = '#C0504D';
     g.beginPath(); g.arc(X(nearest), Y(em), 5, 0, 7); g.fill();
-    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    var lx = X(nearest) + 9;
-    if (lx > w - r - 90) { g.textAlign = 'right'; lx = X(nearest) - 9; }
-    g.fillText(nearest.toFixed(1) + ' km → ' + em.toFixed(0) + ' m', lx, Y(em) - 7);
+    g.font = fnt(13); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText(nearest.toFixed(1) + ' km → ' + em.toFixed(0) + ' m', w - r - 6, h - b - 10);
   }
 
   // 1-sigma position covariance implied by the bearing geometry, in km^2
@@ -353,7 +347,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     var sum = 0;
     for (var i = 0; i < S.n; i++) sum += rangeKm(i);
     var mean = S.n ? sum / S.n : 4;
-    return Math.min(Math.max(mean * 0.13, 0.08), 4);
+    return Math.min(Math.max(mean * 0.24, 0.12), 6);
   }
 
   function drawZoom() {
@@ -433,7 +427,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     var cv = $('brg'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var l = 56, r = 16, t = 20, b = 40;
+    var l = 64, r = 20, t = 22, b = 48;
 
     var err = [];
     for (var i = 0; i < S.n; i++) err.push((measBrg(i) - trueBrg(i)) / D2R);
@@ -445,7 +439,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.font = fnt(11); g.fillStyle = mut;
+    g.font = fnt(12); g.fillStyle = mut;
     for (var q = -1; q <= 1; q += 0.5) {
       var v = lim * q;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -468,12 +462,12 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill();
 
       var above = err[j] >= 0;
-      g.font = fnt(11); g.textAlign = 'center';
+      g.font = fnt(12); g.textAlign = 'center';
       g.textBaseline = above ? 'bottom' : 'top';
       g.fillText((err[j] >= 0 ? '+' : '') + err[j].toFixed(2) + '°', x, y + (above ? -9 : 9));
 
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('Site ' + (j + 1), x, h - b + 6);
+      g.fillText('Site ' + (j + 1), x, h - b + 12);
     }
   }
 
