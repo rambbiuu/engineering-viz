@@ -625,7 +625,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     }
 
     emitterGlyph(g, ex, ey, emc, 5);
-    g.fillStyle = emc; g.font = fnt(11.5);
+    g.fillStyle = emc; g.font = fnt(12);
     g.textAlign = 'center'; g.textBaseline = 'bottom';
     ctext(g, 'emitter', ex, ey - 13, m.ox, m.ox + m.w);
 
@@ -638,17 +638,17 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
         g.globalAlpha = 1;
       }
       siteGlyph(g, px, py, txt);
-      g.fillStyle = sub; g.font = fnt(11.5);
+      g.fillStyle = sub; g.font = fnt(12);
       g.textAlign = 'center'; g.textBaseline = 'top';
       ctext(g, 'site ' + (i + 1), px, py + 5, m.ox, m.ox + m.w);
       if (reached) {
-        g.fillStyle = acc; g.font = fnt(11);
+        g.fillStyle = acc; g.font = fnt(12);
         g.textBaseline = 'bottom'; g.textAlign = 'center';
         ctext(g, (measT(i) - firstT()).toFixed(2) + ' µs', px, py - 20, m.ox, m.ox + m.w);
       }
     }
 
-    g.fillStyle = mut; g.font = fnt(11);
+    g.fillStyle = mut; g.font = fnt(12);
     g.textAlign = 'left'; g.textBaseline = 'top';
     const slow = Math.round(RING_MS / 1000 / (RING_KM / C * 1e-6) / 1000) * 1000;
     g.fillText('slowed about ' + slow.toLocaleString('en-GB') + ' times · 1 km grid', m.ox + 6, m.oy + 5);
@@ -677,7 +677,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     const step = span > 12 ? 5 : span > 5 ? 2 : span > 2 ? 1 : 0.5;
     for (let t = 0; t <= span + 1e-9; t += step) {
       g.beginPath(); g.moveTo(X(t), y0 - 20); g.lineTo(X(t), y0 + 5); g.stroke();
-      g.fillStyle = mut; g.font = fnt(10);
+      g.fillStyle = mut; g.font = fnt(12);
       g.textAlign = 'center'; g.textBaseline = 'top';
       ctext(g, t.toFixed(step < 1 ? 1 : 0), X(t), y0 + 22, 0, w);
     }
@@ -697,7 +697,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
       ticks.push({ i: i, tm: measT(i) - t0, tt: trueT(i) - firstTTrue(), reached: ringKm >= trueRange(i) });
     }
     ticks.sort((a, b) => a.tm - b.tm);
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     /* layout pass: labels sit centred normally, beside the tick when ticks crowd,
        and stagger over two rows when a row is full */
     const edge = [-1e9, -1e9];
@@ -736,7 +736,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
       g.fillText(tk.lab, tk.x0, tk.top - 3);
     });
 
-    g.fillStyle = sub; g.font = fnt(11);
+    g.fillStyle = sub; g.font = fnt(12);
     g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('arrival time after the first site, µs — thin mark is the error-free time', l, y0 + 36);
   }
@@ -813,7 +813,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
         g.beginPath(); g.arc(px, py, 10, 0, TAU); g.stroke();
       }
       siteGlyph(g, px, py, txt);
-      g.fillStyle = i === S.ref ? acc : sub; g.font = fnt(11.5);
+      g.fillStyle = i === S.ref ? acc : sub; g.font = fnt(12);
       g.textAlign = 'center'; g.textBaseline = 'top';
       ctext(g, i === S.ref ? 'site ' + (i + 1) + ' (ref)' : 'site ' + (i + 1),
         px, py + 5, m.ox, m.ox + m.w);
@@ -866,23 +866,23 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     g.beginPath();
     g.moveTo(ix + 8, iy + iw - 10); g.lineTo(ix + 8 + barPx, iy + iw - 10);
     g.stroke();
-    g.fillStyle = mut; g.font = fnt(10);
+    g.fillStyle = mut; g.font = fnt(12);
     g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillText(barKm >= 1 ? barKm.toFixed(1) + ' km' : (barKm * 1000).toFixed(0) + ' m',
       ix + 8, iy + iw - 13);
-    g.fillStyle = sub; g.font = fnt(10.5);
+    g.fillStyle = sub; g.font = fnt(12);
     g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('zoom on the crossing', ix + 6, iy + 4);
 
     if (V.fix.ok && !V.offMap) {
       const fx = X(V.fix.x), fy = Y(V.fix.y);
       crossGlyph(g, fx, fy, txt, 7);
-      g.fillStyle = txt; g.font = fnt(11.5);
+      g.fillStyle = txt; g.font = fnt(12);
       g.textAlign = 'center'; g.textBaseline = 'bottom';
       const lab = V.errM === null ? 'fix' : 'fix, ' + fmtErr(V.errM) + ' out';
       ctext(g, lab, fx, fy - 11, m.ox, m.ox + m.w);
     } else {
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(11.5);
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
       g.textAlign = 'left'; g.textBaseline = 'top';
       g.fillText(V.offMap
         ? 'the fix has run off the map, ' + fmtErr(V.errM) + ' away'
@@ -890,7 +890,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
         m.ox + 6, m.oy + 20);
     }
 
-    g.fillStyle = mut; g.font = fnt(11);
+    g.fillStyle = mut; g.font = fnt(12);
     g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('each curve holds every position matching one pair’s time difference',
       m.ox + 6, m.oy + 5);
@@ -931,7 +931,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     top = clamp(niceUp(top), 60, 6000);
     const Y = v => t + (1 - clamp(v, 0, top) / top) * (h - t - b);
 
-    g.font = fnt(11);
+    g.font = fnt(12);
     for (let k = 0; k <= 5; k++) {
       const v = top * k / 5;
       g.strokeStyle = bd; g.lineWidth = 0.5;
@@ -966,13 +966,13 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
     g.beginPath(); g.arc(pxu, pyu, 3.2, 0, TAU); g.fill();
     g.strokeStyle = mut; g.lineWidth = 1;
     g.beginPath(); g.moveTo(pxu + 2, pyu - 3); g.lineTo(pxu + 16, pyu - 20); g.stroke();
-    g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillText('1 µs → 300 m on c × σ', pxu + 12, pyu - 22);
 
     /* GPS-class sync marker; the note sits top-left, where a rising curve never reaches */
     g.fillStyle = mut;
     g.beginPath(); g.arc(X(10), Y(C * 10), 3.2, 0, TAU); g.fill();
-    g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('grey dot: 10 ns → 3.0 m, GPS-class sync', l + 8, t + 3);
 
     /* PDOP-scaled prediction, drawn to where it leaves the plot */
@@ -982,7 +982,7 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
       g.strokeStyle = cvv('--series-2'); g.lineWidth = 1.6;
       g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(exS), Y(pd * C * exS)); g.stroke();
       const ms = exS * 0.55;
-      g.fillStyle = cvv('--series-2'); g.font = fnt(10.5);
+      g.fillStyle = cvv('--series-2'); g.font = fnt(12);
       g.textAlign = 'left'; g.textBaseline = 'bottom';
       g.fillText('PDOP ' + pd.toFixed(2) + ' × cσ', X(ms) + 6, Y(pd * C * ms) - 5);
     }
@@ -1003,14 +1003,14 @@ abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cur
       const px = X(S.sig), py = Y(V.errM);
       g.fillStyle = cvv('--emitter');
       g.beginPath(); g.arc(px, py, 5, 0, TAU); g.fill();
-      g.fillStyle = cvv('--emitter'); g.font = fnt(11);
+      g.fillStyle = cvv('--emitter'); g.font = fnt(12);
       g.textBaseline = 'bottom';
       const right = px > l + (w - l - r) * 0.66;
       g.textAlign = right ? 'right' : 'center';
       g.fillText(fmtErr(V.errM) + ' now', right ? px - 8 : px, py - (right ? 2 : 8));
     }
     if (pd === null) {
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(11);
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
       g.textAlign = 'left'; g.textBaseline = 'top';
       g.fillText('geometry is degenerate — move a site off the line', l + 6, t + 4);
     }

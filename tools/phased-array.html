@@ -417,7 +417,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     g.strokeStyle = bd; g.lineWidth = 1; g.setLineDash([3, 4]);
     g.beginPath(); g.moveTo(bx, by); g.lineTo(bx, by - aL - 6); g.stroke();
     g.setLineDash([]);
-    g.font = fnt(11); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('broadside', bx, by - aL - 10);
 
     var tx = bx + aL * Math.sin(th), ty = by - aL * Math.cos(th);
@@ -431,7 +431,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       g.lineTo(px + 11 * Math.cos(th), py + 11 * Math.sin(th));
       g.stroke();
     }
-    g.font = fnt(11); g.fillStyle = s2;
+    g.font = fnt(12); g.fillStyle = s2;
     g.textAlign = S.th0 >= 0 ? 'left' : 'right'; g.textBaseline = 'middle';
     g.fillText('beam ' + fx(S.th0, 0, '°'), tx + (S.th0 >= 0 ? 8 : -8), ty - 4);
 
@@ -449,7 +449,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     g.beginPath(); g.moveTo(ex(0), yDim); g.lineTo(ex(N - 1), yDim); g.stroke();
     g.beginPath(); g.moveTo(ex(0), yDim - 4); g.lineTo(ex(0), yDim + 4);
     g.moveTo(ex(N - 1), yDim - 4); g.lineTo(ex(N - 1), yDim + 4); g.stroke();
-    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('aperture ' + fx(span, 2) + ' λ  (spacing d = ' + fx(S.dl, 2) + ' λ)', cx, yDim - 7);
 
     g.strokeStyle = bd; g.lineWidth = 0.5; g.setLineDash([2, 3]);
@@ -471,12 +471,12 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       g.fillStyle = s2;
       g.beginPath(); g.arc(x, yClk, 1.6, 0, 6.2832); g.fill();
       if (N <= 12) {
-        g.font = fnt(10); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+        g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
         g.fillText(fx(wrap(dg(P.psi[i])), 0, '°'), x, yClk + r + 4);
       }
     }
 
-    g.font = fnt(11); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('bar length = drive amplitude', 4, yLine + 6);
     g.textBaseline = 'bottom';
     g.fillText('feed phase of each element', 4, yClk - r - 8);
@@ -498,14 +498,14 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     [0.25, 0.5, 0.75, 1].forEach(function (v) {
       g.beginPath(); g.arc(cx, cy, R * v, Math.PI, 2 * Math.PI); g.stroke();
     });
-    g.font = fnt(10); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
     [0.5, 1].forEach(function (v) { g.fillText(v.toFixed(2), cx - 4, cy - R * v + 8); });
 
     for (a = -90; a <= 90; a += 15) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(cx, cy); g.lineTo(PX(1, a), PY(1, a)); g.stroke();
     }
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(12); g.fillStyle = sub;
     [-90, -60, -30, 0, 30, 60, 90].forEach(function (a2) {
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText(fx(a2, 0, '°'), cx + (R + 17) * Math.sin(rad(a2)), cy - (R + 17) * Math.cos(rad(a2)));
@@ -544,7 +544,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       g.setLineDash([]);
     });
 
-    g.font = fnt(11); g.fillStyle = s1;
+    g.font = fnt(12); g.fillStyle = s1;
     rr = Math.min(m.peak + 0.13, 1.1);
     x = PX(rr, m.pang); y = PY(rr, m.pang);
     g.textAlign = m.pang > 40 ? 'right' : (m.pang < -40 ? 'left' : 'center');
@@ -552,13 +552,13 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     g.fillText('main beam ' + fx(m.pang, 1, '°'), clamp(x, 46, w - 46), Math.max(y, 14));
 
     if (G.lobes.length) {
-      g.fillStyle = s3; g.font = fnt(11);
+      g.fillStyle = s3; g.font = fnt(12);
       var lb0 = G.lobes[0];
       g.textAlign = lb0.ang < 0 ? 'left' : 'right'; g.textBaseline = 'bottom';
       g.fillText('grating lobe', clamp(PX(1.12, lb0.ang), 40, w - 40), Math.max(PY(1.12, lb0.ang), 26));
     }
 
-    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('normalised field |AF| — 1.0 means every element arrives in phase', cx, cy + 26);
     g.textAlign = 'left';
     g.fillStyle = mut;
@@ -575,10 +575,10 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     var Y = function (v) { return t + (0 - clamp(v, FLOOR, 0)) / (0 - FLOOR) * (h - t - b); };
     var i, v, a, px;
 
-    g.font = fnt(11); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('relative power, dB below the beam peak', 4, 6);
 
-    g.font = fnt(11);
+    g.font = fnt(12);
     for (v = 0; v >= FLOOR; v -= 10) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -607,10 +607,10 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       g.setLineDash([]);
     });
     if (G.lobes.length) {
-      g.fillStyle = s3; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillStyle = s3; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText('grating lobe', clamp(X(G.lobes[0].ang), l + 34, w - r - 34), t + 3);
     } else {
-      g.fillStyle = cvv('--text-good'); g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
+      g.fillStyle = cvv('--text-good'); g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'top';
       g.fillText('no grating lobe in visible space', w - r - 3, t + 3);
     }
 
@@ -618,7 +618,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       g.strokeStyle = s2; g.lineWidth = 1; g.setLineDash([5, 4]);
       g.beginPath(); g.moveTo(l, Y(m.highest.db)); g.lineTo(w - r, Y(m.highest.db)); g.stroke();
       g.setLineDash([]);
-      g.fillStyle = s2; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillStyle = s2; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
       g.fillText('highest sidelobe ' + fx(m.highest.db, 1, ' dB'), l + 5, Y(m.highest.db) - 3);
     }
 
@@ -637,7 +637,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     }
     g.stroke();
 
-    g.fillStyle = s1; g.font = fnt(11);
+    g.fillStyle = s1; g.font = fnt(12);
     g.textAlign = m.pang > 55 ? 'right' : 'left'; g.textBaseline = 'bottom';
     g.fillText('main beam', clamp(X(m.pang) + (m.pang > 55 ? -6 : 6), l + 4, w - r - 4), Y(0) + 14);
   }

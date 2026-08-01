@@ -266,7 +266,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
         ? 'apparent spin ' + Math.abs(r).toFixed(2) + ' turns/s, direction undecidable'
         : 'apparent spin ' + Math.abs(r).toFixed(2) + ' turns/s ' + dirApp), 4, 42);
     if (atEdge() && Math.abs(r) > 1e-6) {
-      g.fillStyle = mut; g.font = fnt(11);
+      g.fillStyle = mut; g.font = fnt(12);
       g.fillText(w > 470
         ? 'the spoke flips half a turn at every flash, so forwards and backwards fit equally well'
         : 'the spoke flips half a turn at every flash', 4, 60);
@@ -313,7 +313,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     g.fillStyle = c1;
     g.beginPath(); g.arc(cx + Math.cos(thTrue) * R * 0.94, cy - Math.sin(thTrue) * R * 0.94, 4.5, 0, TAU); g.fill();
 
-    g.font = fnt(11);
+    g.font = fnt(12);
     var lx = cx + Math.cos(thTrue) * (R + 16), ly = cy - Math.sin(thTrue) * (R + 16);
     g.fillStyle = c1;
     g.textAlign = Math.cos(thTrue) >= 0 ? 'left' : 'right';
@@ -341,7 +341,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       g.closePath(); g.fillStyle = c2; g.fill();
       g.globalAlpha = 1;
     } else if (Math.abs(r) <= 1e-6) {
-      g.fillStyle = c2; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = c2; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText('looks frozen', cx, cy + R * 0.55);
     }
 
@@ -353,7 +353,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     g.globalAlpha = 1;
     g.strokeStyle = bd; g.lineWidth = 1;
     g.beginPath(); g.arc(20, h - 16, 7, 0, TAU); g.stroke();
-    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
     g.fillText('strobe lamp', 33, h - 16);
     g.textAlign = 'right';
     g.fillStyle = sub;
@@ -375,7 +375,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     var Y = function (v) { return yc - clamp(v, -1.6, 1.6) * amp; };
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
-    g.font = fnt(11); g.fillStyle = mut;
+    g.font = fnt(12); g.fillStyle = mut;
     [1, 0.5, 0, -0.5, -1].forEach(function (v) {
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(l + pw, Y(v)); g.stroke();
       g.textAlign = 'right'; g.textBaseline = 'middle';
@@ -452,7 +452,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     }
     g.globalAlpha = 1;
 
-    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillStyle = c1;
     g.fillText('real wave ' + S.f.toFixed(2) + ' Hz', 4, 4);
     g.fillStyle = ink;
@@ -475,7 +475,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       var lab = v2 === 'clear'
         ? 'rebuilt wave, same ' + S.f.toFixed(2) + ' Hz'
         : (fAlias() < 1e-6 ? 'rebuilt as a flat line, 0.00 Hz' : 'ghost at ' + fAlias().toFixed(2) + ' Hz');
-      g.font = fnt(11); g.fillStyle = c2;
+      g.font = fnt(12); g.fillStyle = c2;
       var tw = g.measureText(lab).width;
       var tx = clamp(pxl, l + tw / 2 + 2, l + pw - tw / 2 - 2);
       g.textAlign = 'center'; g.textBaseline = above ? 'bottom' : 'top';
@@ -546,7 +546,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       g.strokeStyle = bad; g.lineWidth = 1; g.globalAlpha = 0.9;
       g.beginPath(); g.moveTo(X(fx0), Y(hy)); g.lineTo(ax, ay); g.stroke();
       g.globalAlpha = 1;
-      g.fillStyle = bad; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillStyle = bad; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
       g.fillText('copies overlap here', ax, ay - 2);
     }
 
@@ -554,7 +554,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     [-fsSafe() / 2, fsSafe() / 2].forEach(function (fh) {
       dashLine(g, X(fh), yTop - 4, X(fh), y0, [4, 4]);
     });
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('half the sample rate, ' + (S.fs / 2).toFixed(2) + ' Hz', clamp(X(fsSafe() / 2), l + 60, l + pw - 60), yTop - 6);
 
     var fa = fAlias();
@@ -565,7 +565,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     g.beginPath(); g.moveTo(X(S.f), y0); g.lineTo(X(S.f), Y(0.86)); g.stroke();
     g.beginPath(); g.moveTo(X(-S.f), y0); g.lineTo(X(-S.f), Y(0.86)); g.stroke();
 
-    g.font = fnt(11); g.textBaseline = 'bottom';
+    g.font = fnt(12); g.textBaseline = 'bottom';
     g.fillStyle = c1; g.textAlign = 'left';
     g.fillText('the tone, ' + S.f.toFixed(2) + ' Hz', clamp(X(S.f) + 5, l, l + pw - 110), Y(0.86));
     if (verdict() !== 'clear') {
@@ -573,7 +573,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       g.fillText('lands at ' + fa.toFixed(2) + ' Hz', clamp(X(fa) + 5, l, l + pw - 100), Y(0.62));
     }
 
-    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
     var pxPerImg = Math.max(fsSafe() / (2 * Fmax) * pw, 1);
     var everyImg = Math.max(1, Math.ceil(38 / pxPerImg));
     for (var nn = -S.imgs; nn <= S.imgs; nn++) {
@@ -612,7 +612,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     for (var q = 0; q <= 4; q++) {
       var yv = Fy * q / 4;
       g.beginPath(); g.moveTo(l, Y(yv)); g.lineTo(l + pw, Y(yv)); g.stroke();
-      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'middle';
       g.fillText(yv.toFixed(1), l - 6, Y(yv));
     }
 
@@ -626,7 +626,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(X(fv), t); g.lineTo(X(fv), t + ph); g.stroke();
       if (k % everyN !== 0) continue;
-      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText(fv.toFixed(Fx < 12 ? 1 : 0), X(fv), t + ph + 6);
     }
 
@@ -647,13 +647,13 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     g.fillStyle = c1;
     g.beginPath(); g.arc(X(S.f), Y(fa), 5, 0, TAU); g.fill();
 
-    g.font = fnt(11); g.fillStyle = c1;
+    g.font = fnt(12); g.fillStyle = c1;
     g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('f = ' + S.f.toFixed(2) + ' Hz', clamp(X(S.f), l + 34, l + pw - 34), t + ph + 20);
     g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillText('shows as ' + fa.toFixed(2) + ' Hz', l + 6, clamp(Y(fa) - 5, t + 12, t + ph));
 
-    g.fillStyle = c4; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = c4; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
     var stripW = X(Fy) - l;
     if (stripW > 210) g.fillText('below half the sample rate — nothing folds', l + 6, t + 6);
     else if (stripW > 78) g.fillText('no folding', l + 6, t + 6);

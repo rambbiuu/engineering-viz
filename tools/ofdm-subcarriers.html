@@ -431,11 +431,11 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
         g.setLineDash([]);
       });
 
-      g.font = fnt(10.5); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
+      g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
       g.fillText(P.ttl, l + 3, top + 2);
 
       if (pi === 0) {
-        g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
         if (Tcp > 0) {
           g.fillText('CP', X(Tcp / 2), bot - 14);
           g.strokeStyle = c3; g.lineWidth = 1.2;
@@ -458,7 +458,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
         g.textBaseline = 'bottom';
         g.fillText('receiver window Tᵤ = ' + (Tu * 1e6).toFixed(1) + ' µs', (X(fw0) + X(fw1)) / 2, bot - 3);
       } else {
-        g.textAlign = 'left'; g.textBaseline = 'bottom'; g.font = fnt(10.5);
+        g.textAlign = 'left'; g.textBaseline = 'bottom'; g.font = fnt(12);
         if (tmax > Tcp + 1e-12) {
           g.fillStyle = c7;
           g.fillText('previous symbol still arriving — ' + ((tmax - Tcp) * 1e6).toFixed(2) + ' µs of the window is spoiled',
@@ -469,13 +469,13 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
         }
       }
 
-      g.font = fnt(10); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
       g.fillText('0', l - 5, mid);
     });
 
     const P = panels[1];
     const Xb = t => l + (t - P.t0) / (P.t1 - P.t0) * (w - l - r);
-    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
     for (let i = 0; i <= 4; i++) {
       const t = P.t0 + (P.t1 - P.t0) * i / 4;
       g.fillText(((t - Tsym) * 1e6).toFixed(2), Xb(t), h - 22);
@@ -499,7 +499,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     const X = f => l + (f + fmax) / (2 * fmax) * (w - l - r);
     const Y = v => t + (1 - clamp(v, 0, 1)) * (h - t - b);
 
-    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(10); g.fillStyle = mut;
+    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(12); g.fillStyle = mut;
     for (let i = 0; i <= 4; i++) {
       const v = i / 4;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -542,7 +542,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       g.beginPath(); g.arc(X(fs), Y(v), isW ? 4.5 : 3.5, 0, TAU); g.fill();
     });
 
-    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
     const wantV = Math.abs(sinc(S.eps));
     if (S.eps < 1e-6) {
       g.fillStyle = cvv('--text-good');
@@ -557,7 +557,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 
     g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
     g.beginPath(); g.moveTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
-    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
     const fdp = df < 20e3 ? 1 : 0;
     ks.forEach(function (k) {
       g.fillText((k * df / 1e3).toFixed(fdp), X(k * df), h - b + 5);
@@ -614,7 +614,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     line(c5, 2, 'I', midB, ampB);
 
     const endI = vals[NS].I;
-    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillStyle = c1;
     g.fillText('subcarrier k = ' + kA + ' — ' + kA.toFixed(0) + ' whole cycle' + (kA === 1 ? '' : 's') + ' in Tᵤ', l + 4, t + 14);
     g.fillStyle = c4;
@@ -632,7 +632,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 
     g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
     g.beginPath(); g.moveTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
-    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
     for (let i = 0; i <= 4; i++) {
       const tt = Tu * i / 4;
       g.fillText((tt * 1e6).toFixed(1), X(tt), h - b + 5);
@@ -655,7 +655,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     const X = i => l + (N === 1 ? 0.5 : (i + 0.5) / N) * (w - l - r);
     const Y = v => t + (hi - clamp(v, lo, hi)) / (hi - lo) * (h - t - b);
 
-    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(10); g.fillStyle = mut;
+    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(12); g.fillStyle = mut;
     for (let v = -30; v <= 10; v += 10) {
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
       g.textAlign = 'right'; g.textBaseline = 'middle';
@@ -676,7 +676,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       if (N <= 64) { g.fillStyle = fd ? c7 : c1; g.beginPath(); g.arc(X(i), Y(v), 2, 0, TAU); g.fill(); }
     }
 
-    g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
     const fadeLbl = '−6 dB — below here a subcarrier counts as faded';
     const flw = g.measureText(fadeLbl).width;
     g.fillStyle = cvv('--plot-bg');
@@ -684,7 +684,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     g.fillStyle = c7;
     g.fillText(fadeLbl, l + 9, Y(FADE_DB) - 3);
 
-    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
     const step = N / 8;
     for (let i = 0; i < N; i += step) g.fillText((i - N / 2).toFixed(0), X(i), h - b + 6);
     g.fillText((N / 2 - 1).toFixed(0), X(N - 1), h - b + 6);
@@ -737,7 +737,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     g.strokeStyle = bd; g.lineWidth = 1;
     g.strokeRect(cx - size / 2, cy - size / 2, size, size);
 
-    g.font = fnt(10); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('in-phase I (normalised)', cx, cy + size / 2 + 6);
     g.save();
     g.translate(cx - size / 2 - 12, cy); g.rotate(-Math.PI / 2);

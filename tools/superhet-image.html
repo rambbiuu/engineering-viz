@@ -321,9 +321,9 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     function box(cx, label, sub2) {
       g.strokeStyle = bd; g.lineWidth = 1.2; g.fillStyle = cvv('--surface-1');
       g.beginPath(); g.rect(cx - bwid / 2, bt, bwid, boxH); g.fill(); g.stroke();
-      g.fillStyle = ink; g.font = fnt(11.5); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = ink; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText(label, cx, wireY - 6);
-      g.fillStyle = sub; g.font = fnt(10.5);
+      g.fillStyle = sub; g.font = fnt(12);
       g.fillText(sub2, cx, wireY + 8);
     }
     box(xF1, 'RF filter', S.bw.toFixed(1) + ' MHz wide');
@@ -336,7 +336,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     g.moveTo(xMx - 7, wireY - 7); g.lineTo(xMx + 7, wireY + 7);
     g.moveTo(xMx + 7, wireY - 7); g.lineTo(xMx - 7, wireY + 7);
     g.stroke();
-    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('mixer', xMx, wireY + mr + 4);
 
     // local oscillator
@@ -345,12 +345,12 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     g.beginPath(); g.moveTo(xMx, loT); g.lineTo(xMx, wireY + mr); g.stroke();
     g.fillStyle = cvv('--surface-1');
     g.beginPath(); g.rect(xMx - bwid / 2, loT, bwid, loH); g.fill(); g.stroke();
-    g.fillStyle = acc; g.font = fnt(11.5); g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = acc; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('LO ' + flo().toFixed(2) + ' MHz', xMx, loT + loH / 2);
-    g.fillStyle = mut; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
     if (xMx + bwid / 2 + 8 < w - 4) g.fillText(S.hi ? 'high side' : 'low side', xMx + bwid / 2 + 8, loT + loH / 2);
 
-    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
     g.fillText('to demodulator', xEnd, wireY - 6);
 
     // three inset spectra
@@ -371,7 +371,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
       var x0 = cx - iw / 2, x1 = cx + iw / 2;
       g.strokeStyle = cvv('--border'); g.lineWidth = 1;
       g.beginPath(); g.moveTo(x0, base); g.lineTo(x1, base); g.stroke();
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText(title, cx, top - 16);
       for (var i = 0; i < freqs.length; i++) {
         var s2 = freqs[i];
@@ -383,13 +383,13 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
         g.beginPath(); g.moveTo(x, base); g.lineTo(x, y); g.stroke();
         g.setLineDash([]);
         if (s2.lab) {
-          g.fillStyle = s2.col; g.font = fnt(10); g.textBaseline = 'bottom';
+          g.fillStyle = s2.col; g.font = fnt(12); g.textBaseline = 'bottom';
           g.textAlign = s2.align || (xr > 0.75 ? 'right' : (xr < 0.25 ? 'left' : 'center'));
           g.fillText(s2.lab, clamp(x + (s2.lox || 0), x0 - 10, x1 + 10), y - 3);
         }
       }
       if (note) {
-        g.fillStyle = mut; g.font = fnt(9.5); g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
         g.fillText(note, cx, base + 3);
       }
     }
@@ -409,7 +409,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     spec(w * 0.625, 'after the mixer', tapC, -1, 1, 'IF ' + S.fif.toFixed(3) + ' MHz');
 
     if (!hasImage()) {
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'top';
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'top';
       g.fillText('no image exists in this setting', w - 4, 4);
     }
   }
@@ -440,7 +440,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     var Y = function (v) { return t + (top - v) / (top - bot) * ph; };
 
     // grid
-    g.font = fnt(11);
+    g.font = fnt(12);
     var ys = niceStep(top - bot, 5);
     for (var v = Math.ceil(bot / ys) * ys; v <= top + 1e-9; v += ys) {
       g.strokeStyle = bdl; g.lineWidth = 0.5;
@@ -483,7 +483,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
       g.beginPath(); g.moveTo(x, Y(bot)); g.lineTo(x, y); g.stroke();
       g.setLineDash([]);
       if (lab) {
-        g.fillStyle = col; g.font = fnt(11);
+        g.fillStyle = col; g.font = fnt(12);
         g.textAlign = align || (x > l + pw * 0.8 ? 'right' : (x < l + pw * 0.2 ? 'left' : 'center'));
         g.textBaseline = 'bottom';
         g.fillText(lab, x + (align === 'right' ? -5 : (align === 'left' ? 5 : 0)), y - 4);
@@ -496,7 +496,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     g.strokeStyle = cvv('--c-violet'); g.lineWidth = 1.4; g.setLineDash([6, 4]);
     g.beginPath(); g.moveTo(xlo, t); g.lineTo(xlo, Y(bot)); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = cvv('--c-violet'); g.font = fnt(11);
+    g.fillStyle = cvv('--c-violet'); g.font = fnt(12);
     g.textAlign = xlo > l + pw * 0.8 ? 'right' : 'left'; g.textBaseline = 'top';
     g.fillText('LO ' + flo().toFixed(2), xlo + (xlo > l + pw * 0.8 ? -4 : 4), t + 2);
 
@@ -514,7 +514,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
       g.moveTo(bx - 4, pIn.y); g.lineTo(bx + 4, pIn.y);
       g.moveTo(bx - 4, pOut.y); g.lineTo(bx + 4, pOut.y);
       g.stroke();
-      g.fillStyle = img; g.font = fnt(11);
+      g.fillStyle = img; g.font = fnt(12);
       g.textAlign = bx > pIn.x ? 'left' : 'right'; g.textBaseline = 'middle';
       var rtxt = rejRaw() > REJ_CAP ? '> ' + REJ_CAP.toFixed(0) + ' dB' : rejDisp().toFixed(1) + ' dB';
       g.fillText('rejection ' + rtxt, bx + (bx > pIn.x ? 6 : -6), (pIn.y + pOut.y) / 2);
@@ -528,13 +528,13 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
       g.moveTo(xa, yb - 4); g.lineTo(xa, yb + 4);
       g.moveTo(xbb, yb - 4); g.lineTo(xbb, yb + 4);
       g.stroke();
-      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
       g.fillText('2 × IF = ' + (2 * S.fif).toFixed(3) + ' MHz', (xa + xbb) / 2, yb - 5);
     }
     g.restore();
 
     if (!hasImage()) {
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(11.5);
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
       g.textAlign = 'left'; g.textBaseline = 'top';
       g.fillText('no image: 2 × IF = ' + (2 * S.fif).toFixed(3) + ' MHz is more than f_RF = ' + S.frf.toFixed(1) + ' MHz', l + 6, t + 20);
     }
@@ -563,7 +563,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     var X = function (f) { return l + (f - f0) / (f1 - f0) * pw; };
     var Y = function (v) { return t + (top - v) / (top - bot) * ph; };
 
-    g.font = fnt(11);
+    g.font = fnt(12);
     var ys = niceStep(top - bot, 5);
     for (var v = Math.ceil(bot / ys) * ys; v <= top + 1e-9; v += ys) {
       g.strokeStyle = bdl; g.lineWidth = 0.5;
@@ -588,7 +588,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     var x = X(S.fif);
     g.strokeStyle = gw; g.lineWidth = 3;
     g.beginPath(); g.moveTo(x - 3, Y(bot)); g.lineTo(x - 3, Y(P_WANTED)); g.stroke();
-    g.fillStyle = gw; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillStyle = gw; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
     g.fillText('wanted ' + mn(P_WANTED, 0) + ' dBm', x - 8, Y(P_WANTED) - 4);
 
     if (hasImage()) {
@@ -612,7 +612,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     }
     g.restore();
 
-    g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
     if (!hasImage()) {
       g.fillStyle = cvv('--text-good');
       g.fillText('only the wanted signal converts — there is no image frequency above 0 Hz', l, 6);
@@ -639,7 +639,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     var X = function (p) { return l + (p - lov) / (hiv - lov) * pw; };
     var Y = function (p) { return t + (hiv - p) / (hiv - lov) * ph; };
 
-    g.font = fnt(11);
+    g.font = fnt(12);
     var st = niceStep(hiv - lov, 6);
     for (var v = Math.ceil(lov / st) * st; v <= hiv + 1e-9; v += st) {
       g.strokeStyle = bdl; g.lineWidth = 0.5;
@@ -667,7 +667,7 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
       g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1; g.setLineDash([4, 4]);
       g.beginPath(); g.moveTo(xc, t); g.lineTo(xc, h - b); g.stroke();
       g.setLineDash([]);
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(10.5);
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
       g.textAlign = 'right'; g.textBaseline = 'top';
       g.fillText('1 dB compression ≈ OIP3 − 10', Math.min(xc - 5, w - r - 4), t + 4);
     }
@@ -708,13 +708,13 @@ summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; marg
     g.moveTo(bx - 4, yF); g.lineTo(bx + 4, yF);
     g.moveTo(bx - 4, yIc); g.lineTo(bx + 4, yIc);
     g.stroke();
-    g.fillStyle = sub; g.font = fnt(11);
+    g.fillStyle = sub; g.font = fnt(12);
     g.textAlign = bx > xd ? 'left' : 'right'; g.textBaseline = 'middle';
     g.fillText(sfWindow().toFixed(0) + ' dB', bx + (bx > xd ? 6 : -6), (yF + yIc) / 2);
     g.restore();
 
     // line labels, each placed on its own line at a chosen height
-    g.font = fnt(11); g.textBaseline = 'bottom';
+    g.font = fnt(12); g.textBaseline = 'bottom';
     function tag(txt, py, px, col, align) {
       g.fillStyle = col; g.textAlign = align;
       var x = clamp(X(px), l + 6, l + pw - 6);

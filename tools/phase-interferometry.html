@@ -293,7 +293,7 @@ summary { cursor: pointer; color: var(--text-primary); }
     g.strokeStyle = sub; g.globalAlpha = 0.7; g.lineWidth = 1; g.setLineDash([3, 5]);
     g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, Math.max(12, cy - R2 - 8)); g.stroke();
     g.setLineDash([]); g.globalAlpha = 1;
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('0° (straight ahead)', cx, Math.max(12, cy - R2 - 12));
 
     if (Math.abs(S.th) > 1) {
@@ -377,7 +377,7 @@ summary { cursor: pointer; color: var(--text-primary); }
       g.fillText(i === 0 ? 'ref' : wrap(ph[i]).toFixed(0) + '°', 12, yc + 9);
       const turns = Math.round((ph[i] - wrap(ph[i])) / 360);
       if (turns !== 0) {
-        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(10);
+        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(12);
         g.fillText((turns > 0 ? '+' : '') + turns + ' hidden', 12, yc + 24);
         if (xm >= lx && xm <= rx) {
           g.strokeStyle = cvv('--text-warning') || sub; g.lineWidth = 1.5;
@@ -385,7 +385,7 @@ summary { cursor: pointer; color: var(--text-primary); }
         }
       }
     }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('time →', lx + (rx - lx) / 2, h - 4);
   }
 
@@ -398,7 +398,7 @@ summary { cursor: pointer; color: var(--text-primary); }
     const Y = v => t + (180 - v) / 360 * (h - t - b);
     const L = lam();
 
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(12); g.fillStyle = sub;
     [-180, -90, 0, 90, 180].forEach(v => {
       g.strokeStyle = bd; g.lineWidth = v === 0 ? 1 : 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();

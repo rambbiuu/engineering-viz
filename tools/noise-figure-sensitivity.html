@@ -357,7 +357,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     var boxH = 44, boxTop = 62, cy = boxTop + boxH / 2;
     var xOf = function (i) { return pad + i * (sw + gap); };
 
-    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('signal path', pad, 8);
     g.textAlign = 'right';
     g.fillText('gain and noise figure under each block', w - pad, 8);
@@ -423,7 +423,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.fillText(clipText(g, 'needs ' + fx(S.snr, 1) + ' dB', sw), midd, boxTop + boxH + 6);
     g.fillText(clipText(g, 'of SNR', sw), midd, boxTop + boxH + 6 + fs + 3);
 
-    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
     var tot = 'chain: ' + sgn(R.Gtot, 1) + ' dB gain, ' + fx(R.NF, 2) + ' dB noise figure';
     g.fillText(clipText(g, tot, w - 12), w / 2, h - 5);
   }
@@ -450,7 +450,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 
     g.fillStyle = cvv('--plot-bg'); g.fillRect(l, t, pw, ph);
     var st = niceStep(hi - lo, 6);
-    g.font = fnt(11); g.strokeStyle = gr; g.lineWidth = 0.5;
+    g.font = fnt(12); g.strokeStyle = gr; g.lineWidth = 0.5;
     for (var v = Math.ceil(lo / st) * st; v <= hi; v += st) {
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(l + pw, Y(v)); g.stroke();
       g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
@@ -464,11 +464,11 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     for (var i = 0; i <= n; i++) {
       g.strokeStyle = gr; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(X(i), t); g.lineTo(X(i), t + ph); g.stroke();
-      g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       var lab = (i === 0) ? 'antenna' : String(i);
       g.fillText(clipText(g, lab, pw / (n + 1)), X(i), t + ph + 6);
     }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('after block number', l + pw / 2, h - 4);
 
     var stair = function (arr, col, wd, dash) {
@@ -501,12 +501,12 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.beginPath(); g.moveTo(bx, yS); g.lineTo(bx, yN); g.stroke();
     g.beginPath(); g.moveTo(bx - 3, yS + 4); g.lineTo(bx, yS); g.lineTo(bx + 3, yS + 4); g.stroke();
     g.beginPath(); g.moveTo(bx - 3, yN - 4); g.lineTo(bx, yN); g.lineTo(bx + 3, yN - 4); g.stroke();
-    g.font = fnt(11); g.fillStyle = cvv('--text-primary'); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.font = fnt(12); g.fillStyle = cvv('--text-primary'); g.textAlign = 'left'; g.textBaseline = 'middle';
     var ymid = clamp((yS + yN) / 2, t + 10, t + ph - 10);
     g.fillText(clipText(g, 'SNR', r - 24), bx + 6, ymid - 7);
     g.fillText(clipText(g, fx(snrOut, 1) + ' dB', r - 24), bx + 6, ymid + 7);
 
-    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillStyle = s1;
     g.fillText(clipText(g, 'wanted signal', pw - 10), l + 6, Y(R.sOut[0]) - 5);
     g.fillStyle = s2;
@@ -531,7 +531,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     var barY = 22, barH = 40, barW = Math.max(w - 2 * pad, 20);
     var cols = ['--series-1', '--series-2', '--series-3', '--series-4', '--series-5', '--series-6', '--series-7'];
 
-    g.font = fnt(11); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('total noise factor F = ' + fx(R.Ftot, 3) + '  (' + fx(R.NF, 2) + ' dB)', pad, 4);
 
     var x = pad;
@@ -544,7 +544,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       g.strokeStyle = cvv('--plot-bg'); g.lineWidth = 1;
       g.strokeRect(x, barY, Math.max(segW, 0), barH);
       if (segW > 36) {
-        g.fillStyle = cvv('--plot-bg'); g.font = fnt(11);
+        g.fillStyle = cvv('--plot-bg'); g.font = fnt(12);
         g.textAlign = 'center'; g.textBaseline = 'middle';
         g.fillText(clipText(g, pct(share), segW - 6), x + segW / 2, barY + barH / 2);
       }
@@ -554,7 +554,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.strokeRect(pad, barY, barW, barH);
 
     var ly = barY + barH + 14, cw = Math.max(barW / Math.max(Math.min(n, 3), 1), 90);
-    g.textBaseline = 'middle'; g.font = fnt(11);
+    g.textBaseline = 'middle'; g.font = fnt(12);
     for (var j = 0; j < n; j++) {
       var col = j % 3, rowi = Math.floor(j / 3);
       var lx = pad + col * cw, lyy = ly + rowi * 17;
@@ -566,7 +566,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       g.fillText(clipText(g, nm, cw - 16), lx + 13, lyy);
     }
     g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     g.fillText(clipText(g, 'block 1 also carries the leading 1 in F, the antenna source noise itself', w - 2 * pad), pad, h - 4);
   }
 

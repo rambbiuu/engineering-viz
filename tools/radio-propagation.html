@@ -408,7 +408,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.setLineDash([]);
   }
   function tag(g, x, y, text, col, align, base) {
-    g.fillStyle = col; g.font = fnt(10.5); g.textAlign = align || 'left'; g.textBaseline = base || 'bottom';
+    g.fillStyle = col; g.font = fnt(12); g.textAlign = align || 'left'; g.textBaseline = base || 'bottom';
     g.fillText(text, x, y);
   }
 
@@ -432,7 +432,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       g.font = fnt(i === bandIx() ? 12 : 11); g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText(B.k, (x0 + x1) / 2, sy + sh / 2);
     });
-    g.font = fnt(9.5); g.fillStyle = mut; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = mut; g.textBaseline = 'top';
     [[3e3, '3 kHz'], [3e5, '300 kHz'], [3e7, '30 MHz'], [3e9, '3 GHz'], [3e11, '300 GHz']].forEach(t => {
       g.textAlign = t[0] === 3e3 ? 'left' : t[0] === 3e11 ? 'right' : 'center';
       g.fillText(t[1], X(t[0]), sy + sh + 4);
@@ -458,9 +458,9 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       g.globalAlpha = on ? 1 : 0.5;
       g.strokeStyle = on ? bds : bd; g.lineWidth = on ? 1.2 : 0.5;
       g.strokeRect(x0 + 0.5, y0 + 0.5, cw - 1, ch - 1);
-      g.fillStyle = on ? ink : mut; g.font = fnt(11.5); g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillStyle = on ? ink : mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
       g.fillText(titles[i], x0 + 8, y0 + 6);
-      g.fillStyle = mut; g.font = fnt(9.5);
+      g.fillStyle = mut; g.font = fnt(12);
       g.fillText(bands[i], x0 + 8, y0 + 20);
       const px = x0 + 10, py = y0 + 34, pw = cw - 20, ph = ch - 44;
       if (i === 0) scene0(g, px, py, pw, ph, sub, mut);
@@ -544,7 +544,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       cvv('--series-2'), hx > x + w * 0.6 ? 'right' : 'left', 'bottom');
     g.strokeStyle = cvv('--border-strong'); g.lineWidth = 0.5;
     g.beginPath(); g.moveTo(x, gy + 3); g.lineTo(x + w, gy + 3); g.stroke();
-    g.font = fnt(9.5); g.fillStyle = mut; g.textBaseline = 'top';
+    g.font = fnt(12); g.fillStyle = mut; g.textBaseline = 'top';
     for (let i = 0; i <= 4; i++) {
       const d = span * i / 4;
       g.beginPath(); g.moveTo(px(d), gy + 3); g.lineTo(px(d), gy + 6); g.stroke();
@@ -597,7 +597,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     lo = Math.floor((lo - 8) / 20) * 20; hi = Math.ceil((hi + 8) / 20) * 20;
     const Y = v => t + (hi - v) / Math.max(hi - lo, 1) * (h - t - b);
 
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     for (let v = lo; v <= hi; v += 20) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -663,7 +663,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     const X = f => l + (L10(f) - L10(f0)) / (L10(f1) - L10(f0)) * (w - l - r);
     const Y = v => t + (vhi - Math.min(Math.max(L10(Math.max(v, 1e-6)), vlo), vhi)) / (vhi - vlo) * (h - t - b);
 
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     [0.001, 0.01, 0.1, 1, 10, 100].forEach(v => {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -746,7 +746,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     hi = Math.ceil(hi / 20) * 20; lo = Math.floor(lo / 20) * 20;
     const Y = v => t + (hi - Math.min(Math.max(v, lo), hi)) / Math.max(hi - lo, 1) * (h - t - b);
 
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     for (let v = lo; v <= hi; v += 20) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -790,7 +790,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
       for (let px = l; px <= aliasedTo; px++) g.lineTo(px, Y(Pfs(dOf(px)) + 6.02));
       g.lineTo(aliasedTo, h - b); g.lineTo(l, h - b); g.closePath(); g.fill();
       g.globalAlpha = 1;
-      g.font = fnt(10.5);
+      g.font = fnt(12);
       const msg = 'fringes finer than one pixel — envelope shaded';
       if (aliasedTo - l > g.measureText(msg).width + 8)
         tag(g, (l + aliasedTo) / 2, t + 30, msg, cvv('--series-1'), 'center', 'top');
@@ -844,7 +844,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     const hi = Math.ceil(Math.min(Math.max(Lfs(dhi), Lts(dhi)) + 20, lo + 500) / 25) * 25;
     const Y = v => t + (Math.min(Math.max(v, lo), hi) - lo) / Math.max(hi - lo, 1) * (h - t - b);
 
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     for (let v = lo; v <= hi; v += 25) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -921,7 +921,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     const vmax = Math.max(12, Math.ceil(S.foF2 * secFlat(Dmax) / 10) * 10);
     const Y = v => t + (vmax - Math.min(Math.max(v, 0), vmax)) / vmax * (h - t - b);
 
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     for (let v = 0; v <= vmax; v += vmax > 40 ? 10 : 5) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -983,7 +983,7 @@ dl.glossary dd { margin: 0; color: var(--text-secondary); }
     const vlo = -20, vhi = 100;
     const Y = v => t + (vhi - Math.min(Math.max(v, vlo), vhi)) / (vhi - vlo) * (h - t - b);
 
-    g.font = fnt(10.5);
+    g.font = fnt(12);
     for (let v = vlo; v <= vhi; v += 20) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();

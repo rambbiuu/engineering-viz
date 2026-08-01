@@ -215,7 +215,7 @@ summary:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
     const c = $('anchor'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
     const sub = cvv('--text-secondary'), bd = cvv('--border-strong');
-    g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
     const yc = h * 0.48;
 
     g.strokeStyle = '#1D9E75'; g.lineWidth = 1.5;
@@ -354,7 +354,7 @@ summary:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
       const tx = Math.min(Math.max(xb, l + 80), w - r - 80);
       g.strokeStyle = sub; g.lineWidth = 1;
       g.beginPath(); g.moveTo(xb, t + 15); g.lineTo(xb, yc - ampl * 0.3); g.stroke();
-      g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText(S.mode === 'fm' ? 'fastest here — message peak' : 'fastest here — message steepest', tx, t);
       g.textBaseline = 'alphabetic';
     }
@@ -362,7 +362,7 @@ summary:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
     if (S.mode === 'psk') {
       const n = S.bits.length;
       g.strokeStyle = cvv('--text-warning') || sub; g.lineWidth = 1.5;
-      g.font = fnt(11); g.fillStyle = cvv('--text-warning') || sub;
+      g.font = fnt(12); g.fillStyle = cvv('--text-warning') || sub;
       g.textAlign = 'center'; g.textBaseline = 'bottom';
       for (let i = 1; i < n; i++) {
         if (S.bits[i] !== S.bits[i - 1]) {
@@ -379,7 +379,7 @@ summary:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
     if (S.mode === 'qpsk') {
       const bs = qbits(), nSym = bs.length / 2;
       g.strokeStyle = cvv('--text-warning') || sub; g.lineWidth = 1.5;
-      g.font = fnt(11); g.fillStyle = cvv('--text-warning') || sub;
+      g.font = fnt(12); g.fillStyle = cvv('--text-warning') || sub;
       g.textAlign = 'center'; g.textBaseline = 'bottom';
       for (let i = 1; i < nSym; i++) {
         const p0 = QPH[bs.substr((i - 1) * 2, 2)], p1 = QPH[bs.substr(i * 2, 2)];
@@ -395,7 +395,7 @@ summary:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
       g.textBaseline = 'alphabetic';
     }
 
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
     g.fillText('time →', w - r, h - 2);
   }
 

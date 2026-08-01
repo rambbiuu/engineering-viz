@@ -354,7 +354,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       g.fillRect(xm - 30, side < 0 ? ay - 15 : ay, 60, 15);
       g.globalAlpha = 1;
       g.strokeStyle = col; g.lineWidth = 1; g.strokeRect(xm - 29.5, (side < 0 ? ay - 15 : ay) + 0.5, 59, 14);
-      g.fillStyle = col; g.font = fnt(9.5); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillStyle = col; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
       var extra = C * p.tau;
       g.fillText('+' + extra.toFixed(0) + ' m, ' + (p.tau * 1e6).toFixed(2) + ' ' + MU + 's',
         xm + 36, side < 0 ? ay - 7 : ay + 7);
@@ -362,7 +362,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 
     g.strokeStyle = cvv(TAPCOL[0]); g.lineWidth = 2.4;
     g.beginPath(); g.moveTo(x0, midY); g.lineTo(x1, midY); g.stroke();
-    g.fillStyle = cvv(TAPCOL[0]); g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = cvv(TAPCOL[0]); g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('direct path, ' + DBS.toFixed(0) + ' m', (x0 + xm) / 2, midY - 5);
 
     g.fillStyle = txt;
@@ -370,14 +370,14 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.fillRect(x0 - 16, midY - 12, 13, 6);
     g.fillStyle = cvv('--bg');
     g.fillRect(x0 - 18, midY - 4, 6, 5);
-    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('mobile', x0 - 9, midY + 12);
 
     g.strokeStyle = txt; g.lineWidth = 2;
     g.beginPath(); g.moveTo(x1 + 12, midY + 8); g.lineTo(x1 + 12, midY - 30); g.stroke();
     g.beginPath(); g.moveTo(x1 + 12, midY - 30); g.lineTo(x1 + 5, midY - 18);
     g.lineTo(x1 + 19, midY - 18); g.closePath(); g.fillStyle = txt; g.fill();
-    g.fillStyle = sub; g.font = fnt(10.5); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('base station', x1 + 12, midY + 12);
 
     if (S.v > 0) {
@@ -386,11 +386,11 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       g.beginPath(); g.moveTo(ax, ay2); g.lineTo(ax + 38, ay2); g.stroke();
       g.beginPath(); g.moveTo(ax + 38, ay2); g.lineTo(ax + 30, ay2 - 4);
       g.lineTo(ax + 30, ay2 + 4); g.closePath(); g.fillStyle = cvv('--text-warning'); g.fill();
-      g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
       g.fillText(S.v.toFixed(0) + ' km/h', ax + 42, ay2 + 4);
     }
 
-    g.fillStyle = mut; g.font = fnt(10.5); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
     var travel = (S.v / 3.6) * M.Twin;
     var line1;
     if (S.v > 0) {
@@ -424,7 +424,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     var X = function (tau) { return l + (tau / axMax) * pw; };
     var Y = function (db) { return t + (TOP - Math.max(Math.min(db, TOP), FLOOR)) / (TOP - FLOOR) * ph2; };
 
-    g.font = fnt(11); g.strokeStyle = grd; g.lineWidth = 0.5;
+    g.font = fnt(12); g.strokeStyle = grd; g.lineWidth = 0.5;
     for (var db = 0; db >= FLOOR; db -= 10) {
       g.beginPath(); g.moveTo(l, Y(db)); g.lineTo(l + pw, Y(db)); g.stroke();
       g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
@@ -453,7 +453,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.3; g.setLineDash([5, 4]);
       g.beginPath(); g.moveTo(X(M.tbar), t); g.lineTo(X(M.tbar), t + ph2); g.stroke();
       g.setLineDash([]);
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(10.5);
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
       g.textAlign = X(M.tbar) > l + pw * 0.62 ? 'right' : 'left';
       g.textBaseline = 'top';
       g.fillText(' mean excess delay ' + (M.tbar * 1e6).toFixed(2) + ' ' + MU + 's ', X(M.tbar), t + 4);
@@ -469,7 +469,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       g.fillStyle = col;
       g.beginPath(); g.arc(X(p.tau), Y(pdb), 3.6, 0, 7); g.fill();
       if (k === 0) {
-        g.font = fnt(10); g.textAlign = 'left'; g.textBaseline = 'bottom';
+        g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
         g.fillText(' direct', X(p.tau) + 3, Y(pdb) - 5);
       }
     }
@@ -490,7 +490,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     var X = function (f) { return l + (f + F / 2) / F * pw; };
     var Y = function (db) { return t + (TOP - Math.max(Math.min(db, TOP), FLOOR)) / (TOP - FLOOR) * ph2; };
 
-    g.font = fnt(11);
+    g.font = fnt(12);
     for (var db = TOP - 2; db >= FLOOR; db -= 10) {
       g.strokeStyle = grd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(db)); g.lineTo(l + pw, Y(db)); g.stroke();
@@ -549,7 +549,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.strokeStyle = cvv('--accent'); g.lineWidth = 1.2; g.setLineDash([4, 3]);
     g.beginPath(); g.moveTo(X(bLo), t); g.lineTo(X(bLo), t + ph2);
     g.moveTo(X(bHi), t); g.lineTo(X(bHi), t + ph2); g.stroke(); g.setLineDash([]);
-    g.fillStyle = cvv('--accent'); g.font = fnt(10.5);
+    g.fillStyle = cvv('--accent'); g.font = fnt(12);
     g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('signal band ' + fFreq(M.Bs), (X(bLo) + X(bHi)) / 2, t + 4);
 
@@ -559,12 +559,12 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
       g.beginPath(); g.moveTo(xa, yb); g.lineTo(xb2, yb);
       g.moveTo(xa, yb - 4); g.lineTo(xa, yb + 4);
       g.moveTo(xb2, yb - 4); g.lineTo(xb2, yb + 4); g.stroke();
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(10.5);
+      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
       g.textAlign = 'center'; g.textBaseline = 'bottom';
       g.fillText('coherence bandwidth ' + fFreq(M.Bc), (xa + xb2) / 2, yb - 5);
     }
     if (deepest < -10) {
-      g.fillStyle = cvv('--bad'); g.font = fnt(10);
+      g.fillStyle = cvv('--bad'); g.font = fnt(12);
       g.textAlign = 'left'; g.textBaseline = 'top';
       g.fillText('deepest notch ' + deepest.toFixed(1) + ' dB', l + 5, t + 4);
     }
@@ -583,7 +583,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     var thr = -S.M;
     var Y = function (db) { return t + (TOP - Math.max(Math.min(db, TOP), FLOOR)) / (TOP - FLOOR) * ph2; };
 
-    g.font = fnt(11);
+    g.font = fnt(12);
     for (var db = 10; db >= FLOOR; db -= 10) {
       g.strokeStyle = grd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(l, Y(db)); g.lineTo(l + pw, Y(db)); g.stroke();
@@ -621,7 +621,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
 
     g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.3; g.setLineDash([6, 4]);
     g.beginPath(); g.moveTo(l, Y(thr)); g.lineTo(l + pw, Y(thr)); g.stroke(); g.setLineDash([]);
-    g.fillStyle = cvv('--text-warning'); g.font = fnt(10.5);
+    g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
     g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillText(' threshold, ' + S.M.toFixed(1) + ' dB below RMS', l + 3, Y(thr) - 3);
 
@@ -634,7 +634,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.stroke();
 
     if (worst < thr && worst > FLOOR - 1) {
-      g.fillStyle = cvv('--bad'); g.font = fnt(10);
+      g.fillStyle = cvv('--bad'); g.font = fnt(12);
       g.textAlign = worstPx > np * 0.6 ? 'right' : 'left'; g.textBaseline = 'top';
       g.fillText(' deepest fade ' + worst.toFixed(1) + ' dB ', l + worstPx, Math.min(Y(worst) + 5, t + ph2 - 14));
     }
@@ -642,7 +642,7 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.strokeStyle = cvv('--text-primary'); g.lineWidth = 1; g.globalAlpha = 0.55;
     g.beginPath(); g.moveTo(l + pw - 0.5, t); g.lineTo(l + pw - 0.5, t + ph2); g.stroke();
     g.globalAlpha = 1;
-    g.fillStyle = mut; g.font = fnt(10); g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'top';
     g.fillText('now ', l + pw - 2, t + 3);
 
     drawPhasors(g, M, 4, t, panW, ph2);
@@ -688,10 +688,10 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     g.beginPath(); g.arc(cx + re * sc, cy - im * sc, 3, 0, 7); g.fill();
     g.restore();
 
-    g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     var env = Math.sqrt(re * re + im * im);
     g.fillText('sum now ' + dbOf(env, M.Rrms).toFixed(1) + ' dB', bx + bw / 2, by + bh - 13);
-    g.fillStyle = mut; g.font = fnt(9.5);
+    g.fillStyle = mut; g.font = fnt(12);
     g.fillText('paths added tip to tail', bx + bw / 2, by + bh - 3);
   }
 

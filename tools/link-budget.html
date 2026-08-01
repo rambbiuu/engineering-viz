@@ -245,7 +245,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
     g.fillStyle = cvv('--plot-bg');
     g.fillRect(l, t, w - l - r, h - t - b);
-    g.font = fnt(11); g.fillStyle = sub; g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.font = fnt(12); g.fillStyle = sub; g.strokeStyle = bd; g.lineWidth = 0.5;
     for (let k = 0; k <= 5; k++) {
       const v = lo + (hi - lo) * k / 5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -275,11 +275,11 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
         g.strokeStyle = bd; g.lineWidth = 1;
         g.beginPath(); g.moveTo(x - bw * 0.32, Y(prev)); g.lineTo(x, Y(prev)); g.stroke();
       }
-      g.fillStyle = sub; g.font = fnt(10); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       const words = s.n.split(' ');
       words.forEach((wd, k) => g.fillText(wd, x + bwid / 2, h - b + 6 + k * 12));
       if (i > 0) {
-        g.fillStyle = up ? cg : cl; g.font = fnt(10);
+        g.fillStyle = up ? cg : cl; g.font = fnt(12);
         g.textBaseline = 'bottom';
         g.fillText((s.d >= 0 ? '+' : '') + s.d.toFixed(1), x + bwid / 2, Math.min(y0, y1) - 3);
       }
@@ -288,7 +288,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     g.strokeStyle = cvv('--warn'); g.lineWidth = 1.4; g.setLineDash([6, 4]);
     g.beginPath(); g.moveTo(l, Y(nfl)); g.lineTo(w - r, Y(nfl)); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = cvv('--warn'); g.font = fnt(11);
+    g.fillStyle = cvv('--warn'); g.font = fnt(12);
     g.textAlign = 'left'; g.textBaseline = 'bottom';
     g.fillText('noise floor ' + nfl.toFixed(1) + ' dBm', l + 4, Y(nfl) - 3);
   }
@@ -306,7 +306,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
     g.fillStyle = cvv('--plot-bg');
     g.fillRect(l, t, w - l - r, h - t - b);
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(12); g.fillStyle = sub;
     [0.1, 1, 10, 100].forEach(d => {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(X(d), t); g.lineTo(X(d), h - b); g.stroke();
@@ -344,7 +344,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
     g.fillStyle = cvv('--series-2');
     g.beginPath(); g.arc(X(S.d), Y(prx(S.d)), 5, 0, 7); g.fill();
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('you are here', X(S.d), Y(prx(S.d)) - 9);
   }
 
