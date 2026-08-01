@@ -105,10 +105,14 @@ canvas { width: 100%; display: block; }
 <div class="row">
   <span class="lbl">Antenna</span>
   <button id="a0">Isotropic</button>
-  <button id="a1" class="on">Half-wave dipole</button>
-  <button id="a2">&frac14;-wave monopole</button>
-  <button id="a3">Horn</button>
-  <button id="a4">Dish</button>
+  <button id="a1">Omni (collinear)</button>
+  <button id="a2" class="on">Half-wave dipole</button>
+  <button id="a3">&frac14;-wave monopole</button>
+  <button id="a4">Patch</button>
+  <button id="a5">Yagi</button>
+  <button id="a6">Log-periodic</button>
+  <button id="a7">Horn</button>
+  <button id="a8">Dish</button>
 </div>
 <div class="row" id="szRow" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="ap" style="min-width: 132px;">Aperture width</label>
@@ -140,35 +144,51 @@ canvas { width: 100%; display: block; }
   var D2R = Math.PI / 180;
   var BLUE = '#4472C4', ORANGE = '#ED7D31', RED = '#C0504D', GREY = '#A5A5A5';
 
-  var S = { kind: 1, ap: 5 };
-  var NAMES = ['Isotropic', 'Half-wave dipole', 'Quarter-wave monopole', 'Horn', 'Parabolic dish'];
+  var S = { kind: 2, ap: 5 };
+  var NAMES = ['Isotropic', 'Collinear omni', 'Half-wave dipole', 'Quarter-wave monopole',
+               'Patch', 'Yagi-Uda', 'Log-periodic', 'Horn', 'Parabolic dish'];
+  var DOUGHNUT = { 1: 1, 2: 1, 3: 1 };        // same pattern all the way round in azimuth
+  var HALFSPACE = { 3: 1 };                    // radiates into a half space only
+
+  // cos^n forward lobe with a back lobe, for the endfire and patch types.
+  // n is set from the round-beam-equivalent beamwidth: the geometric mean of the
+  // published E and H plane widths, so the gain that falls out matches a datasheet.
+  function nFor(hpbwDeg) { return Math.log(Math.SQRT1_2) / Math.log(Math.cos(hpbwDeg / 2 * D2R)); }
+  var LOBE = {
+    4: { n: nFor(Math.sqrt(65 * 75)), b: 0.158 },    // patch, back lobe -16 dB
+    5: { n: nFor(Math.sqrt(50 * 60)), b: 0.1 },      // 6-element Yagi, -20 dB
+    6: { n: nFor(Math.sqrt(60 * 120)), b: 0.178 }    // log-periodic, -15 dB
+  };
 
   // normalised FIELD pattern, theta measured from boresight (0 = straight ahead)
   function field(th) {
     var t = th * D2R;
     if (S.kind === 0) return 1;
-    if (S.kind === 1) {                       // half-wave dipole, pattern across the wire
+    if (S.kind >= 1 && S.kind <= 3) {         // dipole family, pattern across the wire
       var c = Math.cos(t);                    // boresight = broadside
       var s = Math.sin(t);
-      var den = Math.abs(c);
-      if (den < 1e-6) return 0;               // along the wire: a true null
-      return Math.abs(Math.cos(Math.PI / 2 * s) / den);
+      if (Math.abs(c) < 1e-6) return 0;       // along the wire: a true null
+      var el = Math.abs(Math.cos(Math.PI / 2 * s) / c);
+      if (S.kind === 1) {                     // four of them stacked in line, 0.9 lambda apart
+        var N = 4, d = 0.9, psi = 2 * Math.PI * d * s, sh = Math.sin(psi / 2);
+        var af = Math.abs(sh) < 1e-9 ? 1 : Math.abs(Math.sin(N * psi / 2) / (N * sh));
+        return el * af;
+      }
+      if (S.kind === 3 && Math.abs(t) > Math.PI / 2) return 0;   // ground plane kills the lower half
+      return el;
     }
-    if (S.kind === 2) {                       // quarter-wave monopole over ground
-      var c2 = Math.cos(t), s2 = Math.sin(t);
-      var den2 = Math.abs(c2);
-      if (den2 < 1e-6) return 0;
-      var f = Math.abs(Math.cos(Math.PI / 2 * s2) / den2);
-      return Math.abs(t) > Math.PI / 2 ? 0 : f;   // ground plane kills the lower half
+    if (LOBE[S.kind]) {
+      var L = LOBE[S.kind];
+      var front = Math.abs(t) < Math.PI / 2 ? Math.pow(Math.cos(t), L.n) : 0;
+      return Math.sqrt(front * front + L.b * L.b) / Math.sqrt(1 + L.b * L.b);
     }
-    // horn and dish: uniform line source of width ap wavelengths -> sinc
+    // horn and dish: an aperture ap wavelengths wide, radiating forwards only
+    if (Math.abs(t) > Math.PI / 2) return 0;
     var u = Math.PI * S.ap * Math.sin(t);
-    var base = Math.abs(u) < 1e-9 ? 1 : Math.abs(Math.sin(u) / u);
-    if (S.kind === 4) {                       // dish: circular aperture tapers the sidelobes
-      var v = Math.PI * S.ap * Math.sin(t);
-      base = Math.abs(v) < 1e-9 ? 1 : Math.abs(2 * j1(v) / v);
+    if (S.kind === 8) {                       // dish: circular aperture tapers the sidelobes
+      return Math.abs(u) < 1e-9 ? 1 : Math.abs(2 * j1(u) / u);
     }
-    return base;
+    return Math.abs(u) < 1e-9 ? 1 : Math.abs(Math.sin(u) / u);
   }
   // first-order Bessel, enough accuracy for a pattern plot
   function j1(x) {
@@ -197,17 +217,25 @@ canvas { width: 100%; display: block; }
   // directivity by numerically integrating the power pattern over a sphere
   function gainDbi() {
     if (S.kind === 0) return 0;
-    var num = 0, den = 0, N = 2000;
-    for (var i = 0; i < N; i++) {
-      var th = (i + 0.5) / N * 180 - 90;         // -90..90 about boresight
-      var f = field(th), p = f * f;
-      var w = Math.cos(th * D2R);                // solid-angle weight for this cut
-      den += p * Math.abs(w);
-      num += Math.abs(w);
+    var num = 0, den = 0, N = 4000, i, th, f, w;
+    if (DOUGHNUT[S.kind]) {
+      // omni in azimuth: spin the -90..90 cut about the vertical, weight by cos
+      for (i = 0; i < N; i++) {
+        th = (i + 0.5) / N * 180 - 90;
+        f = field(th); w = Math.abs(Math.cos(th * D2R));
+        den += f * f * w; num += w;
+      }
+    } else {
+      // round beam: spin the 0..180 cut about boresight, weight by sin
+      for (i = 0; i < N; i++) {
+        th = (i + 0.5) / N * 180;
+        f = field(th); w = Math.sin(th * D2R);
+        den += f * f * w; num += w;
+      }
     }
     if (den <= 0) return 0;
     var d = num / den;
-    if (S.kind === 2) d *= 2;                    // monopole radiates into a half-space
+    if (HALFSPACE[S.kind]) d *= 2;               // monopole radiates into a half-space
     return 10 * Math.log10(d);
   }
 
@@ -250,13 +278,7 @@ canvas { width: 100%; display: block; }
     g.strokeStyle = bd; g.lineWidth = 0.5;
     g.font = fnt(12); g.fillStyle = mut;
     [0, -10, -20, -30].forEach(function (dbv) {
-      var rr = rad(dbv, R);
-      g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.stroke();
-      if (dbv !== 0) {
-        var la = 145 * D2R;
-        g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillText(dbv + ' dB', cx + Math.cos(la) * rr, cy + Math.sin(la) * rr);
-      }
+      g.beginPath(); g.arc(cx, cy, rad(dbv, R), 0, 7); g.stroke();
     });
     for (var a = 0; a < 360; a += 30) {
       var ar = (a - 90) * D2R;
@@ -278,6 +300,18 @@ canvas { width: 100%; display: block; }
       if (t === -180) g.moveTo(px, py); else g.lineTo(px, py);
     }
     g.closePath(); g.fill(); g.globalAlpha = 1; g.stroke();
+
+    // ring labels last, on a chip, so they stay readable over a back lobe
+    g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
+    [-10, -20, -30].forEach(function (dbv) {
+      var rr = rad(dbv, R), la = 145 * D2R, txt = dbv + ' dB';
+      var tx = cx + Math.cos(la) * rr, ty = cy + Math.sin(la) * rr;
+      var tw = g.measureText(txt).width;
+      g.fillStyle = cvv('--bg');
+      g.fillRect(tx - tw / 2 - 3, ty - 8, tw + 6, 16);
+      g.fillStyle = mut;
+      g.fillText(txt, tx, ty);
+    });
 
     // boresight
     g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
@@ -371,19 +405,20 @@ canvas { width: 100%; display: block; }
   }
 
   function syncControls() {
-    var needsSize = S.kind === 3 || S.kind === 4;
+    var needsSize = S.kind === 7 || S.kind === 8;
     $('szRow').style.display = needsSize ? 'flex' : 'none';
     $('apNote').textContent = needsSize
-      ? (S.kind === 4 ? 'a dish this many wavelengths across' : 'a horn mouth this many wavelengths wide')
+      ? (S.kind === 8 ? 'a dish this many wavelengths across' : 'a horn mouth this many wavelengths wide')
       : '';
   }
 
   function redraw() { syncControls(); drawPolar(); drawRect(); cards(); }
 
-  ['a0', 'a1', 'a2', 'a3', 'a4'].forEach(function (id, k) {
+  var IDS = ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
+  IDS.forEach(function (id, k) {
     $(id).addEventListener('click', function () {
       S.kind = k;
-      ['a0', 'a1', 'a2', 'a3', 'a4'].forEach(function (o) { $(o).classList.remove('on'); });
+      IDS.forEach(function (o) { $(o).classList.remove('on'); });
       $(id).classList.add('on');
       redraw();
     });
