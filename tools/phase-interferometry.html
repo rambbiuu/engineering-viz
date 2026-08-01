@@ -289,6 +289,14 @@ canvas { width: 100%; display: block; }
     const scroll = (time * 0.04) % lp;
     const x0 = lx + lp + ((0.25 * lp + scroll) % lp + lp) % lp;
 
+    // one dotted line per cycle, so the periods are countable across all four traces
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1; g.setLineDash([2, 4]);
+    for (let k = Math.ceil((lx - x0) / lp); x0 + k * lp <= rx; k++) {
+      const gx = x0 + k * lp;
+      g.beginPath(); g.moveTo(gx, t); g.lineTo(gx, h - b); g.stroke();
+    }
+    g.setLineDash([]);
+
     g.strokeStyle = sub; g.lineWidth = 1.4; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(x0, t); g.lineTo(x0, h - b); g.stroke();
     g.setLineDash([]);
