@@ -2,6 +2,20 @@
 
 These come directly from the repository owner. They override conflicting guidance elsewhere.
 
+## NO GUIDED TOURS (owner, 2026-07-29)
+
+"I really don't like this guided tour, I don't understand the point." Remove them. Do not
+add step buttons that drive the controls, and do not add narration text. The controls and
+the plot are the teaching; a tour is just more words wearing buttons. Currently hidden by
+a CSS rule in every tool; delete the markup and handlers properly when next editing a file.
+
+## Canvas text SCALES, it is not a fixed size (owner, 2026-07-29)
+
+Canvas labels must grow with the canvas. A flat 12px label on a 1180px-wide plot is
+proportionally smaller than the 11px it replaced on a 760px plot — that was a real defect.
+theme().font(px) now multiplies by min(1.65, max(1, canvasWidth / 820)) and floors at 12px,
+so a laptop-width plot renders ticks at ~17px. Never reintroduce fixed canvas font sizes.
+
 ## Every tool — NO SIDE RAIL, single column (owner, 2026-07-29)
 
 "I don't like how you set control to one side and the simulation to the other, totally not

@@ -47,7 +47,7 @@ the label, cut the explanation of the label.
 4. **Label features on the canvas itself**, not only on the axes. Draw a short leader line
    and a few words pointing at the peak, the null, the crossing point, the region that
    matters. A student should be able to screenshot the canvas alone and still follow it.
-5. **A guided tour.** A row of numbered step buttons that *drive the controls themselves*
+5. **(REMOVED — owner rejected guided tours; do not add them.)** ~~A guided tour.~~ A row of numbered step buttons that *drive the controls themselves*
    and narrate what just changed in one sentence ("Step 2 — frequency doubled; notice the
    wave peaks are now half as far apart"). Three to five steps, ending in the interesting
    case. This is the single highest-value feature for a visual learner; do not skip it.
