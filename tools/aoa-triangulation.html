@@ -387,7 +387,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     g.beginPath(); g.rect(cx - fw / 2, cy - fh / 2, fw, fh); g.clip();
     var L = 60;
     for (var i = 0; i < S.n; i++) {
-      var m = measBrg(i), e = S.sig * D2R;
+      var m = trueBrg(i), e = S.sig * D2R;   // true bearing: only the width follows sigma
       var tip = function (ang) {
         return [PX(S.sx[i] + Math.sin(ang) * L), PY(S.sy[i] + Math.cos(ang) * L)];
       };
