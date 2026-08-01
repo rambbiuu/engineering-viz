@@ -4,428 +4,1208 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Link budget</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230072bd' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 12c2.5 0 2.5-7 5-7s2.5 14 5 14 2.5-7 5-7 2.5 3.5 5 3.5'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #ffffff;
-  --surface-1: #f4f6f8;
-  --surface-2: #ffffff;
-  --plot-bg: #ffffff;
-  --grid: #e4e8ec;
-  --grid-strong: #c8ced4;
-  --axis: #3c4650;
-  --text-primary: #14181d;
-  --text-secondary: #2f3742;
-  --text-muted: #5c6672;
-  --series-1: #0072bd;
-  --series-2: #d95319;
-  --series-3: #edb120;
-  --series-4: #7e2f8e;
-  --series-5: #77ac30;
-  --series-6: #4dbeee;
-  --series-7: #a2142f;
-  --good: #77ac30;
-  --warn: #d95319;
-  --bad: #a2142f;
-  --border: #dfe4e9;
-  --border-strong: #b6bfc8;
-  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #16191d;
-    --surface-1: #1e2328;
-    --surface-2: #232930;
-    --plot-bg: #1a1e23;
-    --grid: #2c333a;
-    --grid-strong: #444d56;
-    --axis: #9aa5b1;
-    --text-primary: #f2f5f8;
-    --text-secondary: #d4dae1;
-    --text-muted: #9aa5b1;
-    --series-1: #4da6ff;
-    --series-2: #ff8c42;
-    --series-3: #ffd24d;
-    --series-4: #c77dda;
-    --series-5: #9fd356;
-    --series-6: #7fd4f5;
-    --series-7: #ff6b6b;
-    --good: #9fd356;
-    --warn: #ff8c42;
-    --bad: #ff6b6b;
-    --border: #2c333a;
-    --border-strong: #49525b;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: min(1180px, 94vw); margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
-h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 2rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.35rem 1.9rem; align-items: start; }
+.rail > .hero, .rail > .presets, .rail > .tour, .rail > .tour-note,
+.rail > details, .rail > .full { grid-column: 1 / -1; }
+.stage { display: flex; flex-direction: column; }
+
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
-button:hover { background: var(--surface-1); }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
-.row .lbl { font-size: 14.5px; color: var(--text-secondary); }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem;
-  font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; }
-.note b { color: var(--text-primary); font-weight: 500; }
-details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.85rem; margin: 1.1rem 0; }
-summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
-.legend-note { font-size: 14px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 0; list-style: none; }
-.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
-.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; }
-ol.work li { margin: 3px 0; font-variant-numeric: tabular-nums; }
-dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
-dl.glossary dt { font-weight: 500; margin-top: 8px; }
-dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 1.25rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 116px; }
-.ctl input[type=range] { flex: 1; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
 .sec { margin: 1.5rem 0 6px; font-size: 16px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 14px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 14.5px; color: var(--text-secondary); }
+.hero .val { font-size: 36px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 14.5px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 14px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
 .card .hd { font-size: 14px; color: var(--text-secondary); }
-.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-canvas { width: 100%; display: block; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
-th, td { text-align: right; padding: 5px 8px; border-bottom: 0.5px solid var(--border); }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
 th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.note { font-size: 13px; color: var(--text-secondary); margin: 0.5rem 0 0; }
+
+.tour, .tour-note, .steps, .tourbtn, #tour, #tourNote, #tmsg, #tourTxt { display: none !important; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Link budget</h1>
-<p class="sub">Every radio link is one running total in decibels: add every gain, subtract every loss, and see what reaches the receiver. Compare that with the receiver's own noise to see whether the link closes.</p>
+<div class="wrap">
 
-<div class="row">
-  <span class="lbl">Guided tour</span>
-  <button id="tr0">1 &middot; a short hop</button>
-  <button id="tr1">2 &middot; go further</button>
-  <button id="tr2">3 &middot; add dishes</button>
-  <button id="tr3">4 &middot; raise the frequency</button>
-  <button id="trR">reset</button>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Link budget</h1>
+  <p class="sub">Every radio link is one running total in decibels: add the gains, subtract the losses, and see what reaches the receiver. Compare that with the receiver's own noise floor to see whether the link closes.</p>
+  <p class="prereq">New to <span class="term" title="A ratio on a log scale: +3 dB doubles the power, +10 dB is ten times.">dB</span>? Every term is defined in the glossary at the foot.</p>
+</header>
+
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Fade margin</div>
+    <div class="val" id="heroVal">&mdash;</div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div>
+    <div class="ctl">
+      <label for="ds">Distance</label>
+      <div class="in">
+        <input type="range" id="ds" min="0.05" max="60" step="0.05" value="0.8">
+        <input type="number" id="dsN" min="0.05" max="60" step="0.05" aria-label="Distance in kilometres">
+        <span class="unit">km</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fq">Frequency</label>
+      <div class="in">
+        <input type="range" id="fq" min="0.1" max="40" step="0.01" value="2.4">
+        <input type="number" id="fqN" min="0.1" max="40" step="0.01" aria-label="Frequency in gigahertz">
+        <span class="unit">GHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="pt">Tx power</label>
+      <div class="in">
+        <input type="range" id="pt" min="-10" max="50" step="1" value="20">
+        <input type="number" id="ptN" min="-10" max="50" step="1" aria-label="Transmit power in dBm">
+        <span class="unit">dBm</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="gt">Tx antenna gain</label>
+      <div class="in">
+        <input type="range" id="gt" min="0" max="45" step="0.5" value="3">
+        <input type="number" id="gtN" min="0" max="45" step="0.5" aria-label="Transmit antenna gain in dBi">
+        <span class="unit">dBi</span>
+      </div>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="p1" class="on">Wi-Fi 2.4 GHz</button>
+      <button type="button" id="p2">GSM 900 uplink</button>
+      <button type="button" id="p3">Microwave 18 GHz</button>
+      <button type="button" id="p4">LoRa 868 MHz</button>
+      <button type="button" id="p5">FM broadcast</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="ctl">
+      <label for="gr">Rx antenna gain</label>
+      <div class="in">
+        <input type="range" id="gr" min="0" max="45" step="0.5" value="3">
+        <input type="number" id="grN" min="0" max="45" step="0.5" aria-label="Receive antenna gain in dBi">
+        <span class="unit">dBi</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="lt">Feeder losses, both ends</label>
+      <div class="in">
+        <input type="range" id="lt" min="0" max="15" step="0.5" value="2">
+        <input type="number" id="ltN" min="0" max="15" step="0.5" aria-label="Feeder losses total, in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="lm">Rain, trees, misc</label>
+      <div class="in">
+        <input type="range" id="lm" min="0" max="30" step="0.5" value="0">
+        <input type="number" id="lmN" min="0" max="30" step="0.5" aria-label="Miscellaneous losses in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="nf">Rx noise figure</label>
+      <div class="in">
+        <input type="range" id="nf" min="0.5" max="12" step="0.5" value="5">
+        <input type="number" id="nfN" min="0.5" max="12" step="0.5" aria-label="Receiver noise figure in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="bw">Rx bandwidth</label>
+      <div class="in">
+        <input type="range" id="bw" min="0.1" max="20" step="0.1" value="1.6">
+        <input type="number" id="bwN" min="0.1" max="20" step="0.1" aria-label="Receiver bandwidth in megahertz">
+        <span class="unit">MHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="cn">Required C/N</label>
+      <div class="in">
+        <input type="range" id="cn" min="0" max="30" step="0.5" value="9">
+        <input type="number" id="cnN" min="0" max="30" step="0.5" aria-label="Required carrier to noise ratio in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="n0">Noise density, N<sub>0</sub></label>
+      <div class="in">
+        <input type="range" id="n0" min="-180" max="-160" step="0.1" value="-174">
+        <input type="number" id="n0N" min="-180" max="-160" step="0.1" aria-label="Thermal noise density in dBm per hertz">
+        <span class="unit">dBm/Hz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="mg">Margin target</label>
+      <div class="in">
+        <input type="range" id="mg" min="0" max="30" step="1" value="10">
+        <input type="number" id="mgN" min="0" max="30" step="1" aria-label="Design fade margin target in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="h1">Tx mast height</label>
+      <div class="in">
+        <input type="range" id="h1" min="3" max="120" step="1" value="25">
+        <input type="number" id="h1N" min="3" max="120" step="1" aria-label="Transmit mast height in metres">
+        <span class="unit">m</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="h2">Rx mast height</label>
+      <div class="in">
+        <input type="range" id="h2" min="3" max="120" step="1" value="15">
+        <input type="number" id="h2N" min="3" max="120" step="1" aria-label="Receive mast height in metres">
+        <span class="unit">m</span>
+      </div>
+    </div>
+    <p class="note">Mast heights set the drawing only; free space ignores them.</p>
+  </details>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd">EIRP</div>
+      <div class="big" id="cE">&mdash;</div>
+      <div class="ft">what leaves the antenna</div>
+    </div>
+    <div class="card">
+      <div class="hd">Free-space loss</div>
+      <div class="big" id="cF">&mdash;</div>
+      <div class="ft">92.4 + 20&middot;log <span class="var">f</span> + 20&middot;log <span class="var">d</span></div>
+    </div>
+    <div class="card">
+      <div class="hd">Received power</div>
+      <div class="big" id="cR">&mdash;</div>
+      <div class="ft">the carrier C at the receiver</div>
+    </div>
+    <div class="card">
+      <div class="hd">Noise floor</div>
+      <div class="big" id="cNf">&mdash;</div>
+      <div class="ft">N<sub>0</sub> + 10&middot;log B + NF</div>
+    </div>
+    <div class="card">
+      <div class="hd">C/N achieved</div>
+      <div class="big" id="cN">&mdash;</div>
+      <div class="ft" id="cNn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Maximum range</div>
+      <div class="big" id="cX">&mdash;</div>
+      <div class="ft">where the margin reaches zero</div>
+    </div>
+  </div>
+
 </div>
-<p class="note" id="tourNote"><b>Start here.</b> Press the tour buttons in order; each one moves the sliders for you.</p>
 
-<div class="grid2">
-  <div class="ctl"><label for="pt">Tx power</label><input type="range" id="pt" min="-10" max="50" step="1" value="20"><span class="v" id="ptv">20 dBm</span></div>
-  <div class="ctl"><label for="fq">Frequency</label><input type="range" id="fq" min="0.1" max="40" step="0.1" value="2.4"><span class="v" id="fqv">2.4 GHz</span></div>
-  <div class="ctl"><label for="gt">Tx antenna gain</label><input type="range" id="gt" min="0" max="45" step="0.5" value="3"><span class="v" id="gtv">3 dBi</span></div>
-  <div class="ctl"><label for="gr">Rx antenna gain</label><input type="range" id="gr" min="0" max="45" step="0.5" value="3"><span class="v" id="grv">3 dBi</span></div>
-  <div class="ctl"><label for="lt">Feeder losses</label><input type="range" id="lt" min="0" max="15" step="0.5" value="2"><span class="v" id="ltv">2 dB</span></div>
-  <div class="ctl"><label for="lm">Misc / rain / trees</label><input type="range" id="lm" min="0" max="30" step="0.5" value="0"><span class="v" id="lmv">0 dB</span></div>
-  <div class="ctl"><label for="ds">Distance</label><input type="range" id="ds" min="0.05" max="60" step="0.05" value="0.8"><span class="v" id="dsv">0.80 km</span></div>
-  <div class="ctl"><label for="nf">Rx noise figure</label><input type="range" id="nf" min="0.5" max="12" step="0.5" value="5"><span class="v" id="nfv">5 dB</span></div>
-  <div class="ctl"><label for="bw">Rx bandwidth</label><input type="range" id="bw" min="1" max="200" step="1" value="16"><span class="v" id="bwv">1.6 MHz</span></div>
-  <div class="ctl"><label for="cn">Required C/N</label><input type="range" id="cn" min="0" max="30" step="0.5" value="9"><span class="v" id="cnv">9 dB</span></div>
+<div class="stage">
+
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="tr0">1 &middot; a short hop</button>
+    <button type="button" id="tr1">2 &middot; go further</button>
+    <button type="button" id="tr2">3 &middot; add dishes</button>
+    <button type="button" id="tr3">4 &middot; raise the frequency</button>
+    <button type="button" id="trR">reset</button>
+  </div>
+  <p class="tour-note" id="tourNote">Press the steps in order; each one moves the controls.</p>
+
+  <p class="sec"><b>1 &middot; The hop, drawn to scale</b> <span>&mdash; two sites, the ray, the losses between</span></p>
+  <canvas id="sc" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>the radio path</li>
+    <li><span class="sw" style="background:var(--text-primary)"></span>hardware, to scale</li>
+    <li>dish drawn above 15 dBi</li>
+  </ul>
+
+  <p class="sec"><b>2 &middot; The running total</b> <span>&mdash; every gain and loss, in order</span></p>
+  <canvas id="wf" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>transmit power</li>
+    <li><span class="sw" style="background:var(--good)"></span>a gain step</li>
+    <li><span class="sw" style="background:var(--bad)"></span>a loss step</li>
+    <li><span class="sw dash" style="color:var(--warn)"></span>noise floor</li>
+    <li><span class="sw dash" style="color:var(--bad)"></span>level required</li>
+  </ul>
+
+  <p class="sec"><b>3 &middot; Received power vs distance</b> <span>&mdash; where this link runs out of margin</span></p>
+  <canvas id="dc" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>received power</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>your distance</li>
+    <li><span class="sw" style="background:var(--bad)"></span>shaded &mdash; link fails</li>
+  </ul>
+
+  <p class="sec"><b>4 &middot; The budget as engineers write it</b> <span>&mdash; the same numbers as one column</span></p>
+  <table id="tbl"></table>
+
+  <details>
+    <summary>Worked example, with the current numbers</summary>
+    <ol class="work" id="work"></ol>
+  </details>
+
+  <details>
+    <summary>What the sliders are teaching</summary>
+    <p class="note">Doubling the distance costs 6 dB and doubling the frequency costs another 6 &mdash; both are the 20&middot;log terms, and neither can be argued with. Antenna gain is free power at both ends, which is why a dish at each end beats a bigger amplifier. The noise floor sets the finish line: widen the receiver bandwidth and it rises 3 dB per doubling, so a link that fails on a wideband waveform may pass on a narrow one at the same power.</p>
+  </details>
+
+  <details>
+    <summary>Glossary</summary>
+    <dl class="glossary">
+      <dt>dB</dt><dd>A ratio on a log scale; +3 dB doubles the power, +10 dB is ten times.</dd>
+      <dt>dBm</dt><dd>Power compared with 1 milliwatt, in dB. 0 dBm = 1 mW; 20 dBm = 100 mW.</dd>
+      <dt>dBi</dt><dd>Antenna gain compared with an isotropic antenna that radiates equally everywhere.</dd>
+      <dt>EIRP</dt><dd>Effective isotropic radiated power: transmit power minus feeder loss plus antenna gain.</dd>
+      <dt>Free-space loss</dt><dd>Spreading loss with nothing in the way: 92.4 + 20&middot;log <span class="var">f</span><sub>GHz</sub> + 20&middot;log <span class="var">d</span><sub>km</sub> dB.</dd>
+      <dt>Feeder loss</dt><dd>Power lost in the cable between radio and antenna.</dd>
+      <dt>Noise figure</dt><dd>How much noise the receiver adds on top of the unavoidable thermal noise, in dB.</dd>
+      <dt>Noise floor</dt><dd>N<sub>0</sub> + 10&middot;log B + NF. N<sub>0</sub> is &minus;174 dBm/Hz at 290 K.</dd>
+      <dt>C/N</dt><dd>Carrier-to-noise ratio: received power minus the noise floor, in dB.</dd>
+      <dt>Fade margin</dt><dd>How far the achieved C/N sits above the required C/N; headroom for a bad day.</dd>
+    </dl>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: <a href="noise-figure-sensitivity.html">noise figure and sensitivity</a>.</p>
+
 </div>
-
-<p class="sec"><b>1 &middot; The running total</b> <span>&mdash; running total in dBm; dashed line is the noise floor</span></p>
-<canvas id="wf" style="height: 300px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background:var(--series-1)"></span>starting transmit power</li>
-  <li><span class="sw" style="background:var(--good)"></span>a gain step</li>
-  <li><span class="sw" style="background:var(--bad)"></span>a loss step</li>
-  <li><span class="sw" style="background:var(--warn)"></span>dashed &mdash; receiver noise floor</li>
-</ul>
-
-<div class="cards">
-  <div class="card">
-    <div class="hd">EIRP</div>
-    <div class="big" id="cE">&mdash;</div>
-    <div class="ft">what leaves the antenna, as if it were isotropic</div>
-  </div>
-  <div class="card">
-    <div class="hd">Free-space loss</div>
-    <div class="big" id="cF">&mdash;</div>
-    <div class="ft">92.4 + 20log(f<sub>GHz</sub>) + 20log(d<sub>km</sub>)</div>
-  </div>
-  <div class="card">
-    <div class="hd">Received power</div>
-    <div class="big" id="cR">&mdash;</div>
-    <div class="ft">the carrier C arriving at the receiver</div>
-  </div>
-  <div class="card">
-    <div class="hd">Fade margin</div>
-    <div class="big" id="cM">&mdash;</div>
-    <div class="ft" id="cMn">&mdash;</div>
-  </div>
 </div>
-
-<p class="sec"><b>2 &middot; The budget as engineers write it</b></p>
-<table id="tbl"></table>
-
-<p class="sec"><b>3 &middot; Received power vs distance</b> <span>&mdash; where this link runs out of margin</span></p>
-<canvas id="dc" style="height: 250px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background:var(--series-1)"></span>received power vs distance</li>
-  <li><span class="sw" style="background:var(--series-2)"></span>your current distance</li>
-  <li><span class="sw" style="background:var(--bad)"></span>shaded &mdash; link fails here</li>
-</ul>
-
-<details><summary>Worked example, with the current numbers substituted in</summary>
-<ol class="work" id="work"></ol>
-</details>
-<details><summary>What the sliders are teaching</summary>
-<p class="sub" style="margin:0.5rem 0 0">Three lessons live in these sliders. Doubling the distance costs 6 dB and doubling the frequency costs another 6 &mdash; both are the 20log terms, and neither can be argued with. Antenna gain is free power in both directions, which is why a dish at each end beats a bigger amplifier. And the noise floor, kTB + noise figure, sets the finish line: widen the receiver bandwidth and the floor rises 3 dB per doubling, so a link that fails on a wideband waveform may pass on a narrow one at the same power.</p>
-</details>
-<details><summary>Glossary</summary>
-<dl class="glossary">
-  <dt>dB</dt><dd>A ratio on a log scale; +3 dB doubles the power, +10 dB is ten times.</dd>
-  <dt>dBm</dt><dd>Power compared with 1 milliwatt, in dB. 0 dBm = 1 mW; 20 dBm = 100 mW.</dd>
-  <dt>dBi</dt><dd>Antenna gain compared with an isotropic antenna that radiates equally everywhere.</dd>
-  <dt>EIRP</dt><dd>Effective isotropic radiated power: transmit power minus feeder loss plus antenna gain.</dd>
-  <dt>Free-space loss</dt><dd>Spreading loss over distance with nothing in the way: 92.4 + 20log f<sub>GHz</sub> + 20log d<sub>km</sub> dB.</dd>
-  <dt>Feeder loss</dt><dd>Power lost in the cable between radio and antenna.</dd>
-  <dt>Noise figure</dt><dd>How much noise the receiver adds on top of the unavoidable thermal noise, in dB.</dd>
-  <dt>Noise floor</dt><dd>kTB plus the noise figure: &minus;174 dBm/Hz plus 10log of the bandwidth plus NF.</dd>
-  <dt>C/N</dt><dd>Carrier-to-noise ratio: received power minus the noise floor, in dB.</dd>
-  <dt>Fade margin</dt><dd>How far the achieved C/N sits above the required C/N; headroom for a bad day.</dd>
-</dl>
-</details>
 
 <script>
 (function () {
-  const $ = id => document.getElementById(id);
-  const S = {};
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
+  /* ============================================================
+     engineering-viz shared canvas kit
+     ============================================================ */
 
-  const read = () => {
-    S.pt = +$('pt').value; S.f = +$('fq').value; S.gt = +$('gt').value; S.gr = +$('gr').value;
-    S.lt = +$('lt').value; S.lm = +$('lm').value; S.d = +$('ds').value; S.nf = +$('nf').value;
-    S.bw = +$('bw').value / 10; S.cn = +$('cn').value;
-  };
-  const fsl = d => 92.4 + 20 * L10(S.f) + 20 * L10(Math.max(d, 1e-4));
-  const noiseFloor = () => -174 + 10 * L10(S.bw * 1e6) + S.nf;
-  const prx = d => S.pt - S.lt / 2 + S.gt - fsl(d) - S.lm + S.gr - S.lt / 2;
-
-  function stages() {
-    const half = S.lt / 2;
-    return [
-      { n: 'Tx power', v: S.pt, d: 0 },
-      { n: 'Tx feeder', v: S.pt - half, d: -half },
-      { n: 'Tx antenna', v: S.pt - half + S.gt, d: +S.gt },
-      { n: 'free space', v: S.pt - half + S.gt - fsl(S.d), d: -fsl(S.d) },
-      { n: 'misc losses', v: S.pt - half + S.gt - fsl(S.d) - S.lm, d: -S.lm },
-      { n: 'Rx antenna', v: S.pt - half + S.gt - fsl(S.d) - S.lm + S.gr, d: +S.gr },
-      { n: 'Rx feeder', v: prx(S.d), d: -half }
-    ];
-  }
-
+  /* --- 1. sizing ------------------------------------------------ */
   function fit(c) {
-    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
   }
 
-  function drawWF() {
-    const c = $('wf'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--grid');
-    const st = stages(), nfl = noiseFloor();
-    const lo = Math.min(nfl - 12, Math.min.apply(null, st.map(s => s.v)) - 8);
-    const hi = Math.max.apply(null, st.map(s => s.v)) + 8;
-    const l = 52, r = 12, t = 14, b = 42;
-    const Y = v => t + (hi - v) / (hi - lo) * (h - t - b);
-    const bw = (w - l - r) / st.length;
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { var k = 1, w = 0;
+        var cs = document.querySelectorAll('canvas');
+        for (var i = 0; i < cs.length; i++) { var r = cs[i].getBoundingClientRect().width; if (r > w) w = r; }
+        k = Math.min(1.65, Math.max(1, (w || 820) / 820));
+        return (weight ? weight + ' ' : '') + Math.max(12, Math.round(px * k)) + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
 
-    g.fillStyle = cvv('--plot-bg');
-    g.fillRect(l, t, w - l - r, h - t - b);
-    g.font = fnt(12); g.fillStyle = sub; g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let k = 0; k <= 5; k++) {
-      const v = lo + (hi - lo) * k / 5;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(0), l - 6, Y(v));
-    }
-    g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('dBm', 6, t);
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
 
-    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, t); g.lineTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
-
-    const c1 = cvv('--series-1'), cg = cvv('--good'), cl = cvv('--bad');
-    st.forEach((s, i) => {
-      const x = l + i * bw + bw * 0.16, bwid = bw * 0.68;
-      const prev = i === 0 ? s.v : st[i - 1].v;
-      const up = s.v >= prev;
-      const y0 = Y(Math.max(prev, s.v)), y1 = Y(Math.min(prev, s.v));
-      if (i === 0) {
-        g.fillStyle = c1;
-        g.fillRect(x, Y(s.v), bwid, Y(lo) - Y(s.v));
-      } else {
-        g.fillStyle = up ? cg : cl;
-        g.globalAlpha = 0.85;
-        g.fillRect(x, y0, bwid, Math.max(y1 - y0, 1.5));
-        g.globalAlpha = 1;
-        g.strokeStyle = bd; g.lineWidth = 1;
-        g.beginPath(); g.moveTo(x - bw * 0.32, Y(prev)); g.lineTo(x, Y(prev)); g.stroke();
-      }
-      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      const words = s.n.split(' ');
-      words.forEach((wd, k) => g.fillText(wd, x + bwid / 2, h - b + 6 + k * 12));
-      if (i > 0) {
-        g.fillStyle = up ? cg : cl; g.font = fnt(12);
-        g.textBaseline = 'bottom';
-        g.fillText((s.d >= 0 ? '+' : '') + s.d.toFixed(1), x + bwid / 2, Math.min(y0, y1) - 3);
-      }
-    });
-
-    g.strokeStyle = cvv('--warn'); g.lineWidth = 1.4; g.setLineDash([6, 4]);
-    g.beginPath(); g.moveTo(l, Y(nfl)); g.lineTo(w - r, Y(nfl)); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = cvv('--warn'); g.font = fnt(12);
-    g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('noise floor ' + nfl.toFixed(1) + ' dBm', l + 4, Y(nfl) - 3);
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
   }
 
-  function drawDist() {
-    const c = $('dc'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--grid');
-    const l = 52, r = 12, t = 14, b = 34;
-    const dmin = 0.02, dmax = 100;
-    const X = d => l + (L10(d) - L10(dmin)) / (L10(dmax) - L10(dmin)) * (w - l - r);
-    const nfl = noiseFloor(), thr = nfl + S.cn;
-    const lo = thr - 45, hi = prx(dmin) + 5;
-    const Y = v => t + (hi - v) / (hi - lo) * (h - t - b);
-
-    g.fillStyle = cvv('--plot-bg');
-    g.fillRect(l, t, w - l - r, h - t - b);
-    g.font = fnt(12); g.fillStyle = sub;
-    [0.1, 1, 10, 100].forEach(d => {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(d), t); g.lineTo(X(d), h - b); g.stroke();
-      g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(d + ' km', X(d), h - b + 6);
-    });
-    for (let v = Math.ceil(lo / 20) * 20; v < hi; v += 20) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(0), l - 6, Y(v));
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
     }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
 
-    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, t); g.lineTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
 
-    g.fillStyle = cvv('--bad'); g.globalAlpha = 0.12;
-    g.fillRect(l, Y(thr), w - l - r, Math.max(0, Y(lo) - Y(thr)));
-    g.globalAlpha = 1;
-    g.strokeStyle = cvv('--bad'); g.lineWidth = 1.2; g.setLineDash([6, 4]);
-    g.beginPath(); g.moveTo(l, Y(thr)); g.lineTo(w - r, Y(thr)); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = cvv('--bad'); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('link fails below here (' + thr.toFixed(0) + ' dBm)', l + 4, Y(thr) - 3);
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
 
-    g.strokeStyle = cvv('--series-1'); g.lineWidth = 2;
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
     g.beginPath();
-    for (let px = l; px <= w - r; px++) {
-      const frac = (px - l) / (w - l - r);
-      const d = Math.pow(10, L10(dmin) + frac * (L10(dmax) - L10(dmin)));
-      const y = Y(prx(d));
-      if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
     }
     g.stroke();
 
-    g.fillStyle = cvv('--series-2');
-    g.beginPath(); g.arc(X(S.d), Y(prx(S.d)), 5, 0, 7); g.fill();
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('you are here', X(S.d), Y(prx(S.d)) - 9);
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
   }
 
-  function updateUI() {
-    $('ptv').textContent = S.pt + ' dBm';
-    $('fqv').textContent = S.f.toFixed(1) + ' GHz';
-    $('gtv').textContent = S.gt + ' dBi';
-    $('grv').textContent = S.gr + ' dBi';
-    $('ltv').textContent = S.lt + ' dB';
-    $('lmv').textContent = S.lm + ' dB';
-    $('dsv').textContent = S.d.toFixed(2) + ' km';
-    $('nfv').textContent = S.nf + ' dB';
-    $('bwv').textContent = S.bw.toFixed(1) + ' MHz';
-    $('cnv').textContent = S.cn + ' dB';
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
 
-    const eirp = S.pt - S.lt / 2 + S.gt;
-    const pr = prx(S.d), nfl = noiseFloor(), cn = pr - nfl, fm = cn - S.cn;
-    $('cE').textContent = eirp.toFixed(1) + ' dBm';
-    $('cF').textContent = fsl(S.d).toFixed(1) + ' dB';
-    $('cR').textContent = pr.toFixed(1) + ' dBm';
-    $('cM').textContent = (fm >= 0 ? '+' : '') + fm.toFixed(1) + ' dB';
-    $('cM').style.color = fm >= 10 ? 'var(--good)' : (fm >= 0 ? 'var(--warn)' : 'var(--bad)');
-    $('cMn').textContent = fm < 0 ? 'link does not close — short by ' + (-fm).toFixed(1) + ' dB'
-      : fm < 10 ? 'closes, but thin — most designs want 10–20 dB' : 'healthy margin for fading';
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
 
-    const nfl2 = noiseFloor();
-    const rows = [
-      ['Tx power', S.pt.toFixed(1), 'dBm'],
-      ['Tx feeder loss', (-S.lt / 2).toFixed(1), 'dB'],
-      ['Tx antenna gain', '+' + S.gt.toFixed(1), 'dBi'],
-      ['EIRP', eirp.toFixed(1), 'dBm'],
-      ['Free-space loss', (-fsl(S.d)).toFixed(1), 'dB'],
-      ['Misc losses', (-S.lm).toFixed(1), 'dB'],
-      ['Rx antenna gain', '+' + S.gr.toFixed(1), 'dBi'],
-      ['Rx feeder loss', (-S.lt / 2).toFixed(1), 'dB'],
-      ['Received carrier C', pr.toFixed(1), 'dBm'],
-      ['Noise floor kTB + NF', nfl2.toFixed(1), 'dBm'],
-      ['C/N achieved', cn.toFixed(1), 'dB'],
-      ['C/N required', S.cn.toFixed(1), 'dB'],
-      ['Fade margin', (fm >= 0 ? '+' : '') + fm.toFixed(1), 'dB']
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 7. technical hardware ------------------------------------ */
+  function mast(g, x, groundY, heightPx, label, opts) {
+    opts = opts || {};
+    const t = theme();
+    const h = Math.max(6, heightPx), top = groundY - h;
+    const bw = Math.max(2.5, Math.min(13, h * 0.075)), tw = Math.max(1.4, bw * 0.36);
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.fillStyle = opts.colour || t.axis;
+    g.setLineDash([]); g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(x - bw, groundY); g.lineTo(x - tw, top);
+    g.moveTo(x + bw, groundY); g.lineTo(x + tw, top);
+    g.stroke();
+    if (h > 18) {
+      const n = Math.max(1, Math.min(24, Math.round(h / Math.max(11, bw * 2.6))));
+      g.lineWidth = 0.7; g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const f0 = i / n, f1 = (i + 1) / n;
+        const w0 = bw + (tw - bw) * f0, w1 = bw + (tw - bw) * f1;
+        const y0 = groundY + (top - groundY) * f0, y1 = groundY + (top - groundY) * f1;
+        g.moveTo(x - w0, y0); g.lineTo(x + w1, y1);
+        g.moveTo(x + w0, y0); g.lineTo(x - w1, y1);
+        g.moveTo(x - w1, y1); g.lineTo(x + w1, y1);
+      }
+      g.stroke();
+    }
+    const ah = Math.max(5, Math.min(16, h * 0.15));
+    g.lineWidth = 1.2; g.beginPath();
+    g.moveTo(x, top); g.lineTo(x, top - ah);
+    g.moveTo(x - ah * 0.42, top - ah * 0.58); g.lineTo(x + ah * 0.42, top - ah * 0.58);
+    g.moveTo(x - ah * 0.28, top - ah * 0.92); g.lineTo(x + ah * 0.28, top - ah * 0.92);
+    g.stroke();
+    g.lineWidth = 1; g.beginPath();
+    g.moveTo(x - bw * 1.6, groundY); g.lineTo(x + bw * 1.6, groundY);
+    g.stroke();
+    if (label) {
+      const side = opts.side === 'right' ? 1 : -1;
+      const dx = side * (bw + (opts.gap == null ? 16 : opts.gap));
+      g.strokeStyle = t.muted; g.lineWidth = 0.5;
+      g.beginPath();
+      g.moveTo(x, groundY); g.lineTo(x + dx * 1.15, groundY);
+      g.moveTo(x, top); g.lineTo(x + dx * 1.15, top);
+      g.stroke();
+      dimension(g, x + dx, groundY, x + dx, top, label, { size: opts.size || 10.5 });
+    }
+    g.restore();
+  }
+
+  function dish(g, x, y, r, angle, opts) {
+    opts = opts || {};
+    const t = theme();
+    r = Math.max(4, r);
+    const back = angle + Math.PI, spread = 1.05;
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.setLineDash([]);
+    g.lineWidth = Math.max(1, Math.min(1.6, r * 0.06));
+    g.beginPath(); g.arc(x, y, r, back - spread, back + spread); g.stroke();
+    const e0x = x + Math.cos(back - spread) * r, e0y = y + Math.sin(back - spread) * r;
+    const e1x = x + Math.cos(back + spread) * r, e1y = y + Math.sin(back + spread) * r;
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(e0x, e0y); g.lineTo(x, y); g.moveTo(e1x, e1y); g.lineTo(x, y);
+    g.stroke();
+    const f = Math.max(1.6, r * 0.13);
+    g.lineWidth = 1.1;
+    g.strokeRect(x - f, y - f, f * 2, f * 2);
+    const bx = x + Math.cos(back) * r, by = y + Math.sin(back) * r;
+    g.beginPath();
+    g.moveTo(bx, by); g.lineTo(bx + Math.cos(back) * r * 0.45, by + Math.sin(back) * r * 0.45);
+    g.stroke();
+    if (opts.axisLine !== false && r > 8) {
+      g.strokeStyle = t.muted; g.lineWidth = 0.7; g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(angle) * r * 1.1, y + Math.sin(angle) * r * 1.1); g.stroke();
+      g.setLineDash([]);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ============================================================
+     tool code
+     ============================================================ */
+
+  var $ = function (id) { return document.getElementById(id); };
+  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  var clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
+  var merge = function (a, b) {
+    var o = {}, k;
+    for (k in a) o[k] = a[k];
+    for (k in b) o[k] = b[k];
+    return o;
+  };
+
+  var IDS = ['ds', 'fq', 'pt', 'gt', 'gr', 'lt', 'lm', 'nf', 'bw', 'cn', 'n0', 'mg', 'h1', 'h2'];
+  var DEF = { ds: 0.8, fq: 2.4, pt: 20, gt: 3, gr: 3, lt: 2, lm: 0,
+              nf: 5, bw: 1.6, cn: 9, n0: -174, mg: 10, h1: 25, h2: 15 };
+  var S = merge(DEF, {});
+
+  /* ---- physics, unchanged ---- */
+  function fsl(d) { return 92.4 + 20 * L10(Math.max(S.fq, 1e-6)) + 20 * L10(Math.max(d, 1e-4)); }
+  function noiseFloor() { return S.n0 + 10 * L10(Math.max(S.bw, 1e-6) * 1e6) + S.nf; }
+  function eirp() { return S.pt - S.lt / 2 + S.gt; }
+  function prx(d) { return S.pt - S.lt / 2 + S.gt - fsl(d) - S.lm + S.gr - S.lt / 2; }
+  function required() { return noiseFloor() + S.cn; }
+
+  /* range at which the received power meets the required level */
+  function maxRange() {
+    var allowed = eirp() - S.lm + S.gr - S.lt / 2 - required();
+    var ex = (allowed - 92.4 - 20 * L10(Math.max(S.fq, 1e-6))) / 20;
+    if (!isFinite(ex)) return NaN;
+    return Math.pow(10, clamp(ex, -6, 6));
+  }
+
+  function stages() {
+    var half = S.lt / 2;
+    var v1 = S.pt, v2 = v1 - half, v3 = v2 + S.gt, v4 = v3 - fsl(S.ds),
+        v5 = v4 - S.lm, v6 = v5 + S.gr, v7 = v6 - half;
+    return [
+      { n: 'Tx power', v: v1, d: 0 },
+      { n: 'Tx feeder', v: v2, d: -half },
+      { n: 'Tx antenna', v: v3, d: S.gt },
+      { n: 'free space', v: v4, d: -fsl(S.ds) },
+      { n: 'misc losses', v: v5, d: -S.lm },
+      { n: 'Rx antenna', v: v6, d: S.gr },
+      { n: 'Rx feeder', v: v7, d: -half }
     ];
-    $('tbl').innerHTML = rows.map((r, i) => {
-      const strong = ['EIRP', 'Received carrier C', 'Fade margin'].indexOf(r[0]) >= 0;
-      return '<tr' + (strong ? ' style="font-weight:500"' : '') + '><td>' + r[0] + '</td><td>' + r[1] + '</td><td style="color:var(--text-muted);width:44px">' + r[2] + '</td></tr>';
+  }
+
+  /* ---- canvas text sizing: 12 px floor, grows with the canvas ---- */
+  function annFs(w) { return Math.max(12, Math.round(w / 62)); }
+  function tickFs(w) { return Math.max(12, Math.round(w / 78)); }
+  function fitText(g, text, maxW) {
+    if (g.measureText(text).width <= maxW) return text;
+    var s = text;
+    while (s.length > 1 && g.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+    return s + '…';
+  }
+
+  /* ---- 1 · the hop, drawn to scale ---- */
+  function drawScene() {
+    var c = $('sc'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme(), fs = annFs(w);
+    var ymax = Math.max(10, Math.max(S.h1, S.h2) * 1.7);
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: Math.max(S.ds, 1e-3), unit: 'km', label: 'ground range' },
+      { min: 0, max: ymax, unit: 'm', label: 'height' },
+      { fontSize: tickFs(w) });
+
+    var gy = P.Y(0);
+    var xa = P.X(S.ds * 0.08), xb = P.X(S.ds * 0.92);
+    var ya = P.Y(S.h1), yb = P.Y(S.h2);
+    var pr = prx(S.ds), thr = required();
+
+    P.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(xa, ya); g.lineTo(xb, yb); g.stroke();
+    P.unclip(g);
+
+    mast(g, xa, gy, gy - ya, fmtEng(S.h1, 'm', 0), { side: 'right', size: fs });
+    mast(g, xb, gy, gy - yb, fmtEng(S.h2, 'm', 0), { side: 'left', size: fs });
+
+    var r = clamp(P.h * 0.07, 5, 26);
+    if (S.gt >= 15) dish(g, xa, ya, r, 0);
+    if (S.gr >= 15) dish(g, xb, yb, r, Math.PI);
+
+    dimension(g, xa, P.Y(ymax * 0.12), xb, P.Y(ymax * 0.12), fmtEng(S.ds, 'km', 2), { size: fs });
+
+    leader(g, xa, ya, 'EIRP ' + fmtEng(eirp(), 'dBm', 1),
+      { box: P, colour: t.s1, size: fs, dx: 34, dy: -26 });
+    leader(g, xb, yb, fmtEng(pr, 'dBm', 1) + ' in',
+      { box: P, colour: pr >= thr ? t.good : t.bad, size: fs, dx: -34, dy: -26 });
+    leader(g, (xa + xb) / 2, (ya + yb) / 2, 'free space ' + fmtEng(fsl(S.ds), 'dB', 1),
+      { box: P, colour: t.text2, size: fs, dx: -30, dy: 30 });
+  }
+
+  /* ---- 2 · the running total ---- */
+  function drawWF() {
+    var c = $('wf'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme(), fs = annFs(w);
+    var st = stages(), n = st.length, i;
+    var nfl = noiseFloor(), thr = nfl + S.cn, pr = st[n - 1].v;
+    var vals = st.map(function (s) { return s.v; });
+    var lo = Math.min(nfl - 12, Math.min.apply(null, vals) - 8);
+    var hi = Math.max(Math.max.apply(null, vals) + 8, lo + 10);
+
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0.5, max: n + 0.5, label: 'budget stage',
+        fmt: function (v) {
+          var k = Math.round(v);
+          return (Math.abs(v - k) < 1e-9 && k >= 1 && k <= n) ? fmtNum(k, 0) : '';
+        } },
+      { min: lo, max: hi, unit: 'dBm', label: 'level' },
+      { fontSize: tickFs(w) });
+
+    band(g, P, P.Y(lo), P.Y(thr), t.bad, 'y');
+
+    var pitch = P.w / n, bwid = pitch * 0.6;
+    g.font = t.font(fs);
+    P.clip(g);
+    for (i = 0; i < n; i++) {
+      var cx = P.X(i + 1), x = cx - bwid / 2;
+      var prev = i === 0 ? st[i].v : st[i - 1].v;
+      var up = st[i].v >= prev;
+      var y0 = P.Y(Math.max(prev, st[i].v)), y1 = P.Y(Math.min(prev, st[i].v));
+      if (i === 0) {
+        g.fillStyle = t.s1; g.globalAlpha = 0.85;
+        g.fillRect(x, P.Y(st[i].v), bwid, Math.max(1.5, P.y1 - P.Y(st[i].v)));
+        g.globalAlpha = 1;
+      } else {
+        g.strokeStyle = t.gridStrong; g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(P.X(i) + bwid / 2, P.Y(prev)); g.lineTo(x, P.Y(prev));
+        g.stroke();
+        g.fillStyle = up ? t.good : t.bad; g.globalAlpha = 0.85;
+        g.fillRect(x, y0, bwid, Math.max(1.5, y1 - y0));
+        g.globalAlpha = 1;
+        g.fillStyle = up ? t.good : t.bad;
+        g.textAlign = 'center'; g.textBaseline = 'bottom';
+        var lab = (st[i].d >= 0 ? '+' : '') + fmtNum(st[i].d, 1);
+        g.fillText(fitText(g, lab, pitch - 4), cx,
+          clamp(Math.min(y0, y1) - 3, P.y0 + fs, P.y1 - 2));
+      }
+    }
+
+    var maxNameW = 0;
+    for (i = 0; i < n; i++) maxNameW = Math.max(maxNameW, g.measureText(st[i].n).width);
+    var rot = maxNameW > pitch - 6;
+    for (i = 0; i < n; i++) {
+      var nx = P.X(i + 1);
+      g.save();
+      if (rot) {
+        var rt = fitText(g, st[i].n, Math.max(24, P.h - 16));
+        var rw = g.measureText(rt).width;
+        g.translate(nx, P.y1 - 6); g.rotate(-Math.PI / 2);
+        g.globalAlpha = 0.85; g.fillStyle = t.plot;
+        g.fillRect(-3, -fs * 0.78, rw + 6, fs * 1.5);
+        g.globalAlpha = 1; g.fillStyle = t.text2;
+        g.textAlign = 'left'; g.textBaseline = 'middle';
+        g.fillText(rt, 0, 0);
+      } else {
+        var ht = fitText(g, st[i].n, pitch - 6);
+        var hw = g.measureText(ht).width;
+        g.globalAlpha = 0.85; g.fillStyle = t.plot;
+        g.fillRect(nx - hw / 2 - 3, P.y1 - 6 - fs, hw + 6, fs * 1.4);
+        g.globalAlpha = 1; g.fillStyle = t.text2;
+        g.textAlign = 'center'; g.textBaseline = 'bottom';
+        g.fillText(ht, nx, P.y1 - 5);
+      }
+      g.restore();
+    }
+
+    g.setLineDash([6, 4]); g.lineWidth = 1.4;
+    g.strokeStyle = t.warn;
+    g.beginPath(); g.moveTo(P.x0, P.Y(nfl)); g.lineTo(P.x1, P.Y(nfl)); g.stroke();
+    g.strokeStyle = t.bad;
+    g.beginPath(); g.moveTo(P.x0, P.Y(thr)); g.lineTo(P.x1, P.Y(thr)); g.stroke();
+    g.setLineDash([]);
+    P.unclip(g);
+
+    var fm = (pr - nfl) - S.cn;
+    var dx = clamp(P.X(n) - pitch * 0.42, P.x0 + fs * 1.3, P.x1 - fs * 1.3);
+    dimension(g, dx, P.Y(thr), dx, P.Y(pr),
+      (fm >= 0 ? '+' : '') + fmtEng(fm, 'dB', 1),
+      { size: fs, colour: fm >= 0 ? t.good : t.bad });
+
+    leader(g, P.x0 + P.w * 0.42, P.Y(nfl), 'noise floor ' + fmtEng(nfl, 'dBm', 1),
+      { box: P, colour: t.warn, size: fs, dx: -30, dy: -24, dot: false });
+    leader(g, P.X(n), P.Y(pr), 'received ' + fmtEng(pr, 'dBm', 1),
+      { box: P, colour: t.s1, size: fs, dx: -36, dy: -32 });
+  }
+
+  /* ---- 3 · received power vs distance ---- */
+  function drawDist() {
+    var c = $('dc'), wh = fit(c), w = wh[0], h = wh[1];
+    var g = c.getContext('2d'), t = theme(), fs = annFs(w);
+    var dmin = 0.02, dmax = 100;
+    var nfl = noiseFloor(), thr = nfl + S.cn;
+    var hi = prx(dmin) + 5, lo = Math.min(thr - 45, hi - 20);
+
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: dmin, max: dmax, unit: 'km', label: 'distance', log: true },
+      { min: lo, max: hi, unit: 'dBm', label: 'received power' },
+      { fontSize: tickFs(w) });
+
+    band(g, P, P.Y(lo), P.Y(thr), t.bad, 'y');
+
+    P.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 2;
+    g.beginPath();
+    for (var px = P.x0; px <= P.x1; px++) {
+      var f = (px - P.x0) / Math.max(1, P.w);
+      var d = Math.pow(10, L10(dmin) + f * (L10(dmax) - L10(dmin)));
+      var y = P.Y(prx(d));
+      if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
+    }
+    g.stroke();
+
+    g.strokeStyle = t.bad; g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P.x0, P.Y(thr)); g.lineTo(P.x1, P.Y(thr)); g.stroke();
+    g.setLineDash([]);
+
+    var dx = P.X(clamp(S.ds, dmin, dmax)), pr = prx(S.ds);
+    g.fillStyle = t.s2;
+    g.beginPath(); g.arc(dx, P.Y(pr), clamp(P.h * 0.014, 2.5, 6), 0, Math.PI * 2); g.fill();
+    P.unclip(g);
+
+    leader(g, dx, P.Y(pr), 'you are here, ' + fmtEng(pr, 'dBm', 1),
+      { box: P, colour: t.s2, size: fs, dy: -30 });
+    leader(g, P.x1, P.Y(thr), 'fails below ' + fmtEng(thr, 'dBm', 1),
+      { box: P, colour: t.bad, size: fs, dx: -30, dy: 26, dot: false });
+    var mr = maxRange();
+    if (isFinite(mr) && mr > dmin && mr < dmax) {
+      leader(g, P.X(mr), P.Y(thr), 'max range ' + fmtEng(mr, 'km', 2),
+        { box: P, colour: t.text2, size: fs, dx: 28, dy: -34 });
+    }
+  }
+
+  /* ---- readouts ---- */
+  function update() {
+    var e = eirp(), pr = prx(S.ds), nfl = noiseFloor(), cn = pr - nfl, fm = cn - S.cn;
+    var mr = maxRange();
+    var sgn = function (v) { return v >= 0 ? '+' : ''; };
+
+    $('heroVal').innerHTML = sgn(fm) + fmtNum(fm, 1) + '<span class="u">dB</span>';
+    var b = $('heroBadge');
+    b.className = 'badge ' + (fm >= S.mg ? 'good' : fm >= 0 ? 'warn' : 'bad');
+    b.textContent = fm >= S.mg ? 'link closes' : fm >= 0 ? 'thin margin' : 'link fails';
+    $('heroFt').textContent = fm >= 0
+      ? 'target is ' + fmtEng(S.mg, 'dB', 0) + ' of headroom'
+      : 'short by ' + fmtEng(-fm, 'dB', 1);
+
+    $('cE').textContent = fmtEng(e, 'dBm', 1);
+    $('cF').textContent = fmtEng(fsl(S.ds), 'dB', 1);
+    $('cR').textContent = fmtEng(pr, 'dBm', 1);
+    $('cNf').textContent = fmtEng(nfl, 'dBm', 1);
+    $('cN').textContent = fmtEng(cn, 'dB', 1);
+    $('cNn').textContent = 'needs ' + fmtEng(S.cn, 'dB', 1);
+    $('cX').textContent = (!isFinite(mr) || mr <= 0) ? '—'
+      : mr >= 1e4 ? '> ' + fmtEng(1e4, 'km', 0)
+      : mr < 1 ? fmtEng(mr * 1000, 'm', 0)
+      : fmtEng(mr, 'km', mr < 10 ? 2 : 1);
+
+    var rows = [
+      ['Tx power', fmtNum(S.pt, 1), 'dBm'],
+      ['Tx feeder loss', fmtNum(-S.lt / 2, 1), 'dB'],
+      ['Tx antenna gain', '+' + fmtNum(S.gt, 1), 'dBi'],
+      ['EIRP', fmtNum(e, 1), 'dBm'],
+      ['Free-space loss', fmtNum(-fsl(S.ds), 1), 'dB'],
+      ['Misc losses', fmtNum(-S.lm, 1), 'dB'],
+      ['Rx antenna gain', '+' + fmtNum(S.gr, 1), 'dBi'],
+      ['Rx feeder loss', fmtNum(-S.lt / 2, 1), 'dB'],
+      ['Received carrier C', fmtNum(pr, 1), 'dBm'],
+      ['Noise floor', fmtNum(nfl, 1), 'dBm'],
+      ['C/N achieved', fmtNum(cn, 1), 'dB'],
+      ['C/N required', fmtNum(S.cn, 1), 'dB'],
+      ['Fade margin', sgn(fm) + fmtNum(fm, 1), 'dB']
+    ];
+    $('tbl').innerHTML = rows.map(function (r) {
+      var strong = ['EIRP', 'Received carrier C', 'Fade margin'].indexOf(r[0]) >= 0;
+      return '<tr' + (strong ? ' style="font-weight:500"' : '') + '><td>' + r[0] +
+        '</td><td>' + r[1] + '</td><td style="color:var(--text-muted);width:52px">' + r[2] + '</td></tr>';
     }).join('');
 
     $('work').innerHTML = [
-      'EIRP = ' + S.pt.toFixed(1) + ' − ' + (S.lt / 2).toFixed(1) + ' + ' + S.gt.toFixed(1) + ' = ' + eirp.toFixed(1) + ' dBm',
-      'Free-space loss = 92.4 + 20·log ' + S.f.toFixed(1) + ' + 20·log ' + S.d.toFixed(2) + ' = ' + fsl(S.d).toFixed(1) + ' dB',
-      'Received C = ' + eirp.toFixed(1) + ' − ' + fsl(S.d).toFixed(1) + ' − ' + S.lm.toFixed(1) + ' + ' + S.gr.toFixed(1) + ' − ' + (S.lt / 2).toFixed(1) + ' = ' + pr.toFixed(1) + ' dBm',
-      'Noise floor = −174 + 10·log(' + (S.bw * 1e6).toFixed(0) + ' Hz) + ' + S.nf.toFixed(1) + ' = ' + nfl.toFixed(1) + ' dBm',
-      'C/N = ' + pr.toFixed(1) + ' − (' + nfl.toFixed(1) + ') = ' + cn.toFixed(1) + ' dB',
-      'Fade margin = ' + cn.toFixed(1) + ' − ' + S.cn.toFixed(1) + ' = ' + (fm >= 0 ? '+' : '') + fm.toFixed(1) + ' dB'
-    ].map(s => '<li>' + s + '</li>').join('');
+      'EIRP = ' + fmtNum(S.pt, 1) + ' − ' + fmtNum(S.lt / 2, 1) + ' + ' + fmtNum(S.gt, 1) +
+        ' = ' + fmtEng(e, 'dBm', 1),
+      'Free-space loss = 92.4 + 20·log ' + fmtNum(S.fq, 2) + ' + 20·log ' + fmtNum(S.ds, 2) +
+        ' = ' + fmtEng(fsl(S.ds), 'dB', 1),
+      'Received C = ' + fmtNum(e, 1) + ' − ' + fmtNum(fsl(S.ds), 1) + ' − ' + fmtNum(S.lm, 1) +
+        ' + ' + fmtNum(S.gr, 1) + ' − ' + fmtNum(S.lt / 2, 1) + ' = ' + fmtEng(pr, 'dBm', 1),
+      'Noise floor = ' + fmtNum(S.n0, 1) + ' + 10·log(' + fmtEng(S.bw * 1e6, 'Hz', 1) + ') + ' +
+        fmtNum(S.nf, 1) + ' = ' + fmtEng(nfl, 'dBm', 1),
+      'C/N = ' + fmtNum(pr, 1) + ' − (' + fmtNum(nfl, 1) + ') = ' + fmtEng(cn, 'dB', 1),
+      'Fade margin = ' + fmtNum(cn, 1) + ' − ' + fmtNum(S.cn, 1) + ' = ' + sgn(fm) + fmtEng(fm, 'dB', 1)
+    ].map(function (s) { return '<li>' + s + '</li>'; }).join('');
+
+    drawScene(); drawWF(); drawDist();
   }
 
-  ['pt', 'fq', 'gt', 'gr', 'lt', 'lm', 'ds', 'nf', 'bw', 'cn'].forEach(id =>
-    $(id).addEventListener('input', () => { read(); updateUI(); }));
-
-  const DEF = { pt: 20, fq: 2.4, gt: 3, gr: 3, lt: 2, lm: 0, ds: 0.8, nf: 5, bw: 16, cn: 9 };
-  function setSliders(v) {
-    for (const k in v) $(k).value = v[k];
-    read(); updateUI();
-  }
-  const tours = [
-    { id: 'tr0', v: DEF, s: '<b>Step 1.</b> A street-length Wi-Fi hop; the total ends far above the noise floor.' },
-    { id: 'tr1', v: Object.assign({}, DEF, { ds: 25.6 }), s: '<b>Step 2.</b> Distance ×32: five doublings cost 30 dB and the link fails.' },
-    { id: 'tr2', v: Object.assign({}, DEF, { ds: 25.6, gt: 25, gr: 25 }), s: '<b>Step 3.</b> A dish at each end adds 44 dB — no extra transmit power.' },
-    { id: 'tr3', v: Object.assign({}, DEF, { ds: 25.6, gt: 25, gr: 25, fq: 24 }), s: '<b>Step 4.</b> Frequency ×10 costs 20 dB — higher bands need shorter hops.' }
-  ];
-  tours.forEach(tr => $(tr.id).addEventListener('click', () => {
-    setSliders(tr.v); $('tourNote').innerHTML = tr.s;
-  }));
-  $('trR').addEventListener('click', () => {
-    setSliders(DEF);
-    $('tourNote').innerHTML = '<b>Back to the default hop.</b> Now drag the sliders yourself.';
+  /* ---- controls ---- */
+  IDS.forEach(function (id) {
+    bindPair($(id), $(id + 'N'), function (val) { S[id] = val; update(); });
+    S[id] = parseFloat($(id).value);
   });
 
-  read(); updateUI();
-  function frame() { drawWF(); drawDist(); requestAnimationFrame(frame); }
-  requestAnimationFrame(frame);
+  function setAll(v) {
+    IDS.forEach(function (id) {
+      if (v[id] == null) return;
+      $(id).value = v[id];
+      $(id + 'N').value = $(id).value;
+      S[id] = parseFloat($(id).value);
+    });
+    update();
+  }
+
+  var PRE = [
+    { id: 'p1', v: DEF },
+    { id: 'p2', v: merge(DEF, { ds: 3, fq: 0.9, pt: 33, gt: 0, gr: 17, lt: 3, lm: 8, nf: 3, bw: 0.2, h1: 3, h2: 30 }) },
+    { id: 'p3', v: merge(DEF, { ds: 15, fq: 18, pt: 20, gt: 38, gr: 38, lt: 1, lm: 3, bw: 20, cn: 15, mg: 15, h1: 60, h2: 60 }) },
+    { id: 'p4', v: merge(DEF, { ds: 10, fq: 0.87, pt: 14, gt: 2, gr: 2, lt: 0.5, lm: 6, nf: 6, bw: 0.1, cn: 0, h1: 5, h2: 30 }) },
+    { id: 'p5', v: merge(DEF, { ds: 30, fq: 0.1, pt: 50, gt: 10, gr: 0, lt: 3, nf: 8, bw: 0.2, cn: 12, h1: 120, h2: 10 }) }
+  ];
+  function markPreset(id) {
+    PRE.forEach(function (q) {
+      if (id === q.id) q.el.classList.add('on'); else q.el.classList.remove('on');
+    });
+  }
+  PRE.forEach(function (p) {
+    p.el = $(p.id);
+    p.el.addEventListener('click', function () { setAll(p.v); markPreset(p.id); });
+  });
+
+  var TOUR = [
+    { id: 'tr0', v: DEF, s: 'A street-length Wi-Fi hop; the total ends well above the noise floor.' },
+    { id: 'tr1', v: merge(DEF, { ds: 25.6 }), s: 'Distance ×32: five doublings cost 30 dB and the link fails.' },
+    { id: 'tr2', v: merge(DEF, { ds: 25.6, gt: 25, gr: 25 }), s: 'A dish at each end adds 44 dB, with no extra power.' },
+    { id: 'tr3', v: merge(DEF, { ds: 25.6, gt: 25, gr: 25, fq: 24 }), s: 'Frequency ×10 costs 20 dB; high bands need short hops.' }
+  ];
+  TOUR.forEach(function (tr) {
+    $(tr.id).addEventListener('click', function () {
+      setAll(tr.v); markPreset(tr.id === 'tr0' ? 'p1' : '');
+      $('tourNote').textContent = tr.s;
+    });
+  });
+  $('trR').addEventListener('click', function () {
+    setAll(DEF); markPreset('p1');
+    $('tourNote').textContent = 'Back to the default hop; now move the controls yourself.';
+  });
+
+  window.addEventListener('resize', update);
+  var MQ = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (MQ && MQ.addEventListener) MQ.addEventListener('change', function () { setTimeout(update, 60); });
+
+  update();
 })();
 </script>
 </body>

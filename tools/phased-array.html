@@ -4,216 +4,758 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Phased arrays — beam steering, sidelobes and grating lobes</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230072bd' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 12c2.5 0 2.5-7 5-7s2.5 14 5 14 2.5-7 5-7 2.5 3.5 5 3.5'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
-  --s1: #378ADD; --s2: #1D9E75; --s3: #D85A30; --s4: #7F77DD;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
-    --s1: #6FB3F0; --s2: #4FC79B; --s3: #F0855A; --s4: #A49CF0;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: min(1180px, 94vw); margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
-h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
-h2 { font-size: 16px; font-weight: 500; margin: 2rem 0 4px; }
-.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.35rem 1.9rem; align-items: start; }
+.rail > .hero, .rail > .presets, .rail > .tour, .rail > .tour-note,
+.rail > details, .rail > .full { grid-column: 1 / -1; }
+.stage { display: flex; flex-direction: column; }
+
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
-  padding: 5px 12px; cursor: pointer; font-size: 13px; transition: background 120ms linear; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--s1); color: var(--s1); }
-input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { button { transition: none; } }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
-.ctl input[type=range] { flex: 1; min-width: 90px; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums; }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.row .lbl { font-size: 14.5px; color: var(--text-secondary); margin-right: 2px; }
-.sec { margin: 1.75rem 0 6px; font-size: 16px; }
+.sec { margin: 1.5rem 0 6px; font-size: 16px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 14px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 14.5px; color: var(--text-secondary); }
+.hero .val { font-size: 36px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 14.5px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 14px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
 .card .hd { font-size: 14px; color: var(--text-secondary); }
-.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
-canvas { width: 100%; display: block; }
-.legend-note { font-size: 14px; color: var(--text-secondary); margin: 7px 0 0; padding-left: 1.15rem; }
-.legend-note li { margin: 3px 0; }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.75rem 0.95rem;
-  font-size: 13px; color: var(--text-secondary); margin: 0 0 1.25rem; }
-.note b { color: var(--text-primary); font-weight: 500; }
-.tour { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
-details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.9rem; margin: 0 0 1.25rem; }
-details[open] { padding-bottom: 0.8rem; }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
 summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
-details .grid2 { margin: 0.7rem 0 0; }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.25rem; margin: 0.4rem 0 0; }
-ol.work li { margin: 5px 0; }
-ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
-.glossary { font-size: 13px; margin: 0.4rem 0 0; }
-.glossary dt { font-weight: 500; margin-top: 9px; }
-.glossary dd { margin: 0; color: var(--text-secondary); }
-.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 3px; }
+details[open] summary { margin-bottom: 0.6rem; }
+details p { font-size: 13px; color: var(--text-secondary); margin: 0.4rem 0; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+ol.work b { color: var(--text-primary); font-weight: 500; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.tour, .tour-note, .steps, .tourbtn, #tour, #tourNote, #tmsg, #tourTxt { display: none !important; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Phased arrays — beam steering, sidelobes and grating lobes</h1>
-<p class="sub">A phased array steers a beam by feeding each element a slightly different phase &mdash; nothing rotates. The price is sidelobes, beam broadening off broadside, and extra beams called grating lobes.</p>
-<p class="sub" style="margin-bottom: 1rem;">If phase, dBi or beamwidth are unfamiliar, start with <a href="antenna-basics.html">antenna basics</a> first.</p>
+<div class="wrap">
 
-<p class="note"><b>An everyday version.</b> A line of people clapping in step is loudest straight ahead; ask each to clap a fixed fraction of a beat after their neighbour and the loudest direction tilts.</p>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Phased arrays &mdash; beam steering, sidelobes and grating lobes</h1>
+  <p class="sub">A phased array steers its beam by feeding each element a different phase; nothing moves. The price is sidelobes, a wider beam off broadside, and grating lobes when the elements sit too far apart.</p>
+  <p class="prereq">New to phase, dBi or beamwidth? Start with <a href="antenna-basics.html">antenna basics</a>.</p>
+</header>
 
-<div class="tour">
-  <button id="t1">Step 1 &middot; straight ahead</button>
-  <button id="t2">Step 2 &middot; steer to 45&deg;</button>
-  <button id="t3">Step 3 &middot; more elements</button>
-  <button id="t4">Step 4 &middot; open the spacing</button>
-  <button id="t5">Step 5 &middot; taper, then spoil it</button>
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Half-power beamwidth</div>
+    <div class="val" id="heroVal">&mdash;<span class="u" id="heroUnit">&deg;</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div>
+    <div class="ctl">
+      <label for="cn">Elements <span class="var">N</span></label>
+      <div class="in">
+        <input type="range" id="cn" min="2" max="32" step="1" value="8">
+        <input type="number" id="cnN" min="2" max="32" step="1" aria-label="Number of elements">
+        <span class="unit"></span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="cd">Element spacing <span class="var">d</span></label>
+      <div class="in">
+        <input type="range" id="cd" min="0.1" max="1.5" step="0.01" value="0.5">
+        <input type="number" id="cdN" min="0.1" max="1.5" step="0.01" aria-label="Element spacing in wavelengths">
+        <span class="unit">&lambda;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="ct">Steer angle &theta;<sub>0</sub></label>
+      <div class="in">
+        <input type="range" id="ct" min="-60" max="60" step="1" value="30">
+        <input type="number" id="ctN" min="-60" max="60" step="1" aria-label="Steer angle in degrees">
+        <span class="unit">&deg;</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="presets">
+      <span class="lbl">Amplitude taper</span>
+      <button type="button" id="bUni" class="on">Uniform</button>
+      <button type="button" id="bBin">Binomial</button>
+      <button type="button" id="bChe">Chebyshev</button>
+      <button type="button" id="bCos">Cosine</button>
+    </div>
+    <div class="presets">
+      <span class="lbl">Presets</span>
+      <button type="button" id="p0">L-band radar 1.3 GHz</button>
+      <button type="button" id="p1">S-band, 45&deg; scan</button>
+      <button type="button" id="p2">Low sidelobe &minus;30 dB</button>
+      <button type="button" id="p3">Grating lobe, <span class="var">d</span> = 0.9 &lambda;</button>
+      <button type="button" id="p4">28 GHz 5G panel</button>
+    </div>
+  </div>
+
+  <details id="more">
+    <summary>More controls</summary>
+    <div class="rail">
+      <div class="ctl">
+        <label for="cs">Chebyshev design level</label>
+        <div class="in">
+          <input type="range" id="cs" min="13" max="60" step="1" value="30">
+          <input type="number" id="csN" min="13" max="60" step="1" aria-label="Chebyshev design sidelobe level in decibels below the peak">
+          <span class="unit">dB</span>
+        </div>
+      </div>
+      <div class="ctl">
+        <label for="cp">Phase error, rms</label>
+        <div class="in">
+          <input type="range" id="cp" min="0" max="30" step="1" value="0">
+          <input type="number" id="cpN" min="0" max="30" step="1" aria-label="Root mean square phase error in degrees">
+          <span class="unit">&deg;</span>
+        </div>
+      </div>
+      <div class="ctl">
+        <label for="cf">Frequency</label>
+        <div class="in">
+          <input type="range" id="cf" min="0.1" max="40" step="0.1" value="3">
+          <input type="number" id="cfN" min="0.1" max="40" step="0.1" aria-label="Frequency in gigahertz">
+          <span class="unit">GHz</span>
+        </div>
+      </div>
+      <div class="ctl">
+        <label for="cl">Plot floor</label>
+        <div class="in">
+          <input type="range" id="cl" min="20" max="70" step="5" value="40">
+          <input type="number" id="clN" min="20" max="70" step="5" aria-label="Plot floor in decibels below the peak">
+          <span class="unit">dB</span>
+        </div>
+      </div>
+    </div>
+    <div class="presets" style="margin: 0.3rem 0 0;">
+      <button type="button" id="bRoll">New random error draw</button>
+      <span class="lbl">Frequency sets physical size only.</span>
+    </div>
+  </details>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd">Aperture</div>
+      <div class="big" id="cardAP">&mdash;</div>
+      <div class="ft" id="cardAPn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">First sidelobe</div>
+      <div class="big" id="cardSL">&mdash;</div>
+      <div class="ft" id="cardSLn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Directivity</div>
+      <div class="big" id="cardD">&mdash;</div>
+      <div class="ft" id="cardDn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Scan loss</div>
+      <div class="big" id="cardSC">&mdash;</div>
+      <div class="ft" id="cardSCn">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Grating lobes</div>
+      <div class="big" id="cardGL">&mdash;</div>
+      <div class="ft" id="cardGLn">&mdash;</div>
+    </div>
+  </div>
+
 </div>
-<p class="note" id="tourNote">Guided tour &mdash; press the buttons in order. Each one moves the sliders for you and says what changed. You can drag anything yourself at any time.</p>
 
-<div class="grid2">
-  <div class="ctl"><label for="cn">Elements N</label><input type="range" id="cn" min="2" max="32" step="1" value="8"><span class="v" id="cnv">8</span></div>
-  <div class="ctl"><label for="cd">Spacing d</label><input type="range" id="cd" min="0.1" max="1.5" step="0.01" value="0.5"><span class="v" id="cdv">0.50 &lambda;</span></div>
-  <div class="ctl"><label for="ct">Steer angle &theta;<sub>0</sub></label><input type="range" id="ct" min="-60" max="60" step="1" value="30"><span class="v" id="ctv">30&deg;</span></div>
+<div class="stage">
+
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="t1">1 &middot; straight ahead</button>
+    <button type="button" id="t2">2 &middot; steer to 45&deg;</button>
+    <button type="button" id="t3">3 &middot; more elements</button>
+    <button type="button" id="t4">4 &middot; open the spacing</button>
+    <button type="button" id="t5">5 &middot; taper, then spoil it</button>
+  </div>
+  <p class="tour-note" id="tourNote">Press the steps in order; each one moves the controls.</p>
+
+  <p class="sec"><b>1 &middot; The array and its beam</b> <span>&mdash; elements to scale, wedge at half power</span></p>
+  <canvas id="cFace" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--axis)"></span>elements, drawn to scale</li>
+    <li><span class="sw" style="background:var(--series-1)"></span>main beam, half-power wedge</li>
+    <li><span class="sw dash" style="color:var(--warn)"></span>grating lobe</li>
+  </ul>
+
+  <p class="sec"><b>2 &middot; What each element is fed</b> <span>&mdash; amplitude sets sidelobes, phase sets aim</span></p>
+  <div class="cv-pair">
+    <canvas id="cAmp" class="cv-sub"></canvas>
+    <canvas id="cPhs" class="cv-sub"></canvas>
+  </div>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>bars &mdash; drive amplitude</li>
+    <li><span class="sw" style="background:var(--series-1)"></span>dots &mdash; feed phase</li>
+  </ul>
+
+  <p class="sec"><b>3 &middot; The pattern in decibels</b> <span>&mdash; a log scale, where sidelobes live</span></p>
+  <canvas id="cRect" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>pattern, dB below peak</li>
+    <li><span class="sw dash" style="color:var(--series-4)"></span>highest sidelobe</li>
+    <li><span class="sw" style="background:var(--good)"></span>half-power edges</li>
+    <li><span class="sw" style="background:var(--warn);opacity:0.4"></span>grating-lobe region</li>
+  </ul>
+
+  <details>
+    <summary>An everyday version</summary>
+    <p>A line of people clapping in step is loudest straight ahead. Ask each to clap a fixed fraction of a beat after their neighbour and the loudest direction tilts.</p>
+  </details>
+
+  <details>
+    <summary>The arithmetic, with the numbers you have set</summary>
+    <ol class="work">
+      <li>Aperture, first element to last: (<span class="var">N</span> &minus; 1) &times; <span class="var">d</span> = <b id="w1">&mdash;</b>.</li>
+      <li>Phase step per element: &minus;360&deg; &times; (<span class="var">d</span>/&lambda;) &times; sin&thinsp;&theta;<sub>0</sub> = <b id="w2">&mdash;</b>.</li>
+      <li>Beamwidth estimate 50.76 / (<span class="var">N</span> &times; <span class="var">d</span>/&lambda; &times; cos&thinsp;&theta;<sub>0</sub>) = <b id="w3">&mdash;</b>; measured off the pattern <b id="w4">&mdash;</b>.</li>
+      <li>Grating lobes stay hidden while <span class="var">d</span>/&lambda; &lt; 1 / (1 + |sin&thinsp;&theta;<sub>0</sub>|) = <b id="w5">&mdash;</b>; you are at <b id="w6">&mdash;</b>.</li>
+    </ol>
+  </details>
+
+  <details>
+    <summary>The four trade-offs, and what is not modelled</summary>
+    <p>More elements buy a narrower beam and about 3 dB per doubling, and cost money at every element. Steering off broadside widens the beam by 1/cos&thinsp;&theta;<sub>0</sub> and loses gain, which is why most arrays cover roughly &plusmn;60&deg; and are turned mechanically beyond that. Tapering buries the sidelobes and pays for it in beamwidth and directivity &mdash; Chebyshev sits on the good side of that curve, binomial is the extreme. Spacing has a hard edge: past <span class="var">d</span>/&lambda; = 1/(1+|sin&thinsp;&theta;<sub>0</sub>|) a second full-strength beam appears and a radar cannot tell the two apart.</p>
+    <p>The plot is the <i>array factor</i> for isotropic elements, so a real array's pattern is this multiplied by one element's pattern, which pulls the far-out lobes down. Directivity is computed exactly for isotropic elements from the weights and spacing, then multiplied by cos&thinsp;&theta;<sub>0</sub> for the projected aperture &mdash; the <span class="var">n</span> = 1 scan-loss model. Real arrays with directive elements fall closer to cos<sup>2.5</sup>&thinsp;&theta;<sub>0</sub>, so treat the scan-loss card as the optimistic bound. Mutual coupling, quantised phase shifters and amplitude errors are not modelled.</p>
+  </details>
+
+  <details>
+    <summary>Glossary</summary>
+    <dl class="glossary">
+      <dt>Wavelength &lambda;</dt><dd>The distance from one wave peak to the next. Every spacing here is quoted in wavelengths, so the tool works at any frequency: at 3 GHz, &lambda; = 10 cm, so <span class="var">d</span> = 0.5 &lambda; is 5 cm.</dd>
+      <dt>Phase</dt><dd>Where a wave is in its cycle, in degrees. 360&deg; is one whole cycle; a 90&deg; shift is a delay of a quarter of a wave.</dd>
+      <dt>Array factor</dt><dd>The pattern produced by the positions and feed phases of the elements alone, each element treated as a point source radiating equally in all directions.</dd>
+      <dt>Broadside</dt><dd>The direction straight out from the face of the array, at right angles to the line of elements. Angles here are measured from broadside.</dd>
+      <dt>Main beam and sidelobe</dt><dd>The main beam is the strongest lobe, pointing where you steered. Every other bump is a sidelobe: energy leaking towards, or arriving from, a direction you did not want.</dd>
+      <dt>Grating lobe</dt><dd>A sidelobe as strong as the main beam. It appears once the elements are far enough apart that a whole extra cycle of phase fits between neighbours.</dd>
+      <dt>HPBW, half-power beamwidth</dt><dd>The angular width of the main beam between the two directions where the power has fallen to half of the peak, which is 3 dB down.</dd>
+      <dt>Decibel (dB)</dt><dd>A ratio on a log scale: 10 dB is a factor of 10 in power, 3 dB is a factor of 2. Sidelobes are quoted in dB below the main beam.</dd>
+      <dt>Directivity, dBi</dt><dd>How much more power the array sends in its best direction than a perfectly omnidirectional antenna would, in dB. The i stands for isotropic.</dd>
+      <dt>Amplitude taper</dt><dd>Driving the middle elements harder than the ones at the ends. It softens the edge of the aperture, suppressing sidelobes at the cost of a wider beam and less gain.</dd>
+      <dt>Scan loss</dt><dd>The gain lost when the beam is steered off broadside, because the array looks narrower from an angle than it does head on.</dd>
+    </dl>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: the same elements run backwards, reading phase differences instead of writing them, in <a href="phase-interferometry.html">phase interferometry</a>.</p>
+
 </div>
-<div class="row">
-  <span class="lbl">Amplitude taper</span>
-  <button id="bUni" class="on">Uniform</button>
-  <button id="bBin">Binomial</button>
-  <button id="bChe">Chebyshev</button>
-  <button id="bCos">Cosine</button>
 </div>
 
-<details id="more">
-  <summary>More controls &mdash; Chebyshev design level and per-element phase errors</summary>
-  <div class="grid2">
-    <div class="ctl"><label for="cs">Chebyshev design</label><input type="range" id="cs" min="13" max="60" step="1" value="30"><span class="v" id="csv">&minus;30 dB</span></div>
-    <div class="ctl"><label for="cp">Phase error, rms</label><input type="range" id="cp" min="0" max="30" step="1" value="0"><span class="v" id="cpv">0&deg;</span></div>
-  </div>
-  <div class="row" style="margin: 0.7rem 0 0;">
-    <button id="bRoll">New random error draw</button>
-    <span class="lbl">The design level only affects the Chebyshev taper. Phase errors are one fixed random draw, scaled by the slider.</span>
-  </div>
-</details>
-
-<p class="sec"><b>1 &middot; The array face</b> <span>&mdash; the hardware: N elements in a line, the phase each one is driven with, and the direction that phase pattern points the beam</span></p>
-<canvas id="cFace" style="height: 274px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background: var(--s1)"></span>bars &mdash; drive amplitude per element</li>
-  <li><span class="sw" style="background: var(--s2)"></span>clock hands &mdash; feed phases</li>
-  <li><span class="sw" style="background: var(--s2)"></span>arrow &mdash; steered beam direction</li>
-</ul>
-
-<p class="sec"><b>2 &middot; Where the power goes</b> <span>&mdash; the array factor drawn as a polar plot: distance from the centre is field strength in that direction</span></p>
-<canvas id="cPol" style="height: 344px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background: var(--s1)"></span>filled shape &mdash; array factor</li>
-  <li><span class="sw" style="background: var(--s2)"></span>green marks &mdash; half-power edges</li>
-  <li><span class="sw" style="background: var(--s3)"></span>orange spoke &mdash; grating lobe</li>
-</ul>
-
-<p class="sec"><b>3 &middot; The same pattern in decibels</b> <span>&mdash; a log scale, because the sidelobes are far too small to see on a linear plot</span></p>
-<canvas id="cRect" style="height: 308px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background: var(--s1)"></span>blue curve &mdash; pattern, dB scale</li>
-  <li><span class="sw" style="background: var(--s2)"></span>dashed green &mdash; highest sidelobe</li>
-  <li><span class="sw" style="background: var(--s3)"></span>orange band &mdash; grating-lobe region</li>
-</ul>
-
-<div class="cards">
-  <div class="card">
-    <div class="hd">Beamwidth (HPBW)</div>
-    <div class="big" id="cardBW">&mdash;</div>
-    <div class="ft" id="cardBWn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">First sidelobe</div>
-    <div class="big" id="cardSL">&mdash;</div>
-    <div class="ft" id="cardSLn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Directivity</div>
-    <div class="big" id="cardD">&mdash;</div>
-    <div class="ft" id="cardDn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Scan loss</div>
-    <div class="big" id="cardSC">&mdash;</div>
-    <div class="ft" id="cardSCn">&mdash;</div>
-  </div>
-  <div class="card">
-    <div class="hd">Grating lobes</div>
-    <div class="big" id="cardGL">&mdash;</div>
-    <div class="ft" id="cardGLn">&mdash;</div>
-  </div>
-</div>
-
-<details class="wordy"><summary>The arithmetic, with the numbers you have set</summary>
-<ol class="work">
-  <li>The aperture is the distance from the first element to the last: (N &minus; 1) &times; d = <b id="w1">&mdash;</b>.</li>
-  <li>To steer to &theta;<sub>0</sub>, each element lags its neighbour by &minus;360&deg; &times; (d/&lambda;) &times; sin&thinsp;&theta;<sub>0</sub> = <b id="w2">&mdash;</b>. The clock hands in section 1 step by exactly that much.</li>
-  <li>The textbook beamwidth estimate is 0.886&thinsp;&lambda; / (N d cos&thinsp;&theta;<sub>0</sub>) radians = 50.76 / (N &times; d/&lambda; &times; cos&thinsp;&theta;<sub>0</sub>) degrees = <b id="w3">&mdash;</b>. Measured off the plotted pattern: <b id="w4">&mdash;</b>. The estimate is a small-angle approximation and is several per cent optimistic for short arrays.</li>
-  <li>Grating lobes stay out of view while d/&lambda; &lt; 1 / (1 + |sin&thinsp;&theta;<sub>0</sub>|) = <b id="w5">&mdash;</b>. You are at d/&lambda; = <b id="w6">&mdash;</b>.</li>
-</ol>
-
-<p class="sub" style="margin-top: 2rem;">Four trade-offs live in these sliders, and a real array designer argues about all four. More elements buy a narrower beam and about 3 dB of gain per doubling, and cost money and power at every element. Steering away from broadside widens the beam by 1/cos&thinsp;&theta;<sub>0</sub> and loses gain, which is why most arrays are only asked to cover roughly &plusmn;60&deg; and are physically turned for anything beyond. Tapering the drive amplitudes buries the sidelobes, and every decibel of sidelobe suppression is paid for in beamwidth and in directivity &mdash; Chebyshev is on the good side of that curve, binomial is the extreme case that removes sidelobes entirely and gives up an enormous amount of gain to do it. Spacing is the one with a hard edge: past d/&lambda; = 1/(1+|sin&thinsp;&theta;<sub>0</sub>|) a full-strength second beam appears, and a radar cannot tell which of the two a return came from. Half-wavelength spacing is the default everywhere because it is the widest spacing that is safe at every steer angle.</p>
-<p class="sub">What is modelled and what is not: the plot is the <i>array factor</i> for isotropic elements, so the true pattern of a real array is this multiplied by the pattern of one element, which pulls the far-out lobes down. Directivity is computed exactly for isotropic elements from the element weights and spacing, then multiplied by cos&thinsp;&theta;<sub>0</sub> for the projected aperture &mdash; that is the n = 1 scan-loss model; real arrays with directive elements fall closer to cos<sup>2.5</sup>&thinsp;&theta;<sub>0</sub>, so treat the scan-loss card as the optimistic bound. Mutual coupling between elements, quantised phase shifters and amplitude errors are not modelled.</p>
-<p class="sub">Next: the same four antennas run backwards, reading phase differences instead of writing them, in <a href="phase-interferometry.html">phase interferometry</a>.</p>
-
-</details>
-<details class="wordy"><summary>Glossary</summary>
-<dl class="glossary">
-  <dt>Wavelength &lambda;</dt><dd>The distance from one wave peak to the next. Every spacing here is quoted in wavelengths, so the tool works at any frequency: at 3 GHz, &lambda; = 10 cm, so d = 0.5 &lambda; is 5 cm.</dd>
-  <dt>Phase</dt><dd>Where a wave is in its cycle, in degrees. 360&deg; is one whole cycle; a 90&deg; phase shift is a delay of a quarter of a wave.</dd>
-  <dt>Array factor</dt><dd>The pattern produced by the positions and feed phases of the elements alone, with each element treated as a point source that radiates equally in all directions.</dd>
-  <dt>Broadside</dt><dd>The direction straight out from the face of the array, at right angles to the line of elements. Angles here are measured from broadside.</dd>
-  <dt>Main beam and sidelobe</dt><dd>The main beam is the strongest lobe, pointing where you steered. Every other bump is a sidelobe: energy leaking in a direction you did not want, which shows up as interference received from, or transmitted towards, the wrong place.</dd>
-  <dt>Grating lobe</dt><dd>A sidelobe that is as strong as the main beam. It appears when the elements are far enough apart that a whole extra cycle of phase fits between neighbours, so the array can no longer tell two directions apart.</dd>
-  <dt>HPBW, half-power beamwidth</dt><dd>The angular width of the main beam measured between the two directions where the power has fallen to half of the peak, which is 3 dB down.</dd>
-  <dt>Decibel (dB)</dt><dd>A ratio on a log scale: 10 dB is a factor of 10 in power, 3 dB is a factor of 2. Sidelobes are quoted in dB below the main beam.</dd>
-  <dt>Directivity, dBi</dt><dd>How much more power the array sends in its best direction than a perfectly omnidirectional antenna would, expressed in dB. The i stands for isotropic, the imaginary antenna that radiates equally everywhere.</dd>
-  <dt>Amplitude taper</dt><dd>Driving the middle elements harder than the ones at the ends. It softens the sharp edge of the aperture, which suppresses sidelobes at the cost of a wider beam and less gain.</dd>
-  <dt>Scan loss</dt><dd>The gain lost when the beam is steered away from broadside, because the array looks narrower from an angle than it does head on.</dd>
-</dl>
-
-</details>
 <script>
 (function () {
   'use strict';
-  var $ = function (id) { return document.getElementById(id); };
-  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
-  var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
-  var rad = function (d) { return d * Math.PI / 180; };
-  var dg = function (r) { return r * 180 / Math.PI; };
-  var clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
-  var wrap = function (x) { return ((x + 180) % 360 + 360) % 360 - 180; };
-  var dB = function (a) { return 20 * L10(Math.max(a, 1e-7)); };
-  var fx = function (v, n, u) {
-    if (typeof v !== 'number' || !isFinite(v)) return '—';
-    var s = v.toFixed(n);
-    if (/^-0(\.0*)?$/.test(s)) s = s.slice(1);
-    return s.replace('-', '−') + (u || '');
-  };
 
-  var STEP = 0.02, NS = 9001;
-  var S = { n: 8, dl: 0.5, th0: 30, taper: 'uni', sll: 30, perr: 0 };
-  var NRM = normals(7);
+  /* ============================================================
+     engineering-viz shared canvas kit
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { var k = 1, w = 0;
+        var cs = document.querySelectorAll('canvas');
+        for (var i = 0; i < cs.length; i++) { var r = cs[i].getBoundingClientRect().width; if (r > w) w = r; }
+        k = Math.min(1.65, Math.max(1, (w || 820) / 820));
+        return (weight ? weight + ' ' : '') + Math.max(12, Math.round(px * k)) + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 7. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ============================================================
+     tool code
+     ============================================================ */
+
+  const $ = id => document.getElementById(id);
+  const L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
+  const rad = d => d * Math.PI / 180;
+  const dg = r => r * 180 / Math.PI;
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const wrapDeg = x => ((x + 180) % 360 + 360) % 360 - 180;
+  const dB = a => 20 * L10(Math.max(a, 1e-7));
+  const C0 = 299792458;
+  const DEG = '°';
+  const TH0 = 'θ' + sub('0');
+
+  const HERO_U = $('heroUnit');
+  const STEP = 0.02, NS = 9001;
+  const S = { n: 8, dl: 0.5, th0: 30, taper: 'uni', sll: 30, perr: 0, f: 3, floor: 40 };
+  let NRM = normals(7);
+
+  function lambda() { return C0 / Math.max(S.f * 1e9, 1e3); }
 
   function normals(seed) {
     var s = (seed >>> 0) || 1, out = [], i, u1, u2;
@@ -379,274 +921,280 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     return { thr: thr, lobes: lobes, span: span, degenerate: span < 1e-6 };
   }
 
-  function fit(c) {
-    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
-  }
+  /* --- drawing -------------------------------------------------- */
 
-  function arrow(g, x0, y0, x1, y1, sz) {
-    var a = Math.atan2(y1 - y0, x1 - x0);
-    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+  function tickFont(w) { return Math.max(12, Math.round(w / 78)); }
+  function noteFont(w) { return Math.max(12, Math.round(w / 62)); }
+
+  function arrowHead(g, x, y, aRad, s) {
     g.beginPath();
-    g.moveTo(x1, y1);
-    g.lineTo(x1 - sz * Math.cos(a - 0.4), y1 - sz * Math.sin(a - 0.4));
-    g.lineTo(x1 - sz * Math.cos(a + 0.4), y1 - sz * Math.sin(a + 0.4));
+    g.moveTo(x, y);
+    g.lineTo(x - s * Math.cos(aRad - 0.4), y - s * Math.sin(aRad - 0.4));
+    g.lineTo(x - s * Math.cos(aRad + 0.4), y - s * Math.sin(aRad + 0.4));
     g.closePath(); g.fill();
   }
 
-  function drawFace(P) {
-    var c = $('cFace'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border'),
-        bds = cvv('--border-strong'), s1 = cvv('--s1'), s2 = cvv('--s2');
-    var N = S.n, marg = 36, avail = Math.max(w - 2 * marg, 60), cx = w / 2;
-    var span = (N - 1) * S.dl;
-    var pxLam = span > 1e-6 ? Math.min(150, avail / span) : 150;
-    var pitch = pxLam * S.dl;
-    var yLine = 122, yDim = 168, yClk = 220;
-    var ex = function (n) { return cx + (n - (N - 1) / 2) * pitch; };
-    var cp = Math.min(46, avail / Math.max(N, 1));
-    var ck = function (n) { return cx + (n - (N - 1) / 2) * cp; };
-    var r = Math.max(4, Math.min(15, cp * 0.42));
-    var th = rad(S.th0), aL = 76, bx = cx, by = yLine - 10;
-    var i, x, hgt, p;
-
-    g.strokeStyle = bd; g.lineWidth = 1; g.setLineDash([3, 4]);
-    g.beginPath(); g.moveTo(bx, by); g.lineTo(bx, by - aL - 6); g.stroke();
-    g.setLineDash([]);
-    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('broadside', bx, by - aL - 10);
-
-    var tx = bx + aL * Math.sin(th), ty = by - aL * Math.cos(th);
-    g.strokeStyle = s2; g.fillStyle = s2; g.lineWidth = 2;
-    arrow(g, bx, by, tx, ty, 8);
-    g.lineWidth = 1.4;
-    for (i = 1; i <= 2; i++) {
-      var fr = 0.5 + i * 0.2, px = bx + aL * fr * Math.sin(th), py = by - aL * fr * Math.cos(th);
-      g.beginPath();
-      g.moveTo(px - 11 * Math.cos(th), py - 11 * Math.sin(th));
-      g.lineTo(px + 11 * Math.cos(th), py + 11 * Math.sin(th));
-      g.stroke();
-    }
-    g.font = fnt(12); g.fillStyle = s2;
-    g.textAlign = S.th0 >= 0 ? 'left' : 'right'; g.textBaseline = 'middle';
-    g.fillText('beam ' + fx(S.th0, 0, '°'), tx + (S.th0 >= 0 ? 8 : -8), ty - 4);
-
-    g.strokeStyle = bds; g.lineWidth = 1.2;
-    g.beginPath(); g.moveTo(ex(0) - 12, yLine); g.lineTo(ex(N - 1) + 12, yLine); g.stroke();
-
-    var bw = Math.max(3, Math.min(pitch * 0.5, 13));
-    for (i = 0; i < N; i++) {
-      x = ex(i); hgt = 7 + 25 * P.w[i];
-      g.fillStyle = s1;
-      g.fillRect(x - bw / 2, yLine, bw, hgt);
-    }
-
-    g.strokeStyle = bd; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(ex(0), yDim); g.lineTo(ex(N - 1), yDim); g.stroke();
-    g.beginPath(); g.moveTo(ex(0), yDim - 4); g.lineTo(ex(0), yDim + 4);
-    g.moveTo(ex(N - 1), yDim - 4); g.lineTo(ex(N - 1), yDim + 4); g.stroke();
-    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('aperture ' + fx(span, 2) + ' λ  (spacing d = ' + fx(S.dl, 2) + ' λ)', cx, yDim - 7);
-
-    g.strokeStyle = bd; g.lineWidth = 0.5; g.setLineDash([2, 3]);
-    for (i = 0; i < N; i++) {
-      g.beginPath(); g.moveTo(ex(i), yLine + 34); g.lineTo(ck(i), yClk - r - 3); g.stroke();
-    }
-    g.setLineDash([]);
-
-    for (i = 0; i < N; i++) {
-      x = ck(i); p = rad(wrap(dg(P.psi[i])));
-      g.strokeStyle = bd; g.lineWidth = 1;
-      g.beginPath(); g.arc(x, yClk, r, 0, 6.2832); g.stroke();
-      g.strokeStyle = mut; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(x, yClk - r); g.lineTo(x, yClk - r + 3); g.stroke();
-      g.strokeStyle = s2; g.lineWidth = 1.8;
-      g.beginPath(); g.moveTo(x, yClk);
-      g.lineTo(x + r * 0.84 * Math.sin(p), yClk - r * 0.84 * Math.cos(p));
-      g.stroke();
-      g.fillStyle = s2;
-      g.beginPath(); g.arc(x, yClk, 1.6, 0, 6.2832); g.fill();
-      if (N <= 12) {
-        g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-        g.fillText(fx(wrap(dg(P.psi[i])), 0, '°'), x, yClk + r + 4);
-      }
-    }
-
-    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('bar length = drive amplitude', 4, yLine + 6);
-    g.textBaseline = 'bottom';
-    g.fillText('feed phase of each element', 4, yClk - r - 8);
-    g.textAlign = 'right'; g.textBaseline = 'top';
-    g.fillText(N.toFixed(0) + ' elements', w - 4, yLine + 6);
+  /* pixel point along a ray from (ox, oy) at thDeg from vertical, clipped to P */
+  function rayPt(P, ox, oy, thDeg, frac) {
+    const s = Math.sin(rad(thDeg)), c = Math.cos(rad(thDeg));
+    let tmax = Infinity;
+    if (s > 1e-9) tmax = Math.min(tmax, (P.x1 - ox) / s);
+    if (s < -1e-9) tmax = Math.min(tmax, (P.x0 - ox) / s);
+    if (c > 1e-9) tmax = Math.min(tmax, (oy - P.y0) / c);
+    if (!isFinite(tmax) || !(tmax > 0)) tmax = P.h;
+    const t = tmax * frac;
+    return [ox + s * t, oy - c * t];
   }
 
-  function drawPolar(P, m, G) {
-    var c = $('cPol'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border'),
-        bds = cvv('--border-strong'), s1 = cvv('--s1'), s2 = cvv('--s2'), s3 = cvv('--s3');
-    var cx = w / 2, cy = h - 54, R = Math.max(40, Math.min(w / 2 - 58, h - 104));
-    var i, a, x, y, rr;
-    var PX = function (v, aDeg) { return cx + R * v * Math.sin(rad(aDeg)); };
-    var PY = function (v, aDeg) { return cy - R * v * Math.cos(rad(aDeg)); };
+  function drawFace(m, G) {
+    const c = $('cFace'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = tickFont(w), ns = noteFont(w);
+    const N = S.n, span = (N - 1) * S.dl;
+    const xh = Math.max(span / 2 * 1.35, 1.2);
 
-    g.strokeStyle = bd; g.lineWidth = 0.6;
-    [0.25, 0.5, 0.75, 1].forEach(function (v) {
-      g.beginPath(); g.arc(cx, cy, R * v, Math.PI, 2 * Math.PI); g.stroke();
-    });
-    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
-    [0.5, 1].forEach(function (v) { g.fillText(v.toFixed(2), cx - 4, cy - R * v + 8); });
+    let padL = fs * 3.4 + 10, padR = fs * 1.8, padT = fs * 1.1, padB = fs * 2.6 + 8;
+    padL = Math.min(padL, w * 0.42); padR = Math.min(padR, w * 0.22);
+    padT = Math.min(padT, h * 0.28); padB = Math.min(padB, h * 0.38);
+    const iw = Math.max(12, w - padL - padR), ih = Math.max(12, h - padT - padB);
+    const ymax = Math.max(1e-3, 2 * xh * ih / iw);
 
-    for (a = -90; a <= 90; a += 15) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(cx, cy); g.lineTo(PX(1, a), PY(1, a)); g.stroke();
-    }
-    g.font = fnt(12); g.fillStyle = sub;
-    [-90, -60, -30, 0, 30, 60, 90].forEach(function (a2) {
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(fx(a2, 0, '°'), cx + (R + 17) * Math.sin(rad(a2)), cy - (R + 17) * Math.cos(rad(a2)));
-    });
-    g.strokeStyle = bds; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(cx - R - 9, cy); g.lineTo(cx + R + 9, cy); g.stroke();
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -xh, max: xh, unit: 'λ', label: 'position along the array' },
+      { min: 0, max: ymax, unit: 'λ', label: 'distance in front' },
+      { padL: padL, padR: padR, padT: padT, padB: padB, fontSize: fs });
 
-    g.fillStyle = s1; g.globalAlpha = 0.15;
-    g.beginPath(); g.moveTo(cx, cy);
-    for (i = 0; i < NS; i += 2) { g.lineTo(PX(P.a[i], ang(i)), PY(P.a[i], ang(i))); }
-    g.closePath(); g.fill(); g.globalAlpha = 1;
-    g.strokeStyle = s1; g.lineWidth = 1.8;
+    const ox = P.X(0), oy = P.Y(0);
+    const tick = Math.max(5, Math.min(16, P.h * 0.05));
+
+    P.clip(g);
+
+    /* main-beam wedge, at the measured half-power edges */
+    const est = 50.76 / Math.max(S.n * S.dl * Math.cos(rad(S.th0)), 1e-6);
+    const aLo = m.lo !== null ? m.lo : clamp(S.th0 - est / 2, -90, 90);
+    const aHi = m.hi !== null ? m.hi : clamp(S.th0 + est / 2, -90, 90);
+    const pLo = rayPt(P, ox, oy, aLo, 1), pHi = rayPt(P, ox, oy, aHi, 1);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = t.s1;
+    g.beginPath(); g.moveTo(ox, oy);
+    const stepA = Math.max(0.4, (aHi - aLo) / 24);
+    for (let a = aLo; a <= aHi + 1e-9; a += stepA) { const p = rayPt(P, ox, oy, a, 1); g.lineTo(p[0], p[1]); }
+    g.lineTo(pHi[0], pHi[1]); g.closePath(); g.fill();
+    g.restore();
+    g.strokeStyle = t.s1; g.lineWidth = 1;
     g.beginPath();
-    for (i = 0; i < NS; i += 2) {
-      x = PX(P.a[i], ang(i)); y = PY(P.a[i], ang(i));
-      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    g.moveTo(ox, oy); g.lineTo(pLo[0], pLo[1]);
+    g.moveTo(ox, oy); g.lineTo(pHi[0], pHi[1]);
+    g.stroke();
+
+    /* broadside construction line */
+    g.strokeStyle = t.gridStrong; g.lineWidth = 1; g.setLineDash([4, 3]);
+    const pBr = rayPt(P, ox, oy, 0, 0.98);
+    g.beginPath(); g.moveTo(ox, oy); g.lineTo(pBr[0], pBr[1]); g.stroke();
+    g.setLineDash([]);
+
+    /* grating-lobe rays */
+    g.strokeStyle = t.warn; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+    G.lobes.forEach(function (lb) {
+      const p = rayPt(P, ox, oy, lb.ang, 1);
+      g.beginPath(); g.moveTo(ox, oy); g.lineTo(p[0], p[1]); g.stroke();
+    });
+    g.setLineDash([]);
+
+    /* the beam axis */
+    const pAx = rayPt(P, ox, oy, m.pang, 0.92);
+    g.strokeStyle = t.s1; g.fillStyle = t.s1; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(ox, oy); g.lineTo(pAx[0], pAx[1]); g.stroke();
+    arrowHead(g, pAx[0], pAx[1], Math.atan2(pAx[1] - oy, pAx[0] - ox), Math.max(5, Math.min(10, P.h * 0.035)));
+
+    /* the hardware: element ticks on a common baseline */
+    g.strokeStyle = t.axis; g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(P.X(-span / 2 - S.dl * 0.5), oy); g.lineTo(P.X(span / 2 + S.dl * 0.5), oy);
+    g.stroke();
+    g.lineWidth = 1.2;
+    g.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = P.X((i - (N - 1) / 2) * S.dl);
+      g.moveTo(_px(x), oy); g.lineTo(_px(x), oy - tick);
     }
     g.stroke();
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(PX(1.04, S.th0), PY(1.04, S.th0)); g.stroke();
-    g.setLineDash([]);
+    P.unclip(g);
 
+    /* aperture dimension */
+    const dimY = oy - tick - ns * 1.5;
+    const xa = P.X(-span / 2), xb = P.X(span / 2);
+    const apTxt = fmtNum(span, 2) + ' λ = ' + fmtEng(span * lambda(), 'm', 2);
+    if (xb - xa > 10) dimension(g, xa, dimY, xb, dimY, apTxt, { size: ns });
+    else leader(g, ox, oy - tick, apTxt, { box: P, size: ns, dy: -ns * 2, dot: false });
+
+    /* annotation */
+    const pMain = rayPt(P, ox, oy, m.pang, 0.55);
+    leader(g, pMain[0], pMain[1], 'main beam ' + fmtNum(m.pang, 1) + DEG,
+      { box: P, colour: t.s1, size: ns, dx: m.pang >= 0 ? -34 : 34, dy: -18 });
+    if (m.hpbw !== null) {
+      const pEdge = rayPt(P, ox, oy, aHi, 0.78);
+      leader(g, pEdge[0], pEdge[1], 'half power, ' + fmtNum(m.hpbw, 2) + DEG + ' wide',
+        { box: P, colour: t.s1, size: ns, dx: 30, dy: 20 });
+    }
+    if (G.lobes.length) {
+      const pG = rayPt(P, ox, oy, G.lobes[0].ang, 0.7);
+      leader(g, pG[0], pG[1], 'grating lobe ' + fmtNum(G.lobes[0].ang, 1) + DEG,
+        { box: P, colour: t.warn, size: ns, dx: G.lobes[0].ang < 0 ? 30 : -30, dy: -20 });
+    }
+    leader(g, pBr[0], pBr[1], 'broadside',
+      { box: P, colour: t.text2, size: ns, dot: false, dx: 26, dy: 14 });
+  }
+
+  function drawAmp(P0) {
+    const c = $('cAmp'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = tickFont(w), ns = noteFont(w);
+    const N = S.n, span = (N - 1) * S.dl, xh = Math.max(span / 2 * 1.15, 0.06);
+
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -xh, max: xh, unit: 'λ', label: 'element position' },
+      { min: 0, max: 1.08, label: 'drive amplitude', dec: 1 },
+      { fontSize: fs });
+
+    const bw = Math.max(1.5, Math.min(11, P.w / Math.max(N, 1) * 0.42));
+    const dotR = Math.max(2, Math.min(4, P.h * 0.014));
+    P.clip(g);
+    g.strokeStyle = t.s1; g.fillStyle = t.s1; g.lineWidth = Math.max(1.5, Math.min(bw, 5));
+    for (let i = 0; i < N; i++) {
+      const x = P.X((i - (N - 1) / 2) * S.dl);
+      g.beginPath(); g.moveTo(_px(x), P.Y(0)); g.lineTo(_px(x), P.Y(P0.w[i])); g.stroke();
+      g.beginPath(); g.arc(x, P.Y(P0.w[i]), dotR, 0, Math.PI * 2); g.fill();
+    }
+    P.unclip(g);
+
+    let imx = 0;
+    for (let i = 1; i < N; i++) if (P0.w[i] > P0.w[imx]) imx = i;
+    leader(g, P.X((imx - (N - 1) / 2) * S.dl), P.Y(P0.w[imx]),
+      'peak drive ' + fmtNum(P0.w[imx], 2), { box: P, colour: t.s1, size: ns, dy: -20 });
+    leader(g, P.X(-span / 2), P.Y(P0.w[0]),
+      'end element ' + fmtNum(P0.w[0], 2), { box: P, colour: t.text2, size: ns, dx: 30, dy: 24 });
+  }
+
+  function drawPhase(P0) {
+    const c = $('cPhs'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = tickFont(w), ns = noteFont(w);
+    const N = S.n, span = (N - 1) * S.dl, xh = Math.max(span / 2 * 1.15, 0.06);
+
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -xh, max: xh, unit: 'λ', label: 'element position' },
+      { min: -180, max: 180, unit: DEG, label: 'feed phase', dec: 0 },
+      { fontSize: fs });
+
+    const ph = [], xs = [];
+    for (let i = 0; i < N; i++) {
+      ph.push(wrapDeg(dg(P0.psi[i])));
+      xs.push(P.X((i - (N - 1) / 2) * S.dl));
+    }
+    const dotR = Math.max(2, Math.min(4.5, P.h * 0.016));
+    P.clip(g);
+    g.strokeStyle = t.s1; g.lineWidth = 1;
+    g.beginPath();
+    for (let i = 0; i + 1 < N; i++) {
+      if (Math.abs(ph[i + 1] - ph[i]) < 180) { g.moveTo(xs[i], P.Y(ph[i])); g.lineTo(xs[i + 1], P.Y(ph[i + 1])); }
+    }
+    g.stroke();
+    g.fillStyle = t.s1;
+    for (let i = 0; i < N; i++) { g.beginPath(); g.arc(xs[i], P.Y(ph[i]), dotR, 0, Math.PI * 2); g.fill(); }
+    P.unclip(g);
+
+    const stepPh = wrapDeg(-360 * S.dl * Math.sin(rad(S.th0)));
+    leader(g, xs[0], P.Y(ph[0]), 'first element ' + fmtNum(ph[0], 0) + DEG,
+      { box: P, colour: t.s1, size: ns, dx: 30, dy: -20 });
+    const j = Math.min(N - 1, Math.max(1, Math.round(N * 0.6)));
+    leader(g, xs[j], P.Y(ph[j]), 'step ' + fmtNum(stepPh, 1) + DEG + ' per element',
+      { box: P, colour: t.text2, size: ns, dx: -30, dy: 22 });
+  }
+
+  function drawRect(P0, m, G) {
+    const c = $('cRect'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = tickFont(w), ns = noteFont(w);
+    const FLOOR = -S.floor;
+
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -90, max: 90, unit: DEG, label: 'angle from broadside' },
+      { min: FLOOR, max: 0, unit: 'dB', label: 'relative power' },
+      { fontSize: fs });
+
+    /* grating-lobe regions */
+    const bandw = m.hpbw !== null ? clamp(m.hpbw, 2, 24) : 4;
+    G.lobes.forEach(function (lb) {
+      band(g, P, P.X(clamp(lb.ang - bandw / 2, -90, 90)), P.X(clamp(lb.ang + bandw / 2, -90, 90)), t.warn);
+    });
+
+    P.clip(g);
+
+    G.lobes.forEach(function (lb) {
+      g.strokeStyle = t.warn; g.lineWidth = 1; g.setLineDash([6, 4]);
+      g.beginPath(); g.moveTo(_px(P.X(lb.ang)), P.y0); g.lineTo(_px(P.X(lb.ang)), P.y1); g.stroke();
+      g.setLineDash([]);
+    });
+
+    /* half-power edges */
     if (m.lo !== null && m.hi !== null) {
-      g.strokeStyle = s2; g.lineWidth = 1.6;
+      g.strokeStyle = t.good; g.lineWidth = 1.2;
       [m.lo, m.hi].forEach(function (e) {
-        g.beginPath();
-        g.moveTo(PX(0.6, e), PY(0.6, e)); g.lineTo(PX(0.82, e), PY(0.82, e));
-        g.stroke();
+        g.beginPath(); g.moveTo(_px(P.X(e)), P.Y(-3)); g.lineTo(_px(P.X(e)), P.Y(-3) + P.h * 0.09); g.stroke();
       });
     }
 
-    G.lobes.forEach(function (lb) {
-      g.strokeStyle = s3; g.lineWidth = 1.4; g.setLineDash([4, 3]);
-      g.beginPath(); g.moveTo(cx, cy); g.lineTo(PX(1.04, lb.ang), PY(1.04, lb.ang)); g.stroke();
+    /* highest sidelobe */
+    if (m.highest && m.highest.db > FLOOR) {
+      g.strokeStyle = t.s4; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+      g.beginPath(); g.moveTo(P.x0, P.Y(m.highest.db)); g.lineTo(P.x1, P.Y(m.highest.db)); g.stroke();
       g.setLineDash([]);
-    });
-
-    g.font = fnt(12); g.fillStyle = s1;
-    rr = Math.min(m.peak + 0.13, 1.1);
-    x = PX(rr, m.pang); y = PY(rr, m.pang);
-    g.textAlign = m.pang > 40 ? 'right' : (m.pang < -40 ? 'left' : 'center');
-    g.textBaseline = 'bottom';
-    g.fillText('main beam ' + fx(m.pang, 1, '°'), clamp(x, 46, w - 46), Math.max(y, 14));
-
-    if (G.lobes.length) {
-      g.fillStyle = s3; g.font = fnt(12);
-      var lb0 = G.lobes[0];
-      g.textAlign = lb0.ang < 0 ? 'left' : 'right'; g.textBaseline = 'bottom';
-      g.fillText('grating lobe', clamp(PX(1.12, lb0.ang), 40, w - 40), Math.max(PY(1.12, lb0.ang), 26));
     }
 
-    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('normalised field |AF| — 1.0 means every element arrives in phase', cx, cy + 26);
-    g.textAlign = 'left';
-    g.fillStyle = mut;
-    g.fillText('angle from broadside, degrees', 4, 4);
-  }
-
-  function drawRect(P, m, G) {
-    var c = $('cRect'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border'),
-        bds = cvv('--border-strong'), s1 = cvv('--s1'), s2 = cvv('--s2'), s3 = cvv('--s3');
-    var l = 56, r = 18, t = 32, b = 44, FLOOR = -40;
-    var X = function (a) { return l + (a + 90) / 180 * (w - l - r); };
-    var Y = function (v) { return t + (0 - clamp(v, FLOOR, 0)) / (0 - FLOOR) * (h - t - b); };
-    var i, v, a, px;
-
-    g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('relative power, dB below the beam peak', 4, 6);
-
-    g.font = fnt(12);
-    for (v = 0; v >= FLOOR; v -= 10) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText((v === 0 ? '0' : '−' + Math.abs(v).toFixed(0)) + ' dB', l - 6, Y(v));
+    /* the pattern, column-max downsampled */
+    const nCol = Math.max(2, Math.round(P.w));
+    const col = new Float64Array(nCol);
+    for (let i = 0; i < NS; i++) {
+      const px = Math.round((ang(i) + 90) / 180 * (nCol - 1));
+      if (P0.a[i] > col[px]) col[px] = P0.a[i];
     }
-    for (a = -90; a <= 90; a += 30) {
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(fx(a, 0, '°'), X(a), h - b + 6);
-    }
-    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('direction θ, degrees from broadside', l + (w - l - r) / 2, h - 6);
-    g.strokeStyle = bds; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
-
-    var bandw = m.hpbw !== null ? clamp(m.hpbw, 2, 24) : 4;
-    G.lobes.forEach(function (lb) {
-      var x0 = X(clamp(lb.ang - bandw / 2, -90, 90)), x1 = X(clamp(lb.ang + bandw / 2, -90, 90));
-      g.fillStyle = s3; g.globalAlpha = 0.14;
-      g.fillRect(x0, t, Math.max(x1 - x0, 2), h - t - b);
-      g.globalAlpha = 1;
-      g.strokeStyle = s3; g.lineWidth = 1; g.setLineDash([4, 3]);
-      g.beginPath(); g.moveTo(X(lb.ang), t); g.lineTo(X(lb.ang), h - b); g.stroke();
-      g.setLineDash([]);
-    });
-    if (G.lobes.length) {
-      g.fillStyle = s3; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('grating lobe', clamp(X(G.lobes[0].ang), l + 34, w - r - 34), t + 3);
-    } else {
-      g.fillStyle = cvv('--text-good'); g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'top';
-      g.fillText('no grating lobe in visible space', w - r - 3, t + 3);
-    }
-
-    if (m.highest) {
-      g.strokeStyle = s2; g.lineWidth = 1; g.setLineDash([5, 4]);
-      g.beginPath(); g.moveTo(l, Y(m.highest.db)); g.lineTo(w - r, Y(m.highest.db)); g.stroke();
-      g.setLineDash([]);
-      g.fillStyle = s2; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('highest sidelobe ' + fx(m.highest.db, 1, ' dB'), l + 5, Y(m.highest.db) - 3);
-    }
-
-    var nCol = Math.max(2, Math.round(w - l - r));
-    var col = new Float64Array(nCol);
-    for (i = 0; i < nCol; i++) col[i] = 0;
-    for (i = 0; i < NS; i++) {
-      px = Math.round((ang(i) + 90) / 180 * (nCol - 1));
-      if (P.a[i] > col[px]) col[px] = P.a[i];
-    }
-    g.strokeStyle = s1; g.lineWidth = 1.7;
+    g.strokeStyle = t.s1; g.lineWidth = 1.7;
     g.beginPath();
-    for (i = 0; i < nCol; i++) {
-      var yy = Y(dB(col[i] / Math.max(m.peak, 1e-12)));
-      if (i === 0) g.moveTo(l + i, yy); else g.lineTo(l + i, yy);
+    for (let i = 0; i < nCol; i++) {
+      const yy = P.Y(clamp(dB(col[i] / Math.max(m.peak, 1e-12)), FLOOR, 0));
+      if (i === 0) g.moveTo(P.x0 + i, yy); else g.lineTo(P.x0 + i, yy);
     }
     g.stroke();
+    P.unclip(g);
 
-    g.fillStyle = s1; g.font = fnt(12);
-    g.textAlign = m.pang > 55 ? 'right' : 'left'; g.textBaseline = 'bottom';
-    g.fillText('main beam', clamp(X(m.pang) + (m.pang > 55 ? -6 : 6), l + 4, w - r - 4), Y(0) + 14);
+    leader(g, P.X(m.pang), P.Y(0), 'main beam ' + fmtNum(m.pang, 1) + DEG,
+      { box: P, colour: t.s1, size: ns, dx: m.pang > 40 ? -32 : 32, dy: 24 });
+    if (m.highest && m.highest.db > FLOOR) {
+      leader(g, P.X(m.highest.ang), P.Y(m.highest.db),
+        'highest sidelobe ' + fmtNum(m.highest.db, 1) + NB + 'dB',
+        { box: P, colour: t.s4, size: ns, dx: m.highest.ang > 0 ? -30 : 30, dy: -20 });
+    }
+    if (G.lobes.length) {
+      leader(g, P.X(G.lobes[0].ang), P.Y(0), 'grating lobe',
+        { box: P, colour: t.warn, size: ns, dx: G.lobes[0].ang < 0 ? 28 : -28, dy: 22 });
+    }
   }
+
+  /* --- controls ------------------------------------------------- */
 
   function setTaper(k) {
     S.taper = k;
     [['uni', 'bUni'], ['bin', 'bBin'], ['che', 'bChe'], ['cos', 'bCos']].forEach(function (p) {
-      $(p[1]).className = (S.taper === p[0]) ? 'on' : '';
+      $(p[1]).classList.toggle('on', S.taper === p[0]);
     });
+  }
+
+  function setPair(id, v) { $(id).value = v; $(id + 'N').value = $(id).value; }
+
+  function clearPresets() {
+    for (let i = 0; i < 5; i++) $('p' + i).classList.remove('on');
   }
 
   function readControls() {
@@ -655,137 +1203,151 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     S.th0 = +$('ct').value;
     S.sll = +$('cs').value;
     S.perr = +$('cp').value;
+    S.f = +$('cf').value;
+    S.floor = +$('cl').value;
+    if (!isFinite(S.f) || S.f <= 0) S.f = 3;
+    if (!isFinite(S.floor) || S.floor <= 0) S.floor = 40;
   }
 
   function update() {
     readControls();
-    $('cnv').textContent = S.n.toFixed(0);
-    $('cdv').textContent = S.dl.toFixed(2) + ' λ';
-    $('ctv').textContent = fx(S.th0, 0, '°');
-    $('csv').textContent = '−' + S.sll.toFixed(0) + ' dB';
-    $('cpv').textContent = S.perr.toFixed(0) + '°';
+    const P0 = pattern(), m = metrics(P0), G = grating();
+    const cs = Math.cos(rad(S.th0));
+    const est = 50.76 / Math.max(S.n * S.dl * cs, 1e-6);
+    const span = (S.n - 1) * S.dl;
 
-    var P = pattern(), m = metrics(P), G = grating();
-    var cs = Math.cos(rad(S.th0));
-    var est = 50.76 / Math.max(S.n * S.dl * cs, 1e-6);
+    const hv = $('heroVal');
+    hv.textContent = m.hpbw === null ? 'wider than view' : fmtNum(m.hpbw, 2);
+    HERO_U.textContent = m.hpbw === null ? '' : DEG;
+    hv.appendChild(HERO_U);
+    $('heroFt').textContent = '0.886 λ/(N d cos ' + TH0 + ') estimate ' + fmtNum(est, 2) + DEG;
+    const badge = $('heroBadge');
+    badge.className = 'badge';
+    if (G.lobes.length) { badge.classList.add('bad'); badge.textContent = 'grating lobe'; }
+    else if (m.hpbw === null) { badge.classList.add('warn'); badge.textContent = 'beam fills the view'; }
+    else { badge.classList.add('good'); badge.textContent = 'no grating lobe'; }
 
-    if (m.hpbw === null) {
-      $('cardBW').textContent = 'wider than view';
-      $('cardBWn').textContent = 'the half-power edge runs past ±90°, so the beam is cut off by the horizon, not by the array';
-    } else {
-      $('cardBW').textContent = fx(m.hpbw, 2, '°');
-      $('cardBWn').textContent = 'measured off the pattern; 0.886 λ/(N d cos θ₀) estimate is ' + fx(est, 2, '°');
-    }
+    $('cardAP').textContent = fmtNum(span, 2) + NB + 'λ';
+    $('cardAPn').textContent = fmtEng(span * lambda(), 'm', 2) + ' at ' + fmtNum(S.f, 1) + NB + 'GHz';
 
     if (m.first === null && m.highest !== null) {
       $('cardSL').textContent = 'none in view';
-      $('cardSLn').textContent = 'the pattern is still climbing at ' + fx(m.highest.ang, 0, '°')
-        + ', reaching ' + fx(m.highest.db, 1, ' dB') + ' — the edge of a lobe sitting at or beyond ±90°';
+      $('cardSLn').textContent = 'still climbing at ' + fmtNum(m.highest.ang, 0) + DEG;
     } else if (m.first === null) {
       $('cardSL').textContent = 'none';
-      $('cardSLn').textContent = S.taper === 'bin'
-        ? 'a binomial taper has no sidelobes at all while d ≤ λ/2 — that is its whole point'
-        : 'no lobe outside the main beam within ±90°';
+      $('cardSLn').textContent = S.taper === 'bin' ? 'binomial taper, no sidelobes' : 'no lobe within ±90' + DEG;
     } else {
-      $('cardSL').textContent = fx(m.first.db, 1, ' dB');
-      var extra = (m.highest && Math.abs(m.highest.db - m.first.db) > 0.1)
-        ? 'at ' + fx(m.first.ang, 1, '°') + '; highest lobe is ' + fx(m.highest.db, 1, ' dB') + ' at ' + fx(m.highest.ang, 1, '°')
-        : 'at ' + fx(m.first.ang, 1, '°') + ', relative to the main beam peak';
-      $('cardSLn').textContent = extra;
+      $('cardSL').textContent = fmtNum(m.first.db, 1) + NB + 'dB';
+      $('cardSLn').textContent = 'at ' + fmtNum(m.first.ang, 1) + DEG
+        + (m.highest && Math.abs(m.highest.db - m.first.db) > 0.1
+           ? '; highest ' + fmtNum(m.highest.db, 1) + NB + 'dB' : '');
     }
-    $('cardSL').style.color = (m.first && m.first.db > -6) ? 'var(--text-warning)' : '';
+    $('cardSL').style.color = (m.first && m.first.db > -6) ? 'var(--warn)' : '';
 
-    $('cardD').textContent = fx(m.Ddbi, 2, ' dBi');
-    $('cardDn').textContent = 'isotropic elements; taper costs ' + fx(m.taperLoss, 2, ' dB') + ' of aperture efficiency';
-    $('cardSC').textContent = fx(-m.scanLoss, 2, ' dB');
-    $('cardSCn').textContent = 'cos θ₀ projected aperture (n = 1) at θ₀ = ' + fx(S.th0, 0, '°');
+    $('cardD').textContent = fmtNum(m.Ddbi, 2) + NB + 'dBi';
+    $('cardDn').textContent = 'taper costs ' + fmtNum(m.taperLoss, 2) + NB + 'dB';
+    $('cardSC').textContent = fmtNum(-m.scanLoss, 2) + NB + 'dB';
+    $('cardSCn').textContent = 'cos ' + TH0 + ' model at ' + fmtNum(S.th0, 0) + DEG;
 
     if (G.degenerate) {
       $('cardGL').textContent = '—';
-      $('cardGLn').textContent = 'the array has no physical extent, so there is no pattern to test';
+      $('cardGLn').textContent = 'no physical extent';
       $('cardGL').style.color = '';
     } else if (G.lobes.length) {
-      var at = G.lobes.map(function (lb) { return fx(lb.ang, 1, '°'); }).join(', ');
-      $('cardGL').textContent = 'yes, at ' + at;
-      $('cardGLn').textContent = 'needs d/λ < 1/(1+|sin θ₀|) = ' + fx(G.thr, 3) + '; you are at ' + fx(S.dl, 2);
-      $('cardGL').style.color = 'var(--text-warning)';
+      $('cardGL').textContent = 'yes, at ' + G.lobes.map(function (lb) { return fmtNum(lb.ang, 1) + DEG; }).join(', ');
+      $('cardGLn').textContent = 'limit ' + fmtNum(G.thr, 3) + '; you are at ' + fmtNum(S.dl, 2);
+      $('cardGL').style.color = 'var(--warn)';
     } else {
       $('cardGL').textContent = 'none';
-      $('cardGLn').textContent = 'safe while d/λ < 1/(1+|sin θ₀|) = ' + fx(G.thr, 3) + '; you are at ' + fx(S.dl, 2);
-      $('cardGL').style.color = 'var(--text-good)';
+      $('cardGLn').textContent = 'limit ' + fmtNum(G.thr, 3) + '; you are at ' + fmtNum(S.dl, 2);
+      $('cardGL').style.color = 'var(--good)';
     }
 
-    $('w1').textContent = fx((S.n - 1) * S.dl, 2, ' λ');
-    $('w2').textContent = fx(wrap(-360 * S.dl * Math.sin(rad(S.th0))), 1, '°');
-    $('w3').textContent = fx(est, 2, '°');
-    $('w4').textContent = m.hpbw === null ? 'wider than the visible region' : fx(m.hpbw, 2, '°');
-    $('w5').textContent = fx(G.thr, 3);
-    $('w6').textContent = fx(S.dl, 2);
+    $('w1').textContent = fmtNum(span, 2) + NB + 'λ';
+    $('w2').textContent = fmtNum(wrapDeg(-360 * S.dl * Math.sin(rad(S.th0))), 1) + DEG;
+    $('w3').textContent = fmtNum(est, 2) + DEG;
+    $('w4').textContent = m.hpbw === null ? 'wider than the visible region' : fmtNum(m.hpbw, 2) + DEG;
+    $('w5').textContent = fmtNum(G.thr, 3);
+    $('w6').textContent = fmtNum(S.dl, 2);
 
-    drawFace(P);
-    drawPolar(P, m, G);
-    drawRect(P, m, G);
+    drawFace(m, G);
+    drawAmp(P0);
+    drawPhase(P0);
+    drawRect(P0, m, G);
     return m;
   }
 
-  function setState(st) {
-    if (st.n !== undefined) $('cn').value = st.n;
-    if (st.dl !== undefined) $('cd').value = st.dl;
-    if (st.th0 !== undefined) $('ct').value = st.th0;
-    if (st.sll !== undefined) $('cs').value = st.sll;
-    if (st.perr !== undefined) $('cp').value = st.perr;
+  function apply(st) {
+    if (st.n !== undefined) setPair('cn', st.n);
+    if (st.dl !== undefined) setPair('cd', st.dl);
+    if (st.th0 !== undefined) setPair('ct', st.th0);
+    if (st.sll !== undefined) setPair('cs', st.sll);
+    if (st.perr !== undefined) setPair('cp', st.perr);
+    if (st.f !== undefined) setPair('cf', st.f);
     if (st.taper !== undefined) setTaper(st.taper);
     return update();
   }
 
-  ['cn', 'cd', 'ct', 'cs', 'cp'].forEach(function (id) {
-    $(id).addEventListener('input', function () { update(); });
+  [['cn', 'cnN'], ['cd', 'cdN'], ['ct', 'ctN'], ['cs', 'csN'],
+   ['cp', 'cpN'], ['cf', 'cfN'], ['cl', 'clN']].forEach(function (p) {
+    bindPair($(p[0]), $(p[1]), function () { clearPresets(); update(); });
   });
+
   [['bUni', 'uni'], ['bBin', 'bin'], ['bChe', 'che'], ['bCos', 'cos']].forEach(function (p) {
-    $(p[0]).addEventListener('click', function () { setTaper(p[1]); update(); });
+    $(p[0]).addEventListener('click', function () { clearPresets(); setTaper(p[1]); update(); });
   });
+
   $('bRoll').addEventListener('click', function () {
     NRM = normals(Math.floor(Math.random() * 4294967295) + 1);
     update();
   });
 
-  var tour = [
-    ['t1', { n: 8, dl: 0.5, th0: 0, taper: 'uni', perr: 0 }, false, function (m) {
-      return 'Step 1 — eight elements half a wavelength apart, all fed in phase. Every clock hand points at 12 o’clock and the beam sits on broadside, '
-        + fx(m.hpbw, 2, '°') + ' wide, with the first sidelobe ' + (m.first ? fx(m.first.db, 1, ' dB') : '—') + ' down.';
-    }],
-    ['t2', { n: 8, dl: 0.5, th0: 45, taper: 'uni', perr: 0 }, false, function (m) {
-      return 'Step 2 — steered to 45°. Nothing moved mechanically: the clock hands now step by a fixed amount along the row. The beam is '
-        + fx(m.hpbw, 2, '°') + ' wide, broader than at broadside because the array looks shorter from 45° off, and it has given up '
-        + fx(m.scanLoss, 2, ' dB') + ' of gain.';
-    }],
-    ['t3', { n: 24, dl: 0.5, th0: 45, taper: 'uni', perr: 0 }, false, function (m) {
-      return 'Step 3 — 24 elements instead of 8. Three times the aperture, so roughly a third of the beamwidth: '
-        + fx(m.hpbw, 2, '°') + ', and directivity is up to ' + fx(m.Ddbi, 2, ' dBi') + '. The sidelobes did not improve; they are set by the shape of the taper, not by how many elements there are.';
-    }],
-    ['t4', { n: 24, dl: 0.9, th0: 45, taper: 'uni', perr: 0 }, false, function (m) {
-      var G = grating();
-      return 'Step 4 — the spacing opened to 0.90 λ, past the limit 1/(1+|sin 45°|) = ' + fx(G.thr, 3)
-        + '. A second beam of the same height has appeared'
-        + (G.lobes.length ? ' at ' + fx(G.lobes[0].ang, 1, '°') : '')
-        + '. A radar cannot tell which of the two an echo came from, which is why half-wavelength spacing is the default.';
-    }],
-    ['t5', { n: 24, dl: 0.5, th0: 45, taper: 'che', sll: 30, perr: 18 }, true, function (m) {
-      return 'Step 5 — back to safe spacing, with a Chebyshev taper designed for −30 dB sidelobes, then 18° rms of random phase error poured on top. '
-        + 'The measured sidelobe is now ' + (m.first ? fx(m.first.db, 1, ' dB') : '—')
-        + ': the taper alone would have delivered −30 dB, and the phase errors have handed most of that back. This is why array calibration matters.';
-    }]
+  const PRESETS = [
+    { n: 16, dl: 0.5, th0: 0, taper: 'uni', perr: 0, f: 1.3 },
+    { n: 24, dl: 0.5, th0: 45, taper: 'uni', perr: 0, f: 3 },
+    { n: 24, dl: 0.5, th0: 20, taper: 'che', sll: 30, perr: 0, f: 3 },
+    { n: 24, dl: 0.9, th0: 45, taper: 'uni', perr: 0, f: 3 },
+    { n: 8, dl: 0.5, th0: 30, taper: 'che', sll: 20, perr: 0, f: 28 }
   ];
-
-  tour.forEach(function (t) {
-    $(t[0]).addEventListener('click', function () {
-      if (t[2]) $('more').open = true;
-      var m = setState(t[1]);
-      $('tourNote').textContent = t[3](m);
+  PRESETS.forEach(function (st, i) {
+    $('p' + i).addEventListener('click', function () {
+      apply(st); clearPresets(); $('p' + i).classList.add('on');
     });
   });
 
-  window.addEventListener('resize', function () { update(); });
+  const TOUR = [
+    ['t1', { n: 8, dl: 0.5, th0: 0, taper: 'uni', perr: 0 }, false, function (m) {
+      return 'Step 1 — all elements in phase; the beam sits on broadside, '
+        + fmtNum(m.hpbw, 2) + DEG + ' wide.';
+    }],
+    ['t2', { n: 8, dl: 0.5, th0: 45, taper: 'uni', perr: 0 }, false, function (m) {
+      return 'Step 2 — a phase ramp tilts the beam to 45' + DEG + ', costing '
+        + fmtNum(m.scanLoss, 2) + NB + 'dB.';
+    }],
+    ['t3', { n: 24, dl: 0.5, th0: 45, taper: 'uni', perr: 0 }, false, function (m) {
+      return 'Step 3 — 24 elements: three times the aperture, beam now '
+        + fmtNum(m.hpbw, 2) + DEG + '.';
+    }],
+    ['t4', { n: 24, dl: 0.9, th0: 45, taper: 'uni', perr: 0 }, false, function () {
+      const G = grating();
+      return 'Step 4 — spacing past the limit ' + fmtNum(G.thr, 3)
+        + ': a second, equal beam appears.';
+    }],
+    ['t5', { n: 24, dl: 0.5, th0: 45, taper: 'che', sll: 30, perr: 18 }, true, function (m) {
+      return 'Step 5 — a −30 dB taper, then 18' + DEG + ' phase error hands it back at '
+        + (m.first ? fmtNum(m.first.db, 1) + NB + 'dB' : '—') + '.';
+    }]
+  ];
+  TOUR.forEach(function (st) {
+    $(st[0]).addEventListener('click', function () {
+      if (st[2]) $('more').open = true;
+      clearPresets();
+      const m = apply(st[1]);
+      $('tourNote').textContent = st[3](m);
+    });
+  });
+
+  window.addEventListener('resize', update);
   setTaper('uni');
   update();
 })();

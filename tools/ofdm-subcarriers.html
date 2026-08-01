@@ -4,164 +4,356 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OFDM subcarriers and the cyclic prefix</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230072bd' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 12c2.5 0 2.5-7 5-7s2.5 14 5 14 2.5-7 5-7 2.5 3.5 5 3.5'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, sans-serif;
-  --accent: #378ADD;
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
   --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
   --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
-  --plot-bg: #ffffff; --grid: #e4e8ec; --axis: #3c4650;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e;
-    --surface-1: #262624; --accent: #6BB0F0;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
     --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
     --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
-    --plot-bg: #201f1d; --grid: #34342f; --axis: #9aa5b1;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: min(1180px, 94vw); margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
-h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 1.5rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.35rem 1.9rem; align-items: start; }
+.rail > .hero, .rail > .presets, .rail > .tour, .rail > .tour-note,
+.rail > details, .rail > .full { grid-column: 1 / -1; }
+.stage { display: flex; flex-direction: column; }
+
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
-  padding: 5px 11px; cursor: pointer; font-size: 13px; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--accent); color: var(--accent); }
-input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 26px; margin-bottom: 0.75rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
-.ctl input[type=range] { flex: 1; min-width: 80px; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 72px; text-align: right; font-variant-numeric: tabular-nums; }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0.5rem 0 0.75rem; }
-.row .lbl { font-size: 14.5px; color: var(--text-secondary); }
-.sec { margin: 1.75rem 0 6px; font-size: 16px; }
+.sec { margin: 1.5rem 0 6px; font-size: 16px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 14px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 14.5px; color: var(--text-secondary); }
+.hero .val { font-size: 36px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 14.5px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 12.5px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 14px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; }
 .card .hd { font-size: 14px; color: var(--text-secondary); }
-.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-canvas { width: 100%; display: block; background: var(--plot-bg); border: 1px solid var(--border); border-radius: var(--radius); }
-.legend-note { font-size: 14px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 1.1rem; }
-.legend-note li { margin-bottom: 2px; }
-.legend-note b { color: var(--text-primary); font-weight: 500; }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; font-size: 13px;
-  color: var(--text-secondary); margin: 1.25rem 0; }
-.note b { color: var(--text-primary); font-weight: 500; }
-.tour { font-size: 13px; color: var(--text-secondary); margin-top: 8px; min-height: 2.6em; }
-details { margin: 0.75rem 0 1rem; font-size: 13px; }
-summary { cursor: pointer; color: var(--text-secondary); }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; }
-ol.work li { margin-bottom: 3px; }
-ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
-.glossary { font-size: 13px; margin-top: 0.5rem; }
-.glossary dt { font-weight: 500; margin-top: 7px; }
-.glossary dd { margin: 0; color: var(--text-secondary); }
-.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; vertical-align: -1px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.cv-sq { aspect-ratio: 1 / 1; width: min(100%, 520px); min-height: 260px; }
+
+.tour, .tour-note, .steps, .tourbtn, #tour, #tourNote, #tmsg, #tourTxt { display: none !important; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>OFDM subcarriers and the cyclic prefix</h1>
-<p class="sub">Orthogonal frequency-division multiplexing (OFDM) spaces many narrow subcarriers so every peak lands on every other's null. Two things break it: an echo arriving late, and a receiver tuned slightly off frequency.</p>
-<p class="sub" style="margin-bottom: 1rem;">New to this? Start with <a href="sampling-aliasing.html">sampling and aliasing</a> and <a href="iq-constellation.html">the I/Q constellation</a>, which explain the sinc shape and the constellation dots used below.</p>
+<div class="wrap">
+
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>OFDM subcarriers and the cyclic prefix</h1>
+  <p class="sub">Orthogonal frequency-division multiplexing (OFDM) splits one wide channel into many narrow subcarriers, each peak sitting on its neighbours' nulls. A late echo and a mistuned receiver are the two things that break it.</p>
+  <p class="prereq">New here? Start with <a href="sampling-aliasing.html">sampling and aliasing</a>, then <a href="iq-constellation.html">the I/Q constellation</a>.</p>
+</header>
+
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Cyclic prefix overhead</div>
+    <div class="val" id="heroVal">&mdash;<span class="u">%</span></div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div>
+    <div class="ctl">
+      <label for="nn">Subcarriers 2<sup><span class="var">n</span></sup></label>
+      <div class="in">
+        <input type="range" id="nn" min="3" max="7" step="1" value="5">
+        <input type="number" id="nnN" min="3" max="7" step="1" aria-label="Subcarrier count exponent n">
+        <span class="unit" id="nnU">32</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="ctl">
+      <label for="cp">Guard length T<sub>cp</sub></label>
+      <div class="in">
+        <input type="range" id="cp" min="0" max="25" step="0.25" value="6.25">
+        <input type="number" id="cpN" min="0" max="25" step="0.25" aria-label="Guard length as a percentage of the useful symbol time">
+        <span class="unit">% T<sub>u</sub></span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="ctl">
+      <label for="ds">Delay spread <span class="var">&tau;</span></label>
+      <div class="in">
+        <input type="range" id="ds" min="0" max="50" step="0.1" value="1">
+        <input type="number" id="dsN" min="0" max="50" step="0.1" aria-label="Channel delay spread in microseconds">
+        <span class="unit">&micro;s</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="ctl">
+      <label for="fo">Frequency offset &epsilon;</label>
+      <div class="in">
+        <input type="range" id="fo" min="0" max="0.4" step="0.005" value="0">
+        <input type="number" id="foN" min="0" max="0.4" step="0.005" aria-label="Receiver frequency offset in units of subcarrier spacing">
+        <span class="unit">&Delta;f</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="presets">
+    <span class="lbl">Presets</span>
+    <button type="button" id="pWifi">Wi-Fi 802.11a</button>
+    <button type="button" id="pLte">LTE 15 kHz</button>
+    <button type="button" id="pNr">5G NR 30 kHz</button>
+    <button type="button" id="pDvb">DVB-T 2k</button>
+    <button type="button" id="pOver">Echo overruns guard</button>
+  </div>
+
+  <div class="presets">
+    <span class="lbl">Cyclic prefix</span>
+    <button type="button" id="bCpOn" class="on">on</button>
+    <button type="button" id="bCpOff">off</button>
+  </div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="ctl">
+      <label for="bw">Occupied bandwidth</label>
+      <div class="in">
+        <input type="range" id="bw" min="100" max="20000" step="20" value="960">
+        <input type="number" id="bwN" min="100" max="20000" step="20" aria-label="Occupied bandwidth in kilohertz">
+        <span class="unit">kHz</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="sn">Thermal SNR</label>
+      <div class="in">
+        <input type="range" id="sn" min="5" max="40" step="1" value="25">
+        <input type="number" id="snN" min="5" max="40" step="1" aria-label="Thermal signal-to-noise ratio in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="fd">Fade threshold</label>
+      <div class="in">
+        <input type="range" id="fd" min="-12" max="-2" step="0.5" value="-6">
+        <input type="number" id="fdN" min="-12" max="-2" step="0.5" aria-label="Fade threshold in decibels">
+        <span class="unit">dB</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="nt">Channel taps</label>
+      <div class="in">
+        <input type="range" id="nt" min="2" max="9" step="1" value="5">
+        <input type="number" id="ntN" min="2" max="9" step="1" aria-label="Number of channel taps">
+        <span class="unit">taps</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="dk">Link distance <span class="var">D</span></label>
+      <div class="in">
+        <input type="range" id="dk" min="0.5" max="20" step="0.1" value="3">
+        <input type="number" id="dkN" min="0.5" max="20" step="0.1" aria-label="Link distance in kilometres">
+        <span class="unit">km</span>
+      </div>
+    </div>
+    <div class="presets">
+      <span class="lbl">Modulation</span>
+      <button type="button" id="m2" class="on">QPSK</button>
+      <button type="button" id="m4">16-QAM</button>
+      <button type="button" id="m6">64-QAM</button>
+      <button type="button" id="newsym">new data symbol</button>
+    </div>
+  </details>
+
+  <div class="cards full">
+    <div class="card"><div class="hd">Subcarrier spacing &Delta;f</div><div class="big" id="cDF">&mdash;</div><div class="ft" id="cDFn">&mdash;</div></div>
+    <div class="card"><div class="hd">Symbol duration</div><div class="big" id="cTS">&mdash;</div><div class="ft" id="cTSn">&mdash;</div></div>
+    <div class="card"><div class="hd">r.m.s. delay spread &sigma;<sub>&tau;</sub></div><div class="big" id="cSIG">&mdash;</div><div class="ft" id="cSIGn">&mdash;</div></div>
+    <div class="card"><div class="hd">ICI power</div><div class="big" id="cICI">&mdash;</div><div class="ft">1 &minus; sinc<sup>2</sup>(&epsilon;) of one subcarrier</div></div>
+    <div class="card"><div class="hd">Effective SNR ceiling</div><div class="big" id="cSNR">&mdash;</div><div class="ft" id="cSNRn">&mdash;</div></div>
+    <div class="card"><div class="hd">Peak-to-average power</div><div class="big" id="cPAPR">&mdash;</div><div class="ft" id="cPAPRn">&mdash;</div></div>
+  </div>
+
+</div>
+
+<div class="stage">
+
+<div class="tour">
+  <span class="lbl">Guided tour</span>
+  <button type="button" id="t1">1 &middot; orthogonal</button>
+  <button type="button" id="t2">2 &middot; long echo</button>
+  <button type="button" id="t3">3 &middot; guard off</button>
+  <button type="button" id="t4">4 &middot; off frequency</button>
+  <button type="button" id="t5">5 &middot; more subcarriers</button>
+</div>
+<p class="tour-note" id="tourTxt">Press the steps in order; each one moves the controls.</p>
+
+<p class="sec"><b>1 &middot; Where the echo comes from</b> <span>&mdash; one reflector, one extra path length</span></p>
+<canvas id="cScene" class="cv-sub"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background:var(--series-1)"></span>direct path</li>
+  <li><span class="sw" style="background:var(--series-2)"></span>reflected path, arrives late</li>
+  <li><span class="sw" style="color:var(--axis);background:currentColor"></span>hardware, dimensioned</li>
+</ul>
+
+<p class="sec"><b>2 &middot; The symbol in time</b> <span>&mdash; the guard is a copy of the tail</span></p>
+<canvas id="cT" class="cv-hero"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background:var(--series-1)"></span>transmitted waveform</li>
+  <li><span class="sw" style="background:var(--series-2)"></span>delayed echo</li>
+  <li><span class="sw" style="background:var(--series-3)"></span>guard, the copied tail</li>
+  <li><span class="sw" style="background:var(--bad)"></span>spoiled window</li>
+</ul>
+
+<p class="sec"><b>3 &middot; Why subcarriers do not interfere</b> <span>&mdash; peaks on nulls, whole cycles in time</span></p>
+<div class="presets">
+  <span class="lbl">View</span>
+  <button type="button" id="vF" class="on">frequency</button>
+  <button type="button" id="vT">time</button>
+</div>
+<canvas id="cS" class="cv-sub"></canvas>
+<ul class="legend-note" id="legS"></ul>
+
+<p class="sec"><b>4 &middot; The channel across the band</b> <span>&mdash; the same echoes, seen in frequency</span></p>
+<canvas id="cH" class="cv-sub"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="background:var(--series-1)"></span>gain |H<sub>k</sub>| per subcarrier</li>
+  <li><span class="sw" style="background:var(--series-7)"></span>faded subcarrier</li>
+  <li><span class="sw dash" style="color:var(--bad)"></span>fade threshold</li>
+</ul>
+
+<p class="sec"><b>5 &middot; What the receiver decides on</b> <span>&mdash; after one-tap equalisation, all subcarriers</span></p>
+<canvas id="cC" class="cv-sq"></canvas>
+<ul class="legend-note">
+  <li><span class="sw" style="color:var(--text-secondary);background:currentColor"></span>ideal points</li>
+  <li><span class="sw" style="background:var(--series-1)"></span>received subcarriers</li>
+  <li><span class="sw" style="background:var(--series-7)"></span>from faded subcarriers</li>
+</ul>
+
+<details>
+  <summary>Worked example, with the current numbers</summary>
+  <ol class="work" id="work"></ol>
+</details>
 
 <details>
   <summary>An everyday picture</summary>
-  <div class="note">Think of a choir where each singer holds a note that fits a whole number of times into one bar. Over a full bar every other singer's contribution averages to nothing, so you can pick out any one voice cleanly. If one singer drifts slightly off pitch, their note no longer cancels &mdash; it smears into everyone else's part. That smearing is intercarrier interference, and the frequency-offset slider below creates it.</div>
+  <ol class="work">
+    <li>A choir where every singer holds a note that fits a whole number of times into one bar. Over a full bar each other voice averages to nothing, so any one voice can be picked out cleanly.</li>
+    <li>Let one singer drift off pitch and their note stops cancelling: it smears into everyone else's part. That is intercarrier interference, and the frequency-offset slider creates it.</li>
+  </ol>
 </details>
 
-<p class="sec"><b>Guided tour</b> <span>&mdash; each step moves the controls for you and says what changed</span></p>
-<div class="row">
-  <button id="t1">1 &middot; orthogonal</button>
-  <button id="t2">2 &middot; long echo</button>
-  <button id="t3">3 &middot; guard off</button>
-  <button id="t4">4 &middot; off frequency</button>
-  <button id="t5">5 &middot; more subcarriers</button>
-</div>
-<p class="tour" id="tourTxt">Press step 1 to set the tool back to a clean, working OFDM symbol.</p>
-
-<div class="grid2">
-  <div class="ctl"><label for="nn">Subcarriers N</label><input type="range" id="nn" min="3" max="7" step="1" value="5"><span class="v" id="nnv">32</span></div>
-  <div class="ctl"><label for="cp">Guard length T<sub>cp</sub></label><input type="range" id="cp" min="0" max="0.25" step="0.00625" value="0.0625"><span class="v" id="cpv">6.25 %</span></div>
-  <div class="ctl"><label for="ds">Channel delay spread</label><input type="range" id="ds" min="0" max="5" step="0.1" value="1"><span class="v" id="dsv">1.0 &micro;s</span></div>
-  <div class="ctl"><label for="fo">Frequency offset &epsilon;</label><input type="range" id="fo" min="0" max="0.4" step="0.005" value="0"><span class="v" id="fov">0.000</span></div>
-</div>
-<div class="row">
-  <span class="lbl">Cyclic prefix</span>
-  <button id="bCpOn" class="on">on</button><button id="bCpOff">off</button>
-</div>
-
 <details>
-  <summary>More controls</summary>
-  <div class="row" style="margin-top: 0.6rem;">
-    <span class="lbl">Subcarrier modulation</span>
-    <button id="m2" class="on">QPSK</button><button id="m4">16-QAM</button><button id="m6">64-QAM</button>
-    <button id="newsym">New data symbol</button>
-  </div>
-  <p style="color: var(--text-secondary); margin: 0;">The occupied bandwidth is held at 960 kHz throughout, so changing N trades subcarrier spacing against symbol length. Background thermal noise is fixed at 25 dB signal-to-noise ratio so that interference has something to be compared against.</p>
-</details>
-
-<p class="sec"><b>1 &middot; The symbol in time, and the echo that arrives late</b> <span>&mdash; the guard is a copy of the symbol's own tail, pasted on the front</span></p>
-<canvas id="cT" style="height: 340px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> &mdash; transmitted waveform</li>
-  <li><span class="sw" style="background: var(--series-3)"></span> <b>yellow</b> &mdash; cyclic prefix, the copied tail</li>
-  <li><span class="sw" style="background: var(--series-2)"></span> <b>orange</b> &mdash; the delayed echo</li>
-  <li><span class="sw" style="background: var(--series-7)"></span> <b>red strip</b> &mdash; intersymbol interference</li>
-</ul>
-
-<p class="sec"><b>2 &middot; Why the subcarriers do not interfere</b> <span>&mdash; peaks on nulls in frequency, whole cycles in time</span></p>
-<div class="row">
-  <span class="lbl">View</span>
-  <button id="vF" class="on">frequency</button><button id="vT">time</button>
-</div>
-<canvas id="cS" style="height: 300px;"></canvas>
-<ul class="legend-note" id="legS"></ul>
-
-<p class="sec"><b>3 &middot; What the channel does to each subcarrier</b> <span>&mdash; the same echoes, seen as a frequency response</span></p>
-<canvas id="cH" style="height: 250px;"></canvas>
-<ul class="legend-note">
-  <li><span class="sw" style="background: var(--series-1)"></span> <b>stems</b> &mdash; per-subcarrier gain |H<sub>k</sub>|</li>
-  <li><span class="sw" style="background: var(--series-7)"></span> <b>red stems</b> &mdash; faded below &minus;6 dB</li>
-</ul>
-
-<p class="sec"><b>4 &middot; The constellation the receiver actually sees</b> <span>&mdash; after one-tap equalisation, every subcarrier plotted together</span></p>
-<canvas id="cC" style="height: 300px;"></canvas>
-<ul class="legend-note">
-  <li><b>grey crosses</b> &mdash; ideal transmitted points</li>
-  <li><span class="sw" style="background: var(--series-1)"></span> <b>blue dots</b> &mdash; received subcarriers, equalised</li>
-  <li><span class="sw" style="background: var(--series-7)"></span> <b>red dots</b> &mdash; from faded subcarriers</li>
-</ul>
-
-<div class="cards">
-  <div class="card"><div class="hd">Subcarrier spacing &Delta;f</div><div class="big" id="cDF">&mdash;</div><div class="ft" id="cDFn">&mdash;</div></div>
-  <div class="card"><div class="hd">Symbol duration</div><div class="big" id="cTS">&mdash;</div><div class="ft" id="cTSn">&mdash;</div></div>
-  <div class="card"><div class="hd">Guard overhead</div><div class="big" id="cOV">&mdash;</div><div class="ft" id="cOVn">&mdash;</div></div>
-  <div class="card"><div class="hd">ICI power</div><div class="big" id="cICI">&mdash;</div><div class="ft">1 &minus; sinc<sup>2</sup>(&epsilon;), relative to the power on one subcarrier</div></div>
-  <div class="card"><div class="hd">Effective SNR ceiling</div><div class="big" id="cSNR">&mdash;</div><div class="ft" id="cSNRn">&mdash;</div></div>
-  <div class="card"><div class="hd">Peak-to-average power</div><div class="big" id="cPAPR">&mdash;</div><div class="ft" id="cPAPRn">&mdash;</div></div>
-</div>
-
-<details>
-  <summary>Worked example &mdash; the arithmetic for the settings on screen</summary>
-  <ol class="work" id="work"></ol>
-
-  <p class="sub" style="margin-top: 2rem;">Three trade-offs live in these sliders. Packing more subcarriers into the same bandwidth makes each one narrower and each symbol longer, so a guard of the same percentage covers a longer echo &mdash; that is why a channel with a lot of delay spread pushes designers towards large fast Fourier transforms. The guard itself is pure overhead: at 25 % of the symbol you throw away a fifth of your capacity to buy immunity, and the only way to get it back is to shorten the guard until the echoes start bleeding through. And a frequency offset of a few percent of the subcarrier spacing puts a hard ceiling on signal-to-noise ratio that no amount of transmit power can lift, which is why OFDM receivers spend so much effort on synchronisation. Watch the peak-to-average number as you raise N: many subcarriers occasionally line up in phase, and the power amplifier has to stay linear over that peak or it clips and regrows the spectrum into the neighbours' band.</p>
-
-  <p class="sub">Where this model is simplified, and it is simplified in four places. The channel taps are given zero phase and an exponential power profile rather than random phases, so this is a deterministic delay profile rather than one realisation of Rayleigh fading &mdash; the companion multipath tool is the place for that. The interference from an echo that overruns the guard is estimated as 2&middot;a<sup>2</sup>&middot;(&tau;&nbsp;&minus;&nbsp;T<sub>cp</sub>)/T<sub>u</sub> summed over the taps that overrun, the standard small-overrun approximation; the exact value depends on which data the previous symbol carried. The intercarrier interference power 1&nbsp;&minus;&nbsp;sinc<sup>2</sup>(&epsilon;) is the large-N limit, and it is quoted relative to the total power falling on the subcarrier rather than to the surviving wanted part, so the true wanted-to-interference ratio is a few tenths of a decibel lower. Finally the equaliser is given perfect knowledge of the channel; a real receiver estimates it from pilots and the estimate is worst exactly where the channel is deepest in a notch.</p>
+  <summary>Model, and where it is simplified</summary>
+  <ol class="work">
+    <li>The channel taps are given zero phase and an exponential power profile rather than random phases, so this is a deterministic delay profile rather than one realisation of Rayleigh fading.</li>
+    <li>Interference from an echo that overruns the guard is estimated as 2&middot;<span class="var">a</span><sup>2</sup>&middot;(&tau; &minus; T<sub>cp</sub>)/T<sub>u</sub> summed over the taps that overrun, the standard small-overrun approximation.</li>
+    <li>The ICI power 1 &minus; sinc<sup>2</sup>(&epsilon;) is the large-N limit, quoted against the total power on the subcarrier, so the true wanted-to-interference ratio is a few tenths of a decibel lower.</li>
+    <li>The equaliser is given perfect knowledge of the channel; a real receiver estimates it from pilots, and the estimate is worst exactly where the channel is deepest in a notch.</li>
+    <li>The scene places a single reflector on the ellipse whose extra path length is <span class="var">c</span>&middot;&tau;. A real channel has many.</li>
+  </ol>
 </details>
 
 <details>
@@ -171,7 +363,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   <dt>Subcarrier spacing &Delta;f</dt><dd>The frequency step between neighbouring subcarriers, in hertz. It is fixed by the symbol length: &Delta;f = 1/T<sub>u</sub>.</dd>
   <dt>Useful symbol time T<sub>u</sub></dt><dd>The part of the symbol the receiver integrates over. Every subcarrier fits a whole number of cycles into it, which is what makes them orthogonal.</dd>
   <dt>Orthogonal</dt><dd>Two signals are orthogonal when multiplying them together and averaging over one symbol gives exactly zero, so neither disturbs the other.</dd>
-  <dt>sinc</dt><dd>The function sin(&pi;x)/(&pi;x). It is the spectrum of a rectangular time window, peaks at 1 when x = 0, and is exactly zero at every other whole number.</dd>
+  <dt>sinc</dt><dd>The function sin(&pi;<span class="var">x</span>)/(&pi;<span class="var">x</span>). It is the spectrum of a rectangular time window, peaks at 1 when <span class="var">x</span> = 0, and is exactly zero at every other whole number.</dd>
   <dt>Cyclic prefix (CP), or guard interval</dt><dd>A copy of the end of a symbol pasted onto its front. An echo shorter than the guard then still looks to the receiver like a clean, whole symbol.</dd>
   <dt>Delay spread</dt><dd>How long after the first arrival the last usable echo turns up, in microseconds. It is set by the size of the reflecting environment.</dd>
   <dt>Intersymbol interference (ISI)</dt><dd>Energy from the previous symbol still arriving inside the current symbol's receive window.</dd>
@@ -183,27 +375,493 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 </dl>
 </details>
 
-<p class="sub" style="margin-top: 1.5rem;">Next: <a href="cellular-reuse.html">cellular reuse and interference</a> shows what happens when many of these carriers have to share one spectrum allocation across a network.</p>
+<p class="prereq" style="margin-top:1rem">Next: <a href="cellular-reuse.html">cellular reuse and interference</a>.</p>
+
+</div>
+</div>
 
 <script>
 (function () {
+  /* ============================================================
+     engineering-viz shared canvas kit — paste verbatim inside the
+     tool's IIFE, above your own drawing code. No dependencies.
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { var k = 1, w = 0;
+        var cs = document.querySelectorAll('canvas');
+        for (var i = 0; i < cs.length; i++) { var r = cs[i].getBoundingClientRect().width; if (r > w) w = r; }
+        k = Math.min(1.65, Math.max(1, (w || 820) / 820));
+        return (weight ? weight + ' ' : '') + Math.max(12, Math.round(px * k)) + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 7. technical hardware ------------------------------------ */
+  function mast(g, x, groundY, heightPx, label, opts) {
+    opts = opts || {};
+    const t = theme();
+    const h = Math.max(6, heightPx), top = groundY - h;
+    const bw = Math.max(2.5, Math.min(13, h * 0.075)), tw = Math.max(1.4, bw * 0.36);
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.fillStyle = opts.colour || t.axis;
+    g.setLineDash([]); g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(x - bw, groundY); g.lineTo(x - tw, top);
+    g.moveTo(x + bw, groundY); g.lineTo(x + tw, top);
+    g.stroke();
+    if (h > 18) {
+      const n = Math.max(1, Math.min(24, Math.round(h / Math.max(11, bw * 2.6))));
+      g.lineWidth = 0.7; g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const f0 = i / n, f1 = (i + 1) / n;
+        const w0 = bw + (tw - bw) * f0, w1 = bw + (tw - bw) * f1;
+        const y0 = groundY + (top - groundY) * f0, y1 = groundY + (top - groundY) * f1;
+        g.moveTo(x - w0, y0); g.lineTo(x + w1, y1);
+        g.moveTo(x + w0, y0); g.lineTo(x - w1, y1);
+        g.moveTo(x - w1, y1); g.lineTo(x + w1, y1);
+      }
+      g.stroke();
+    }
+    const ah = Math.max(5, Math.min(16, h * 0.15));
+    g.lineWidth = 1.2; g.beginPath();
+    g.moveTo(x, top); g.lineTo(x, top - ah);
+    g.moveTo(x - ah * 0.42, top - ah * 0.58); g.lineTo(x + ah * 0.42, top - ah * 0.58);
+    g.moveTo(x - ah * 0.28, top - ah * 0.92); g.lineTo(x + ah * 0.28, top - ah * 0.92);
+    g.stroke();
+    g.lineWidth = 1; g.beginPath();
+    g.moveTo(x - bw * 1.6, groundY); g.lineTo(x + bw * 1.6, groundY);
+    g.stroke();
+    if (label) {
+      const side = opts.side === 'right' ? 1 : -1;
+      const dx = side * (bw + (opts.gap == null ? 16 : opts.gap));
+      g.strokeStyle = t.muted; g.lineWidth = 0.5;
+      g.beginPath();
+      g.moveTo(x, groundY); g.lineTo(x + dx * 1.15, groundY);
+      g.moveTo(x, top); g.lineTo(x + dx * 1.15, top);
+      g.stroke();
+      dimension(g, x + dx, groundY, x + dx, top, label, { size: opts.size || 10.5 });
+    }
+    g.restore();
+  }
+
+  function dish(g, x, y, r, angle, opts) {
+    opts = opts || {};
+    const t = theme();
+    r = Math.max(4, r);
+    const back = angle + Math.PI, spread = 1.05;
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.setLineDash([]);
+    g.lineWidth = Math.max(1, Math.min(1.6, r * 0.06));
+    g.beginPath(); g.arc(x, y, r, back - spread, back + spread); g.stroke();
+    const e0x = x + Math.cos(back - spread) * r, e0y = y + Math.sin(back - spread) * r;
+    const e1x = x + Math.cos(back + spread) * r, e1y = y + Math.sin(back + spread) * r;
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(e0x, e0y); g.lineTo(x, y); g.moveTo(e1x, e1y); g.lineTo(x, y);
+    g.stroke();
+    const f = Math.max(1.6, r * 0.13);
+    g.lineWidth = 1.1;
+    g.strokeRect(x - f, y - f, f * 2, f * 2);
+    const bx = x + Math.cos(back) * r, by = y + Math.sin(back) * r;
+    g.beginPath();
+    g.moveTo(bx, by); g.lineTo(bx + Math.cos(back) * r * 0.45, by + Math.sin(back) * r * 0.45);
+    g.stroke();
+    if (opts.axisLine !== false && r > 8) {
+      g.strokeStyle = t.muted; g.lineWidth = 0.7; g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(angle) * r * 1.1, y + Math.sin(angle) * r * 1.1); g.stroke();
+      g.setLineDash([]);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ============================================================
+     tool code
+     ============================================================ */
+
   const $ = id => document.getElementById(id);
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
   const L10 = Math.log10 || (x => Math.log(x) / Math.LN10);
   const TAU = Math.PI * 2;
   const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
   const sinc = x => Math.abs(x) < 1e-9 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
+  const us = x => (x * 1e6).toFixed(2) + NB + 'µs';
+  const TS = w => Math.max(12, Math.min(15, Math.round(w / 78)));
+  const AS = w => Math.max(12, Math.min(16, Math.round(w / 62)));
 
-  const BW = 960e3;
-  const SNRDB = 25;
-  const FADE_DB = -6;
-  const FADE = Math.pow(10, FADE_DB / 20);
   const OS = 4;
-  const NTAP = 5;
+  const C0 = 299792458;
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const S = { nExp: 5, cpFrac: 0.0625, tau: 1.0, eps: 0, bits: 2, cpOn: true, view: 'freq', seed: 20260729 };
+  const S = {
+    nExp: 5, bwk: 960, cpPct: 6.25, tau: 1.0, eps: 0,
+    snr: 25, fadeDb: -6, ntap: 5, dkm: 3,
+    bits: 2, cpOn: true, view: 'freq', seed: 20260729
+  };
 
   let M = {};
 
@@ -234,6 +892,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
   }
 
   function taps(tauUs) {
+    const NTAP = Math.max(2, Math.round(S.ntap));
     const tmax = tauUs * 1e-6;
     if (tmax < 5e-8) return [{ t: 0, a: 1 }];
     const td = tmax / 2, out = [];
@@ -246,13 +905,30 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     return out;
   }
 
+  function idft(X, N) {
+    const NN = N * OS, out = new Array(NN);
+    for (let n = 0; n < NN; n++) {
+      let re = 0, im = 0;
+      for (let i = 0; i < N; i++) {
+        const k = i - N / 2, ph = TAU * k * n / NN;
+        const c = Math.cos(ph), s = Math.sin(ph);
+        re += X[i].re * c - X[i].im * s;
+        im += X[i].re * s + X[i].im * c;
+      }
+      out[n] = { re: re / N, im: im / N };
+    }
+    return out;
+  }
+
   function compute() {
     const N = 1 << S.nExp;
+    const BW = Math.max(1e3, S.bwk * 1e3);
     const df = BW / N;
     const Tu = 1 / df;
-    const Tcp = S.cpOn ? S.cpFrac * Tu : 0;
+    const Tcp = S.cpOn ? (S.cpPct / 100) * Tu : 0;
     const Tsym = Tu + Tcp;
     const tp = taps(S.tau);
+    const FADE = Math.pow(10, S.fadeDb / 20);
 
     let m1 = 0, m2 = 0;
     tp.forEach(o => { const p = o.a * o.a; m1 += p * o.t; m2 += p * o.t * o.t; });
@@ -299,7 +975,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     for (let n = 0; n < wCur.length; n++) wmax = Math.max(wmax, Math.abs(wCur[n].re), Math.abs(wPrev[n].re));
 
     const rngN = mkRng(S.seed ^ 0x5bf03635);
-    const nvar = Math.pow(10, -SNRDB / 10);
+    const nvar = Math.pow(10, -S.snr / 10);
     const iv = ici + isi;
     const sd = Math.sqrt(Math.max(nvar + iv, 0) / 2);
     const pts = [];
@@ -316,34 +992,11 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     }
 
     M = {
-      N: N, df: df, Tu: Tu, Tcp: Tcp, Tsym: Tsym, taps: tp, sigTau: sigTau,
-      isi: isi, ici: ici, aW: aW, H: H, faded: faded, hmin: hmin,
+      N: N, BW: BW, df: df, Tu: Tu, Tcp: Tcp, Tsym: Tsym, taps: tp, sigTau: sigTau,
+      isi: isi, ici: ici, aW: aW, H: H, faded: faded, hmin: hmin, fade: FADE,
       wCur: wCur, wPrev: wPrev, wmax: wmax, papr: papr, pts: pts, ideal: ideal,
       eta: Tu / Tsym, overhead: Tcp / Tsym
     };
-  }
-
-  function idft(X, N) {
-    const NN = N * OS, out = new Array(NN);
-    for (let n = 0; n < NN; n++) {
-      let re = 0, im = 0;
-      for (let i = 0; i < N; i++) {
-        const k = i - N / 2, ph = TAU * k * n / NN;
-        const c = Math.cos(ph), s = Math.sin(ph);
-        re += X[i].re * c - X[i].im * s;
-        im += X[i].re * s + X[i].im * c;
-      }
-      out[n] = { re: re / N, im: im / N };
-    }
-    return out;
-  }
-
-  function fit(c) {
-    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    const W = Math.max(1, Math.round(r.width * dp)), H = Math.max(1, Math.round(r.height * dp));
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [Math.max(r.width, 1), Math.max(r.height, 1)];
   }
 
   function txAt(t) {
@@ -358,233 +1011,218 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     return w[idx].re;
   }
 
+  /* --- section 1: where the echo comes from --------------------- */
+  function drawScene() {
+    const c = $('cScene'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fsz = TS(w), asz = AS(w);
+    const D = Math.max(S.dkm, 0.1);
+    const dd = C0 * S.tau * 1e-6 / 1000;
+    const aE = (D + dd) / 2;
+    const bE = Math.sqrt(Math.max(aE * aE - (D / 2) * (D / 2), 0));
+    const ymax = Math.max(bE * 1.45, D * 0.30, 0.1);
+
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -D * 0.14, max: D * 1.14, unit: 'km', label: 'ground range' },
+      { min: 0, max: ymax, unit: 'km', label: 'height' },
+      { fontSize: fsz });
+
+    const gy = P.Y(0), xT = P.X(0), xR = P.X(D);
+    const mh = Math.max(12, Math.min(P.h * 0.20, gy - P.y0 - asz * 3));
+    P.clip(g);
+    mast(g, xT, gy, mh);
+    mast(g, xR, gy, mh, null, { side: 'right' });
+    const yTop = gy - mh;
+
+    if (dd > 1e-6) {
+      const rx = P.X(D / 2), ry = P.Y(bE);
+      const rw = Math.max(6, P.w * 0.018), rh = Math.max(10, P.h * 0.09);
+      g.save();
+      g.globalAlpha = 0.10; g.fillStyle = t.text;
+      g.fillRect(rx - rw / 2, ry - rh / 2, rw, rh);
+      g.globalAlpha = 1; g.strokeStyle = t.text2; g.lineWidth = 1.2;
+      g.strokeRect(rx - rw / 2, ry - rh / 2, rw, rh);
+      g.restore();
+      g.strokeStyle = t.s2; g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(xT, yTop); g.lineTo(rx, ry); g.lineTo(xR, yTop); g.stroke();
+      dimension(g, rx + rw, gy, rx + rw, ry, fmtEng(bE * 1000, 'm', 0), { size: fsz });
+    }
+    dimension(g, xT, yTop, xR, yTop, fmtNum(D, 1) + NB + 'km', { colour: t.s1, size: asz });
+    P.unclip(g);
+
+    leader(g, xT, yTop, 'transmitter', { box: P, colour: t.text2, size: asz, dx: 26, dy: 30 });
+    leader(g, xR, yTop, 'receiver', { box: P, colour: t.text2, size: asz, dx: -26, dy: 30 });
+    if (dd > 1e-6) {
+      leader(g, P.X(D / 2), P.Y(bE), 'echo +' + fmtEng(dd * 1000, 'm', 0) + ' = ' + S.tau.toFixed(1) + NB + 'µs',
+        { box: P, colour: t.s2, size: asz, dy: -28 });
+    } else {
+      leader(g, P.X(D / 2), yTop, 'single path, no echo', { box: P, colour: t.good, size: asz, dy: -28 });
+    }
+  }
+
+  /* --- section 2: the symbol in time ---------------------------- */
   function drawTime() {
-    const c = $('cT'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
-    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c3 = cvv('--series-3'), c7 = cvv('--series-7'), c5 = cvv('--series-5');
+    const c = $('cT'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fsz = TS(w), asz = AS(w), US = 1e6;
     const Tu = M.Tu, Tcp = M.Tcp, Tsym = M.Tsym, tmax = S.tau * 1e-6;
     const aEcho = M.taps[M.taps.length - 1].a;
-    const l = 46, r = 12;
-    const panels = [
-      { t: 12, b: h * 0.50, t0: 0, t1: 2 * Tsym, ttl: 'two consecutive symbols' },
-      { t: h * 0.56, b: h - 26, t0: 0, t1: 0, ttl: 'zoom on the symbol boundary' }
+
+    const gap = h * 0.045;
+    const boxes = [
+      { x: 0, y: 0, w: w, h: h * 0.5 - gap / 2 },
+      { x: 0, y: h * 0.5 + gap / 2, w: w, h: h * 0.5 - gap / 2 }
     ];
     const span = Math.max(Tcp, tmax, Tu * 0.05) * 3.2;
-    panels[1].t0 = Math.max(Tsym - span * 0.42, 0);
-    panels[1].t1 = Math.min(Tsym + span * 0.58, 2 * Tsym);
-    if (panels[1].t1 - panels[1].t0 < 1e-9) panels[1].t1 = panels[1].t0 + Tu * 0.1;
+    const z0 = Math.max(Tsym - span * 0.42, 0);
+    let z1 = Math.min(Tsym + span * 0.58, 2 * Tsym);
+    if (z1 - z0 < 1e-12) z1 = z0 + Tu * 0.1;
+    const views = [
+      { t0: 0, t1: 2 * Tsym, ttl: 'two consecutive symbols' },
+      { t0: z0, t1: z1, ttl: 'zoom on the symbol boundary' }
+    ];
 
-    panels.forEach(function (P, pi) {
-      const top = P.t, bot = P.b, mid = (top + bot) / 2, amp = (bot - top) / 2 - 12;
-      const X = t => l + (t - P.t0) / (P.t1 - P.t0) * (w - l - r);
-      const inW = t => t >= P.t0 && t <= P.t1;
+    views.forEach(function (V, pi) {
+      const P = graticule(g, boxes[pi],
+        { min: V.t0 * US, max: V.t1 * US, unit: 'µs', label: 'time' },
+        { min: -1.15, max: 1.15, unit: 'norm.', label: 'amplitude' },
+        { title: V.ttl, fontSize: fsz });
+      const XT = s => P.X(s * US);
 
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, mid); g.lineTo(w - r, mid); g.stroke();
+      if (Tcp > 0) [0, Tsym].forEach(function (s) { band(g, P, XT(s), XT(s + Tcp), t.s3); });
+      if (tmax > Tcp + 1e-12) band(g, P, XT(Tsym + Tcp), XT(Tsym + Math.min(tmax, Tu + Tcp)), t.bad);
 
-      g.fillStyle = c3; g.globalAlpha = 0.30;
-      [0, Tsym].forEach(function (s) {
-        const x0 = Math.max(X(s), l), x1 = Math.min(X(s + Tcp), w - r);
-        if (x1 > x0) g.fillRect(x0, top, x1 - x0, bot - top);
-      });
-      g.globalAlpha = 1;
-
-      if (tmax > Tcp + 1e-12) {
-        const a = Tsym + Tcp, b2 = Tsym + Math.min(tmax, Tu + Tcp);
-        const x0 = Math.max(X(a), l), x1 = Math.min(X(b2), w - r);
-        if (x1 > x0) {
-          g.fillStyle = c7; g.globalAlpha = 0.20;
-          g.fillRect(x0, top, x1 - x0, bot - top);
-          g.globalAlpha = 1;
-        }
-      }
-
-      g.strokeStyle = c2; g.lineWidth = 1.3; g.globalAlpha = 0.85;
-      g.beginPath();
+      P.clip(g);
       let started = false;
-      for (let px = l; px <= w - r; px += 1) {
-        const t = P.t0 + (px - l) / (w - l - r) * (P.t1 - P.t0);
-        const v = txAt(t - tmax);
+      g.strokeStyle = t.s2; g.lineWidth = 1.4; g.globalAlpha = 0.9;
+      g.beginPath();
+      for (let px = P.x0; px <= P.x1; px += 1) {
+        const tt = V.t0 + (px - P.x0) / P.w * (V.t1 - V.t0);
+        const v = txAt(tt - tmax);
         if (v === null) { started = false; continue; }
-        const y = mid - v * aEcho / M.wmax * amp;
+        const y = P.Y(clamp(v * aEcho / M.wmax, -1.15, 1.15));
         if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
       }
       g.stroke(); g.globalAlpha = 1;
 
-      g.strokeStyle = c1; g.lineWidth = 1.6;
+      g.strokeStyle = t.s1; g.lineWidth = 1.8;
       g.beginPath(); started = false;
-      for (let px = l; px <= w - r; px += 1) {
-        const t = P.t0 + (px - l) / (w - l - r) * (P.t1 - P.t0);
-        const v = txAt(t);
+      for (let px = P.x0; px <= P.x1; px += 1) {
+        const tt = V.t0 + (px - P.x0) / P.w * (V.t1 - V.t0);
+        const v = txAt(tt);
         if (v === null) { started = false; continue; }
-        const y = mid - v / M.wmax * amp;
+        const y = P.Y(clamp(v / M.wmax, -1.15, 1.15));
         if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
       }
       g.stroke();
 
-      g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+      g.strokeStyle = t.borderStrong; g.lineWidth = 1; g.setLineDash([4, 3]);
       [0, Tsym, 2 * Tsym].forEach(function (s) {
-        if (!inW(s)) return;
-        g.setLineDash([3, 3]);
-        g.beginPath(); g.moveTo(X(s), top); g.lineTo(X(s), bot); g.stroke();
-        g.setLineDash([]);
+        const x = XT(s);
+        if (x < P.x0 - 0.5 || x > P.x1 + 0.5) return;
+        g.beginPath(); g.moveTo(x, P.y0); g.lineTo(x, P.y1); g.stroke();
       });
-
-      g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'left'; g.textBaseline = 'top';
-      g.fillText(P.ttl, l + 3, top + 2);
+      g.setLineDash([]);
+      P.unclip(g);
 
       if (pi === 0) {
-        g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-        if (Tcp > 0) {
-          g.fillText('CP', X(Tcp / 2), bot - 14);
-          g.strokeStyle = c3; g.lineWidth = 1.2;
-          g.beginPath();
-          g.moveTo(X(Tsym - Tcp / 2), top + 16);
-          g.bezierCurveTo(X(Tsym - Tcp / 2), top + 2, X(Tcp / 2), top + 2, X(Tcp / 2), top + 16);
-          g.stroke();
-          g.fillStyle = cvv('--text-warning');
-          g.fillText('the tail is copied to the front', (X(Tcp / 2) + X(Tsym - Tcp / 2)) / 2, top + 16);
-        } else {
-          g.fillStyle = cvv('--text-warning');
-          g.fillText('no guard interval', X(Tsym * 0.5), top + 16);
-        }
-        g.fillStyle = sub; g.textAlign = 'center';
-        const fw0 = Tsym + Tcp, fw1 = 2 * Tsym;
-        g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
-        g.beginPath();
-        g.moveTo(X(fw0), bot - 6); g.lineTo(X(fw0), bot - 1); g.lineTo(X(fw1), bot - 1); g.lineTo(X(fw1), bot - 6);
-        g.stroke();
-        g.textBaseline = 'bottom';
-        g.fillText('receiver window Tᵤ = ' + (Tu * 1e6).toFixed(1) + ' µs', (X(fw0) + X(fw1)) / 2, bot - 3);
+        if (Tcp > 0) leader(g, XT(Tcp / 2), P.Y(0.8), 'guard, the copied tail',
+          { box: P, colour: t.s3, size: asz, dy: -24 });
+        else leader(g, XT(Tsym * 0.5), P.Y(0.9), 'no guard interval',
+          { box: P, colour: t.bad, size: asz, dy: -24 });
+        leader(g, XT(Tsym + Tcp + Tu / 2), P.Y(-0.85), 'window T' + sub('u') + ' = ' + us(Tu),
+          { box: P, colour: t.text2, size: asz, dy: 22 });
       } else {
-        g.textAlign = 'left'; g.textBaseline = 'bottom'; g.font = fnt(12);
         if (tmax > Tcp + 1e-12) {
-          g.fillStyle = c7;
-          g.fillText('previous symbol still arriving — ' + ((tmax - Tcp) * 1e6).toFixed(2) + ' µs of the window is spoiled',
-            Math.min(X(Tsym + Tcp) + 4, w - r - 250), bot - 4);
+          const mid = Tsym + Tcp + (Math.min(tmax, Tu + Tcp) - Tcp) / 2;
+          leader(g, XT(mid), P.Y(0.6), 'window spoiled ' + us(tmax - Tcp),
+            { box: P, colour: t.bad, size: asz, dy: -24 });
         } else {
-          g.fillStyle = c5;
-          g.fillText('echo lands inside the guard — the window is clean', Math.min(X(Tsym) + 4, w - r - 240), bot - 4);
+          leader(g, XT(Tsym + Math.max(tmax, Tcp * 0.5)), P.Y(0.6), 'echo inside the guard',
+            { box: P, colour: t.good, size: asz, dy: -24 });
         }
+        leader(g, XT(Tsym + tmax + (z1 - z0) * 0.08), P.Y(-0.6), 'delayed echo',
+          { box: P, colour: t.s2, size: asz, dy: 22 });
       }
-
-      g.font = fnt(12); g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText('0', l - 5, mid);
     });
-
-    const P = panels[1];
-    const Xb = t => l + (t - P.t0) / (P.t1 - P.t0) * (w - l - r);
-    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    for (let i = 0; i <= 4; i++) {
-      const t = P.t0 + (P.t1 - P.t0) * i / 4;
-      g.fillText(((t - Tsym) * 1e6).toFixed(2), Xb(t), h - 22);
-    }
-    g.textAlign = 'left';
-    g.fillText('time relative to the symbol boundary (µs)', l, h - 11);
-    g.textAlign = 'right';
-    g.fillStyle = mut;
-    g.fillText('amplitude, normalised', w - r, h - 11);
   }
 
+  /* --- section 3a: spectrum ------------------------------------- */
   function drawSpec() {
-    const c = $('cS'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
-    const c1 = cvv('--series-1'), c2 = cvv('--series-2'), c4 = cvv('--series-4');
+    const c = $('cS'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fsz = TS(w), asz = AS(w);
     const N = M.N, df = M.df;
     const KS = Math.min(4, N / 2);
     const fmax = (KS + 0.65) * df;
-    const l = 46, r = 14, t = 16, b = 44;
-    const X = f => l + (f + fmax) / (2 * fmax) * (w - l - r);
-    const Y = v => t + (1 - clamp(v, 0, 1)) * (h - t - b);
 
-    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(12); g.fillStyle = mut;
-    for (let i = 0; i <= 4; i++) {
-      const v = i / 4;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(2), l - 5, Y(v));
-    }
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -fmax / 1e3, max: fmax / 1e3, unit: 'kHz', label: 'offset from band centre' },
+      { min: 0, max: 1.08, unit: 'norm.', label: '|spectrum|' },
+      { fontSize: fsz });
+    const XF = f => P.X(f / 1e3);
 
     const ks = [];
     for (let k = -KS; k <= KS; k++) if (k >= -N / 2 && k <= N / 2 - 1) ks.push(k);
 
+    P.clip(g);
     ks.forEach(function (k) {
-      g.strokeStyle = k === 0 ? c1 : c4;
-      g.globalAlpha = k === 0 ? 1 : 0.42;
+      g.strokeStyle = k === 0 ? t.s1 : t.s4;
+      g.globalAlpha = k === 0 ? 1 : 0.45;
       g.lineWidth = k === 0 ? 2 : 1.2;
       g.beginPath();
-      for (let px = l; px <= w - r; px++) {
-        const f = -fmax + (px - l) / (w - l - r) * 2 * fmax;
-        const y = Y(Math.abs(sinc((f - k * df) / df)));
-        if (px === l) g.moveTo(px, y); else g.lineTo(px, y);
+      for (let px = P.x0; px <= P.x1; px++) {
+        const f = -fmax + (px - P.x0) / P.w * 2 * fmax;
+        const y = P.Y(Math.abs(sinc((f - k * df) / df)));
+        if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
       }
       g.stroke();
     });
     g.globalAlpha = 1;
 
-    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
-    g.setLineDash([2, 3]);
+    g.strokeStyle = t.borderStrong; g.lineWidth = 1; g.setLineDash([4, 3]);
     ks.forEach(function (k) {
       const f = (k - S.eps) * df;
       if (Math.abs(f) > fmax) return;
-      g.beginPath(); g.moveTo(X(f), t); g.lineTo(X(f), h - b); g.stroke();
+      g.beginPath(); g.moveTo(XF(f), P.y0); g.lineTo(XF(f), P.y1); g.stroke();
     });
     g.setLineDash([]);
 
-    const fs = -S.eps * df;
+    const f0 = -S.eps * df;
+    const dr = Math.max(2.6, Math.min(5, P.h * 0.016));
     ks.forEach(function (k) {
-      const v = Math.abs(sinc((fs - k * df) / df));
+      const v = Math.abs(sinc((f0 - k * df) / df));
       const isW = k === 0;
       if (!isW && v < 0.004) return;
-      g.fillStyle = isW ? c1 : c2;
-      g.beginPath(); g.arc(X(fs), Y(v), isW ? 4.5 : 3.5, 0, TAU); g.fill();
+      g.fillStyle = isW ? t.s1 : t.s2;
+      g.beginPath(); g.arc(XF(f0), P.Y(v), isW ? dr : dr * 0.78, 0, TAU); g.fill();
     });
+    P.unclip(g);
 
-    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
     const wantV = Math.abs(sinc(S.eps));
+    leader(g, XF(f0), P.Y(wantV), 'wanted ' + wantV.toFixed(3),
+      { box: P, colour: t.s1, size: asz, dy: -26 });
     if (S.eps < 1e-6) {
-      g.fillStyle = cvv('--text-good');
-      g.fillText('sampled exactly here: every neighbour is zero', Math.min(X(fs) + 8, w - r - 250), Y(0) - 4);
+      leader(g, XF(df), P.Y(0), 'neighbours sampled at zero',
+        { box: P, colour: t.good, size: asz, dy: -30 });
     } else {
-      g.fillStyle = c2;
-      g.fillText('sampled ' + S.eps.toFixed(3) + ' Δf early — neighbours no longer zero',
-        Math.min(X(fs) + 8, w - r - 250), Y(0.16));
+      leader(g, XF(f0), P.Y(Math.abs(sinc((f0 - df) / df))),
+        'leakage ' + (100 * M.ici).toFixed(1) + NB + '%',
+        { box: P, colour: t.s2, size: asz, dy: 30 });
     }
-    g.fillStyle = c1; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('wanted = ' + wantV.toFixed(3), X(fs), Math.max(Y(wantV) - 8, t + 13));
-
-    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
-    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    const fdp = df < 20e3 ? 1 : 0;
-    ks.forEach(function (k) {
-      g.fillText((k * df / 1e3).toFixed(fdp), X(k * df), h - b + 5);
-    });
-    g.textAlign = 'left';
-    g.fillText('frequency offset from band centre (kHz), tick = one subcarrier', l, h - b + 22);
-    g.save();
-    g.translate(11, (t + h - b) / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top'; g.fillStyle = mut;
-    g.fillText('|spectrum|, normalised', 0, 0);
-    g.restore();
   }
 
+  /* --- section 3b: orthogonality in time ------------------------ */
   function drawOrtho() {
-    const c = $('cS'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
-    const c1 = cvv('--series-1'), c4 = cvv('--series-4'), c5 = cvv('--series-5'), c2 = cvv('--series-2');
+    const c = $('cS'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fsz = TS(w), asz = AS(w), US = 1e6;
     const Tu = M.Tu, df = M.df;
     const kA = 1, kB = 2;
-    const l = 46, r = 14, t = 14, b = 44;
-    const midT = t + (h - t - b) * 0.30, ampT = (h - t - b) * 0.18;
-    const midB = t + (h - t - b) * 0.76, ampB = (h - t - b) * 0.20;
-    const X = tt => l + tt / Tu * (w - l - r);
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    [midT, midB].forEach(function (m) { g.beginPath(); g.moveTo(l, m); g.lineTo(w - r, m); g.stroke(); });
+    const gap = h * 0.045;
+    const b0 = { x: 0, y: 0, w: w, h: h * 0.5 - gap / 2 };
+    const b1 = { x: 0, y: h * 0.5 + gap / 2, w: w, h: h * 0.5 - gap / 2 };
 
     const NS = 720;
     const fA = kA * df, fB = (kB + S.eps) * df;
@@ -598,158 +1236,144 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       vals.push({ t: tt, a: a, b: bb, p: p, I: 2 * acc / Tu });
     }
 
-    function line(col, wd, key, mid, amp, alpha) {
+    const P0 = graticule(g, b0,
+      { min: 0, max: Tu * US, unit: 'µs', label: 'time in T' + sub('u') },
+      { min: -1.2, max: 1.2, unit: 'norm.', label: 'amplitude' },
+      { title: 'two subcarriers', fontSize: fsz });
+    const P1 = graticule(g, b1,
+      { min: 0, max: Tu * US, unit: 'µs', label: 'time in T' + sub('u') },
+      { min: -1.2, max: 1.2, unit: 'norm.', label: 'average' },
+      { title: 'their product, and its running average', fontSize: fsz });
+
+    function line(P, col, wd, key, alpha) {
       g.strokeStyle = col; g.lineWidth = wd; g.globalAlpha = alpha === undefined ? 1 : alpha;
       g.beginPath();
       for (let i = 0; i <= NS; i++) {
-        const y = mid - clamp(vals[i][key], -1.6, 1.6) * amp;
-        if (i === 0) g.moveTo(X(vals[i].t), y); else g.lineTo(X(vals[i].t), y);
+        const x = P.X(vals[i].t * US), y = P.Y(clamp(vals[i][key], -1.2, 1.2));
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
       }
       g.stroke(); g.globalAlpha = 1;
     }
 
-    line(c1, 1.6, 'a', midT, ampT);
-    line(c4, 1.6, 'b', midT, ampT);
-    line(mut, 1, 'p', midB, ampB, 0.5);
-    line(c5, 2, 'I', midB, ampB);
+    P0.clip(g); line(P0, t.s1, 1.6, 'a'); line(P0, t.s4, 1.6, 'b'); P0.unclip(g);
 
-    const endI = vals[NS].I;
-    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillStyle = c1;
-    g.fillText('subcarrier k = ' + kA + ' — ' + kA.toFixed(0) + ' whole cycle' + (kA === 1 ? '' : 's') + ' in Tᵤ', l + 4, t + 14);
-    g.fillStyle = c4;
-    g.fillText('subcarrier k = ' + kB + (S.eps > 1e-6 ? ' shifted by ε — ' + (kB + S.eps).toFixed(3) + ' cycles' : ' — ' + kB.toFixed(0) + ' whole cycles'), l + 4, t + 28);
-    g.fillStyle = c5;
-    g.fillText('running average of their product, normalised', l + 4, midB - ampB - 6);
-
-    g.strokeStyle = Math.abs(endI) < 0.01 ? c5 : c2; g.lineWidth = 1;
-    g.setLineDash([3, 3]);
-    g.beginPath(); g.moveTo(l, midB - endI * ampB); g.lineTo(w - r, midB - endI * ampB); g.stroke();
+    const endI = vals[NS].I, endC = clamp(endI, -1.2, 1.2);
+    P1.clip(g);
+    line(P1, t.text2, 1, 'p', 0.45);
+    line(P1, t.s5, 2, 'I');
+    g.strokeStyle = Math.abs(endI) < 0.01 ? t.s5 : t.s2; g.lineWidth = 1.4;
+    g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P1.x0, P1.Y(endC)); g.lineTo(P1.x1, P1.Y(endC)); g.stroke();
     g.setLineDash([]);
-    g.textAlign = 'right'; g.textBaseline = 'bottom';
-    g.fillStyle = Math.abs(endI) < 0.01 ? cvv('--text-good') : c2;
-    g.fillText('ends at ' + endI.toFixed(4) + (Math.abs(endI) < 0.01 ? ' — orthogonal' : ' — leakage'), w - r - 4, midB - endI * ampB - 5);
+    P1.unclip(g);
 
-    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, h - b); g.lineTo(w - r, h - b); g.stroke();
-    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    for (let i = 0; i <= 4; i++) {
-      const tt = Tu * i / 4;
-      g.fillText((tt * 1e6).toFixed(1), X(tt), h - b + 5);
-    }
-    g.textAlign = 'left';
-    g.fillText('time within one useful symbol Tᵤ (µs)', l, h - b + 22);
-    g.textAlign = 'right'; g.fillStyle = mut;
-    g.fillText('amplitude, normalised', w - r, h - b + 22);
+    const iA = Math.round(NS * 0.25), iB = Math.round(NS * 0.62);
+    leader(g, P0.X(vals[iA].t * US), P0.Y(vals[iA].a), 'k = ' + kA + ', one whole cycle',
+      { box: P0, colour: t.s1, size: asz, dy: -24 });
+    leader(g, P0.X(vals[iB].t * US), P0.Y(vals[iB].b),
+      S.eps > 1e-6 ? 'k = ' + kB + ', ' + (kB + S.eps).toFixed(3) + ' cycles'
+                   : 'k = ' + kB + ', two whole cycles',
+      { box: P0, colour: t.s4, size: asz, dy: 24 });
+    leader(g, P1.x1, P1.Y(endC),
+      'ends at ' + fmtNum(endI, 4) + (Math.abs(endI) < 0.01 ? ' — orthogonal' : ' — leakage'),
+      { box: P1, colour: Math.abs(endI) < 0.01 ? t.good : t.s2, size: asz, dx: -30, dy: -24 });
   }
 
+  /* --- section 4: channel across the band ----------------------- */
   function drawChan() {
-    const c = $('cH'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
-    const c1 = cvv('--series-1'), c7 = cvv('--series-7');
-    const N = M.N;
-    const l = 50, r = 14, t = 14, b = 42;
-    const lo = -30, hi = 12;
+    const c = $('cH'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fsz = TS(w), asz = AS(w);
+    const N = M.N, lo = -30, hi = 12;
     const dB = m => clamp(20 * L10(Math.max(m, 1e-4)), lo, hi);
-    const X = i => l + (N === 1 ? 0.5 : (i + 0.5) / N) * (w - l - r);
-    const Y = v => t + (hi - clamp(v, lo, hi)) / (hi - lo) * (h - t - b);
 
-    g.strokeStyle = bd; g.lineWidth = 0.5; g.font = fnt(12); g.fillStyle = mut;
-    for (let v = -30; v <= 10; v += 10) {
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v.toFixed(0), l - 5, Y(v));
-    }
-    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -N / 2 - 0.5, max: N / 2 - 0.5, label: 'subcarrier index k, 0 = band centre', dec: 0 },
+      { min: lo, max: hi, unit: 'dB', label: '|H' + sub('k') + '|' },
+      { fontSize: fsz });
 
-    g.strokeStyle = c7; g.lineWidth = 1; g.setLineDash([4, 3]);
-    g.beginPath(); g.moveTo(l, Y(FADE_DB)); g.lineTo(w - r, Y(FADE_DB)); g.stroke();
-    g.setLineDash([]);
+    band(g, P, P.Y(lo), P.Y(S.fadeDb), t.bad, 'y');
 
-    const bw2 = Math.max((w - l - r) / N * 0.5, 1);
+    P.clip(g);
+    const bw2 = Math.max(P.w / N * 0.5, 1);
     for (let i = 0; i < N; i++) {
-      const v = dB(M.H[i].mag), fd = M.H[i].mag < FADE;
-      g.strokeStyle = fd ? c7 : c1; g.lineWidth = Math.min(bw2, 4);
-      g.beginPath(); g.moveTo(X(i), Y(0)); g.lineTo(X(i), Y(v)); g.stroke();
-      if (N <= 64) { g.fillStyle = fd ? c7 : c1; g.beginPath(); g.arc(X(i), Y(v), 2, 0, TAU); g.fill(); }
+      const k = i - N / 2, v = dB(M.H[i].mag), fd = M.H[i].mag < M.fade;
+      g.strokeStyle = fd ? t.s7 : t.s1; g.lineWidth = Math.min(bw2, 4);
+      g.beginPath(); g.moveTo(P.X(k), P.Y(0)); g.lineTo(P.X(k), P.Y(v)); g.stroke();
+      if (N <= 64) {
+        g.fillStyle = fd ? t.s7 : t.s1;
+        g.beginPath(); g.arc(P.X(k), P.Y(v), Math.max(2, Math.min(3.5, P.h * 0.013)), 0, TAU); g.fill();
+      }
     }
+    g.strokeStyle = t.bad; g.lineWidth = 1.4; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P.x0, P.Y(S.fadeDb)); g.lineTo(P.x1, P.Y(S.fadeDb)); g.stroke();
+    g.setLineDash([]);
+    P.unclip(g);
 
-    g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    const fadeLbl = '−6 dB — below here a subcarrier counts as faded';
-    const flw = g.measureText(fadeLbl).width;
-    g.fillStyle = cvv('--plot-bg');
-    g.fillRect(l + 6, Y(FADE_DB) - 15, flw + 6, 14);
-    g.fillStyle = c7;
-    g.fillText(fadeLbl, l + 9, Y(FADE_DB) - 3);
-
-    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    const step = N / 8;
-    for (let i = 0; i < N; i += step) g.fillText((i - N / 2).toFixed(0), X(i), h - b + 6);
-    g.fillText((N / 2 - 1).toFixed(0), X(N - 1), h - b + 6);
-    g.textAlign = 'left';
-    g.fillText('subcarrier index k, 0 = band centre', l, h - b + 22);
-    g.textAlign = 'right'; g.fillStyle = mut;
-    g.fillText('|Hₖ| (dB), 0 dB = average power gain', w - r, h - b + 22);
+    leader(g, P.x1, P.Y(S.fadeDb), 'fade threshold ' + fmtNum(S.fadeDb, 1) + NB + 'dB',
+      { box: P, colour: t.bad, size: asz, dx: -30, dy: -22 });
+    let wi = 0;
+    for (let i = 1; i < N; i++) if (M.H[i].mag < M.H[wi].mag) wi = i;
+    leader(g, P.X(wi - N / 2), P.Y(dB(M.H[wi].mag)),
+      'deepest notch ' + fmtNum(dB(M.H[wi].mag), 1) + NB + 'dB',
+      { box: P, colour: t.s7, size: asz, dy: 26 });
   }
 
+  /* --- section 5: constellation --------------------------------- */
   function drawConst() {
-    const c = $('cC'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--grid');
-    const c1 = cvv('--series-1'), c7 = cvv('--series-7');
-    const b = 40, t = 12;
-    const size = Math.max(Math.min(w - 120, h - b - t), 40);
-    const cx = w / 2, cy = t + size / 2;
+    const c = $('cC'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fsz = TS(w), asz = AS(w);
     const R = 1.9;
-    const X = v => cx + v / R * (size / 2);
-    const Y = v => cy - v / R * (size / 2);
 
-    g.save();
-    g.beginPath(); g.rect(cx - size / 2, cy - size / 2, size, size); g.clip();
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -R, max: R, unit: 'norm.', label: 'in-phase I' },
+      { min: -R, max: R, unit: 'norm.', label: 'quadrature Q' },
+      { fontSize: fsz });
 
-    g.strokeStyle = bd; g.lineWidth = 0.5;
-    for (let i = -2; i <= 2; i++) {
-      const v = i * 0.5 * R / 2;
-      g.beginPath(); g.moveTo(X(v), cy - size / 2); g.lineTo(X(v), cy + size / 2); g.stroke();
-      g.beginPath(); g.moveTo(cx - size / 2, Y(v)); g.lineTo(cx + size / 2, Y(v)); g.stroke();
-    }
-    g.strokeStyle = cvv('--axis'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(cx - size / 2, Y(0)); g.lineTo(cx + size / 2, Y(0)); g.stroke();
-    g.beginPath(); g.moveTo(X(0), cy - size / 2); g.lineTo(X(0), cy + size / 2); g.stroke();
+    P.clip(g);
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(P.x0, P.Y(0)); g.lineTo(P.x1, P.Y(0));
+    g.moveTo(P.X(0), P.y0); g.lineTo(P.X(0), P.y1);
+    g.stroke();
 
-    g.strokeStyle = mut; g.lineWidth = 1; g.globalAlpha = 0.8;
+    const cr = Math.max(2.5, Math.min(5, P.h * 0.014));
+    g.strokeStyle = t.text2; g.lineWidth = 1;
     M.ideal.forEach(function (p) {
-      const x = X(p.re), y = Y(p.im);
-      g.beginPath(); g.moveTo(x - 3, y); g.lineTo(x + 3, y); g.moveTo(x, y - 3); g.lineTo(x, y + 3); g.stroke();
+      const x = P.X(p.re), y = P.Y(p.im);
+      g.beginPath();
+      g.moveTo(x - cr, y); g.lineTo(x + cr, y);
+      g.moveTo(x, y - cr); g.lineTo(x, y + cr);
+      g.stroke();
     });
-    g.globalAlpha = 1;
 
+    const dr = Math.max(2, Math.min(3.6, P.h * 0.010));
     M.pts.forEach(function (p) {
-      g.fillStyle = p.faded ? c7 : c1;
+      g.fillStyle = p.faded ? t.s7 : t.s1;
       g.globalAlpha = p.faded ? 0.95 : 0.75;
-      g.beginPath(); g.arc(X(p.re), Y(p.im), 2.6, 0, TAU); g.fill();
+      g.beginPath(); g.arc(P.X(p.re), P.Y(p.im), dr, 0, TAU); g.fill();
     });
     g.globalAlpha = 1;
-    g.restore();
+    P.unclip(g);
 
-    g.strokeStyle = bd; g.lineWidth = 1;
-    g.strokeRect(cx - size / 2, cy - size / 2, size, size);
-
-    g.font = fnt(12); g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('in-phase I (normalised)', cx, cy + size / 2 + 6);
-    g.save();
-    g.translate(cx - size / 2 - 12, cy); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('quadrature Q (normalised)', 0, 0);
-    g.restore();
-    g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillStyle = mut;
-    g.fillText(M.N.toFixed(0) + ' subcarriers, ' + (1 << S.bits).toFixed(0) + '-point constellation, thermal SNR ' + SNRDB.toFixed(0) + ' dB',
-      8, h - 8);
+    const p0 = M.pts[0];
+    leader(g, P.X(clamp(p0.re, -R, R)), P.Y(clamp(p0.im, -R, R)), 'one subcarrier',
+      { box: P, colour: t.s1, size: asz, dy: -24 });
+    let fi = -1;
+    for (let i = 0; i < M.pts.length; i++) if (M.pts[i].faded) { fi = i; break; }
+    if (fi >= 0) {
+      leader(g, P.X(clamp(M.pts[fi].re, -R, R)), P.Y(clamp(M.pts[fi].im, -R, R)),
+        M.faded.toFixed(0) + ' faded, noise amplified',
+        { box: P, colour: t.s7, size: asz, dx: -28, dy: 24 });
+    } else {
+      leader(g, P.X(M.ideal[0].re), P.Y(M.ideal[0].im), 'ideal point',
+        { box: P, colour: t.text2, size: asz, dx: -28, dy: 24 });
+    }
   }
 
   function drawAll() {
+    drawScene();
     drawTime();
     if (S.view === 'freq') drawSpec(); else drawOrtho();
     drawChan();
@@ -758,24 +1382,22 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
 
   function legendSpec() {
     if (S.view === 'freq') {
-      return '<li><span class="sw" style="background: var(--series-1)"></span> <b>blue</b> — the received subcarrier’s spectrum</li>'
-        + '<li><span class="sw" style="background: var(--series-4)"></span> <b>purple</b> — its neighbours</li>'
-        + '<li><b>dashed lines</b> — the receiver’s sampling instants</li>'
-        + '<li><span class="sw" style="background: var(--series-2)"></span> <b>orange dots</b> — neighbour leakage, the ICI</li>';
+      return '<li><span class="sw" style="background:var(--series-1)"></span>wanted subcarrier</li>'
+        + '<li><span class="sw" style="background:var(--series-4)"></span>its neighbours</li>'
+        + '<li><span class="sw dash" style="color:var(--border-strong)"></span>sampling instants</li>'
+        + '<li><span class="sw" style="background:var(--series-2)"></span>neighbour leakage, the ICI</li>';
     }
-    return '<li><span class="sw" style="background: var(--series-1)"></span> <b>blue, purple</b> — two subcarriers over Tᵤ</li>'
-      + '<li><b>grey</b> — their product</li>'
-      + '<li><span class="sw" style="background: var(--series-5)"></span> <b>green</b> — running average; zero = orthogonal</li>';
+    return '<li><span class="sw" style="background:var(--series-1)"></span>subcarrier k = 1</li>'
+      + '<li><span class="sw" style="background:var(--series-4)"></span>subcarrier k = 2</li>'
+      + '<li><span class="sw" style="color:var(--text-secondary);background:currentColor"></span>their product</li>'
+      + '<li><span class="sw" style="background:var(--series-5)"></span>running average</li>';
   }
-
-  function fmtDb(v, unit) { return v.toFixed(1) + (unit || ' dB'); }
 
   function updateUI() {
     compute();
-    $('nnv').textContent = M.N.toFixed(0);
-    $('cpv').textContent = S.cpOn ? (S.cpFrac * 100).toFixed(2) + ' % Tᵤ' : 'off';
-    $('dsv').textContent = S.tau.toFixed(1) + ' µs';
-    $('fov').textContent = S.eps.toFixed(3);
+    const tmax = S.tau * 1e-6;
+
+    $('nnU').textContent = M.N.toFixed(0);
     $('bCpOn').classList.toggle('on', S.cpOn);
     $('bCpOff').classList.toggle('on', !S.cpOn);
     $('vF').classList.toggle('on', S.view === 'freq');
@@ -783,62 +1405,83 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     [2, 4, 6].forEach(function (bt) { $('m' + bt).classList.toggle('on', S.bits === bt); });
     $('legS').innerHTML = legendSpec();
 
+    $('heroVal').innerHTML = (M.overhead * 100).toFixed(1) + '<span class="u">%</span>';
+    const badge = $('heroBadge');
+    if (!S.cpOn) {
+      badge.className = 'badge bad'; badge.textContent = 'no guard';
+    } else if (M.Tcp >= tmax - 1e-15) {
+      badge.className = 'badge good'; badge.textContent = 'guard covers the echo';
+    } else {
+      badge.className = 'badge bad'; badge.textContent = 'echo overruns the guard';
+    }
+    $('heroFt').textContent = 'guard ' + us(M.Tcp) + ' against echo ' + us(tmax)
+      + ', efficiency ' + (M.eta * 100).toFixed(1) + ' %';
+
     $('cDF').textContent = (M.df / 1e3).toFixed(2) + ' kHz';
-    $('cDFn').textContent = 'N = ' + M.N.toFixed(0) + ' subcarriers across a fixed 960 kHz band';
+    $('cDFn').textContent = 'N = ' + M.N.toFixed(0) + ' across ' + (M.BW / 1e3).toFixed(0) + ' kHz';
     $('cTS').textContent = (M.Tsym * 1e6).toFixed(1) + ' µs';
-    $('cTSn').textContent = 'Tᵤ = ' + (M.Tu * 1e6).toFixed(1) + ' µs plus guard ' + (M.Tcp * 1e6).toFixed(2) + ' µs';
-    $('cOV').textContent = (M.overhead * 100).toFixed(1) + ' %';
-    $('cOVn').textContent = 'efficiency η = Tᵤ/(Tᵤ + T_cp) = ' + (M.eta * 100).toFixed(1) + ' %';
+    $('cTSn').textContent = 'Tᵤ ' + (M.Tu * 1e6).toFixed(1) + ' µs plus guard ' + (M.Tcp * 1e6).toFixed(2) + ' µs';
+    $('cSIG').textContent = (M.sigTau * 1e6).toFixed(3) + ' µs';
+    $('cSIGn').textContent = M.faded.toFixed(0) + ' of ' + M.N.toFixed(0) + ' subcarriers faded';
 
     if (M.ici < 1e-9) {
       $('cICI').textContent = 'none';
     } else {
-      $('cICI').textContent = fmtDb(10 * L10(M.ici));
+      $('cICI').textContent = fmtNum(10 * L10(M.ici), 1) + ' dB';
     }
+
     const floor = M.ici + M.isi;
     if (floor < 1e-9) {
       $('cSNR').textContent = 'no ceiling';
-      $('cSNR').style.color = 'var(--text-good)';
-      $('cSNRn').textContent = 'nothing but thermal noise limits this link';
+      $('cSNR').style.color = 'var(--good)';
+      $('cSNRn').textContent = 'only thermal noise limits this link';
     } else {
       const ceil = -10 * L10(floor);
-      $('cSNR').textContent = fmtDb(ceil);
-      $('cSNR').style.color = ceil >= 20 ? 'var(--text-good)' : (ceil >= 10 ? 'var(--text-warning)' : 'var(--series-7)');
-      $('cSNRn').textContent = M.isi > 1e-9
-        ? 'set by ICI and by the echo beyond the guard'
-        : 'set by ICI alone: −10·log₁₀(1 − sinc²ε)';
+      $('cSNR').textContent = fmtNum(ceil, 1) + ' dB';
+      $('cSNR').style.color = ceil >= 20 ? 'var(--good)' : (ceil >= 10 ? 'var(--warn)' : 'var(--bad)');
+      $('cSNRn').textContent = M.isi > 1e-9 ? 'set by ICI and the overrunning echo' : 'set by ICI alone';
     }
-    $('cPAPR').textContent = fmtDb(M.papr);
-    $('cPAPRn').textContent = 'this symbol; worst case ≈ ' + (10 * L10(M.N)).toFixed(1) + ' dB at N = ' + M.N.toFixed(0);
+    $('cPAPR').textContent = fmtNum(M.papr, 1) + ' dB';
+    $('cPAPRn').textContent = 'worst case ' + (10 * L10(M.N)).toFixed(1) + ' dB at N = ' + M.N.toFixed(0);
 
-    const tmax = S.tau * 1e-6;
     const rows = [
-      'Subcarrier spacing: 960 kHz shared by N = ' + M.N.toFixed(0) + ' subcarriers gives <b>Δf = ' + (M.df / 1e3).toFixed(2) + ' kHz</b>.',
-      'Useful symbol time: Tᵤ = 1/Δf = 1/' + (M.df / 1e3).toFixed(2) + ' kHz = <b>' + (M.Tu * 1e6).toFixed(2) + ' µs</b>.',
-      'Guard: ' + (S.cpOn ? (S.cpFrac * 100).toFixed(2) + ' % of Tᵤ' : '0 % (switched off)') + ' gives T_cp = <b>' + (M.Tcp * 1e6).toFixed(2) + ' µs</b>, so efficiency η = Tᵤ/(Tᵤ + T_cp) = <b>' + (M.eta * 100).toFixed(1) + ' %</b>.',
-      'Echo test: the last tap arrives at τ = ' + (tmax * 1e6).toFixed(2) + ' µs, which is <b>' + (tmax <= M.Tcp ? 'inside' : 'beyond') + '</b> the ' + (M.Tcp * 1e6).toFixed(2) + ' µs guard, so the interference from the overrun is <b>' + (M.isi < 1e-9 ? 'zero' : (10 * L10(M.isi)).toFixed(1) + ' dB') + '</b>.',
+      'Subcarrier spacing: ' + (M.BW / 1e3).toFixed(0) + ' kHz shared by N = ' + M.N.toFixed(0) + ' gives <b>Δf = ' + (M.df / 1e3).toFixed(2) + ' kHz</b>.',
+      'Useful symbol time: T<sub>u</sub> = 1/Δf = <b>' + (M.Tu * 1e6).toFixed(2) + ' µs</b>.',
+      'Guard: ' + (S.cpOn ? S.cpPct.toFixed(2) + ' % of T<sub>u</sub>' : '0 % (switched off)') + ' gives T<sub>cp</sub> = <b>' + (M.Tcp * 1e6).toFixed(2) + ' µs</b>, so efficiency η = T<sub>u</sub>/(T<sub>u</sub> + T<sub>cp</sub>) = <b>' + (M.eta * 100).toFixed(1) + ' %</b>.',
+      'Echo test: the last tap arrives at τ = ' + (tmax * 1e6).toFixed(2) + ' µs, <b>' + (tmax <= M.Tcp ? 'inside' : 'beyond') + '</b> the ' + (M.Tcp * 1e6).toFixed(2) + ' µs guard, so the overrun contributes <b>' + (M.isi < 1e-9 ? 'zero' : fmtNum(10 * L10(M.isi), 1) + ' dB') + '</b>.',
       'Frequency offset: sinc(' + S.eps.toFixed(3) + ') = <b>' + M.aW.toFixed(4) + '</b>, so the wanted subcarrier keeps ' + (100 * M.aW * M.aW).toFixed(2) + ' % of its power and <b>' + (100 * M.ici).toFixed(2) + ' %</b> spills into the neighbours as ICI.',
-      'Interference floor: ICI + overrun = <b>' + (100 * floor).toFixed(3) + ' %</b> of a subcarrier’s power, capping the signal-to-noise ratio at <b>' + (floor < 1e-9 ? 'no ceiling' : (-10 * L10(floor)).toFixed(1) + ' dB') + '</b>.',
-      'Channel: r.m.s. delay spread σ = <b>' + (M.sigTau * 1e6).toFixed(3) + ' µs</b>, coherence bandwidth ≈ 1/(5σ) = <b>' + (M.sigTau > 1e-12 ? (1 / (5 * M.sigTau) / 1e3).toFixed(0) + ' kHz' : 'unbounded — the channel has a single tap') + '</b> against a 960 kHz band, and <b>' + M.faded.toFixed(0) + '</b> of ' + M.N.toFixed(0) + ' subcarriers sit more than 6 dB down.'
+      'Interference floor: ICI + overrun = <b>' + (100 * floor).toFixed(3) + ' %</b> of a subcarrier’s power, capping the signal-to-noise ratio at <b>' + (floor < 1e-9 ? 'no ceiling' : fmtNum(-10 * L10(floor), 1) + ' dB') + '</b>.',
+      'Channel: r.m.s. delay spread σ<sub>τ</sub> = <b>' + (M.sigTau * 1e6).toFixed(3) + ' µs</b>, coherence bandwidth ≈ 1/(5σ<sub>τ</sub>) = <b>' + (M.sigTau > 1e-12 ? (1 / (5 * M.sigTau) / 1e3).toFixed(0) + ' kHz' : 'unbounded — a single tap') + '</b> against ' + (M.BW / 1e3).toFixed(0) + ' kHz, and <b>' + M.faded.toFixed(0) + '</b> of ' + M.N.toFixed(0) + ' subcarriers sit below ' + fmtNum(S.fadeDb, 1) + ' dB.',
+      'Extra path: an echo ' + S.tau.toFixed(1) + ' µs late has travelled <b>' + fmtEng(C0 * S.tau * 1e-6, 'm', 0) + '</b> further than the direct ray.'
     ];
     $('work').innerHTML = rows.map(function (x) { return '<li>' + x + '</li>'; }).join('');
 
     drawAll();
   }
 
-  function readInputs() {
-    S.nExp = +$('nn').value;
-    S.cpFrac = +$('cp').value;
-    S.tau = +$('ds').value;
-    S.eps = +$('fo').value;
-  }
+  /* --- controls -------------------------------------------------- */
+  const PAIRS = [
+    ['nn', 'nnN', 'nExp'], ['cp', 'cpN', 'cpPct'], ['ds', 'dsN', 'tau'], ['fo', 'foN', 'eps'],
+    ['bw', 'bwN', 'bwk'], ['sn', 'snN', 'snr'], ['fd', 'fdN', 'fadeDb'],
+    ['nt', 'ntN', 'ntap'], ['dk', 'dkN', 'dkm']
+  ];
+
   function writeInputs() {
-    $('nn').value = S.nExp; $('cp').value = S.cpFrac; $('ds').value = S.tau; $('fo').value = S.eps;
+    PAIRS.forEach(function (p) {
+      const r = $(p[0]), n = $(p[1]);
+      r.value = S[p[2]];
+      S[p[2]] = +r.value;
+      n.value = r.value;
+    });
+  }
+  function readInputs() {
+    PAIRS.forEach(function (p) { S[p[2]] = +$(p[0]).value; });
   }
 
-  ['nn', 'cp', 'ds', 'fo'].forEach(function (id) {
-    $(id).addEventListener('input', function () { readInputs(); updateUI(); });
+  PAIRS.forEach(function (p) {
+    bindPair($(p[0]), $(p[1]), function (v) { S[p[2]] = v; updateUI(); });
   });
+
   $('bCpOn').addEventListener('click', function () { S.cpOn = true; updateUI(); });
   $('bCpOff').addEventListener('click', function () { S.cpOn = false; updateUI(); });
   $('vF').addEventListener('click', function () { S.view = 'freq'; updateUI(); });
@@ -851,17 +1494,34 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
     updateUI();
   });
 
+  const PRESETS = {
+    pWifi: { nExp: 6, bwk: 20000, cpPct: 25, tau: 0.2, eps: 0, cpOn: true },
+    pLte: { nExp: 7, bwk: 1920, cpPct: 7, tau: 1.5, eps: 0, cpOn: true },
+    pNr: { nExp: 7, bwk: 3840, cpPct: 7, tau: 0.5, eps: 0, cpOn: true },
+    pDvb: { nExp: 7, bwk: 140, cpPct: 25, tau: 40, eps: 0, cpOn: true },
+    pOver: { nExp: 5, bwk: 960, cpPct: 6.25, tau: 5, eps: 0, cpOn: true }
+  };
+  Object.keys(PRESETS).forEach(function (id) {
+    $(id).addEventListener('click', function () {
+      const p = PRESETS[id];
+      Object.keys(p).forEach(function (k) { S[k] = p[k]; });
+      writeInputs();
+      updateUI();
+      Object.keys(PRESETS).forEach(function (o) { $(o).classList.toggle('on', o === id); });
+    });
+  });
+
   const TOUR = [
-    { s: { nExp: 5, cpFrac: 0.0625, tau: 1.0, eps: 0, cpOn: true },
-      m: 'Step 1 — back to a clean symbol. 32 subcarriers 30 kHz apart, a guard of 6.25 % lasting 2.08 µs, and echoes out to 1 µs. The echo lands inside the guard, every subcarrier peak sits on its neighbours’ nulls, and the constellation is tight.' },
+    { s: { nExp: 5, bwk: 960, cpPct: 6.25, tau: 1.0, eps: 0, cpOn: true },
+      m: 'Step 1 — a clean symbol: the echo lands inside the guard.' },
     { s: { tau: 5.0 },
-      m: 'Step 2 — delay spread raised to 5 µs. The echo now arrives long after the 2.08 µs guard ends, so part of the previous symbol is still inside the receive window: the red strip in section 1. Section 3 has also grown real notches, because the channel now changes across the band.' },
+      m: 'Step 2 — delay spread 5 µs: the echo now overruns the guard.' },
     { s: { cpOn: false },
-      m: 'Step 3 — guard switched off. Overhead drops to zero, which looks like free capacity, but now every echo overruns and the interference floor rises further. Without a cyclic prefix the channel is no longer a clean circular convolution and orthogonality goes with it.' },
+      m: 'Step 3 — guard off: no overhead, but the window is spoiled.' },
     { s: { tau: 1.0, cpOn: true, eps: 0.15 },
-      m: 'Step 4 — guard back on, echoes short again, but the receiver is tuned 0.15 of a subcarrier spacing off. Look at section 2: the sampling instants have slid off the nulls, so every neighbour now contributes. No extra transmit power can beat this ceiling.' },
+      m: 'Step 4 — tuned 0.15 subcarriers off: every neighbour leaks in.' },
     { s: { nExp: 7, eps: 0, tau: 5.0 },
-      m: 'Step 5 — 128 subcarriers in the same 960 kHz. Each one is only 7.5 kHz wide, the symbol is eight times longer, and the same 6.25 % guard now covers 8.3 µs, so the 5 µs echo fits again. The price is peak-to-average power: more subcarriers means more chances for them all to add up at once.' }
+      m: 'Step 5 — 128 subcarriers: a longer symbol, so the same guard covers more.' }
   ];
 
   ['t1', 't2', 't3', 't4', 't5'].forEach(function (id, i) {
@@ -871,6 +1531,7 @@ ol.work b { color: var(--text-primary); font-weight: 500; font-variant-numeric: 
       writeInputs();
       updateUI();
       $('tourTxt').textContent = step.m;
+      ['t1', 't2', 't3', 't4', 't5'].forEach(function (o) { $(o).classList.toggle('on', o === id); });
       const c = $('cT');
       if (c.scrollIntoView) c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
     });

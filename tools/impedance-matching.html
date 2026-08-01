@@ -32,7 +32,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text-primary);
-  font-family: var(--font-sans); font-size: 15px; font-size: 16px; line-height: 1.65;
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
   font-variant-numeric: tabular-nums; }
 
 .wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
@@ -46,7 +46,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary);
 
 h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
 .sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
-.prereq { font-size: 13px; color: var(--text-muted); margin: 0; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
 .prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
@@ -61,7 +61,7 @@ a { color: inherit; }
 
 input, button, select { font: inherit; color: inherit; }
 button { background: transparent; border: 1px solid var(--border-strong);
-  border-radius: var(--radius); padding: 5px 11px; font-size: 13px; cursor: pointer; }
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
 button:hover { background: var(--surface-1); }
 button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
 input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
@@ -85,11 +85,11 @@ input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visibl
 .hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
 
 .ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
-.ctl label { font-size: 13px; color: var(--text-secondary); }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
 .ctl .in { display: flex; align-items: center; gap: 8px; }
 .ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
 .ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
-  font-size: 13px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  font-size: 14.5px; font-variant-numeric: tabular-nums; background: var(--surface-2);
   color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
 .ctl .unit { font-size: 12px; color: var(--text-muted); min-width: 3.4ch; }
 
@@ -139,6 +139,8 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 .comp-x { font-size: 12px; color: var(--text-muted); min-width: 7ch;
   text-align: right; font-variant-numeric: tabular-nums; }
 .rm { padding: 2px 7px; font-size: 12px; }
+
+.tour, .tour-note, .steps, .tourbtn, #tour, #tourNote, #tmsg, #tourTxt { display: none !important; }
 </style>
 </head>
 <body>
@@ -398,7 +400,11 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       border: v('--border'), borderStrong: v('--border-strong'),
       family: fam, s: s,
       s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
-      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+      font: function (px, weight) { var k = 1, w = 0;
+        var cs = document.querySelectorAll('canvas');
+        for (var i = 0; i < cs.length; i++) { var r = cs[i].getBoundingClientRect().width; if (r > w) w = r; }
+        k = Math.min(1.65, Math.max(1, (w || 820) / 820));
+        return (weight ? weight + ' ' : '') + Math.max(12, Math.round(px * k)) + 'px ' + fam; }
     };
     return _th;
   }

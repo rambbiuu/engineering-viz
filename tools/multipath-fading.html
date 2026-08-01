@@ -4,205 +4,863 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multipath, delay spread and fading</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230072bd' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 12c2.5 0 2.5-7 5-7s2.5 14 5 14 2.5-7 5-7 2.5 3.5 5 3.5'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
-  --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
-  --accent: #378ADD; --bad: #B23B1E; --plot-bg: #ffffff; --grid: #e6e3da;
-  --series-1: #0072bd; --series-2: #d95319; --series-3: #b3860f; --series-4: #7e2f8e;
-  --series-5: #55801f; --series-6: #2f93b8; --series-7: #a2142f; --series-8: #6b6a63;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
-    --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e;
-    --surface-1: #262624; --accent: #6FB3F2; --bad: #EE8A6E; --plot-bg: #201f1d; --grid: #34342f;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
     --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
-    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b; --series-8: #b4b2a9;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 800px; margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
-h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
-h2 { font-size: 16px; font-weight: 500; margin: 2.25rem 0 6px; }
-.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 1.5rem; }
-.pre { font-size: 13px; color: var(--text-muted); margin: 0 0 1.5rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.35rem 1.9rem; align-items: start; }
+.rail > .hero, .rail > .presets, .rail > .tour, .rail > .tour-note,
+.rail > details, .rail > .full { grid-column: 1 / -1; }
+.stage { display: flex; flex-direction: column; }
+
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius);
-  padding: 5px 11px; cursor: pointer; font-size: 13px; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: var(--accent); color: var(--accent); }
-input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.9rem; }
-.row .lbl { font-size: 14.5px; color: var(--text-secondary); }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 4px 26px; margin-bottom: 1.1rem; }
-.ctl { display: flex; align-items: center; gap: 10px; }
-.ctl label { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
-.ctl input[type=range] { flex: 1; min-width: 90px; }
-.ctl .v { font-size: 13px; font-weight: 500; min-width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
-details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.85rem; margin-bottom: 1.1rem; }
-summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
-details .grid2 { margin: 0.8rem 0 0.2rem; }
-.tap-head { font-size: 12px; color: var(--text-muted); margin: 0.7rem 0 0.1rem; grid-column: 1 / -1; }
-.sec { margin: 1.6rem 0 6px; font-size: 16px; }
+.sec { margin: 1.5rem 0 6px; font-size: 16px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 14px; }
-.legend-note { font-size: 14px; color: var(--text-secondary); margin: 6px 0 0; padding-left: 1.1rem; }
-.legend-note li { margin: 2px 0; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 14.5px; color: var(--text-secondary); }
+.hero .val { font-size: 36px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 14.5px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 13px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 13px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 14px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 14px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; min-width: 0; }
 .card .hd { font-size: 14px; color: var(--text-secondary); }
-.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 3px;
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-.note { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem;
-  font-size: 13px; color: var(--text-secondary); margin-top: 1rem; }
-.note b { color: var(--text-primary); font-weight: 500; }
-canvas { width: 100%; display: block; }
-ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.4rem 0 0; }
-ol.work li { margin: 3px 0; font-variant-numeric: tabular-nums; }
-dl.glossary { font-size: 13px; margin: 0.5rem 0 0; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; overflow-wrap: anywhere; }
+dl.glossary { font-size: 13px; margin: 0.3rem 0 0; }
 dl.glossary dt { font-weight: 500; margin-top: 8px; }
 dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.tap-head { font-size: 13px; color: var(--text-muted); margin: 0 0 2px; }
+
+.tour, .tour-note, .steps, .tourbtn, #tour, #tourNote, #tmsg, #tourTxt { display: none !important; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Multipath, delay spread and fading</h1>
-<p class="sub">Bounced copies of the same signal add or cancel at the receiver, so the level can collapse by 30 dB while the transmitter never changes. The tool shows one channel three ways: in delay, in frequency and in time.</p>
-<p class="pre">If the idea of adding waves by phase is new, start with <a href="fresnel-clearance.html">Fresnel zones and clearance</a>. If decibels and margins are new, start with <a href="link-budget.html">Link budget</a>.</p>
+<div class="wrap">
 
-<p class="note" style="margin-top:0"><b>Everyday version.</b> Shout across a canyon and you hear yourself back a moment later. If the echo arrives while you are still speaking, the two sounds overlap and some syllables turn to mush. A radio signal does the same thing, except the echoes arrive microseconds late instead of seconds, and instead of muddying words they cancel parts of the signal outright.</p>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Multipath, delay spread and fading</h1>
+  <p class="sub">Bounced copies of one signal add or cancel at the receiver, so the level can collapse 30 dB while the transmitter never changes. The same channel is shown in delay, in frequency and in time.</p>
+  <p class="prereq">New to adding waves by phase? Start with <a href="fresnel-clearance.html">Fresnel clearance</a>.</p>
+</header>
 
-<div class="row">
-  <span class="lbl">Guided tour</span>
-  <button id="tr0">1 &middot; one reflector</button>
-  <button id="tr1">2 &middot; widen the signal</button>
-  <button id="tr2">3 &middot; push it further away</button>
-  <button id="tr3">4 &middot; eight paths</button>
-  <button id="tr4">5 &middot; drive faster</button>
-  <button id="trR">reset</button>
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Coherence bandwidth B<sub>c</sub></div>
+    <div class="val" id="heroVal">&mdash;</div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
+  </div>
+
+  <div class="ctl">
+    <label for="nt">Paths</label>
+    <div class="in">
+      <input type="range" id="nt" min="2" max="8" step="1" value="3">
+      <input type="number" id="ntN" min="2" max="8" step="1" aria-label="Number of paths">
+      <span class="unit">taps</span>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label for="sp">Mobile speed</label>
+    <div class="in">
+      <input type="range" id="sp" min="0" max="200" step="1" value="50">
+      <input type="number" id="spN" min="0" max="200" step="1" aria-label="Mobile speed in kilometres per hour">
+      <span class="unit">km/h</span>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label for="fc">Carrier frequency</label>
+    <div class="in">
+      <input type="range" id="fc" min="0.3" max="6" step="0.01" value="2.1">
+      <input type="number" id="fcN" min="0.3" max="6" step="0.01" aria-label="Carrier frequency in gigahertz">
+      <span class="unit">GHz</span>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label for="bw">Signal bandwidth</label>
+    <div class="in">
+      <input type="range" id="bw" min="0.03" max="20" step="0.01" value="5">
+      <input type="number" id="bwN" min="0.03" max="20" step="0.01" aria-label="Signal bandwidth in megahertz">
+      <span class="unit">MHz</span>
+    </div>
+  </div>
+
+  <div class="presets">
+    <span class="lbl">Presets</span>
+    <button type="button" id="pUrban" class="on">Urban macro 2.1 GHz</button>
+    <button type="button" id="pWifi">Indoor Wi-Fi 5.8 GHz</button>
+    <button type="button" id="pRural">Rural line of sight 900 MHz</button>
+    <button type="button" id="pHilly">Hilly terrain 450 MHz</button>
+    <button type="button" id="pRail">High-speed rail 2.6 GHz</button>
+  </div>
+
+  <div class="presets">
+    <button type="button" id="play">Pause the drive</button>
+    <button type="button" id="shuf">Reshuffle phases</button>
+    <span class="lbl" style="margin-left:6px">B<sub>c</sub> convention</span>
+    <button type="button" id="bc5" class="on">0.5 correlation</button>
+    <button type="button" id="bc50">0.9 correlation</button>
+  </div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="rail">
+      <div>
+        <div class="ctl">
+          <label for="kf">Rician K factor</label>
+          <div class="in">
+            <input type="range" id="kf" min="-20" max="20" step="0.5" value="0">
+            <input type="number" id="kfN" min="-20" max="20" step="0.5" aria-label="Rician K factor in decibels">
+            <span class="unit">dB</span>
+          </div>
+        </div>
+        <div class="ctl">
+          <label for="mg">Fade margin</label>
+          <div class="in">
+            <input type="range" id="mg" min="0" max="30" step="0.5" value="10">
+            <input type="number" id="mgN" min="0" max="30" step="0.5" aria-label="Fade margin in decibels">
+            <span class="unit">dB</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ctl">
+          <label for="dp">Direct path length</label>
+          <div class="in">
+            <input type="range" id="dp" min="50" max="2000" step="10" value="300">
+            <input type="number" id="dpN" min="50" max="2000" step="10" aria-label="Direct path length in metres">
+            <span class="unit">m</span>
+          </div>
+        </div>
+        <div class="ctl">
+          <label for="nd">Notch depth marked</label>
+          <div class="in">
+            <input type="range" id="nd" min="3" max="30" step="1" value="10">
+            <input type="number" id="ndN" min="3" max="30" step="1" aria-label="Notch depth marked, in decibels below RMS">
+            <span class="unit">dB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="prereq" style="margin: 0.2rem 0 0.6rem">Reflector delay sets the extra distance travelled, at 300 m per microsecond.</p>
+    <div class="rail" id="taprows"></div>
+  </details>
+
+  <div class="cards full">
+    <div class="card">
+      <div class="hd">RMS delay spread</div>
+      <div class="big" id="cSig">&mdash;</div>
+      <div class="ft">&sigma;<sub>&tau;</sub>, spread of arrival times</div>
+    </div>
+    <div class="card">
+      <div class="hd">Mean excess delay</div>
+      <div class="big" id="cTbar">&mdash;</div>
+      <div class="ft">&tau;&#772;, power-weighted mean arrival</div>
+    </div>
+    <div class="card">
+      <div class="hd">Maximum Doppler</div>
+      <div class="big" id="cFm">&mdash;</div>
+      <div class="ft" id="cFmf">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Coherence time</div>
+      <div class="big" id="cTc">&mdash;</div>
+      <div class="ft" id="cTcf">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Outage at margin</div>
+      <div class="big" id="cOut">&mdash;</div>
+      <div class="ft" id="cOutf">&mdash;</div>
+    </div>
+    <div class="card">
+      <div class="hd">Level crossing rate</div>
+      <div class="big" id="cLcr">&mdash;</div>
+      <div class="ft">downward crossings per second</div>
+    </div>
+    <div class="card">
+      <div class="hd">Average fade duration</div>
+      <div class="big" id="cAfd">&mdash;</div>
+      <div class="ft">mean length of one dropout</div>
+    </div>
+  </div>
+
 </div>
-<p class="note" id="tourNote"><b>Start here.</b> Press the tour buttons in order. Each one moves the sliders for you and says in one line what changed. The default setting is a city street with a direct path and two building reflections.</p>
 
-<div class="grid2" style="margin-top:1.25rem">
-  <div class="ctl"><label for="nt">Paths (taps)</label><input type="range" id="nt" min="2" max="8" step="1" value="3"><span class="v" id="ntv">3</span></div>
-  <div class="ctl"><label for="kf">Rician K factor</label><input type="range" id="kf" min="-20" max="20" step="0.5" value="0"><span class="v" id="kfv">0.0 dB</span></div>
-  <div class="ctl"><label for="sp">Mobile speed</label><input type="range" id="sp" min="0" max="200" step="1" value="50"><span class="v" id="spv">50 km/h</span></div>
-  <div class="ctl"><label for="fc">Carrier frequency</label><input type="range" id="fc" min="0.3" max="6" step="0.01" value="2.1"><span class="v" id="fcv">2.10 GHz</span></div>
-  <div class="ctl"><label for="bw">Signal bandwidth</label><input type="range" id="bw" min="0.03" max="20" step="0.01" value="5"><span class="v" id="bwv">5.00 MHz</span></div>
-  <div class="ctl"><label for="mg">Fade margin</label><input type="range" id="mg" min="0" max="30" step="0.5" value="10"><span class="v" id="mgv">10.0 dB</span></div>
+<div class="stage">
+
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="tr0">1 &middot; one reflector</button>
+    <button type="button" id="tr1">2 &middot; widen the signal</button>
+    <button type="button" id="tr2">3 &middot; push it away</button>
+    <button type="button" id="tr3">4 &middot; eight paths</button>
+    <button type="button" id="tr4">5 &middot; drive faster</button>
+    <button type="button" id="trR">reset</button>
+  </div>
+  <p class="tour-note" id="tourNote">Press the steps in order; each one moves the controls.</p>
+
+  <p class="sec"><b>1 &middot; The street</b> <span>&mdash; plan view, drawn to scale in metres</span></p>
+  <canvas id="cv1" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>direct path</li>
+    <li><span class="sw" style="background:var(--series-2)"></span>reflected copies</li>
+    <li><span class="sw" style="background:var(--text-secondary)"></span>wall and hardware</li>
+  </ul>
+
+  <p class="sec"><b>2 &middot; Power delay profile</b> <span>&mdash; power against arrival delay</span></p>
+  <canvas id="cv2" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>one stem per copy</li>
+    <li><span class="sw dash" style="color:var(--warn)"></span>mean excess delay</li>
+    <li><span class="sw" style="background:var(--warn);opacity:.35"></span>&plusmn; one &sigma;<sub>&tau;</sub></li>
+  </ul>
+
+  <p class="sec"><b>3 &middot; The channel across frequency</b> <span>&mdash; notches inside or outside the band</span></p>
+  <canvas id="cv3" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>channel gain |H(f)|</li>
+    <li><span class="sw" style="background:var(--series-6);opacity:.35"></span>signal bandwidth</li>
+    <li><span class="sw" style="background:var(--bad);opacity:.35"></span>deep notches</li>
+  </ul>
+
+  <p class="sec"><b>4 &middot; Envelope as the car drives</b> <span>&mdash; fades against the threshold</span></p>
+  <canvas id="cv4" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-1)"></span>received envelope</li>
+    <li><span class="sw dash" style="color:var(--warn)"></span>fade margin threshold</li>
+    <li><span class="sw" style="background:var(--warn);opacity:.35"></span>outage stretches</li>
+  </ul>
+
+  <p class="sec"><b>5 &middot; The paths added tip to tail</b> <span>&mdash; why the envelope collapses</span></p>
+  <canvas id="cv5" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background:var(--series-2)"></span>one arrow per path</li>
+    <li><span class="sw" style="background:var(--text-primary)"></span>vector sum now</li>
+    <li><span class="sw dash" style="color:var(--warn)"></span>threshold circle</li>
+  </ul>
+
+  <details>
+    <summary>The arithmetic, with the current numbers</summary>
+    <ol class="work" id="work"></ol>
+  </details>
+
+  <details>
+    <summary>Everyday version, and what the sliders teach</summary>
+    <p class="sub">Shout across a canyon and the echo arrives while you are still speaking, so syllables overlap and turn to mush. Radio echoes arrive microseconds late and cancel parts of the signal outright.</p>
+    <p class="sub">Delay spread and Doppler are independent axes of the same channel. Delay spread is about distance: it sets the coherence bandwidth, and once the signal is wider than that, no transmit power helps &mdash; the fix is an equaliser, a rake receiver, or narrow subcarriers as OFDM uses. Doppler is about speed: it sets how fast the pattern sweeps past, so a 30 dB fade at walking pace loses a whole packet while the same fade at 200 km/h is over in a millisecond. A large K factor shrinks both, which is why line of sight is worth more than the link budget alone suggests.</p>
+    <p class="sub">Two honest limits. The envelope is the exact vector sum of the handful of paths set here, so its statistics only approach Rayleigh as taps are added. The outage, crossing rate and fade duration cards use the classical Rayleigh formulas, which assume many equal scatterers from all directions; the outage footnote also reports what the drawn trace actually did.</p>
+  </details>
+
+  <details>
+    <summary>Glossary</summary>
+    <dl class="glossary">
+      <dt>Multipath</dt><dd>The signal arriving by several routes at once, after reflecting off buildings, ground or hills.</dd>
+      <dt>Tap</dt><dd>One arriving copy, described by its delay, its amplitude and its phase.</dd>
+      <dt>Mean excess delay, &tau;&#772;</dt><dd>The power-weighted average of the arrival delays, measured from the first copy.</dd>
+      <dt>RMS delay spread, &sigma;<sub>&tau;</sub></dt><dd>The power-weighted standard deviation of the arrival delays. One number for how smeared in time the channel is.</dd>
+      <dt>Coherence bandwidth, B<sub>c</sub></dt><dd>The width in frequency over which the channel gain stays roughly constant: 1/(5&sigma;<sub>&tau;</sub>) for 0.5 correlation, 1/(50&sigma;<sub>&tau;</sub>) for 0.9.</dd>
+      <dt>Flat fading</dt><dd>The signal is narrower than B<sub>c</sub>, so all of it fades by the same amount at the same moment.</dd>
+      <dt>Frequency-selective fading</dt><dd>The signal is wider than B<sub>c</sub>, so some frequencies inside it are destroyed while others survive. This causes inter-symbol interference.</dd>
+      <dt>Doppler shift, f<sub>d</sub></dt><dd>The shift a moving receiver sees on one path, (v/&lambda;)cos&theta;, with &theta; between the path and the direction of travel.</dd>
+      <dt>Maximum Doppler, f<sub>m</sub></dt><dd>v/&lambda;, the shift on a path arriving from straight ahead. It sets how fast the fading pattern changes.</dd>
+      <dt>Coherence time, T<sub>c</sub></dt><dd>How long the channel stays roughly the same, about 0.423/f<sub>m</sub>.</dd>
+      <dt>Rayleigh fading</dt><dd>The envelope statistics when many similar copies arrive and none dominates. Deep fades are common.</dd>
+      <dt>Rician K factor</dt><dd>Power in the dominant direct path over power in everything scattered, A&sup2;/2&sigma;&sup2;, quoted in dB.</dd>
+      <dt>Fade margin</dt><dd>Headroom in decibels above the level at which the link stops working.</dd>
+      <dt>Outage</dt><dd>The fraction of time the received level sits below that threshold.</dd>
+      <dt>Level crossing rate</dt><dd>How many times per second the envelope crosses the threshold going downwards.</dd>
+      <dt>Average fade duration</dt><dd>The mean length of one of those dropouts.</dd>
+    </dl>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: <a href="link-budget.html">link budget</a> for what the fade margin costs, then <a href="cellular-reuse.html">cellular frequency reuse</a>.</p>
+
+</div>
 </div>
 
-<div class="row">
-  <button id="play">Pause the drive</button>
-  <button id="shuf">Reshuffle path phases</button>
-  <span class="lbl" style="margin-left:8px">Coherence bandwidth definition</span>
-  <button id="bc5" class="on">0.5 correlation, 1/(5&sigma;<sub>&tau;</sub>)</button>
-  <button id="bc50">0.9 correlation, 1/(50&sigma;<sub>&tau;</sub>)</button>
-</div>
-
-<details id="tapbox">
-  <summary>Move the reflectors &mdash; per-path delay and amplitude</summary>
-  <div class="grid2" id="taprows"></div>
-  <p class="legend-note" style="padding-left:0">Delay is how much later than the direct path a copy arrives; 1 microsecond of delay means 300 metres of extra travel. Amplitude is the size of that copy as a fraction of the strongest reflection. The direct path is not listed here &mdash; its strength is set by the K factor above.</p>
-</details>
-
-<p class="sec"><b>1 &middot; The street</b> <span>&mdash; one direct path plus reflections, each labelled with the extra distance it travels</span></p>
-<canvas id="cv1" style="height: 248px;"></canvas>
-<ul class="legend-note">
-  <li>The straight blue line is the direct path from the base station to the car. It is the shortest route, so its copy arrives first.</li>
-  <li>Each coloured triangle is a reflection off a wall. The label gives the extra distance and the delay that follows from it, at 300 metres per microsecond.</li>
-  <li>The reflection point sits halfway along, which is where the angle in equals the angle out. A copy that is late must have come off something far away.</li>
-</ul>
-
-<p class="sec"><b>2 &middot; Power delay profile</b> <span>&mdash; how much power arrives at each delay, with the mean and the spread marked</span></p>
-<canvas id="cv2" style="height: 234px;"></canvas>
-<ul class="legend-note">
-  <li>Each vertical stem is one arriving copy, at its delay, at its power. Together they are the channel's fingerprint.</li>
-  <li>The dashed line is the mean excess delay &#964;&#772; &mdash; the power-weighted average arrival time.</li>
-  <li>The shaded band is one RMS delay spread &sigma;<sub>&tau;</sub> either side of it. That single number, not the number of stems, is what decides everything below.</li>
-</ul>
-
-<p class="sec"><b>3 &middot; The channel across frequency</b> <span>&mdash; |H(f)| over the signal band; shaded columns are the notches</span></p>
-<canvas id="cv3" style="height: 252px;"></canvas>
-<ul class="legend-note">
-  <li>The blue curve is the channel gain at each frequency. Where copies arrive in step it is high; where they cancel it drops into a notch.</li>
-  <li>The pale vertical block is the signal's own bandwidth. If it fits inside one smooth hump the whole signal fades together &mdash; flat fading. If it straddles several notches, parts of the signal are wiped out while other parts are fine &mdash; frequency-selective fading.</li>
-  <li>The red columns mark where the gain is more than 10 dB below the average. Watch them slide sideways as the car drives.</li>
-</ul>
-
-<p class="sec"><b>4 &middot; Received envelope as the car drives</b> <span>&mdash; signal strength against time, with the threshold and the fades marked</span></p>
-<canvas id="cv4" style="height: 268px;"></canvas>
-<ul class="legend-note">
-  <li>The blue trace is how strong the signal is, in dB relative to its own long-term RMS level. Time runs left to right and &quot;now&quot; is the right-hand edge.</li>
-  <li>The dashed line is the fade margin. Below it the link stops working; those stretches are shaded and are what an outage actually looks like.</li>
-  <li>The box on the left shows why. Each short coloured arrow is one path, drawn tip to tail; the long arrow is their sum. When the arrows curl back on themselves the sum shrinks into the small circle and the signal drops out.</li>
-</ul>
-
-<div class="cards">
-  <div class="card"><div class="hd">RMS delay spread</div><div class="big" id="cSig">&mdash;</div><div class="ft">&sigma;<sub>&tau;</sub>, microseconds</div></div>
-  <div class="card"><div class="hd">Coherence bandwidth</div><div class="big" id="cBc">&mdash;</div><div class="ft" id="cBcf">&mdash;</div></div>
-  <div class="card"><div class="hd">Channel verdict</div><div class="big" id="cVer" style="font-size:17px">&mdash;</div><div class="ft" id="cVerf">&mdash;</div></div>
-  <div class="card"><div class="hd">Maximum Doppler</div><div class="big" id="cFm">&mdash;</div><div class="ft" id="cFmf">f<sub>m</sub> = v/&lambda;, hertz</div></div>
-  <div class="card"><div class="hd">Coherence time</div><div class="big" id="cTc">&mdash;</div><div class="ft" id="cTcf">0.423/f<sub>m</sub>, milliseconds</div></div>
-  <div class="card"><div class="hd">Outage at margin</div><div class="big" id="cOut">&mdash;</div><div class="ft" id="cOutf">&mdash;</div></div>
-  <div class="card"><div class="hd">Level crossing rate</div><div class="big" id="cLcr">&mdash;</div><div class="ft">downward crossings of the threshold, per second</div></div>
-  <div class="card"><div class="hd">Average fade duration</div><div class="big" id="cAfd">&mdash;</div><div class="ft">how long one dropout lasts, milliseconds</div></div>
-</div>
-
-<details class="wordy"><summary>The arithmetic, with the current numbers substituted in</summary>
-<ol class="work" id="work"></ol>
-
-</details>
-<details class="wordy"><summary>What the sliders are teaching</summary>
-<p class="sub">Delay spread and Doppler are two independent axes of the same channel, and they hurt in different ways. Delay spread is about distance: it sets the coherence bandwidth, and once the signal is wider than that, no amount of transmit power helps &mdash; the notch is inside the signal, and the fix is an equaliser, a rake receiver, or splitting the signal into narrow subcarriers as OFDM does. Doppler is about speed: it sets how fast the pattern moves past the car, so a 30 dB fade at walking pace lasts long enough to lose a whole packet, while the same fade at 200 km/h is over in a millisecond and interleaving plus coding rides straight through it. Push the K factor to +20 dB and both problems shrink at once, because a dominant direct path leaves the reflections too weak to cancel it &mdash; which is exactly why a line of sight is worth so much more than the link budget alone suggests.</p>
-<p class="sub">Two honest limits of this model. The envelope drawn in section 4 is the exact vector sum of the handful of paths you set, so its statistics only approach the Rayleigh distribution as you add taps &mdash; with two paths it is a deterministic interference pattern, not a random one. And the outage, crossing rate and fade duration cards use the classical Rayleigh formulas, which assume many equal scatterers arriving from all directions; they are the numbers an engineer designs to, and the footnote on the outage card shows what the drawn waveform actually did so you can see the two disagree when there are too few paths.</p>
-<p class="pre" style="margin-top:1.5rem">Next: <a href="link-budget.html">Link budget</a> to see what the fade margin costs, and <a href="cellular-reuse.html">Cellular frequency reuse</a> for the system that has to live with all of this.</p>
-
-</details>
-<details class="wordy"><summary>Glossary</summary>
-<dl class="glossary">
-  <dt>Multipath</dt><dd>The signal reaching the receiver by several routes at once, having reflected off buildings, ground or hills.</dd>
-  <dt>Tap</dt><dd>One arriving copy in the model, described by its delay, its amplitude and its phase.</dd>
-  <dt>Mean excess delay, &#964;&#772;</dt><dd>The power-weighted average of the arrival delays, measured from the first copy.</dd>
-  <dt>RMS delay spread, &sigma;<sub>&tau;</sub></dt><dd>The power-weighted standard deviation of the arrival delays. One number summarising how smeared in time the channel is.</dd>
-  <dt>Coherence bandwidth, B<sub>c</sub></dt><dd>The width in frequency over which the channel gain stays roughly constant. Roughly 1/(5&sigma;<sub>&tau;</sub>) if you want 0.5 correlation, 1/(50&sigma;<sub>&tau;</sub>) if you want 0.9.</dd>
-  <dt>Flat fading</dt><dd>The signal is narrower than the coherence bandwidth, so every part of it fades by the same amount at the same moment.</dd>
-  <dt>Frequency-selective fading</dt><dd>The signal is wider than the coherence bandwidth, so some frequencies inside it are destroyed while others survive. This is what causes inter-symbol interference.</dd>
-  <dt>Doppler shift, f<sub>d</sub></dt><dd>The frequency shift a moving receiver sees on one arriving path, (v/&lambda;)cos&theta;, where &theta; is the angle between the path and the direction of travel.</dd>
-  <dt>Maximum Doppler, f<sub>m</sub></dt><dd>v/&lambda;, the shift on a path arriving from straight ahead. It sets how fast the fading pattern changes.</dd>
-  <dt>Coherence time, T<sub>c</sub></dt><dd>How long the channel stays roughly the same, about 0.423/f<sub>m</sub>.</dd>
-  <dt>Rayleigh fading</dt><dd>The envelope statistics when many similar scattered copies arrive and none dominates. Deep fades are common.</dd>
-  <dt>Rician K factor</dt><dd>The power in the dominant direct path divided by the power in everything scattered, A&sup2;/2&sigma;&sup2;, usually quoted in dB. Large K means a strong line of sight and shallow fades.</dd>
-  <dt>Fade margin</dt><dd>How many decibels of headroom the link is designed with, above the level at which it stops working.</dd>
-  <dt>Outage</dt><dd>The fraction of time the received level sits below that threshold.</dd>
-  <dt>Level crossing rate</dt><dd>How many times per second the envelope crosses the threshold going downwards.</dd>
-  <dt>Average fade duration</dt><dd>The mean length of one of those dropouts.</dd>
-</dl>
-
-</details>
 <script>
 (function () {
+  /* ============================================================
+     engineering-viz shared canvas kit
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { var k = 1, w = 0;
+        var cs = document.querySelectorAll('canvas');
+        for (var i = 0; i < cs.length; i++) { var r = cs[i].getBoundingClientRect().width; if (r > w) w = r; }
+        k = Math.min(1.65, Math.max(1, (w || 820) / 820));
+        return (weight ? weight + ' ' : '') + Math.max(12, Math.round(px * k)) + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 7. technical hardware ------------------------------------ */
+  function mast(g, x, groundY, heightPx, label, opts) {
+    opts = opts || {};
+    const t = theme();
+    const h = Math.max(6, heightPx), top = groundY - h;
+    const bw = Math.max(2.5, Math.min(13, h * 0.075)), tw = Math.max(1.4, bw * 0.36);
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.fillStyle = opts.colour || t.axis;
+    g.setLineDash([]); g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(x - bw, groundY); g.lineTo(x - tw, top);
+    g.moveTo(x + bw, groundY); g.lineTo(x + tw, top);
+    g.stroke();
+    if (h > 18) {
+      const n = Math.max(1, Math.min(24, Math.round(h / Math.max(11, bw * 2.6))));
+      g.lineWidth = 0.7; g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const f0 = i / n, f1 = (i + 1) / n;
+        const w0 = bw + (tw - bw) * f0, w1 = bw + (tw - bw) * f1;
+        const y0 = groundY + (top - groundY) * f0, y1 = groundY + (top - groundY) * f1;
+        g.moveTo(x - w0, y0); g.lineTo(x + w1, y1);
+        g.moveTo(x + w0, y0); g.lineTo(x - w1, y1);
+        g.moveTo(x - w1, y1); g.lineTo(x + w1, y1);
+      }
+      g.stroke();
+    }
+    const ah = Math.max(5, Math.min(16, h * 0.15));
+    g.lineWidth = 1.2; g.beginPath();
+    g.moveTo(x, top); g.lineTo(x, top - ah);
+    g.moveTo(x - ah * 0.42, top - ah * 0.58); g.lineTo(x + ah * 0.42, top - ah * 0.58);
+    g.moveTo(x - ah * 0.28, top - ah * 0.92); g.lineTo(x + ah * 0.28, top - ah * 0.92);
+    g.stroke();
+    g.lineWidth = 1; g.beginPath();
+    g.moveTo(x - bw * 1.6, groundY); g.lineTo(x + bw * 1.6, groundY);
+    g.stroke();
+    if (label) {
+      const side = opts.side === 'right' ? 1 : -1;
+      const dx = side * (bw + (opts.gap == null ? 16 : opts.gap));
+      g.strokeStyle = t.muted; g.lineWidth = 0.5;
+      g.beginPath();
+      g.moveTo(x, groundY); g.lineTo(x + dx * 1.15, groundY);
+      g.moveTo(x, top); g.lineTo(x + dx * 1.15, top);
+      g.stroke();
+      dimension(g, x + dx, groundY, x + dx, top, label, { size: opts.size || 10.5 });
+    }
+    g.restore();
+  }
+
+  function dish(g, x, y, r, angle, opts) {
+    opts = opts || {};
+    const t = theme();
+    r = Math.max(4, r);
+    const back = angle + Math.PI, spread = 1.05;
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.setLineDash([]);
+    g.lineWidth = Math.max(1, Math.min(1.6, r * 0.06));
+    g.beginPath(); g.arc(x, y, r, back - spread, back + spread); g.stroke();
+    const e0x = x + Math.cos(back - spread) * r, e0y = y + Math.sin(back - spread) * r;
+    const e1x = x + Math.cos(back + spread) * r, e1y = y + Math.sin(back + spread) * r;
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(e0x, e0y); g.lineTo(x, y); g.moveTo(e1x, e1y); g.lineTo(x, y);
+    g.stroke();
+    const f = Math.max(1.6, r * 0.13);
+    g.lineWidth = 1.1;
+    g.strokeRect(x - f, y - f, f * 2, f * 2);
+    const bx = x + Math.cos(back) * r, by = y + Math.sin(back) * r;
+    g.beginPath();
+    g.moveTo(bx, by); g.lineTo(bx + Math.cos(back) * r * 0.45, by + Math.sin(back) * r * 0.45);
+    g.stroke();
+    if (opts.axisLine !== false && r > 8) {
+      g.strokeStyle = t.muted; g.lineWidth = 0.7; g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(angle) * r * 1.1, y + Math.sin(angle) * r * 1.1); g.stroke();
+      g.setLineDash([]);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ============================================================
+     tool code
+     ============================================================ */
+
   var $ = function (id) { return document.getElementById(id); };
-  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
   var L10 = Math.log10 || function (x) { return Math.log(x) / Math.LN10; };
   var C = 2.99792458e8;
-  var DBS = 300;
-  var MU = 'µ', SIG = 'σ', TAU = 'τ', LAM = 'λ', PM = '±', MD = '—';
-  var TAPCOL = ['--series-1', '--series-2', '--series-3', '--series-4', '--series-5', '--series-6', '--series-7', '--series-8'];
+  var MU = 'µ', SIG = 'σ', TAU = 'τ', LAM = 'λ', MD = '—';
+  var SIGT = SIG + TAU;
   var NR = 7;
 
   var DEF_D = [1.00, 2.50, 0.40, 4.20, 5.80, 3.10, 7.50];
   var DEF_A = [0.70, 0.45, 0.55, 0.30, 0.22, 0.38, 0.15];
 
-  var S = { n: 3, K: 0, v: 50, fc: 2.1, B: 5, M: 10, conv: 5, playing: true, t0: 0,
-            del: DEF_D.slice(), amp: DEF_A.slice() };
+  var S = { n: 3, K: 0, v: 50, fc: 2.1, B: 5, M: 10, D: 300, ND: 10, conv: 5,
+            playing: true, t0: 0, del: DEF_D.slice(), amp: DEF_A.slice() };
   var PH = [];
 
   function mulberry32(a) {
@@ -220,33 +878,40 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   }
   PH = makePhases(20250729);
 
+  /* per-reflector controls, built once */
   var rows = '';
   for (var i = 0; i < NR; i++) {
-    rows += '<div class="tap-head" id="th' + i + '">Reflection ' + (i + 1) + '</div>' +
-      '<div class="ctl"><label for="d' + i + '">delay</label>' +
+    rows += '<div id="tw' + i + '">' +
+      '<p class="tap-head">Reflection ' + (i + 1) + '</p>' +
+      '<div class="ctl"><label for="d' + i + '">delay</label><div class="in">' +
       '<input type="range" id="d' + i + '" min="0" max="10" step="0.05" value="' + DEF_D[i].toFixed(2) + '">' +
-      '<span class="v" id="d' + i + 'v">&mdash;</span></div>' +
-      '<div class="ctl"><label for="a' + i + '">amplitude</label>' +
+      '<input type="number" id="d' + i + 'N" min="0" max="10" step="0.05" aria-label="Reflection ' + (i + 1) + ' delay in microseconds">' +
+      '<span class="unit">' + MU + 's</span></div></div>' +
+      '<div class="ctl"><label for="a' + i + '">amplitude</label><div class="in">' +
       '<input type="range" id="a' + i + '" min="0.05" max="1" step="0.01" value="' + DEF_A[i].toFixed(2) + '">' +
-      '<span class="v" id="a' + i + 'v">&mdash;</span></div>';
+      '<input type="number" id="a' + i + 'N" min="0.05" max="1" step="0.01" aria-label="Reflection ' + (i + 1) + ' amplitude">' +
+      '<span class="unit">&times;</span></div></div></div>';
   }
   $('taprows').innerHTML = rows;
 
   function read() {
     S.n = +$('nt').value; S.K = +$('kf').value; S.v = +$('sp').value;
     S.fc = +$('fc').value; S.B = +$('bw').value; S.M = +$('mg').value;
+    S.D = +$('dp').value; S.ND = +$('nd').value;
     for (var i = 0; i < NR; i++) { S.del[i] = +$('d' + i).value; S.amp[i] = +$('a' + i).value; }
   }
 
+  /* ---- physics, unchanged ---- */
   function taps() {
     var lam = C / (S.fc * 1e9);
     var fm = (S.v / 3.6) / lam;
+    var Dm = Math.max(S.D, 1);
     var Pscat = 0, i;
     for (i = 0; i < S.n - 1; i++) Pscat += S.amp[i] * S.amp[i];
     var A = Math.sqrt(Math.max(Math.pow(10, S.K / 10) * Pscat, 0));
     var T = [];
     function push(tau, a, ph, name, idx) {
-      var cs = DBS / (DBS + C * tau);
+      var cs = Dm / (Dm + C * tau);
       T.push({ tau: tau, a: a, ph: ph, fd: fm * cs, cs: cs, name: name, idx: idx });
     }
     push(0, A, PH[0], 'direct', 0);
@@ -299,481 +964,461 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
   }
   var dbOf = function (x, ref) { return 20 * L10(Math.max(x, 1e-12) / Math.max(ref, 1e-12)); };
 
-  function fFreq(f) {
-    if (!isFinite(f)) return MD;
-    if (f >= 1e6) return (f / 1e6).toFixed(2) + ' MHz';
-    if (f >= 1e3) return (f / 1e3).toFixed(1) + ' kHz';
-    return f.toFixed(1) + ' Hz';
-  }
-  function fTime(t) {
-    if (!isFinite(t)) return MD;
-    if (t <= 0) return '0';
-    if (t >= 1) return t.toFixed(2) + ' s';
-    if (t >= 1e-3) return (t * 1e3).toFixed(2) + ' ms';
-    return (t * 1e6).toFixed(2) + ' ' + MU + 's';
+  function verdict(M) {
+    var t = theme();
+    if (M.okB && M.okT) return ['flat fading', 'good', t.good];
+    if (!M.okB && !M.okT) return ['frequency-selective', 'bad', t.bad];
+    return ['borderline', 'warn', t.warn];
   }
 
-  function fit(c) {
-    var r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
+  /* series colour per tap index */
+  function tapCol(t, idx) { return t.s[idx % 7]; }
+
+  /* plan-view marks, thin stroke, structure colour */
+  function siteMark(g, x, y, r, colour) {
+    g.save();
+    g.strokeStyle = colour; g.fillStyle = colour; g.lineWidth = 1.2; g.setLineDash([]);
+    g.beginPath();
+    for (var k = 0; k < 3; k++) {
+      var a = -Math.PI / 2 + k * 2 * Math.PI / 3;
+      var px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.closePath(); g.stroke();
+    g.beginPath(); g.arc(x, y, Math.max(1, r * 0.22), 0, Math.PI * 2); g.fill();
+    g.restore();
   }
-  function plotBase(g, l, t, w2, h2) {
-    g.fillStyle = cvv('--plot-bg'); g.fillRect(l, t, w2, h2);
-    g.strokeStyle = cvv('--border'); g.lineWidth = 1; g.strokeRect(l + 0.5, t + 0.5, w2 - 1, h2 - 1);
+  function handsetMark(g, x, y, hgt, colour) {
+    var wdt = hgt / 2;
+    g.save();
+    g.strokeStyle = colour; g.lineWidth = 1.2; g.setLineDash([]);
+    g.strokeRect(x - wdt / 2, y - hgt / 2, wdt, hgt);
+    g.beginPath();
+    g.moveTo(x + wdt / 2 - 1, y - hgt / 2); g.lineTo(x + wdt / 2 - 1, y - hgt / 2 - hgt * 0.3);
+    g.stroke();
+    g.restore();
   }
 
+  /* contiguous runs of true, as [startPx, endPx] pairs */
+  function runsOf(flags) {
+    var out = [], s = -1;
+    for (var i = 0; i < flags.length; i++) {
+      if (flags[i] && s < 0) s = i;
+      if ((!flags[i] || i === flags.length - 1) && s >= 0) {
+        out.push([s, flags[i] ? i + 1 : i]); s = -1;
+      }
+    }
+    return out;
+  }
+
+  /* --------------------------- 1. the street --------------------------- */
   function drawScene(M) {
-    var c = $('cv1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), txt = cvv('--text-primary');
-    var T = M.T, midY = h * 0.42, x0 = 74, x1 = w - 78, xm = (x0 + x1) / 2;
-    var maxOff = Math.min(midY - 26, h - midY - 46);
-    if (maxOff < 24) maxOff = 24;
+    var c = $('cv1'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fsT = Math.max(12, Math.round(w / 78)), fsA = Math.max(12, Math.round(w / 62));
+    var D = Math.max(S.D, 1), T = M.T, k;
 
-    g.fillStyle = cvv('--surface-1');
-    g.fillRect(x0 - 30, midY - 12, (x1 - x0) + 60, 24);
-    g.strokeStyle = cvv('--border'); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(x0 - 30, midY - 12.5); g.lineTo(x1 + 30, midY - 12.5);
-    g.moveTo(x0 - 30, midY + 12.5); g.lineTo(x1 + 30, midY + 12.5); g.stroke();
+    /* lateral offset of each reflector: total reflected path = D + extra */
+    var off = [], ymax = D * 0.3;
+    for (k = 0; k < T.length; k++) {
+      var extra = C * T[k].tau;
+      var halfTot = (D + extra) / 2;
+      var o = Math.sqrt(Math.max(halfTot * halfTot - (D / 2) * (D / 2), 0));
+      off.push(o);
+      if (o > ymax) ymax = o;
+    }
+    ymax *= 1.22;
 
-    var tmax = Math.max(M.taumax, 1e-9);
-    for (var k = T.length - 1; k >= 1; k--) {
-      var p = T[k];
-      var frac = p.tau / tmax;
-      var off = 22 + frac * (maxOff - 22);
-      var side = (k % 2 === 1) ? -1 : 1;
-      var ay = midY + side * off;
-      var col = cvv(TAPCOL[p.idx % 8]);
-      g.strokeStyle = col; g.lineWidth = 1.4; g.globalAlpha = 0.95;
-      g.beginPath(); g.moveTo(x0, midY); g.lineTo(xm, ay); g.lineTo(x1, midY); g.stroke();
-      g.globalAlpha = 1;
-      g.fillStyle = col; g.globalAlpha = 0.22;
-      g.fillRect(xm - 30, side < 0 ? ay - 15 : ay, 60, 15);
-      g.globalAlpha = 1;
-      g.strokeStyle = col; g.lineWidth = 1; g.strokeRect(xm - 29.5, (side < 0 ? ay - 15 : ay) + 0.5, 59, 14);
-      g.fillStyle = col; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
-      var extra = C * p.tau;
-      g.fillText('+' + extra.toFixed(0) + ' m, ' + (p.tau * 1e6).toFixed(2) + ' ' + MU + 's',
-        xm + 36, side < 0 ? ay - 7 : ay + 7);
+    var markR = Math.max(5, Math.min(11, h * 0.035));
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: D, unit: 'm', label: 'along the direct path' },
+      { min: -ymax, max: ymax, unit: 'm', label: 'lateral offset' },
+      { fontSize: fsT, padR: markR + 10 });
+
+    var y0 = P.Y(0), xA = P.X(0), xB = P.X(D), xM = P.X(D / 2);
+    var wallHalf = P.w * 0.045;
+
+    P.clip(g);
+    /* reflections, longest first so the shortest stays on top */
+    var longest = 1, longOff = -1;
+    for (k = T.length - 1; k >= 1; k--) {
+      var side = (k % 2 === 1) ? 1 : -1;
+      var ay = P.Y(side * off[k]);
+      g.strokeStyle = tapCol(t, T[k].idx); g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(xA, y0); g.lineTo(xM, ay); g.lineTo(xB, y0); g.stroke();
+      /* the wall, structure colour, parallel to the direct path */
+      g.strokeStyle = t.text2; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(xM - wallHalf, ay); g.lineTo(xM + wallHalf, ay); g.stroke();
+      if (off[k] > longOff) { longOff = off[k]; longest = k; }
+    }
+    /* the direct path */
+    g.strokeStyle = t.s1; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(xA, y0); g.lineTo(xB, y0); g.stroke();
+    P.unclip(g);
+
+    siteMark(g, xA, y0, markR, t.text);
+    handsetMark(g, xB, y0, markR * 1.9, t.text);
+
+    /* real measurements */
+    dimension(g, xA, P.Y(-ymax * 0.82), xB, P.Y(-ymax * 0.82), fmtEng(D, 'm', 0), { size: fsT });
+    if (T.length > 1 && longOff > 0) {
+      var sideL = (longest % 2 === 1) ? 1 : -1;
+      dimension(g, xM, y0, xM, P.Y(sideL * off[longest]), fmtEng(off[longest], 'm', 0), { size: fsT });
     }
 
-    g.strokeStyle = cvv(TAPCOL[0]); g.lineWidth = 2.4;
-    g.beginPath(); g.moveTo(x0, midY); g.lineTo(x1, midY); g.stroke();
-    g.fillStyle = cvv(TAPCOL[0]); g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('direct path, ' + DBS.toFixed(0) + ' m', (x0 + xm) / 2, midY - 5);
-
-    g.fillStyle = txt;
-    g.fillRect(x0 - 22, midY - 7, 26, 14);
-    g.fillRect(x0 - 16, midY - 12, 13, 6);
-    g.fillStyle = cvv('--bg');
-    g.fillRect(x0 - 18, midY - 4, 6, 5);
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('mobile', x0 - 9, midY + 12);
-
-    g.strokeStyle = txt; g.lineWidth = 2;
-    g.beginPath(); g.moveTo(x1 + 12, midY + 8); g.lineTo(x1 + 12, midY - 30); g.stroke();
-    g.beginPath(); g.moveTo(x1 + 12, midY - 30); g.lineTo(x1 + 5, midY - 18);
-    g.lineTo(x1 + 19, midY - 18); g.closePath(); g.fillStyle = txt; g.fill();
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('base station', x1 + 12, midY + 12);
-
-    if (S.v > 0) {
-      var ax = x0 + 26, ay2 = midY - 26;
-      g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.6;
-      g.beginPath(); g.moveTo(ax, ay2); g.lineTo(ax + 38, ay2); g.stroke();
-      g.beginPath(); g.moveTo(ax + 38, ay2); g.lineTo(ax + 30, ay2 - 4);
-      g.lineTo(ax + 30, ay2 + 4); g.closePath(); g.fillStyle = cvv('--text-warning'); g.fill();
-      g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText(S.v.toFixed(0) + ' km/h', ax + 42, ay2 + 4);
+    leader(g, xM, y0, 'direct path', { box: P, colour: t.s1, dx: -34, dy: -24, size: fsA });
+    if (T.length > 1) {
+      var sl = (longest % 2 === 1) ? 1 : -1;
+      leader(g, xM, P.Y(sl * off[longest]),
+        '+' + fmtEng(C * T[longest].tau, 'm', 0) + ', ' + fmtNum(T[longest].tau * 1e6, 2) + ' ' + MU + 's',
+        { box: P, colour: tapCol(t, T[longest].idx), dx: 30, dy: sl > 0 ? -22 : 22, size: fsA });
     }
-
-    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    var travel = (S.v / 3.6) * M.Twin;
-    var line1;
-    if (S.v > 0) {
-      line1 = 'Over the ' + fTime(M.Twin) + ' shown in section 4 the car moves ' + travel.toFixed(2) +
-        ' m — 8 wavelengths at ' + S.fc.toFixed(2) + ' GHz (' + LAM + ' = ' + (M.lam * 100).toFixed(1) + ' cm).';
-    } else {
-      line1 = 'The car is stationary, so nothing below changes with time. Raise the speed slider to make the channel move.';
-    }
-    g.fillText(line1, 6, h - 16);
-    g.fillText('Lateral distances are compressed to fit; the labels give the true extra path length.', 6, h - 3);
+    leader(g, xB, y0, S.v > 0 ? 'mobile, ' + fmtNum(S.v, 0) + ' km/h' : 'mobile, stationary',
+      { box: P, colour: t.text2, dx: -36, dy: 26, size: fsA });
+    leader(g, xA, y0, 'base station', { box: P, colour: t.text2, dx: 34, dy: 26, size: fsA });
   }
 
+  /* --------------------- 2. power delay profile --------------------- */
   function drawPDP(M) {
-    var c = $('cv2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
-    var l = 56, r = 18, t = 16, b = 42, pw = w - l - r, ph2 = h - t - b;
-    if (pw < 60 || ph2 < 40) return;
-    plotBase(g, l, t, pw, ph2);
-
-    var T = M.T, pmax = 1e-18, pmin = 1e18, k;
+    var c = $('cv2'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fsT = Math.max(12, Math.round(w / 78)), fsA = Math.max(12, Math.round(w / 62));
+    var T = M.T, k, pmax = 1e-18, pmin = 1e18;
     for (k = 0; k < T.length; k++) {
       var pw2 = T[k].a * T[k].a;
       if (pw2 > pmax) pmax = pw2;
       if (pw2 < pmin) pmin = pw2;
     }
-    var minDb = 10 * L10(Math.max(pmin, 1e-18) / pmax);
+    var minDb = 10 * L10(Math.max(pmin, 1e-18) / Math.max(pmax, 1e-18));
     var FLOOR = Math.max(Math.min(-30, Math.floor((minDb - 4) / 10) * 10), -80);
     var TOP = 3;
-    var axMax = Math.max(M.taumax * 1.18, 0.5e-6);
-    var X = function (tau) { return l + (tau / axMax) * pw; };
-    var Y = function (db) { return t + (TOP - Math.max(Math.min(db, TOP), FLOOR)) / (TOP - FLOOR) * ph2; };
+    var axMax = Math.max(M.taumax * 1e6 * 1.18, 0.5);
 
-    g.font = fnt(12); g.strokeStyle = grd; g.lineWidth = 0.5;
-    for (var db = 0; db >= FLOOR; db -= 10) {
-      g.beginPath(); g.moveTo(l, Y(db)); g.lineTo(l + pw, Y(db)); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(db.toFixed(0), l - 6, Y(db));
-    }
-    var dec = (axMax * 1e6) < 2 ? 2 : 1;
-    for (var i = 0; i <= 5; i++) {
-      var tv = axMax * i / 5;
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(tv), t); g.lineTo(X(tv), t + ph2); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText((tv * 1e6).toFixed(dec), X(tv), t + ph2 + 6);
-    }
-    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('delay ' + TAU + ' after the first arrival, ' + MU + 's', l + pw / 2, h - 15);
-    g.save(); g.translate(12, t + ph2 / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('power, dB below strongest', 0, 0); g.restore();
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: axMax, unit: MU + 's', label: 'excess delay ' + TAU },
+      { min: FLOOR, max: TOP, unit: 'dB', label: 'power below strongest' },
+      { fontSize: fsT });
 
-    var lo = Math.max(M.tbar - M.sig, 0), hi2 = Math.min(M.tbar + M.sig, axMax);
-    if (hi2 > lo) {
-      g.fillStyle = cvv('--text-warning'); g.globalAlpha = 0.13;
-      g.fillRect(X(lo), t, X(hi2) - X(lo), ph2); g.globalAlpha = 1;
-    }
-    if (M.tbar <= axMax) {
-      g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.3; g.setLineDash([5, 4]);
-      g.beginPath(); g.moveTo(X(M.tbar), t); g.lineTo(X(M.tbar), t + ph2); g.stroke();
+    var lo = Math.max((M.tbar - M.sig) * 1e6, 0), hi = Math.min((M.tbar + M.sig) * 1e6, axMax);
+    if (hi > lo) band(g, P, P.X(lo), P.X(hi), t.warn);
+
+    P.clip(g);
+    if (M.tbar * 1e6 <= axMax) {
+      g.strokeStyle = t.warn; g.lineWidth = 1.2; g.setLineDash([6, 4]);
+      g.beginPath(); g.moveTo(P.X(M.tbar * 1e6), P.y0); g.lineTo(P.X(M.tbar * 1e6), P.y1); g.stroke();
       g.setLineDash([]);
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
-      g.textAlign = X(M.tbar) > l + pw * 0.62 ? 'right' : 'left';
-      g.textBaseline = 'top';
-      g.fillText(' mean excess delay ' + (M.tbar * 1e6).toFixed(2) + ' ' + MU + 's ', X(M.tbar), t + 4);
-      g.fillText(' ' + PM + ' ' + SIG + TAU + ' = ' + (M.sig * 1e6).toFixed(3) + ' ' + MU + 's ', X(M.tbar), t + 17);
     }
-
     for (k = 0; k < T.length; k++) {
       var p = T[k];
-      var pdb = 10 * L10(Math.max(p.a * p.a, 1e-18) / pmax);
-      var col = cvv(TAPCOL[p.idx % 8]);
-      g.strokeStyle = col; g.lineWidth = 2.4;
-      g.beginPath(); g.moveTo(X(p.tau), t + ph2); g.lineTo(X(p.tau), Y(pdb)); g.stroke();
-      g.fillStyle = col;
-      g.beginPath(); g.arc(X(p.tau), Y(pdb), 3.6, 0, 7); g.fill();
-      if (k === 0) {
-        g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-        g.fillText(' direct', X(p.tau) + 3, Y(pdb) - 5);
-      }
+      var pdb = 10 * L10(Math.max(p.a * p.a, 1e-18) / Math.max(pmax, 1e-18));
+      var yy = P.Y(Math.max(pdb, FLOOR));
+      g.strokeStyle = tapCol(t, p.idx); g.lineWidth = 2;
+      g.beginPath(); g.moveTo(P.X(p.tau * 1e6), P.y1); g.lineTo(P.X(p.tau * 1e6), yy); g.stroke();
+      g.fillStyle = tapCol(t, p.idx);
+      g.beginPath(); g.arc(P.X(p.tau * 1e6), yy, Math.max(2.5, Math.min(5, P.h * 0.016)), 0, Math.PI * 2); g.fill();
     }
+    P.unclip(g);
+
+    if (hi > lo) {
+      dimension(g, P.X(lo), P.y0 + P.h * 0.14, P.X(hi), P.y0 + P.h * 0.14,
+        SIGT + ' = ' + fmtNum(M.sig * 1e6, 3) + ' ' + MU + 's', { size: fsT, colour: t.warn });
+    }
+    if (M.tbar * 1e6 <= axMax) {
+      leader(g, P.X(M.tbar * 1e6), P.y0 + P.h * 0.42,
+        TAU + '̄ = ' + fmtNum(M.tbar * 1e6, 2) + ' ' + MU + 's',
+        { box: P, colour: t.warn, dx: 28, dy: -20, size: fsA, dot: false });
+    }
+    var p0db = 10 * L10(Math.max(T[0].a * T[0].a, 1e-18) / Math.max(pmax, 1e-18));
+    leader(g, P.X(0), P.Y(Math.max(p0db, FLOOR)), 'direct path',
+      { box: P, colour: t.s1, dx: 30, dy: 24, size: fsA });
   }
 
+  /* ------------------ 3. the channel across frequency ------------------ */
   function drawH(M) {
-    var c = $('cv3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
-    var l = 56, r = 18, t = 16, b = 42, pw = w - l - r, ph2 = h - t - b;
-    if (pw < 60 || ph2 < 40) return;
-    plotBase(g, l, t, pw, ph2);
+    var c = $('cv3'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fsT = Math.max(12, Math.round(w / 78)), fsA = Math.max(12, Math.round(w / 62));
 
     var F = 1.4 * M.Bs;
     if (M.Bc !== null) F = Math.max(F, 6 * M.Bc);
     F = Math.min(F, 40 * M.Bs, 400e6);
     var TOP = 12, FLOOR = -30;
-    var X = function (f) { return l + (f + F / 2) / F * pw; };
-    var Y = function (db) { return t + (TOP - Math.max(Math.min(db, TOP), FLOOR)) / (TOP - FLOOR) * ph2; };
+    var useM = F >= 2e6, fu = useM ? 1e6 : 1e3;
 
-    g.font = fnt(12);
-    for (var db = TOP - 2; db >= FLOOR; db -= 10) {
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(db)); g.lineTo(l + pw, Y(db)); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(db.toFixed(0), l - 6, Y(db));
-    }
-    var useM = F >= 2e6;
-    for (var i = 0; i <= 4; i++) {
-      var fv = -F / 2 + F * i / 4;
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(fv), t); g.lineTo(X(fv), t + ph2); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(useM ? (fv / 1e6).toFixed(2) : (fv / 1e3).toFixed(0), X(fv), t + ph2 + 6);
-    }
-    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('frequency offset from the ' + S.fc.toFixed(2) + ' GHz carrier, ' + (useM ? 'MHz' : 'kHz'),
-      l + pw / 2, h - 15);
-    g.save(); g.translate(12, t + ph2 / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('|H(f)|, dB about RMS', 0, 0); g.restore();
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -F / 2 / fu, max: F / 2 / fu, unit: useM ? 'MHz' : 'kHz',
+        label: 'offset from the ' + fmtNum(S.fc, 2) + ' GHz carrier' },
+      { min: FLOOR, max: TOP, unit: 'dB', label: '|H(f)| about RMS' },
+      { fontSize: fsT });
 
     var bLo = Math.max(-M.Bs / 2, -F / 2), bHi = Math.min(M.Bs / 2, F / 2);
-    g.fillStyle = cvv('--accent'); g.globalAlpha = 0.09;
-    g.fillRect(X(bLo), t, Math.max(X(bHi) - X(bLo), 1), ph2); g.globalAlpha = 1;
+    band(g, P, P.X(bLo / fu), P.X(bHi / fu), t.s6);
 
-    var np = Math.max(Math.floor(pw), 2), SUB = 4;
-    var mins = new Array(np), maxs = new Array(np), deepest = 0, deepPx = 0;
+    var np = Math.max(Math.floor(P.w), 2), SUB = 4;
+    var mins = new Array(np), maxs = new Array(np), deep = new Array(np);
+    var deepest = 0, deepPx = 0;
     for (var px = 0; px < np; px++) {
       var mn = 1e9, mx = -1e9;
       for (var s = 0; s < SUB; s++) {
         var f = -F / 2 + ((px + s / SUB) / np) * F;
         var d = dbOf(hAt(M.T, f, S.t0), M.Rrms);
-        if (d < mn) mn = d; if (d > mx) mx = d;
+        if (d < mn) mn = d;
+        if (d > mx) mx = d;
       }
       mins[px] = Math.max(mn, FLOOR); maxs[px] = Math.min(mx, TOP);
+      deep[px] = maxs[px] < -S.ND;
       if (mn < deepest) { deepest = mn; deepPx = px; }
     }
+    runsOf(deep).forEach(function (r) {
+      band(g, P, P.x0 + r[0], P.x0 + r[1], t.bad);
+    });
 
-    g.fillStyle = cvv('--bad'); g.globalAlpha = 0.14;
-    for (px = 0; px < np; px++) if (maxs[px] < -10) g.fillRect(l + px, t, 1.2, ph2);
-    g.globalAlpha = 1;
-
-    g.fillStyle = cvv(TAPCOL[0]); g.globalAlpha = 0.3;
+    P.clip(g);
+    g.fillStyle = t.s1; g.globalAlpha = 0.22;
     g.beginPath();
-    for (px = 0; px < np; px++) g.lineTo(l + px, Y(maxs[px]));
-    for (px = np - 1; px >= 0; px--) g.lineTo(l + px, Y(mins[px]));
+    for (px = 0; px < np; px++) g.lineTo(P.x0 + px, P.Y(maxs[px]));
+    for (px = np - 1; px >= 0; px--) g.lineTo(P.x0 + px, P.Y(mins[px]));
     g.closePath(); g.fill(); g.globalAlpha = 1;
 
-    g.strokeStyle = cvv(TAPCOL[0]); g.lineWidth = 1.6;
+    g.strokeStyle = t.s1; g.lineWidth = 1.6;
     g.beginPath();
     for (px = 0; px < np; px++) {
-      if (px === 0) g.moveTo(l + px, Y(maxs[px])); else g.lineTo(l + px, Y(maxs[px]));
+      if (px === 0) g.moveTo(P.x0 + px, P.Y(maxs[px])); else g.lineTo(P.x0 + px, P.Y(maxs[px]));
     }
     g.stroke();
 
-    g.strokeStyle = cvv('--accent'); g.lineWidth = 1.2; g.setLineDash([4, 3]);
-    g.beginPath(); g.moveTo(X(bLo), t); g.lineTo(X(bLo), t + ph2);
-    g.moveTo(X(bHi), t); g.lineTo(X(bHi), t + ph2); g.stroke(); g.setLineDash([]);
-    g.fillStyle = cvv('--accent'); g.font = fnt(12);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('signal band ' + fFreq(M.Bs), (X(bLo) + X(bHi)) / 2, t + 4);
+    g.strokeStyle = t.s6; g.lineWidth = 1.2; g.setLineDash([4, 3]);
+    g.beginPath();
+    g.moveTo(P.X(bLo / fu), P.y0); g.lineTo(P.X(bLo / fu), P.y1);
+    g.moveTo(P.X(bHi / fu), P.y0); g.lineTo(P.X(bHi / fu), P.y1);
+    g.stroke(); g.setLineDash([]);
+    P.unclip(g);
 
     if (M.Bc !== null && M.Bc < F * 0.98) {
-      var yb = t + ph2 - 16, xa = X(-M.Bc / 2), xb2 = X(M.Bc / 2);
-      g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.3;
-      g.beginPath(); g.moveTo(xa, yb); g.lineTo(xb2, yb);
-      g.moveTo(xa, yb - 4); g.lineTo(xa, yb + 4);
-      g.moveTo(xb2, yb - 4); g.lineTo(xb2, yb + 4); g.stroke();
-      g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
-      g.textAlign = 'center'; g.textBaseline = 'bottom';
-      g.fillText('coherence bandwidth ' + fFreq(M.Bc), (xa + xb2) / 2, yb - 5);
+      dimension(g, P.X(-M.Bc / 2 / fu), P.y1 - P.h * 0.12, P.X(M.Bc / 2 / fu), P.y1 - P.h * 0.12,
+        'B' + sub('c') + ' = ' + fmtEng(M.Bc, 'Hz', 2), { size: fsT, colour: t.warn });
     }
-    if (deepest < -10) {
-      g.fillStyle = cvv('--bad'); g.font = fnt(12);
-      g.textAlign = 'left'; g.textBaseline = 'top';
-      g.fillText('deepest notch ' + deepest.toFixed(1) + ' dB', l + 5, t + 4);
+    leader(g, P.X(0), P.Y(Math.min(maxs[Math.floor(np / 2)], TOP)),
+      'signal band ' + fmtEng(M.Bs, 'Hz', 2), { box: P, colour: t.s6, dx: 30, dy: -24, size: fsA });
+    if (deepest < -S.ND) {
+      leader(g, P.x0 + deepPx, P.Y(Math.max(deepest, FLOOR)),
+        'deepest notch ' + fmtEng(deepest, 'dB', 1),
+        { box: P, colour: t.bad, dx: 30, dy: -26, size: fsA });
     }
   }
 
+  /* --------------------- 4. envelope against time --------------------- */
   function drawEnv(M) {
-    var c = $('cv4'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), grd = cvv('--grid');
-    var panW = Math.min(130, Math.max(0, w * 0.22));
-    var l = panW + 52, r = 16, t = 16, b = 42, pw = w - l - r, ph2 = h - t - b;
-    if (pw < 60 || ph2 < 40) return;
-    plotBase(g, l, t, pw, ph2);
+    var c = $('cv4'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fsT = Math.max(12, Math.round(w / 78)), fsA = Math.max(12, Math.round(w / 62));
+    var TOP = 12, FLOOR = Math.min(-35, -S.M - 8), thr = -S.M;
+    var TwMs = M.Twin * 1e3;
 
-    var TOP = 12, FLOOR = Math.min(-35, -S.M - 8);
-    var thr = -S.M;
-    var Y = function (db) { return t + (TOP - Math.max(Math.min(db, TOP), FLOOR)) / (TOP - FLOOR) * ph2; };
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: TwMs, unit: 'ms', label: 'time, ending now' },
+      { min: FLOOR, max: TOP, unit: 'dB', label: 'envelope about RMS' },
+      { fontSize: fsT });
 
-    g.font = fnt(12);
-    for (var db = 10; db >= FLOOR; db -= 10) {
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(l, Y(db)); g.lineTo(l + pw, Y(db)); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(db.toFixed(0), l - 6, Y(db));
-    }
-    var t0 = S.t0, Tw = M.Twin;
-    for (var i = 0; i <= 4; i++) {
-      var tv = Tw * i / 4;
-      var xx = l + (i / 4) * pw;
-      g.strokeStyle = grd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(xx, t); g.lineTo(xx, t + ph2); g.stroke();
-      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(fTime(tv), xx, t + ph2 + 6);
-    }
-    g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('time, most recent ' + fTime(Tw) + ' of the drive', l + pw / 2, h - 15);
-    g.save(); g.translate(panW + 10, t + ph2 / 2); g.rotate(-Math.PI / 2);
-    g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('envelope, dB about RMS', 0, 0); g.restore();
-
-    var np = Math.max(Math.floor(pw), 2), vals = new Array(np), below = 0;
-    var worst = 99, worstPx = 0;
+    var np = Math.max(Math.floor(P.w), 2), vals = new Array(np), low = new Array(np), below = 0;
+    var worst = 1e9, worstPx = 0;
     for (var px = 0; px < np; px++) {
-      var tt = t0 - Tw + (px / (np - 1)) * Tw;
+      var tt = S.t0 - M.Twin + (px / (np - 1)) * M.Twin;
       var d = dbOf(envAt(M.T, tt), M.Rrms);
-      vals[px] = d;
-      if (d < thr) below++;
+      vals[px] = d; low[px] = d < thr;
+      if (low[px]) below++;
       if (d < worst) { worst = d; worstPx = px; }
     }
+    runsOf(low).forEach(function (r) { band(g, P, P.x0 + r[0], P.x0 + r[1], t.warn); });
 
-    g.fillStyle = cvv('--text-warning'); g.globalAlpha = 0.16;
-    for (px = 0; px < np; px++) if (vals[px] < thr) g.fillRect(l + px, Y(thr), 1.2, Y(FLOOR) - Y(thr));
-    g.globalAlpha = 1;
+    P.clip(g);
+    g.strokeStyle = t.warn; g.lineWidth = 1.3; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(P.x0, P.Y(thr)); g.lineTo(P.x1, P.Y(thr)); g.stroke(); g.setLineDash([]);
 
-    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1.3; g.setLineDash([6, 4]);
-    g.beginPath(); g.moveTo(l, Y(thr)); g.lineTo(l + pw, Y(thr)); g.stroke(); g.setLineDash([]);
-    g.fillStyle = cvv('--text-warning'); g.font = fnt(12);
-    g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText(' threshold, ' + S.M.toFixed(1) + ' dB below RMS', l + 3, Y(thr) - 3);
-
-    g.strokeStyle = cvv(TAPCOL[0]); g.lineWidth = 1.7;
+    g.strokeStyle = t.s1; g.lineWidth = 1.7;
     g.beginPath();
     for (px = 0; px < np; px++) {
-      var yy = Y(vals[px]);
-      if (px === 0) g.moveTo(l + px, yy); else g.lineTo(l + px, yy);
+      var yy = P.Y(Math.max(Math.min(vals[px], TOP), FLOOR));
+      if (px === 0) g.moveTo(P.x0 + px, yy); else g.lineTo(P.x0 + px, yy);
     }
     g.stroke();
+    P.unclip(g);
 
-    if (worst < thr && worst > FLOOR - 1) {
-      g.fillStyle = cvv('--bad'); g.font = fnt(12);
-      g.textAlign = worstPx > np * 0.6 ? 'right' : 'left'; g.textBaseline = 'top';
-      g.fillText(' deepest fade ' + worst.toFixed(1) + ' dB ', l + worstPx, Math.min(Y(worst) + 5, t + ph2 - 14));
+    leader(g, P.x0 + P.w * 0.12, P.Y(thr), 'threshold ' + fmtEng(-S.M, 'dB', 1),
+      { box: P, colour: t.warn, dx: 26, dy: -22, size: fsA, dot: false });
+    if (isFinite(worst)) {
+      leader(g, P.x0 + worstPx, P.Y(Math.max(worst, FLOOR)),
+        'deepest fade ' + fmtEng(worst, 'dB', 1),
+        { box: P, colour: worst < thr ? t.bad : t.text2, dx: 28, dy: 24, size: fsA });
     }
-
-    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 1; g.globalAlpha = 0.55;
-    g.beginPath(); g.moveTo(l + pw - 0.5, t); g.lineTo(l + pw - 0.5, t + ph2); g.stroke();
-    g.globalAlpha = 1;
-    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'top';
-    g.fillText('now ', l + pw - 2, t + 3);
-
-    drawPhasors(g, M, 4, t, panW, ph2);
     M.measured = np > 0 ? below / np : 0;
   }
 
-  function drawPhasors(g, M, px0, t, panW, ph2) {
-    if (panW < 60) return;
-    var mut = cvv('--text-muted'), sub = cvv('--text-secondary');
-    var bx = px0, by = t, bw = panW - 8, bh = Math.min(ph2, bw + 26);
-    g.fillStyle = cvv('--plot-bg'); g.fillRect(bx, by, bw, bh);
-    g.strokeStyle = cvv('--border'); g.lineWidth = 1; g.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+  /* ------------------------ 5. the phasor sum ------------------------ */
+  function drawPhasor(M) {
+    var c = $('cv5'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d'), t = theme();
+    var fsT = Math.max(12, Math.round(w / 78)), fsA = Math.max(12, Math.round(w / 62));
+    var T = M.T, k;
+    var R = Math.max(M.asum / Math.max(M.Rrms, 1e-12), 1e-6) * 1.1;
 
-    var R = Math.min(bw, bh - 24) / 2 - 6;
-    if (R < 12) return;
-    var sc = R / Math.max(M.asum, 1e-9);
-    var T = M.T, pts = [{ x: 0, y: 0 }], k;
-    var re = 0, im = 0;
+    /* measure the plot box, then redraw with equal units on both axes */
+    var P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -R, max: R, unit: '× RMS', label: 'in phase' },
+      { min: -R, max: R, unit: '× RMS', label: 'quadrature' },
+      { fontSize: fsT });
+    var aspect = P.w / Math.max(P.h, 1e-6);
+    g.clearRect(0, 0, w, h);
+    P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -R * aspect, max: R * aspect, unit: '× RMS', label: 'in phase' },
+      { min: -R, max: R, unit: '× RMS', label: 'quadrature' },
+      { fontSize: fsT, padL: P.x0, padR: w - P.x1, padT: P.y0, padB: h - P.y1 });
+
+    var cx = P.X(0), cy = P.Y(0);
+    P.clip(g);
+    /* the threshold circle: the sum must stay outside it */
+    g.strokeStyle = t.warn; g.lineWidth = 1.2; g.setLineDash([4, 3]);
+    g.beginPath(); g.arc(cx, cy, Math.abs(P.Y(M.rho) - cy), 0, Math.PI * 2); g.stroke();
+    g.setLineDash([]);
+
+    var re = 0, im = 0, px = 0, py = 0;
     for (k = 0; k < T.length; k++) {
       var ang = T[k].ph + 2 * Math.PI * T[k].fd * S.t0;
-      re += T[k].a * Math.cos(ang); im += T[k].a * Math.sin(ang);
-      pts.push({ x: re, y: im });
-    }
-    var cx = bx + bw / 2 - (re * sc) / 2, cy = by + (bh - 24) / 2 - (-im * sc) / 2;
-
-    g.save();
-    g.beginPath(); g.rect(bx + 1, by + 1, bw - 2, bh - 2); g.clip();
-
-    var thrLin = M.Rrms * M.rho;
-    g.strokeStyle = cvv('--text-warning'); g.lineWidth = 1; g.setLineDash([3, 3]);
-    g.beginPath(); g.arc(cx, cy, Math.max(thrLin * sc, 1), 0, 7); g.stroke(); g.setLineDash([]);
-
-    for (k = 0; k < T.length; k++) {
-      g.strokeStyle = cvv(TAPCOL[T[k].idx % 8]); g.lineWidth = 1.8;
+      var nre = re + T[k].a * Math.cos(ang), nim = im + T[k].a * Math.sin(ang);
+      g.strokeStyle = tapCol(t, T[k].idx); g.lineWidth = 1.8;
       g.beginPath();
-      g.moveTo(cx + pts[k].x * sc, cy - pts[k].y * sc);
-      g.lineTo(cx + pts[k + 1].x * sc, cy - pts[k + 1].y * sc);
+      g.moveTo(P.X(re / M.Rrms), P.Y(im / M.Rrms));
+      g.lineTo(P.X(nre / M.Rrms), P.Y(nim / M.Rrms));
       g.stroke();
+      re = nre; im = nim;
     }
-    g.strokeStyle = cvv('--text-primary'); g.lineWidth = 2;
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + re * sc, cy - im * sc); g.stroke();
-    g.fillStyle = cvv('--text-primary');
-    g.beginPath(); g.arc(cx + re * sc, cy - im * sc, 3, 0, 7); g.fill();
-    g.restore();
+    px = P.X(re / M.Rrms); py = P.Y(im / M.Rrms);
+    g.strokeStyle = t.text; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(px, py); g.stroke();
+    g.fillStyle = t.text;
+    g.beginPath(); g.arc(px, py, Math.max(2.5, Math.min(5, P.h * 0.016)), 0, Math.PI * 2); g.fill();
+    P.unclip(g);
 
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     var env = Math.sqrt(re * re + im * im);
-    g.fillText('sum now ' + dbOf(env, M.Rrms).toFixed(1) + ' dB', bx + bw / 2, by + bh - 13);
-    g.fillStyle = mut; g.font = fnt(12);
-    g.fillText('paths added tip to tail', bx + bw / 2, by + bh - 3);
+    leader(g, px, py, 'sum now ' + fmtEng(dbOf(env, M.Rrms), 'dB', 1),
+      { box: P, colour: t.text, dx: 30, dy: -24, size: fsA, dot: false });
+    leader(g, cx, P.Y(M.rho), 'threshold radius ' + fmtNum(M.rho, 3) + ' × RMS',
+      { box: P, colour: t.warn, dx: 30, dy: -20, size: fsA, dot: false });
   }
 
-  function verdict(M) {
-    if (M.okB && M.okT) return ['Flat fading', cvv('--text-good')];
-    if (!M.okB && !M.okT) return ['Frequency selective', cvv('--bad')];
-    return ['Borderline', cvv('--text-warning')];
-  }
-
+  /* ------------------------- readouts ------------------------- */
   function updateUI(M) {
-    $('ntv').textContent = S.n.toFixed(0);
-    $('kfv').textContent = S.K.toFixed(1) + ' dB';
-    $('spv').textContent = S.v.toFixed(0) + ' km/h';
-    $('fcv').textContent = S.fc.toFixed(2) + ' GHz';
-    $('bwv').textContent = S.B.toFixed(2) + ' MHz';
-    $('mgv').textContent = S.M.toFixed(1) + ' dB';
+    var t = theme();
     for (var i = 0; i < NR; i++) {
-      var vis = i < S.n - 1;
-      $('th' + i).style.display = vis ? '' : 'none';
-      $('d' + i).parentNode.style.display = vis ? '' : 'none';
-      $('a' + i).parentNode.style.display = vis ? '' : 'none';
-      $('d' + i + 'v').textContent = S.del[i].toFixed(2) + ' ' + MU + 's';
-      $('a' + i + 'v').textContent = S.amp[i].toFixed(2);
+      $('tw' + i).style.display = i < S.n - 1 ? '' : 'none';
     }
 
-    $('cSig').textContent = (M.sig * 1e6).toFixed(3) + ' ' + MU + 's';
-    if (M.Bc === null) {
-      $('cBc').textContent = 'unbounded';
-      $('cBcf').textContent = 'all energy arrives at one delay, so the channel is flat at any bandwidth';
-    } else {
-      $('cBc').textContent = fFreq(M.Bc);
-      $('cBcf').textContent = S.conv === 5 ? '1/(5' + SIG + TAU + '), the 0.5 correlation convention'
-        : '1/(50' + SIG + TAU + '), the 0.9 correlation convention';
-    }
     var vd = verdict(M);
-    $('cVer').textContent = vd[0];
-    $('cVer').style.color = vd[1];
-    var ratio = M.Bc === null ? null : M.Bs / M.Bc;
-    $('cVerf').textContent = 'B/Bc = ' + (ratio === null ? '0.00' : ratio.toFixed(2)) +
-      ', Ts/' + SIG + TAU + ' = ' + (M.sig > 1e-12 ? (M.Ts / M.sig).toFixed(2) : 'very large');
-    $('cFm').textContent = M.fm.toFixed(1) + ' Hz';
-    $('cFmf').textContent = 'v/' + LAM + ' with ' + LAM + ' = ' + (M.lam * 100).toFixed(1) + ' cm';
+    $('heroVal').innerHTML = M.Bc === null ? 'unbounded'
+      : fmtNum(M.Bc >= 1e6 ? M.Bc / 1e6 : M.Bc / 1e3, 2) +
+        '<span class="u">' + (M.Bc >= 1e6 ? 'MHz' : 'kHz') + '</span>';
+    var badge = $('heroBadge');
+    badge.className = 'badge ' + vd[1];
+    badge.textContent = vd[0];
+    var ratio = M.Bc === null ? 0 : M.Bs / M.Bc;
+    $('heroFt').innerHTML = 'B / B<sub>c</sub> = ' + fmtNum(ratio, 2) +
+      ' · &sigma;<sub>&tau;</sub> = ' + fmtNum(M.sig * 1e6, 3) + ' ' + MU + 's';
+
+    $('cSig').textContent = fmtNum(M.sig * 1e6, 3) + ' ' + MU + 's';
+    $('cTbar').textContent = fmtNum(M.tbar * 1e6, 3) + ' ' + MU + 's';
+    $('cFm').textContent = fmtEng(M.fm, 'Hz', 1);
+    $('cFmf').textContent = 'v/' + LAM + ', ' + LAM + ' = ' + fmtEng(M.lam * 100, 'cm', 1);
     if (M.Tc === null) {
       $('cTc').textContent = MD;
-      $('cTcf').textContent = 'the mobile is stationary, so the channel does not change';
+      $('cTcf').textContent = 'the mobile is stationary';
     } else {
-      $('cTc').textContent = (M.Tc * 1e3).toFixed(2) + ' ms';
-      $('cTcf').textContent = '0.423/f' + 'ₘ' + ', milliseconds';
+      $('cTc').textContent = fmtNum(M.Tc * 1e3, 2) + ' ms';
+      $('cTcf').textContent = '0.423/f' + sub('m');
     }
-    $('cOut').textContent = (M.Pout * 100).toFixed(2) + ' %';
-    $('cOutf').textContent = 'Rayleigh, 1 − exp(−10^(−M/10)) at M = ' + S.M.toFixed(1) +
-      ' dB; the drawn trace spent ' + ((M.measured || 0) * 100).toFixed(1) + ' % below';
-    $('cLcr').textContent = M.lcr.toFixed(1) + ' /s';
-    $('cAfd').textContent = M.afd === null ? MD : (M.afd * 1e3).toFixed(2) + ' ms';
+    $('cOut').textContent = fmtNum(M.Pout * 100, 2) + ' %';
+    $('cOutf').textContent = 'Rayleigh; trace spent ' + fmtNum((M.measured || 0) * 100, 1) + ' % below';
+    $('cLcr').textContent = fmtNum(M.lcr, 1) + ' /s';
+    $('cAfd').textContent = M.afd === null ? MD : fmtNum(M.afd * 1e3, 2) + ' ms';
 
     var steps = [];
-    steps.push('Tap powers a², strongest first: ' + M.T.map(function (p) {
+    steps.push('Tap powers a<sup>2</sup>, strongest first: ' + M.T.map(function (p) {
       return (p.a * p.a).toFixed(4);
-    }).sort(function (a, b) { return b - a; }).join(', ') + '; total Σa² = ' + M.P.toFixed(4) + '.');
-    steps.push('Mean excess delay ' + TAU + '̄ = Σa²' + TAU + ' / Σa² = ' +
-      (M.tbar * 1e6).toFixed(3) + ' ' + MU + 's.');
-    steps.push('RMS delay spread ' + SIG + TAU + ' = √(' + TAU + '²̄ − ' + TAU +
-      '̄²) = ' + (M.sig * 1e6).toFixed(3) + ' ' + MU + 's.');
-    steps.push('Coherence bandwidth Bc = 1/(' + S.conv.toFixed(0) + ' × ' + (M.sig * 1e6).toFixed(3) +
-      ' ' + MU + 's) = ' + (M.Bc === null ? 'unbounded' : fFreq(M.Bc)) + '.');
-    steps.push('Signal bandwidth ' + fFreq(M.Bs) + ' against Bc, and symbol period Ts = 1/B = ' +
-      fTime(M.Ts) + ' against 10' + SIG + TAU + ' = ' + fTime(10 * M.sig) + ' → ' + vd[0].toLowerCase() + '.');
-    steps.push('Wavelength ' + LAM + ' = c/f = ' + (M.lam * 100).toFixed(2) + ' cm, so maximum Doppler fₘ = v/' +
-      LAM + ' = ' + (S.v / 3.6).toFixed(2) + ' / ' + M.lam.toFixed(4) + ' = ' + M.fm.toFixed(1) + ' Hz.');
-    steps.push('Coherence time Tc = 0.423/fₘ = ' + (M.Tc === null ? MD : (M.Tc * 1e3).toFixed(2) + ' ms') + '.');
-    steps.push('Threshold ratio ρ = 10^(−M/20) = ' + M.rho.toFixed(4) +
-      ', so Rayleigh outage = 1 − exp(−ρ²) = ' + (M.Pout * 100).toFixed(2) + ' %.');
-    steps.push('Level crossing rate = √(2π) fₘ ρ e^(−ρ²) = ' + M.lcr.toFixed(2) +
-      ' per second, average fade duration = ' + (M.afd === null ? MD : (M.afd * 1e3).toFixed(3) + ' ms') + '.');
+    }).sort(function (a, b) { return b - a; }).join(', ') + '; total &Sigma;a<sup>2</sup> = ' + M.P.toFixed(4) + '.');
+    steps.push('Mean excess delay &tau;&#772; = &Sigma;a<sup>2</sup>&tau; / &Sigma;a<sup>2</sup> = ' +
+      fmtNum(M.tbar * 1e6, 3) + ' ' + MU + 's.');
+    steps.push('RMS delay spread &sigma;<sub>&tau;</sub> = &radic;(&tau;<sup>2</sup>&#772; &minus; &tau;&#772;<sup>2</sup>) = ' +
+      fmtNum(M.sig * 1e6, 3) + ' ' + MU + 's.');
+    steps.push('Coherence bandwidth B<sub>c</sub> = 1/(' + S.conv.toFixed(0) + ' · ' +
+      fmtNum(M.sig * 1e6, 3) + ' ' + MU + 's) = ' +
+      (M.Bc === null ? 'unbounded' : fmtEng(M.Bc, 'Hz', 2)) + '.');
+    steps.push('Signal bandwidth ' + fmtEng(M.Bs, 'Hz', 2) + ' against B<sub>c</sub>, and symbol period T<sub>s</sub> = 1/B = ' +
+      fmtEng(M.Ts, 's', 2) + ' against 10&sigma;<sub>&tau;</sub> = ' + fmtEng(10 * M.sig, 's', 2) + ' &rarr; ' + vd[0] + '.');
+    steps.push('Wavelength &lambda; = c/f = ' + fmtEng(M.lam * 100, 'cm', 2) +
+      ', so maximum Doppler f<sub>m</sub> = v/&lambda; = ' + fmtNum(S.v / 3.6, 2) + ' / ' +
+      fmtNum(M.lam, 4) + ' = ' + fmtEng(M.fm, 'Hz', 1) + '.');
+    steps.push('Coherence time T<sub>c</sub> = 0.423/f<sub>m</sub> = ' +
+      (M.Tc === null ? MD : fmtNum(M.Tc * 1e3, 2) + ' ms') + '.');
+    steps.push('Threshold ratio &rho; = 10<sup>&minus;M/20</sup> = ' + fmtNum(M.rho, 4) +
+      ', so Rayleigh outage = 1 &minus; exp(&minus;&rho;<sup>2</sup>) = ' + fmtNum(M.Pout * 100, 2) + ' %.');
+    steps.push('Level crossing rate = &radic;(2&pi;) f<sub>m</sub> &rho; e<sup>&minus;&rho;<sup>2</sup></sup> = ' +
+      fmtNum(M.lcr, 2) + ' per second, average fade duration = ' +
+      (M.afd === null ? MD : fmtNum(M.afd * 1e3, 3) + ' ms') + '.');
     $('work').innerHTML = steps.map(function (s) { return '<li>' + s + '</li>'; }).join('');
   }
 
   function drawAll() {
     var M = metrics();
-    drawScene(M); drawPDP(M); drawH(M); drawEnv(M);
+    drawScene(M); drawPDP(M); drawH(M); drawEnv(M); drawPhasor(M);
     updateUI(M);
   }
+
+  /* ------------------------- controls ------------------------- */
+  var PRIM = ['nt', 'kf', 'sp', 'fc', 'bw', 'mg', 'dp', 'nd'];
+  var ALL = PRIM.slice();
+  for (var q = 0; q < NR; q++) { ALL.push('d' + q); ALL.push('a' + q); }
+  ALL.forEach(function (id) {
+    bindPair($(id), $(id + 'N'), function () { read(); drawAll(); });
+  });
+
+  function setVals(o) {
+    for (var key in o) {
+      if (!Object.prototype.hasOwnProperty.call(o, key)) continue;
+      var e = $(key);
+      if (!e) continue;
+      e.value = o[key];
+      var n = $(key + 'N');
+      if (n) n.value = e.value;
+    }
+    read();
+  }
+
+  var PRESETS = {
+    pUrban: { nt: 3, kf: 0, sp: 50, fc: 2.10, bw: 5, mg: 10, dp: 300, nd: 10,
+      d0: 1.00, d1: 2.50, a0: 0.70, a1: 0.45 },
+    pWifi: { nt: 4, kf: 6, sp: 3, fc: 5.80, bw: 20, mg: 10, dp: 60, nd: 10,
+      d0: 0.05, d1: 0.12, d2: 0.08, a0: 0.60, a1: 0.35, a2: 0.25 },
+    pRural: { nt: 2, kf: 12, sp: 100, fc: 0.90, bw: 0.2, mg: 8, dp: 2000, nd: 10,
+      d0: 0.30, a0: 0.40 },
+    pHilly: { nt: 8, kf: -10, sp: 80, fc: 0.45, bw: 1.5, mg: 12, dp: 1500, nd: 10,
+      d0: 3.00, d1: 2.50, d2: 0.40, d3: 4.20, d4: 5.80, d5: 3.10, d6: 7.50,
+      a0: 0.70, a1: 0.45, a2: 0.55, a3: 0.30, a4: 0.22, a5: 0.38, a6: 0.15 },
+    pRail: { nt: 5, kf: 6, sp: 200, fc: 2.60, bw: 20, mg: 10, dp: 1000, nd: 10,
+      d0: 0.50, d1: 1.20, d2: 0.30, d3: 2.00, a0: 0.50, a1: 0.30, a2: 0.40, a3: 0.20 }
+  };
+  Object.keys(PRESETS).forEach(function (id) {
+    $(id).addEventListener('click', function () {
+      setVals(PRESETS[id]);
+      Object.keys(PRESETS).forEach(function (o) { $(o).classList.toggle('on', o === id); });
+      S.t0 = 0;
+      drawAll();
+    });
+  });
+
+  $('bc5').addEventListener('click', function () {
+    S.conv = 5; $('bc5').classList.add('on'); $('bc50').classList.remove('on'); drawAll();
+  });
+  $('bc50').addEventListener('click', function () {
+    S.conv = 50; $('bc50').classList.add('on'); $('bc5').classList.remove('on'); drawAll();
+  });
+  $('shuf').addEventListener('click', function () {
+    PH = makePhases(Math.floor(Math.random() * 2147483647));
+    drawAll();
+  });
 
   var raf = null, last = 0;
   function tick(ts) {
@@ -791,46 +1436,28 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     if (on && raf === null) { last = 0; raf = requestAnimationFrame(tick); }
     if (!on && raf !== null) { cancelAnimationFrame(raf); raf = null; drawAll(); }
   }
-
-  var ids = ['nt', 'kf', 'sp', 'fc', 'bw', 'mg'];
-  for (var q = 0; q < NR; q++) { ids.push('d' + q); ids.push('a' + q); }
-  ids.forEach(function (id) {
-    $(id).addEventListener('input', function () { read(); drawAll(); });
-  });
-
   $('play').addEventListener('click', function () { setPlay(!S.playing); });
-  $('shuf').addEventListener('click', function () {
-    PH = makePhases(Math.floor(Math.random() * 2147483647));
-    drawAll();
-  });
-  $('bc5').addEventListener('click', function () {
-    S.conv = 5; $('bc5').classList.add('on'); $('bc50').classList.remove('on'); drawAll();
-  });
-  $('bc50').addEventListener('click', function () {
-    S.conv = 50; $('bc50').classList.add('on'); $('bc5').classList.remove('on'); drawAll();
-  });
 
   var TOUR = [
-    { v: { nt: 2, d0: 0.15, a0: 0.70, kf: 0, sp: 50, fc: 2.10, bw: 1, mg: 10 },
-      s: '<b>Step 1 &mdash; one reflector, narrow signal.</b> A single wall sends a copy 45 m further, arriving 0.15 microseconds late. That spacing puts the notches 6.7 MHz apart, so a 1 MHz signal almost always sits inside one smooth hump. The whole signal rises and falls together: this is flat fading. Press reshuffle path phases a few times to slide the comb about and see how rarely a notch lands in so narrow a band.' },
-    { v: { nt: 2, d0: 0.15, a0: 0.70, kf: 0, sp: 50, fc: 2.10, bw: 20, mg: 10 },
-      s: '<b>Step 2 &mdash; same channel, twenty times the bandwidth.</b> Nothing about the street changed, only the signal. Now two or three notches fall inside the band, so parts of the signal are destroyed while others are untouched. That is frequency-selective fading, and it is what forces equalisers and OFDM.' },
-    { v: { nt: 2, d0: 3.00, a0: 0.70, kf: 0, sp: 50, fc: 2.10, bw: 20, mg: 10 },
-      s: '<b>Step 3 &mdash; push the reflector out to 3 microseconds.</b> The extra path is now 899 m, the RMS delay spread is 1.5 microseconds and the coherence bandwidth collapses to 133 kHz. The notches crowd together: a longer echo makes a finer comb.' },
+    { v: { nt: 2, d0: 0.15, a0: 0.70, kf: 0, sp: 50, fc: 2.10, bw: 1, mg: 10, dp: 300 },
+      s: 'One wall, narrow signal: the whole band rises and falls together.' },
+    { v: { nt: 2, d0: 0.15, a0: 0.70, kf: 0, sp: 50, fc: 2.10, bw: 20, mg: 10, dp: 300 },
+      s: 'Same street, twenty times the bandwidth: notches now sit inside the band.' },
+    { v: { nt: 2, d0: 3.00, a0: 0.70, kf: 0, sp: 50, fc: 2.10, bw: 20, mg: 10, dp: 300 },
+      s: 'A longer echo makes a finer comb, so coherence bandwidth collapses.' },
     { v: { nt: 8, d0: 3.00, d1: 2.50, d2: 0.40, d3: 4.20, d4: 5.80, d5: 3.10, d6: 7.50,
            a0: 0.70, a1: 0.45, a2: 0.55, a3: 0.30, a4: 0.22, a5: 0.38, a6: 0.15,
-           kf: -10, sp: 50, fc: 2.10, bw: 20, mg: 10 },
-      s: '<b>Step 4 &mdash; eight paths and a weak direct ray.</b> With K at &minus;10 dB no single path dominates, and the phasors in the left-hand box now curl into a tangle. The envelope stops looking periodic and starts looking like the Rayleigh fading a real receiver sees.' },
+           kf: -10, sp: 50, fc: 2.10, bw: 20, mg: 10, dp: 300 },
+      s: 'Eight paths, weak direct ray: the phasors tangle and Rayleigh fading appears.' },
     { v: { nt: 8, d0: 3.00, d1: 2.50, d2: 0.40, d3: 4.20, d4: 5.80, d5: 3.10, d6: 7.50,
            a0: 0.70, a1: 0.45, a2: 0.55, a3: 0.30, a4: 0.22, a5: 0.38, a6: 0.15,
-           kf: -10, sp: 200, fc: 2.10, bw: 20, mg: 10 },
-      s: '<b>Step 5 &mdash; four times the speed.</b> The pattern in space has not changed at all; the car just crosses it four times faster. Maximum Doppler and the level crossing rate go up by four, the coherence time and the average fade duration come down by four. Same holes in the road, hit harder.' }
+           kf: -10, sp: 200, fc: 2.10, bw: 20, mg: 10, dp: 300 },
+      s: 'Four times the speed: same holes in the road, hit harder.' }
   ];
   function applyTour(k) {
-    var st = TOUR[k], key;
-    for (key in st.v) { if (Object.prototype.hasOwnProperty.call(st.v, key)) $(key).value = st.v[key]; }
-    read();
-    $('tourNote').innerHTML = st.s;
+    setVals(TOUR[k].v);
+    Object.keys(PRESETS).forEach(function (o) { $(o).classList.remove('on'); });
+    $('tourNote').textContent = 'Step ' + (k + 1) + ' — ' + TOUR[k].s;
     S.t0 = 0;
     drawAll();
   }
@@ -838,11 +1465,12 @@ dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
     (function (k) { $('tr' + k).addEventListener('click', function () { applyTour(k); }); })(z);
   }
   $('trR').addEventListener('click', function () {
-    $('nt').value = 3; $('kf').value = 0; $('sp').value = 50;
-    $('fc').value = 2.1; $('bw').value = 5; $('mg').value = 10;
-    for (var i = 0; i < NR; i++) { $('d' + i).value = DEF_D[i]; $('a' + i).value = DEF_A[i]; }
-    read(); S.t0 = 0;
-    $('tourNote').innerHTML = '<b>Back to the default street.</b> A direct path plus two building reflections at 1.00 and 2.50 microseconds, a 5 MHz signal and 50 km/h.';
+    var o = { nt: 3, kf: 0, sp: 50, fc: 2.1, bw: 5, mg: 10, dp: 300, nd: 10 };
+    for (var i = 0; i < NR; i++) { o['d' + i] = DEF_D[i]; o['a' + i] = DEF_A[i]; }
+    setVals(o);
+    Object.keys(PRESETS).forEach(function (p) { $(p).classList.toggle('on', p === 'pUrban'); });
+    S.t0 = 0;
+    $('tourNote').textContent = 'Back to the default street: direct path plus two building reflections.';
     drawAll();
   });
 

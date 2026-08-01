@@ -14,7 +14,9 @@ mechanical.
 
 ## 0 · How to apply, in order
 
-1. Replace the tool's entire `<style>…</style>` with **block 1**. Delete whatever was there.
+1. Replace the tool's entire `<style>…
+.tour, .tour-note, .steps, .tourbtn, #tour, #tourNote, #tmsg, #tourTxt { display: none !important; }
+</style>` with **block 1**. Delete whatever was there.
 2. Rewrap `<body>` in the **block 3** skeleton (`.wrap` > `header.full` + `.rail` + `.stage`).
 3. Paste **block 2** as the first thing inside the tool's existing `(function () { … })();`.
 4. Rewrite each `draw*()` to start with `fit()` + `theme()` + `graticule()`.
@@ -240,7 +242,11 @@ survives a canvas as small as 40×30 without collapsing or throwing.
       border: v('--border'), borderStrong: v('--border-strong'),
       family: fam, s: s,
       s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
-      font: function (px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + fam; }
+      font: function (px, weight) { var k = 1, w = 0;
+        var cs = document.querySelectorAll('canvas');
+        for (var i = 0; i < cs.length; i++) { var r = cs[i].getBoundingClientRect().width; if (r > w) w = r; }
+        k = Math.min(1.65, Math.max(1, (w || 820) / 820));
+        return (weight ? weight + ' ' : '') + Math.max(12, Math.round(px * k)) + 'px ' + fam; }
     };
     return _th;
   }

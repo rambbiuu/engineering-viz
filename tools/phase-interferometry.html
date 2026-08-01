@@ -4,179 +4,873 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Phase interferometry</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230072bd' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 12c2.5 0 2.5-7 5-7s2.5 14 5 14 2.5-7 5-7 2.5 3.5 5 3.5'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
-  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
-  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+  --bg: #ffffff; --surface-1: #f4f6f8; --surface-2: #ffffff; --plot-bg: #ffffff;
+  --grid: #e4e8ec; --grid-strong: #c8ced4; --axis: #3c4650;
+  --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
+  --series-1: #0072bd; --series-2: #d95319; --series-3: #edb120; --series-4: #7e2f8e;
+  --series-5: #77ac30; --series-6: #4dbeee; --series-7: #a2142f;
+  --good: #77ac30; --warn: #d95319; --bad: #a2142f;
+  --border: #dfe4e9; --border-strong: #b6bfc8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
-    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+    --bg: #16191d; --surface-1: #1e2328; --surface-2: #232930; --plot-bg: #1a1e23;
+    --grid: #2c333a; --grid-strong: #444d56; --axis: #9aa5b1;
+    --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
+    --series-1: #4da6ff; --series-2: #ff8c42; --series-3: #ffd24d; --series-4: #c77dda;
+    --series-5: #9fd356; --series-6: #7fd4f5; --series-7: #ff6b6b;
+    --good: #9fd356; --warn: #ff8c42; --bad: #ff6b6b;
+    --border: #2c333a; --border-strong: #49525b;
   }
 }
-body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: min(1180px, 94vw); margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
-h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
-h2 { font-size: 17px; font-weight: 500; margin: 3rem 0 4px; }
-.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 2rem; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
+  font-variant-numeric: tabular-nums; }
+
+.wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+  display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
+.rail, .stage { min-width: 0; }
+.rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.35rem 1.9rem; align-items: start; }
+.rail > .hero, .rail > .presets, .rail > .tour, .rail > .tour-note,
+.rail > details, .rail > .full { grid-column: 1 / -1; }
+.stage { display: flex; flex-direction: column; }
+
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
+.prereq { font-size: 14px; color: var(--text-muted); margin: 0; }
+.prereq a, .sub a { color: var(--series-1); }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
-input, button { font: inherit; color: inherit; }
-input[type="number"] { background: transparent; border: 1px solid var(--border-strong);
-  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums; }
-button { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 13px; cursor: pointer; }
-button:hover { background: var(--surface-1); }
-button.on { border-color: #378ADD; color: #378ADD; }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
-.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14.5px; color: var(--text-secondary); }
-.sm { font-size: 13px; color: var(--text-secondary); }
-.pair { display: flex; align-items: center; gap: 5px; }
 .sec { margin: 1.5rem 0 6px; font-size: 16px; }
+.sec:first-child { margin-top: 0; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 14px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
-.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-canvas { width: 100%; display: block; }
-.legend-note { font-size: 12px; color: var(--text-muted); margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 3px 16px; }
-.sw { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 5px; }
-details { margin: 1.25rem 0; font-size: 14px; color: var(--text-secondary); }
-summary { cursor: pointer; color: var(--text-primary); }
-.glossary dt { font-weight: 500; color: var(--text-primary); margin-top: 8px; }
-.glossary dd { margin: 0 0 0 0; }
+.var { font-style: italic; }
+.unit { white-space: nowrap; }
+.term { border-bottom: 1px dotted var(--border-strong); cursor: help; }
+
+input, button, select { font: inherit; color: inherit; }
+button { background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 11px; font-size: 14.5px; cursor: pointer; }
+button:hover { background: var(--surface-1); }
+button.on { border-color: var(--series-1); color: var(--series-1); background: var(--surface-1); }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.hero { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.8rem 1rem 0.9rem; }
+.hero .lbl { font-size: 14.5px; color: var(--text-secondary); }
+.hero .val { font-size: 36px; line-height: 1.05; font-weight: 500; margin: 3px 0 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hero .val .u { font-size: 17px; font-weight: 400; color: var(--text-secondary); margin-left: 5px; }
+.hero .badge { display: inline-block; margin-top: 8px; font-size: 12px; line-height: 1.6;
+  padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-secondary); background: transparent; }
+.hero .badge.good { color: var(--good); border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 13%, transparent); }
+.hero .badge.warn { color: var(--warn); border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.hero .badge.bad { color: var(--bad); border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 13%, transparent); }
+.hero .ft { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.ctl { display: grid; grid-template-columns: 1fr; gap: 3px; margin-bottom: 0.75rem; }
+.ctl label { font-size: 14.5px; color: var(--text-secondary); }
+.ctl .in { display: flex; align-items: center; gap: 8px; }
+.ctl input[type=range] { flex: 1 1 60px; min-width: 0; accent-color: var(--series-1); }
+.ctl input[type=number] { width: 7ch; padding: 3px 5px; text-align: right;
+  font-size: 14px; font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+.ctl .unit { font-size: 13px; color: var(--text-muted); min-width: 3.4ch; }
+
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.9rem; }
+.presets .lbl, .tour .lbl { font-size: 14px; color: var(--text-secondary); margin-right: 2px; }
+.tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 0.4rem; }
+.tour-note { font-size: 14px; color: var(--text-secondary); margin: 0 0 1rem; min-height: 1.5em; }
+
+canvas { display: block; width: 100%; background: var(--plot-bg);
+  border: 1px solid var(--border); border-radius: 6px; }
+.cv-hero { aspect-ratio: 21 / 9; min-height: 320px; max-height: 62vh; }
+.cv-sub { aspect-ratio: 16 / 7; min-height: 240px; }
+.cv-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .cv-pair { grid-template-columns: 1fr 1fr; } }
+
+ul.legend-note { list-style: none; margin: 7px 0 0; padding: 0;
+  font-size: 14px; color: var(--text-secondary); }
+ul.legend-note li { display: inline-block; margin: 2px 16px 2px 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+  margin-right: 6px; vertical-align: -1px; }
+.sw.dash { height: 0; border-top: 2px dashed currentColor; border-radius: 0; vertical-align: 3px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.7rem 0.85rem; min-width: 0;
+  overflow-wrap: anywhere; }
+.card .hd { font-size: 14px; color: var(--text-secondary); }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+details { border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.85rem; margin: 1rem 0 0; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
+details[open] summary { margin-bottom: 0.6rem; }
+ol.work { font-size: 14px; color: var(--text-secondary); padding-left: 1.3rem; margin: 0.3rem 0 0; }
+ol.work li { margin: 3px 0; }
+dl.glossary { font-size: 14px; margin: 0.3rem 0 0; }
+dl.glossary dt { font-weight: 500; margin-top: 8px; }
+dl.glossary dd { margin: 1px 0 0; color: var(--text-secondary); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.pos { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.pos label { font-size: 13px; color: var(--text-secondary); }
+.pos input { width: 8ch; padding: 3px 5px; text-align: right; font-size: 14px;
+  font-variant-numeric: tabular-nums; background: var(--surface-2);
+  color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; }
+
+.tour, .tour-note, .steps, .tourbtn, #tour, #tourNote, #tmsg, #tourTxt { display: none !important; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
-<h1>Phase interferometry</h1>
-<p class="sub">One equation runs everything: &Delta;&phi; = 360&deg; &middot; d &middot; sin&thinsp;&theta; / &lambda;, wrapped to &plusmn;180&deg;. Short baselines are coarse but honest; long ones are precise but hide whole cycles.</p>
+<div class="wrap">
 
-<div class="row">
-  <span class="lbl">Antennas</span>
-  <button id="c2">2</button><button id="c3">3</button><button id="c4" class="on">4</button>
-  <button id="c5">5</button><button id="c6">6</button>
-  <button id="pp" style="margin-left: auto;">Pause</button>
-</div>
-<div class="row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px 26px;">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <label class="lbl" for="th" style="min-width: 92px;">Emitter angle</label>
-    <input type="range" id="th" min="-90" max="90" step="1" value="30" style="flex: 1;">
-    <span id="thv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">30&deg;</span>
+<header class="full">
+  <p style="margin: 0 0 0.7rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+  <h1>Phase interferometry</h1>
+  <p class="sub">One equation runs everything: &Delta;&phi; = 360&deg; &middot; <span class="var">d</span> &middot; sin&nbsp;&theta; / &lambda;, wrapped to &plusmn;180&deg;. Short baselines are coarse but honest; long ones are precise but hide whole cycles.</p>
+  <p class="prereq">New to wavelength? Start with <a href="antenna-basics.html">antenna basics</a>.</p>
+</header>
+
+<div class="rail">
+
+  <div class="hero">
+    <div class="lbl">Recovered angle of arrival</div>
+    <div class="val" id="heroVal">&mdash;</div>
+    <span class="badge" id="heroBadge">&mdash;</span>
+    <div class="ft" id="heroFt">&mdash;</div>
   </div>
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <label class="lbl" for="fr">Frequency</label>
-    <input type="range" id="fr" min="0.5" max="18" step="0.1" value="2" style="flex: 1;">
-    <input type="number" id="frn" min="0.5" max="18" step="0.1" value="2" style="width: 74px;">
-    <span class="sm">GHz</span>
+
+  <div>
+    <div class="ctl">
+      <label for="th">Emitter angle &theta;</label>
+      <div class="in">
+        <input type="range" id="th" min="-90" max="90" step="1" value="30">
+        <input type="number" id="thN" min="-90" max="90" step="1" aria-label="Emitter angle in degrees">
+        <span class="unit">&deg;</span>
+      </div>
+    </div>
   </div>
+
+  <div>
+    <div class="ctl">
+      <label for="fr">Frequency <span class="var">f</span></label>
+      <div class="in">
+        <input type="range" id="fr" min="0.5" max="18" step="0.1" value="2.4">
+        <input type="number" id="frN" min="0.5" max="18" step="0.1" aria-label="Frequency in gigahertz">
+        <span class="unit">GHz</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="ctl">
+      <label for="bs">Baseline scale</label>
+      <div class="in">
+        <input type="range" id="bs" min="0.2" max="4" step="0.05" value="1">
+        <input type="number" id="bsN" min="0.2" max="4" step="0.05" aria-label="Baseline scale multiplier">
+        <span class="unit">&times;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="presets">
+    <span class="lbl">Presets</span>
+    <button type="button" id="pr1">L-band pair</button>
+    <button type="button" id="pr2">GPS L1 attitude</button>
+    <button type="button" id="pr3" class="on">Wi-Fi 2.4 GHz</button>
+    <button type="button" id="pr4">X-band seeker</button>
+    <button type="button" id="pr5">Ku-band 5 element</button>
+  </div>
+
+  <div class="presets">
+    <span class="lbl">Elements</span>
+    <button type="button" id="c2">2</button>
+    <button type="button" id="c3">3</button>
+    <button type="button" id="c4" class="on">4</button>
+    <button type="button" id="c5">5</button>
+    <button type="button" id="c6">6</button>
+    <button type="button" id="rs">Resample noise</button>
+    <button type="button" id="pp">Pause</button>
+  </div>
+
+  <div class="presets" id="posRow"><span class="lbl">Element positions (cm)</span></div>
+
+  <details>
+    <summary>More controls</summary>
+    <div class="rail">
+      <div>
+        <div class="ctl">
+          <label for="sg">Phase noise &sigma;<sub>&phi;</sub></label>
+          <div class="in">
+            <input type="range" id="sg" min="0" max="30" step="0.5" value="0">
+            <input type="number" id="sgN" min="0" max="30" step="0.5" aria-label="Phase measurement noise in degrees rms">
+            <span class="unit">&deg;</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ctl">
+          <label for="vf">Velocity factor</label>
+          <div class="in">
+            <input type="range" id="vf" min="0.5" max="1" step="0.005" value="1">
+            <input type="number" id="vfN" min="0.5" max="1" step="0.005" aria-label="Propagation velocity factor">
+            <span class="unit">&nbsp;</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ctl">
+          <label for="cy">Timebase</label>
+          <div class="in">
+            <input type="range" id="cy" min="2" max="12" step="1" value="6">
+            <input type="number" id="cyN" min="2" max="12" step="1" aria-label="Cycles shown on the scope">
+            <span class="unit">cyc</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ctl">
+          <label for="ws">Wavefront speed</label>
+          <div class="in">
+            <input type="range" id="ws" min="0" max="3" step="0.1" value="1">
+            <input type="number" id="wsN" min="0" max="3" step="0.1" aria-label="Wavefront animation speed multiplier">
+            <span class="unit">&times;</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ctl">
+          <label for="an">Angle sweep</label>
+          <div class="in">
+            <input type="range" id="an" min="10" max="90" step="5" value="90">
+            <input type="number" id="anN" min="10" max="90" step="5" aria-label="Angle sweep half-span in degrees">
+            <span class="unit">&deg;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <p class="sec full" style="margin-top:0.2rem"><b>Measured phase differences</b> <span>&mdash; what the receiver reads, wrapped to &plusmn;180&deg;</span></p>
+  <div class="cards full" id="cards"></div>
+
 </div>
-<div class="row" id="posRow"><span class="lbl">Positions (cm)</span></div>
-<div class="row">
-  <span class="lbl">Tour</span>
-  <button class="tb" data-s="0">1</button><button class="tb" data-s="1">2</button>
-  <button class="tb" data-s="2">3</button><button class="tb" data-s="3">4</button>
-  <span id="tmsg" class="sm"></span>
+
+<div class="stage">
+
+  <div class="tour">
+    <span class="lbl">Guided tour</span>
+    <button type="button" id="tr0">1 &middot; broadside</button>
+    <button type="button" id="tr1">2 &middot; tilt to 30&deg;</button>
+    <button type="button" id="tr2">3 &middot; raise to 8 GHz</button>
+    <button type="button" id="tr3">4 &middot; 18 GHz</button>
+    <button type="button" id="trR">reset</button>
+  </div>
+  <p class="tour-note" id="tourNote">Press the steps in order; each one moves the controls.</p>
+
+  <p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; wavefronts sweeping across the array</span></p>
+  <canvas id="geo" class="cv-hero"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background: var(--series-1)"></span>wavefronts, one &lambda; apart</li>
+    <li><span class="sw" style="background: var(--series-7)"></span>emitter</li>
+    <li><span class="sw" style="background: var(--text-primary)"></span>elements, A1 is reference</li>
+    <li><span class="sw dash" style="color: var(--text-secondary)"></span>boresight, 0&deg;</li>
+  </ul>
+
+  <p class="sec"><b>2 &middot; Scope view</b> <span>&mdash; triggered on the A1 peak</span></p>
+  <canvas id="scope" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background: var(--text-primary)"></span>A1, the reference trace</li>
+    <li><span class="sw" style="background: var(--series-1)"></span>each element's received wave</li>
+    <li><span class="sw" style="background: transparent; border: 1.5px solid var(--warn); border-radius: 50%"></span>true peak, cycles hidden</li>
+  </ul>
+
+  <p class="sec"><b>3 &middot; Phase difference against angle</b> <span>&mdash; sawtooth jumps are wrapping</span></p>
+  <canvas id="ch" class="cv-sub"></canvas>
+  <ul class="legend-note">
+    <li><span class="sw" style="background: var(--series-1)"></span>one curve per baseline</li>
+    <li><span class="sw dash" style="color: var(--text-secondary)"></span>current emitter angle</li>
+    <li><span class="sw" style="background: var(--series-2); border-radius: 50%"></span>what the cards read now</li>
+  </ul>
+
+  <p class="sec"><b>4 &middot; Ambiguity chain</b> <span>&mdash; shortest baseline first, then add cycles</span></p>
+  <div class="cards" id="solve"></div>
+
+  <details>
+    <summary>Worked example, with the current numbers</summary>
+    <ol class="work" id="work"></ol>
+  </details>
+
+  <details>
+    <summary>What the controls are teaching</summary>
+    <p class="sub">A baseline shorter than half a wavelength can never hide a cycle, because the largest phase difference it can produce is 180&deg;. That makes it honest but coarse: its whole angular range is squeezed into one sawtooth, so a degree of phase error becomes a large angle error. Stretch the baseline with the scale control and the sawtooth repeats several times across the same sweep &mdash; each repeat is a candidate angle the receiver cannot tell apart from the true one.</p>
+    <p class="sub">The chain is how a real receiver escapes that. Solve the short baseline first, predict what the next baseline should read, and pick the cycle count that lands nearest the reading. It survives as long as each jump in spacing is small enough that the previous estimate points at the right cycle &mdash; roughly a factor of four when the phases are clean. Raise the phase-noise control and the chain starts guessing wrong at the long end first, which is exactly the failure a calibration campaign is trying to prevent.</p>
+  </details>
+
+  <details>
+    <summary>Honest limits of this model</summary>
+    <p class="sub">Plane waves only: the emitter is treated as infinitely far away, so the wavefronts across the array are parallel and the geometry is one-dimensional. Real arrays see curvature at close range, mutual coupling between elements, and per-channel phase offsets from cable lengths that must be calibrated out. Amplitude is uniform here; a real element pattern rolls off toward endfire, where this tool still reports a confident angle.</p>
+  </details>
+
+  <details>
+    <summary>Glossary</summary>
+    <dl class="glossary">
+      <dt>Angle of arrival (&theta;)</dt><dd>The direction the signal comes from, measured from straight ahead.</dd>
+      <dt>Baseline (<span class="var">d</span>)</dt><dd>The distance from the reference element A1 to another element.</dd>
+      <dt>Wavelength (&lambda;)</dt><dd>The distance between two wave peaks; &lambda; = <span class="var">c</span>&thinsp;/&thinsp;<span class="var">f</span>.</dd>
+      <dt>Phase difference (&Delta;&phi;)</dt><dd>How much later the wave arrives at one element than at A1, in degrees.</dd>
+      <dt>Wrapping</dt><dd>A receiver reads phase only modulo 360&deg;; whole cycles vanish from the reading.</dd>
+      <dt>Ambiguity</dt><dd>When <span class="var">d</span> &gt; &lambda;/2, several different angles produce the same wrapped phase.</dd>
+      <dt>Velocity factor</dt><dd>Propagation speed as a fraction of <span class="var">c</span>. Below 1 the wavelength shortens.</dd>
+      <dt>Geolocation</dt><dd>Working backwards from the measured phases to the emitter's direction.</dd>
+    </dl>
+  </details>
+
+  <p class="prereq" style="margin-top:1rem">Next: <a href="aoa-triangulation.html">angle-of-arrival triangulation</a>.</p>
+
 </div>
-
-<p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; looking down at the antenna table</span></p>
-<canvas id="geo" style="height: 290px;"></canvas>
-<p class="legend-note">
-  <span><span class="sw" style="background:#378ADD"></span>wave peaks, one &lambda; apart</span>
-  <span><span class="sw" style="background:#D4537E"></span>emitter</span>
-  <span><span class="sw" style="background:var(--text-primary)"></span>A1, the reference antenna</span>
-  <span><span class="sw" style="background:#7F77DD"></span>the other antennas</span>
-</p>
-
-<p class="sec"><b>2 &middot; Measured phase differences</b> <span>&mdash; what the receiver reads, wrapped to &plusmn;180&deg;</span></p>
-<div class="cards" id="cards"></div>
-
-<p class="sec"><b>3 &middot; Scope view</b> <span>&mdash; one trace per antenna, one cycle per division</span></p>
-<canvas id="scope" style="height: 330px;"></canvas>
-<p class="legend-note">
-  <span><span class="sw" style="background:#7F77DD"></span>each antenna's received wave</span>
-  <span><span class="sw" style="background:#7F77DD; border-radius:50%"></span>small dots — every peak</span>
-  <span><span class="sw" style="background:transparent; border:1.5px solid var(--text-warning); border-radius:50%"></span>amber ring — true matching peak</span>
-</p>
-
-<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>&mdash; sawtooth jumps are wrapping</span></p>
-<canvas id="ch" style="height: 230px;"></canvas>
-<p class="legend-note">
-  <span><span class="sw" style="background:#1D9E75"></span>one curve per baseline</span>
-  <span><span class="sw" style="background:#1D9E75; border-radius:50%"></span>dots — the cards right now</span>
-</p>
-
-<h2>5 &middot; Geolocation mode &mdash; phases in, angle out</h2>
-<p class="sub" style="margin-bottom: 1rem;">The inverse a real receiver runs: add the hidden cycles back, one baseline at a time.</p>
-<div class="cards" id="solve"></div>
-<div style="display: flex; align-items: baseline; gap: 14px; margin-top: 1.25rem; flex-wrap: wrap;">
-  <span class="lbl">Recovered angle of arrival</span>
-  <span id="res" style="font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums;">&mdash;</span>
-  <span id="resn" style="font-size: 13px; color: var(--text-muted);">&mdash;</span>
 </div>
-
-<details>
-  <summary>Worked example — 2 GHz, 30&deg;, d = 2.4 cm</summary>
-  <p>&lambda; = 29.98 / 2 = 14.99 cm. &Delta;&phi; = 360&deg; &middot; 2.4 &middot; sin&thinsp;30&deg; / 14.99 = 28.8&deg;. Inverting: sin&thinsp;&theta; = 28.8 &middot; 14.99 / (360 &middot; 2.4) = 0.500, so &theta; = 30.0&deg;. Because 2.4 cm &le; &lambda;/2 = 7.5 cm, no whole cycle can hide, and the wrapped reading is the whole story. Above 6.25 GHz that stops being true even for 2.4 cm.</p>
-</details>
-<details>
-  <summary>Glossary</summary>
-  <dl class="glossary">
-    <dt>Angle of arrival (&theta;)</dt><dd>The direction the signal comes from, measured from straight ahead.</dd>
-    <dt>Baseline (d)</dt><dd>The distance from the reference antenna A1 to another antenna.</dd>
-    <dt>Wavelength (&lambda;)</dt><dd>The distance between two wave peaks; &lambda; = c / f.</dd>
-    <dt>Phase difference (&Delta;&phi;)</dt><dd>How much later the wave arrives at one antenna than at A1, in degrees.</dd>
-    <dt>Wrapping</dt><dd>A receiver reads phase only modulo 360&deg;; whole cycles vanish from the reading.</dd>
-    <dt>Ambiguity</dt><dd>When d &gt; &lambda;/2, several different angles produce the same wrapped phase.</dd>
-    <dt>Geolocation</dt><dd>Working backwards from the measured phases to the emitter's direction.</dd>
-  </dl>
-</details>
 
 <script>
 (function () {
+  /* ============================================================
+     engineering-viz shared canvas kit — paste verbatim inside the
+     tool's IIFE, above your own drawing code. No dependencies.
+     ============================================================ */
+
+  /* --- 1. sizing ------------------------------------------------ */
+  function fit(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, r.width), h = Math.max(1, r.height);
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W) c.width = W;
+    if (c.height !== H) c.height = H;
+    const g = c.getContext('2d');
+    g.setTransform(W / w, 0, 0, H / h, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return [w, h];
+  }
+
+  /* --- 2. palette ----------------------------------------------- */
+  let _th = null;
+  (function () {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) mq.addEventListener('change', function () { _th = null; });
+  })();
+  function theme() {
+    if (_th) return _th;
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    const fam = v('--font-sans') || 'system-ui, sans-serif';
+    const s = [v('--series-1'), v('--series-2'), v('--series-3'), v('--series-4'),
+               v('--series-5'), v('--series-6'), v('--series-7')];
+    _th = {
+      bg: v('--bg'), surface: v('--surface-1'), surface2: v('--surface-2'), plot: v('--plot-bg'),
+      grid: v('--grid'), gridStrong: v('--grid-strong'), axis: v('--axis'),
+      text: v('--text-primary'), text2: v('--text-secondary'), muted: v('--text-muted'),
+      good: v('--good'), warn: v('--warn'), bad: v('--bad'),
+      border: v('--border'), borderStrong: v('--border-strong'),
+      family: fam, s: s,
+      s1: s[0], s2: s[1], s3: s[2], s4: s[3], s5: s[4], s6: s[5], s7: s[6],
+      font: function (px, weight) { var k = 1, w = 0;
+        var cs = document.querySelectorAll('canvas');
+        for (var i = 0; i < cs.length; i++) { var r = cs[i].getBoundingClientRect().width; if (r > w) w = r; }
+        k = Math.min(1.65, Math.max(1, (w || 820) / 820));
+        return (weight ? weight + ' ' : '') + Math.max(12, Math.round(px * k)) + 'px ' + fam; }
+    };
+    return _th;
+  }
+  theme.clear = function () { _th = null; };
+
+  /* --- 3. numbers ----------------------------------------------- */
+  const THIN = ' ', NB = ' ', MINUS = '−';
+  const _PFX = [[1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
+                [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+  const _SCALABLE = /^(m|Hz|s|W|V|A|F|H|Ω|J|N|Pa|bit\/s|b\/s|B\/s|Sa\/s|sps|bd|rad)$/;
+
+  function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '—';
+    dec = dec == null ? 0 : Math.max(0, Math.min(8, dec));
+    const s = Math.abs(x).toFixed(dec);
+    const p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+    const body = p.join('.');
+    return (x < 0 && parseFloat(s) !== 0 ? MINUS : '') + body;
+  }
+
+  function fmtEng(value, unit, decimals) {
+    if (value == null || !isFinite(value)) return '—';
+    unit = unit == null ? '' : unit;
+    const dec = decimals == null ? 1 : decimals;
+    let v = value, u = unit;
+    if (unit && _SCALABLE.test(unit) && v !== 0) {
+      const a = Math.abs(v);
+      for (let i = 0; i < _PFX.length; i++) {
+        if (a >= _PFX[i][0] * (1 - 1e-12) || i === _PFX.length - 1) {
+          v = v / _PFX[i][0]; u = _PFX[i][1] + unit; break;
+        }
+      }
+    }
+    const n = fmtNum(v, dec);
+    return u ? n + NB + u : n;
+  }
+
+  const _SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '-': '⁻', '−': '⁻', '+': '⁺', 'n': 'ⁿ', 'i': 'ⁱ' };
+  const _SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋', '−': '₋', '+': '₊', 'a': 'ₐ', 'e': 'ₑ',
+    'h': 'ₕ', 'i': 'ᵢ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ',
+    'v': 'ᵥ', 'x': 'ₓ' };
+  function sup(str) { return String(str).split('').map(ch => _SUP[ch] || ch).join(''); }
+  function sub(str) { return String(str).split('').map(ch => _SUB[ch] || ch).join(''); }
+
+  /* --- 4. ticks ------------------------------------------------- */
+  function _niceStep(span, count) {
+    span = Math.abs(span); count = Math.max(1, count);
+    if (!(span > 0) || !isFinite(span)) return 1;
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+    return s * mag;
+  }
+  function _linTicks(min, max, count) {
+    if (!isFinite(min) || !isFinite(max)) return [];
+    if (max === min) max = min + 1;
+    if (max < min) { const t = min; min = max; max = t; }
+    const st = _niceStep(max - min, count);
+    if (!(st > 0)) return [];
+    const out = [];
+    for (let v = Math.ceil(min / st - 1e-9) * st, i = 0;
+         v <= max + st * 1e-9 && i < 500; v += st, i++) {
+      out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    }
+    return out;
+  }
+  function _logTicks(min, max) {
+    const lo = Math.max(Math.min(min, max), 1e-300), hi = Math.max(Math.max(min, max), lo * 10);
+    const d0 = Math.floor(Math.log10(lo)), d1 = Math.ceil(Math.log10(hi));
+    let major = [], minor = [];
+    for (let d = d0; d <= d1 && d - d0 < 40; d++) {
+      const base = Math.pow(10, d);
+      if (base >= lo * (1 - 1e-9) && base <= hi * (1 + 1e-9)) major.push(base);
+      if (d1 - d0 <= 5) for (let m = 2; m <= 9; m++) {
+        const v = m * base;
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) minor.push(v);
+      }
+    }
+    if (major.length < 3) {
+      const keep = minor.filter(v => {
+        const m = v / Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+        return Math.abs(m - 2) < 0.01 || Math.abs(m - 3) < 0.01 || Math.abs(m - 5) < 0.01;
+      });
+      major = major.concat(keep).sort((a, b) => a - b);
+      minor = minor.filter(v => major.indexOf(v) < 0);
+    }
+    return { major: major, minor: minor };
+  }
+  function _autoDec(step) {
+    if (!(step > 0) || !isFinite(step)) return 0;
+    let dec = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+    const k = Math.pow(10, dec);
+    if (Math.abs(step * k - Math.round(step * k)) > 1e-6) dec = Math.min(6, dec + 1);
+    return dec;
+  }
+  function _tickText(v, ax, step) {
+    if (ax.fmt) return ax.fmt(v);
+    let dec = ax.dec;
+    if (dec == null) {
+      dec = ax.log ? Math.max(0, Math.min(6, -Math.floor(Math.log10(Math.abs(v) || 1) + 1e-9)))
+                   : _autoDec(step);
+    }
+    return fmtNum(v, dec);
+  }
+  function _axisTitle(ax) {
+    if (ax.title != null) return ax.title;
+    if (ax.label) return ax.unit ? ax.label + ' (' + ax.unit + ')' : ax.label;
+    return ax.unit || '';
+  }
+  function _px(v) { return Math.round(v) + 0.5; }
+
+  /* --- 5. graticule --------------------------------------------- */
+  function graticule(g, box, xs, ys, opts) {
+    opts = opts || {};
+    const t = theme();
+    const small = Math.min(box.w, box.h) < 280;
+    const fs = opts.fontSize || (small ? 9.5 : 11);
+    g.save();
+    g.font = t.font(fs);
+
+    const xt = xs.log ? _logTicks(xs.min, xs.max)
+                      : { major: _linTicks(xs.min, xs.max, Math.max(2, Math.round(box.w / (small ? 62 : 88)))), minor: [] };
+    const yt = ys.log ? _logTicks(ys.min, ys.max)
+                      : { major: _linTicks(ys.min, ys.max, Math.max(2, Math.round(box.h / (small ? 32 : 46)))), minor: [] };
+    const xstep = xt.major.length > 1 ? xt.major[1] - xt.major[0] : (xs.max - xs.min) / 4;
+    const ystep = yt.major.length > 1 ? yt.major[1] - yt.major[0] : (ys.max - ys.min) / 4;
+    const xlab = v => _tickText(v, xs, xstep), ylab = v => _tickText(v, ys, ystep);
+
+    let ymaxw = 0;
+    for (let i = 0; i < yt.major.length; i++) ymaxw = Math.max(ymaxw, g.measureText(ylab(yt.major[i])).width);
+    const xTitle = _axisTitle(xs), yTitle = _axisTitle(ys);
+    const showY = !!yTitle && box.h >= 150 && box.w >= 220;
+    const showX = !!xTitle && box.h >= 120;
+
+    let padL = opts.padL != null ? opts.padL : ymaxw + 9 + (showY ? fs + 6 : 0);
+    let padB = opts.padB != null ? opts.padB : fs + 9 + (showX ? fs + 6 : 0);
+    let padT = opts.padT != null ? opts.padT : (opts.title ? fs + 13 : Math.max(7, fs * 0.7));
+    let padR = opts.padR != null ? opts.padR
+      : Math.max(10, (xt.major.length ? g.measureText(xlab(xt.major[xt.major.length - 1])).width / 2 : 0) + 4);
+    padL = Math.min(padL, box.w * 0.42); padR = Math.min(padR, box.w * 0.22);
+    padT = Math.min(padT, box.h * 0.28); padB = Math.min(padB, box.h * 0.38);
+
+    const x0 = box.x + padL, y0 = box.y + padT;
+    const iw = Math.max(12, box.w - padL - padR), ih = Math.max(12, box.h - padT - padB);
+    const x1 = x0 + iw, y1 = y0 + ih;
+
+    const lg = v => Math.log10(Math.max(Math.abs(v), 1e-300));
+    const xa = xs.log ? lg(xs.min) : xs.min, xb = xs.log ? lg(xs.max) : xs.max;
+    const ya = ys.log ? lg(ys.min) : ys.min, yb = ys.log ? lg(ys.max) : ys.max;
+    const xd = (xb - xa) || 1, yd = (yb - ya) || 1;
+    const X = xs.log ? (v => x0 + (lg(v) - xa) / xd * iw) : (v => x0 + (v - xa) / xd * iw);
+    const Y = ys.log ? (v => y1 - (lg(v) - ya) / yd * ih) : (v => y1 - (v - ya) / yd * ih);
+
+    if (opts.fill !== false) { g.fillStyle = t.plot; g.fillRect(x0, y0, iw, ih); }
+
+    g.strokeStyle = t.grid; g.lineWidth = 0.5;
+    if (xt.minor.length || yt.minor.length) {
+      g.save(); g.globalAlpha = 0.7; g.beginPath();
+      for (let i = 0; i < xt.minor.length; i++) { const p = _px(X(xt.minor[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+      for (let i = 0; i < yt.minor.length; i++) { const p = _px(Y(yt.minor[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+      g.stroke(); g.restore();
+    }
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) { const p = _px(X(xt.major[i])); if (p > x0 && p < x1) { g.moveTo(p, y0); g.lineTo(p, y1); } }
+    for (let i = 0; i < yt.major.length; i++) { const p = _px(Y(yt.major[i])); if (p > y0 && p < y1) { g.moveTo(x0, p); g.lineTo(x1, p); } }
+    g.stroke();
+
+    g.strokeStyle = t.axis; g.lineWidth = 1;
+    g.strokeRect(_px(x0), _px(y0), Math.round(iw), Math.round(ih));
+    const tk = small ? 3 : 4.5;
+    g.beginPath();
+    for (let i = 0; i < xt.major.length; i++) {
+      const p = _px(X(xt.major[i])); if (p <= x0 || p >= x1) continue;
+      g.moveTo(p, y1); g.lineTo(p, y1 - tk); g.moveTo(p, y0); g.lineTo(p, y0 + tk);
+    }
+    for (let i = 0; i < yt.major.length; i++) {
+      const p = _px(Y(yt.major[i])); if (p <= y0 || p >= y1) continue;
+      g.moveTo(x0, p); g.lineTo(x0 + tk, p); g.moveTo(x1, p); g.lineTo(x1 - tk, p);
+    }
+    g.stroke();
+
+    g.fillStyle = t.text2; g.font = t.font(fs);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let i = 0; i < xt.major.length; i++) {
+      const v = xt.major[i], p = X(v);
+      if (p < x0 - 1 || p > x1 + 1) continue;
+      const s = xlab(v), half = g.measureText(s).width / 2;
+      const cx = Math.min(Math.max(p, box.x + half + 1), box.x + box.w - half - 1);
+      g.fillText(s, cx, y1 + 4);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i < yt.major.length; i++) {
+      const v = yt.major[i], p = Y(v);
+      if (p < y0 - 1 || p > y1 + 1) continue;
+      g.fillText(ylab(v), x0 - 6, Math.min(Math.max(p, box.y + fs * 0.6), box.y + box.h - fs * 0.4));
+    }
+
+    g.fillStyle = t.muted;
+    if (showX) { g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(xTitle, x0 + iw / 2, box.y + box.h - 1); }
+    if (showY) {
+      g.save(); g.translate(box.x + 2, y0 + ih / 2); g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(yTitle, 0, 0); g.restore();
+    }
+    if (opts.title) {
+      g.fillStyle = t.text; g.font = t.font(fs + 0.5, '500');
+      g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(opts.title, x0, y0 - 4);
+    }
+    g.restore();
+
+    return {
+      X: X, Y: Y, x0: x0, y0: y0, x1: x1, y1: y1,
+      x: x0, y: y0, w: iw, h: ih, box: { x: x0, y: y0, w: iw, h: ih },
+      fs: fs, xTicks: xt.major, yTicks: yt.major,
+      clip: function (gg) { gg.save(); gg.beginPath(); gg.rect(x0, y0, iw, ih); gg.clip(); },
+      unclip: function (gg) { gg.restore(); }
+    };
+  }
+
+  /* --- 6. annotation -------------------------------------------- */
+  function _rect(g, opts) {
+    if (opts && opts.box) return opts.box;
+    const dpr = window.devicePixelRatio || 1;
+    return { x: 0, y: 0, w: g.canvas.width / dpr, h: g.canvas.height / dpr };
+  }
+  function leader(g, x, y, text, opts) {
+    opts = opts || {};
+    const t = theme(), box = _rect(g, opts);
+    const size = opts.size || 11, col = opts.colour || t.text2;
+    let dx = opts.dx == null ? 30 : opts.dx, dy = opts.dy == null ? -26 : opts.dy;
+    g.save();
+    g.font = t.font(size, opts.weight);
+    const tw = g.measureText(text).width, tail = 7, pad = 4;
+    if (dx >= 0 && x + dx + tail + tw + pad > box.x + box.w) dx = -Math.abs(dx);
+    if (dx < 0 && x + dx - tail - tw - pad < box.x) dx = Math.abs(dx);
+    if (dy <= 0 && y + dy - size < box.y) dy = Math.abs(dy);
+    if (dy > 0 && y + dy + size > box.y + box.h) dy = -Math.abs(dy);
+    const dir = dx >= 0 ? 1 : -1;
+    let ex = x + dx, ey = y + dy;
+    ey = Math.min(Math.max(ey, box.y + size * 0.8), box.y + box.h - size * 0.8);
+    let tx = ex + dir * (tail + 2);
+    let left = dir > 0 ? tx : tx - tw;
+    if (left < box.x + 2) { const s = box.x + 2 - left; ex += s; tx += s; left += s; }
+    if (left + tw > box.x + box.w - 2) { const s = left + tw - (box.x + box.w - 2); ex -= s; tx -= s; left -= s; }
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(_px(x), _px(y)); g.lineTo(_px(ex), _px(ey)); g.lineTo(_px(ex + dir * tail), _px(ey)); g.stroke();
+    if (opts.dot !== false) { g.beginPath(); g.arc(x, y, opts.dotR || 2.2, 0, Math.PI * 2); g.fill(); }
+    if (opts.halo !== false) {
+      g.globalAlpha = 0.86; g.fillStyle = t.plot;
+      g.fillRect(left - 3, ey - size * 0.78, tw + 6, size * 1.5);
+      g.globalAlpha = 1;
+    }
+    g.fillStyle = col; g.textAlign = dir > 0 ? 'left' : 'right'; g.textBaseline = 'middle';
+    g.fillText(text, tx, ey);
+    g.restore();
+  }
+
+  function _head(g, x, y, dir, s) {
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - Math.cos(dir - 0.35) * s, y - Math.sin(dir - 0.35) * s);
+    g.lineTo(x - Math.cos(dir + 0.35) * s, y - Math.sin(dir + 0.35) * s);
+    g.closePath(); g.fill();
+  }
+  function dimension(g, x1, y1, x2, y2, text, opts) {
+    opts = opts || {};
+    const t = theme(), col = opts.colour || t.text2, size = opts.size || 10.5;
+    const dxv = x2 - x1, dyv = y2 - y1, len = Math.sqrt(dxv * dxv + dyv * dyv);
+    if (!(len > 2)) return;
+    const a = Math.atan2(dyv, dxv);
+    const nx = -Math.sin(a), ny = Math.cos(a);
+    const ah = Math.max(3, Math.min(6, len * 0.22));
+    g.save();
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1; g.setLineDash([]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const wt = Math.max(2.5, Math.min(4, len * 0.12));
+    g.beginPath();
+    g.moveTo(x1 - nx * wt, y1 - ny * wt); g.lineTo(x1 + nx * wt, y1 + ny * wt);
+    g.moveTo(x2 - nx * wt, y2 - ny * wt); g.lineTo(x2 + nx * wt, y2 + ny * wt);
+    g.stroke();
+    _head(g, x1, y1, a + Math.PI, ah); _head(g, x2, y2, a, ah);
+    if (text) {
+      let ta = a;
+      if (ta > Math.PI / 2 || ta < -Math.PI / 2) ta += Math.PI;
+      g.translate((x1 + x2) / 2, (y1 + y2) / 2); g.rotate(ta);
+      g.font = t.font(size);
+      const tw = g.measureText(text).width;
+      const off = len < tw + 14 ? -size * 1.05 : 0;
+      g.globalAlpha = 0.88; g.fillStyle = t.plot;
+      g.fillRect(-tw / 2 - 3, off - size * 0.75, tw + 6, size * 1.45);
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 0, off);
+    }
+    g.restore();
+  }
+
+  function band(g, box, a, b, colour, axis) {
+    const t = theme();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    g.save();
+    g.globalAlpha = 0.10; g.fillStyle = colour || t.warn;
+    if (axis === 'y') {
+      const p0 = Math.max(lo, box.y), p1 = Math.min(hi, box.y + box.h);
+      if (p1 > p0) g.fillRect(box.x, p0, box.w, p1 - p0);
+    } else {
+      const p0 = Math.max(lo, box.x), p1 = Math.min(hi, box.x + box.w);
+      if (p1 > p0) g.fillRect(p0, box.y, p1 - p0, box.h);
+    }
+    g.restore();
+  }
+
+  /* --- 7. technical hardware ------------------------------------ */
+  function mast(g, x, groundY, heightPx, label, opts) {
+    opts = opts || {};
+    const t = theme();
+    const h = Math.max(6, heightPx), top = groundY - h;
+    const bw = Math.max(2.5, Math.min(13, h * 0.075)), tw = Math.max(1.4, bw * 0.36);
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.fillStyle = opts.colour || t.axis;
+    g.setLineDash([]); g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(x - bw, groundY); g.lineTo(x - tw, top);
+    g.moveTo(x + bw, groundY); g.lineTo(x + tw, top);
+    g.stroke();
+    if (h > 18) {
+      const n = Math.max(1, Math.min(24, Math.round(h / Math.max(11, bw * 2.6))));
+      g.lineWidth = 0.7; g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const f0 = i / n, f1 = (i + 1) / n;
+        const w0 = bw + (tw - bw) * f0, w1 = bw + (tw - bw) * f1;
+        const y0 = groundY + (top - groundY) * f0, y1 = groundY + (top - groundY) * f1;
+        g.moveTo(x - w0, y0); g.lineTo(x + w1, y1);
+        g.moveTo(x + w0, y0); g.lineTo(x - w1, y1);
+        g.moveTo(x - w1, y1); g.lineTo(x + w1, y1);
+      }
+      g.stroke();
+    }
+    const ah = Math.max(5, Math.min(16, h * 0.15));
+    g.lineWidth = 1.2; g.beginPath();
+    g.moveTo(x, top); g.lineTo(x, top - ah);
+    g.moveTo(x - ah * 0.42, top - ah * 0.58); g.lineTo(x + ah * 0.42, top - ah * 0.58);
+    g.moveTo(x - ah * 0.28, top - ah * 0.92); g.lineTo(x + ah * 0.28, top - ah * 0.92);
+    g.stroke();
+    g.lineWidth = 1; g.beginPath();
+    g.moveTo(x - bw * 1.6, groundY); g.lineTo(x + bw * 1.6, groundY);
+    g.stroke();
+    if (label) {
+      const side = opts.side === 'right' ? 1 : -1;
+      const dx = side * (bw + (opts.gap == null ? 16 : opts.gap));
+      g.strokeStyle = t.muted; g.lineWidth = 0.5;
+      g.beginPath();
+      g.moveTo(x, groundY); g.lineTo(x + dx * 1.15, groundY);
+      g.moveTo(x, top); g.lineTo(x + dx * 1.15, top);
+      g.stroke();
+      dimension(g, x + dx, groundY, x + dx, top, label, { size: opts.size || 10.5 });
+    }
+    g.restore();
+  }
+
+  function dish(g, x, y, r, angle, opts) {
+    opts = opts || {};
+    const t = theme();
+    r = Math.max(4, r);
+    const back = angle + Math.PI, spread = 1.05;
+    g.save();
+    g.strokeStyle = opts.colour || t.axis; g.setLineDash([]);
+    g.lineWidth = Math.max(1, Math.min(1.6, r * 0.06));
+    g.beginPath(); g.arc(x, y, r, back - spread, back + spread); g.stroke();
+    const e0x = x + Math.cos(back - spread) * r, e0y = y + Math.sin(back - spread) * r;
+    const e1x = x + Math.cos(back + spread) * r, e1y = y + Math.sin(back + spread) * r;
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(e0x, e0y); g.lineTo(x, y); g.moveTo(e1x, e1y); g.lineTo(x, y);
+    g.stroke();
+    const f = Math.max(1.6, r * 0.13);
+    g.lineWidth = 1.1;
+    g.strokeRect(x - f, y - f, f * 2, f * 2);
+    const bx = x + Math.cos(back) * r, by = y + Math.sin(back) * r;
+    g.beginPath();
+    g.moveTo(bx, by); g.lineTo(bx + Math.cos(back) * r * 0.45, by + Math.sin(back) * r * 0.45);
+    g.stroke();
+    if (opts.axisLine !== false && r > 8) {
+      g.strokeStyle = t.muted; g.lineWidth = 0.7; g.setLineDash([4, 3]);
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(angle) * r * 1.1, y + Math.sin(angle) * r * 1.1); g.stroke();
+      g.setLineDash([]);
+    }
+    g.restore();
+  }
+
+  /* --- 8. slider + number input --------------------------------- */
+  function bindPair(rangeEl, numEl, cb) {
+    const lo = parseFloat(rangeEl.min), hi = parseFloat(rangeEl.max);
+    numEl.value = rangeEl.value;
+    rangeEl.addEventListener('input', function () { numEl.value = rangeEl.value; if (cb) cb(parseFloat(rangeEl.value)); });
+    numEl.addEventListener('input', function () {
+      const v = parseFloat(numEl.value);
+      if (isFinite(v) && v >= lo && v <= hi) { rangeEl.value = v; if (cb) cb(parseFloat(rangeEl.value)); }
+    });
+    numEl.addEventListener('change', function () {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) v = parseFloat(rangeEl.value);
+      rangeEl.value = Math.min(hi, Math.max(lo, v));
+      numEl.value = rangeEl.value;
+      if (cb) cb(parseFloat(rangeEl.value));
+    });
+  }
+
+  /* ---- tool code ---------------------------------------------- */
+
   const $ = id => document.getElementById(id);
-  const PC = ['#7F77DD', '#1D9E75', '#D85A30', '#D4537E', '#BA7517'];
-  const DEF = { 2: [0, 2.4], 3: [0, 2.4, 10], 4: [0, 2.4, 10, 30], 5: [0, 2.4, 10, 30, 75], 6: [0, 2.4, 10, 30, 75, 160] };
-  const S = { th: 30, f: 2, n: 4, pos: DEF[4].slice(), playing: true };
+  const C_CM_GHZ = 29.9792458;                     /* c in cm · GHz */
+  const DEF = {
+    2: [0, 2.4], 3: [0, 2.4, 10], 4: [0, 2.4, 10, 30],
+    5: [0, 2.4, 10, 30, 75], 6: [0, 2.4, 10, 30, 75, 160]
+  };
+  const S = {
+    th: 30, f: 2.4, n: 4, pos: DEF[4].slice(),
+    bs: 1, sg: 0, vf: 1, cy: 6, ws: 1, an: 90,
+    playing: true, nz: []
+  };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) S.playing = false;
+
+  const RAD = Math.PI / 180;
   const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
-  const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');
-  const lam = () => 29.9792458 / S.f;
-  const truePhases = () => S.pos.slice(1).map(p => 360 * p * Math.sin(S.th * Math.PI / 180) / lam());
+  const lam = () => C_CM_GHZ * S.vf / Math.max(0.01, S.f);
+  const eff = () => S.pos.map(p => p * S.bs);
+  const truePhases = () => eff().slice(1).map(p => 360 * p * Math.sin(S.th * RAD) / lam());
+  const measPhases = () => truePhases().map((p, i) => p + S.sg * (S.nz[i] || 0));
+  const dmax = () => { const p = eff(); return p.length ? Math.max.apply(null, p) : 0; };
+
+  function reseed() {
+    S.nz = [];
+    for (let i = 0; i < 8; i++) {
+      const u = Math.max(1e-9, Math.random()), v = Math.random();
+      S.nz.push(Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v));
+    }
+  }
+  reseed();
 
   function buildPos() {
     const row = $('posRow');
-    row.innerHTML = '<span class="lbl">Positions (cm)</span>';
+    row.innerHTML = '<span class="lbl">Element positions (cm)</span>';
     S.pos.forEach((p, i) => {
       const sp = document.createElement('span');
-      sp.className = 'pair';
-      sp.innerHTML = '<label class="sm" style="color:' + (i ? PC[i - 1] : 'var(--text-secondary)') + '">A' + (i + 1) + '</label>'
-        + '<input type="number" id="p' + i + '" value="' + p + '" step="0.1" min="0" max="400" style="width:62px"'
-        + (i === 0 ? ' disabled' : '') + '>';
+      sp.className = 'pos';
+      sp.innerHTML = '<label for="pos' + i + '">A' + (i + 1) + '</label>'
+        + '<input type="number" id="pos' + i + '" value="' + p + '" step="0.1" min="0" max="400"'
+        + ' aria-label="Element ' + (i + 1) + ' position in centimetres"' + (i === 0 ? ' disabled' : '') + '>';
       row.appendChild(sp);
     });
     S.pos.forEach((p, i) => {
       if (i === 0) return;
-      $('p' + i).addEventListener('input', () => {
-        S.pos[i] = +$('p' + i).value || 0;
-        updateUI();
+      $('pos' + i).addEventListener('input', () => {
+        const v = parseFloat($('pos' + i).value);
+        S.pos[i] = isFinite(v) && v >= 0 ? v : 0;
+        update();
       });
     });
   }
 
   function solve() {
-    const L = lam(), tp = truePhases();
-    const bl = S.pos.slice(1).map((p, i) => ({ d: p, q: wrap(tp[i]), c: i })).filter(b => b.d > 0);
+    const L = lam(), mp = measPhases(), p = eff();
+    const bl = p.slice(1).map((d, i) => ({ d: d, q: wrap(mp[i]), c: i })).filter(b => b.d > 0);
     if (!bl.length) return null;
-    const asinD = s => Math.asin(Math.max(-1, Math.min(1, s))) * 180 / Math.PI;
+    const asinD = s => Math.asin(Math.max(-1, Math.min(1, s))) / RAD;
     let sinEst = Math.max(-1, Math.min(1, bl[0].q * L / (360 * bl[0].d)));
     const steps = [{ th: asinD(sinEst), k: 0, d: bl[0].d, c: bl[0].c }];
     for (let i = 1; i < bl.length; i++) {
@@ -188,21 +882,28 @@ summary { cursor: pointer; color: var(--text-primary); }
     return { steps: steps, th: steps[steps.length - 1].th, d0: bl[0].d };
   }
 
-  function updateUI() {
-    $('thv').textContent = S.th + '°';
-    const L = lam(), tp = truePhases();
+  /* --- readouts ------------------------------------------------- */
+
+  function update() {
+    const t = theme(), L = lam(), p = eff(), tp = truePhases(), mp = measPhases();
+
     const box = $('cards');
     box.innerHTML = '';
-    tp.forEach((t, i) => {
-      const d = S.pos[i + 1];
-      const amb = d > L / 2 ? ' · <span style="color: var(--text-warning);">ambiguous</span>' : '';
+    tp.forEach((v, i) => {
+      const d = p[i + 1], m = mp[i];
+      const amb = d > L / 2 ? ' · ambiguous' : ' · unambiguous';
       const el = document.createElement('div');
       el.className = 'card';
-      el.innerHTML = '<div class="hd"><span class="dot" style="background:' + PC[i] + '"></span>A' + (i + 2) + ' &minus; A1</div>'
-        + '<div class="big">' + wrap(t).toFixed(0) + '°</div>'
-        + '<div class="ft">true ' + t.toFixed(0) + '° · d ' + d.toFixed(1) + ' cm = ' + (d / L).toFixed(2) + ' λ' + amb + '</div>';
+      el.innerHTML = '<div class="hd">A' + (i + 2) + ' &minus; A1</div>'
+        + '<div class="big" style="color:' + t.s[i % 7] + '">' + fmtNum(wrap(m), 0) + '°</div>'
+        + '<div class="ft">true ' + fmtNum(v, 0) + '° · ' + fmtNum(d, 1) + ' cm = '
+        + fmtNum(L > 0 ? d / L : 0, 2) + ' λ' + amb + '</div>';
       box.appendChild(el);
     });
+    if (!tp.length) {
+      box.innerHTML = '<div class="card"><div class="hd">No baseline</div>'
+        + '<div class="big">&mdash;</div><div class="ft">add a second element</div></div>';
+    }
 
     const sv = solve();
     const sbox = $('solve');
@@ -212,268 +913,393 @@ summary { cursor: pointer; color: var(--text-primary); }
         const el = document.createElement('div');
         el.className = 'card';
         const ft = i === 0
-          ? (st.d <= L / 2 ? 'coarse, no cycles can hide here'
-            : 'coarse — but ' + st.d.toFixed(1) + ' cm > λ/2, even this baseline hides cycles')
-          : 'added back k = ' + (st.k > 0 ? '+' : '') + st.k + ' cycle' + (Math.abs(st.k) === 1 ? '' : 's');
-        el.innerHTML = '<div class="hd"><span class="dot" style="background:' + PC[st.c] + '"></span>Step ' + (i + 1) + ' · ' + st.d.toFixed(1) + ' cm</div>'
-          + '<div class="big" style="font-size:18px">' + st.th.toFixed(1) + '°</div>'
+          ? (st.d <= L / 2 ? 'coarse, no cycle can hide' : 'coarse, but already ambiguous')
+          : 'added k = ' + (st.k > 0 ? '+' : st.k < 0 ? '−' : '') + Math.abs(st.k)
+            + ' cycle' + (Math.abs(st.k) === 1 ? '' : 's');
+        el.innerHTML = '<div class="hd">Step ' + (i + 1) + ' · ' + fmtNum(st.d, 1) + ' cm</div>'
+          + '<div class="big" style="color:' + t.s[st.c % 7] + '">' + fmtNum(st.th, 1) + '°</div>'
           + '<div class="ft">' + ft + '</div>';
         sbox.appendChild(el);
       });
-      $('res').textContent = sv.th.toFixed(1) + '°';
-      const err = Math.abs(sv.th - S.th);
-      $('resn').textContent = err < 0.5 ? 'matches the true angle — every cycle count was right'
-        : 'true angle is ' + S.th + '° — ' + (sv.d0 > L / 2
-          ? 'the ' + sv.d0.toFixed(1) + ' cm starting baseline is itself ambiguous (d > λ/2), so step 1 starts wrong'
-          : 'a cycle count was picked wrong, the spacing jump is too big');
-      $('resn').style.color = err < 0.5 ? 'var(--text-muted)' : 'var(--text-warning)';
     } else {
-      $('res').textContent = '—';
-      $('resn').textContent = 'no usable baseline — set a spacing above 0 cm';
-      $('resn').style.color = 'var(--text-muted)';
+      sbox.innerHTML = '<div class="card"><div class="hd">Step 1</div>'
+        + '<div class="big">&mdash;</div><div class="ft">set a spacing above 0 cm</div></div>';
+    }
+
+    const hv = $('heroVal'), hb = $('heroBadge'), hf = $('heroFt');
+    if (sv) {
+      const D = dmax();
+      const tol = D > 0 ? 0.5 * L / D : Infinity;
+      const ok = Math.abs(Math.sin(sv.th * RAD) - Math.sin(S.th * RAD)) < tol;
+      const err = Math.abs(sv.th - S.th);
+      hv.innerHTML = fmtNum(sv.th, 1) + '<span class="u">°</span>';
+      hb.className = 'badge ' + (ok ? 'good' : 'bad');
+      hb.textContent = ok ? 'chain resolves' : 'cycle count wrong';
+      hf.textContent = 'true ' + fmtNum(S.th, 0) + '°, miss ' + fmtNum(err, 1) + '°';
+    } else {
+      hv.innerHTML = '&mdash;';
+      hb.className = 'badge warn';
+      hb.textContent = 'no baseline';
+      hf.textContent = 'set a spacing above 0 cm';
+    }
+
+    const wk = $('work');
+    wk.innerHTML = '';
+    const li = s => { const e = document.createElement('li'); e.innerHTML = s; wk.appendChild(e); };
+    li('λ = ' + fmtNum(C_CM_GHZ, 2) + ' · ' + fmtNum(S.vf, 3) + ' / ' + fmtNum(S.f, 2)
+       + ' GHz = ' + fmtNum(L, 2) + ' cm, so λ/2 = ' + fmtNum(L / 2, 2) + ' cm');
+    if (sv) {
+      const s0 = sv.steps[0], q0 = wrap(mp[s0.c]);
+      li('shortest usable baseline <span class="var">d</span> = ' + fmtNum(s0.d, 1) + ' cm = '
+         + fmtNum(L > 0 ? s0.d / L : 0, 2) + ' λ, ' + (s0.d <= L / 2 ? 'unambiguous' : 'already ambiguous'));
+      li('Δφ = 360° · ' + fmtNum(s0.d, 1) + ' · sin ' + fmtNum(S.th, 0) + '° / ' + fmtNum(L, 2)
+         + ' = ' + fmtNum(tp[s0.c], 1) + '°, read as ' + fmtNum(q0, 1) + '° after wrapping');
+      li('sin θ = ' + fmtNum(q0, 1) + ' · ' + fmtNum(L, 2) + ' / (360 · ' + fmtNum(s0.d, 1) + ') = '
+         + fmtNum(Math.sin(s0.th * RAD), 3) + ', so θ = ' + fmtNum(s0.th, 1) + '°');
+      const sl = sv.steps[sv.steps.length - 1];
+      if (sv.steps.length > 1) {
+        li('longest baseline ' + fmtNum(sl.d, 1) + ' cm reads ' + fmtNum(wrap(mp[sl.c]), 1)
+           + '°; adding k = ' + (sl.k > 0 ? '+' : sl.k < 0 ? '−' : '') + Math.abs(sl.k)
+           + ' cycles gives θ = ' + fmtNum(sl.th, 1) + '°');
+      }
     }
   }
 
-  function setF(v) {
-    S.f = Math.min(18, Math.max(0.5, v));
-    $('fr').value = S.f; $('frn').value = S.f.toFixed(1);
-    updateUI();
-  }
+  /* --- drawing -------------------------------------------------- */
 
-  function fit(c) {
-    const r = c.getBoundingClientRect(), dp = window.devicePixelRatio || 1;
-    const W = Math.round(r.width * dp), H = Math.round(r.height * dp);
-    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
-    c.getContext('2d').setTransform(dp, 0, 0, dp, 0, 0);
-    return [r.width, r.height];
-  }
-
-  function arrow(g, x, y, dx, dy, sz) {
-    const a = Math.atan2(dy, dx);
-    g.beginPath();
-    g.moveTo(x, y); g.lineTo(x - sz * Math.cos(a - 0.4), y - sz * Math.sin(a - 0.4));
-    g.moveTo(x, y); g.lineTo(x - sz * Math.cos(a + 0.4), y - sz * Math.sin(a + 0.4));
-    g.stroke();
-  }
+  function fsFor(w) { return Math.max(12, Math.min(15, Math.round(w / 78))); }
 
   function drawGeo(time) {
-    const c = $('geo'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bds = cvv('--border-strong');
-    const th = S.th * Math.PI / 180, L = lam();
-    const ml = 50, mr = 50, cy = h - 52;
-    const mx = Math.max.apply(null, S.pos);
-    const scale = (w - ml - mr) / Math.max(mx, 1);
-    const ax = S.pos.map(p => ml + p * scale);
-    const lp = L * scale;
-    const cx = (ml + w - mr) / 2;
-    const px = -Math.sin(th), py = Math.cos(th);
-    const qx = Math.cos(th), qy = Math.sin(th);
-    const R = Math.hypot(w, h);
+    const c = $('geo'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = fsFor(w);
+    const padL = fs * 4.6, padR = fs * 2.6, padT = fs * 1.6, padB = fs * 3.2;
+    const iw = Math.max(12, w - padL - padR), ih = Math.max(12, h - padT - padB);
 
-    g.save(); g.beginPath(); g.rect(0, 0, w, cy); g.clip();
-    g.strokeStyle = '#378ADD'; g.globalAlpha = 0.4; g.lineWidth = 1.5;
-    const off = (time * 0.05) % Math.max(lp, 1);
-    for (let k = -2; k * lp < R * 1.2 && lp > 0.5; k++) {
-      const s = k * lp - off;
-      const bx = cx - px * s, by = cy - py * s;
+    const p = eff(), M = Math.max(1, dmax());
+    const xLo = -0.10 * M, xHi = M * 1.10, xSpan = xHi - xLo;
+    const yTot = xSpan * ih / iw, yLo = -0.17 * yTot, yHi = yLo + yTot;
+
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: xLo, max: xHi, unit: 'cm', label: 'array axis' },
+      { min: yLo, max: yHi, unit: 'cm', label: 'range from array' },
+      { padL: padL, padR: padR, padT: padT, padB: padB, fontSize: fs });
+
+    const sc = P.w / xSpan;                       /* pixels per cm, equal on both axes */
+    const cx = P.X(M / 2), cy = P.Y(0);
+    const th = S.th * RAD;
+    const ux = Math.sin(th), uy = -Math.cos(th);  /* unit vector toward the emitter */
+    const qx = Math.cos(th), qy = Math.sin(th);   /* along a wavefront */
+    const L = lam(), lp = L * sc;
+    const R = Math.hypot(P.w, P.h);
+
+    const step = lp > 0 ? Math.max(1, Math.ceil(5 / lp)) : 1;
+    const gap = lp * step;
+    P.clip(g);
+    if (gap > 2 && isFinite(gap)) {
+      g.save();
+      g.globalAlpha = 0.5; g.strokeStyle = t.s1; g.lineWidth = 1.2;
+      const off = (time * 0.05 * S.ws) % gap;
+      const K = Math.min(400, Math.ceil(R / gap) + 2);
       g.beginPath();
-      g.moveTo(bx - qx * R, by - qy * R); g.lineTo(bx + qx * R, by + qy * R);
-      g.stroke();
+      for (let k = -K; k <= K; k++) {
+        const d = k * gap - off;
+        const bx = cx + ux * d, by = cy + uy * d;
+        g.moveTo(bx - qx * R, by - qy * R); g.lineTo(bx + qx * R, by + qy * R);
+      }
+      g.stroke(); g.restore();
     }
-    g.restore(); g.globalAlpha = 1;
 
-    const R2 = Math.min(w / 2 - 46, cy - 46);
-    const ex = cx + Math.sin(th) * R2, ey = cy - Math.cos(th) * R2;
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([5, 5]);
-    g.beginPath(); g.moveTo(ex, ey); g.lineTo(cx, cy); g.stroke();
-    g.setLineDash([]);
-    arrow(g, cx - px * 30, cy - py * 30, px, py, 9);
+    g.save();
+    g.strokeStyle = t.text2; g.globalAlpha = 0.65; g.lineWidth = 1; g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, P.y0 + P.h * 0.05); g.stroke();
+    g.restore();
 
-    g.strokeStyle = sub; g.globalAlpha = 0.7; g.lineWidth = 1; g.setLineDash([3, 5]);
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, Math.max(12, cy - R2 - 8)); g.stroke();
-    g.setLineDash([]); g.globalAlpha = 1;
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('0° (straight ahead)', cx, Math.max(12, cy - R2 - 12));
+    const Rpx = Math.min(P.h * 0.70, P.w * 0.40);
+    const emx = Math.min(Math.max(cx + ux * Rpx, P.x0 + 12), P.x1 - 12);
+    const emy = Math.min(Math.max(cy + uy * Rpx, P.y0 + 12), P.y1 - 12);
+
+    g.save();
+    g.strokeStyle = t.s7; g.globalAlpha = 0.55; g.lineWidth = 1; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(emx, emy); g.lineTo(cx, cy); g.stroke();
+    g.restore();
 
     if (Math.abs(S.th) > 1) {
-      const a = Math.atan2(-Math.cos(th), Math.sin(th));
-      g.strokeStyle = sub;
-      g.beginPath(); g.arc(cx, cy, 40, -Math.PI / 2, a, S.th < 0); g.stroke();
-      const m = (-Math.PI / 2 + a) / 2;
-      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText('θ = ' + S.th + '°', cx + Math.cos(m) * 62, cy + Math.sin(m) * 62);
+      const ra = Math.min(P.h * 0.30, P.w * 0.11);
+      const a1 = Math.atan2(uy, ux);
+      g.save(); g.strokeStyle = t.text2; g.lineWidth = 1;
+      g.beginPath(); g.arc(cx, cy, ra, -Math.PI / 2, a1, S.th < 0); g.stroke(); g.restore();
     }
 
-    g.fillStyle = '#D4537E';
-    g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('emitter', ex, ey - 11);
-
-    g.strokeStyle = bds; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(ml - 14, cy); g.lineTo(w - mr + 14, cy); g.stroke();
-    ax.forEach((x, i) => {
-      g.fillStyle = i === 0 ? ink : PC[i - 1];
-      g.beginPath(); g.arc(x, cy, 5, 0, 7); g.fill();
-      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText('A' + (i + 1), x, cy + 12);
+    g.save();
+    g.strokeStyle = t.text; g.lineWidth = 1.2;
+    g.beginPath();
+    g.moveTo(Math.max(P.x0, P.X(xLo * 0.6)), cy); g.lineTo(Math.min(P.x1, P.X(M * 1.06)), cy);
+    g.stroke();
+    const eh = Math.max(7, Math.min(22, P.h * 0.085));
+    const dotR = Math.max(2.5, Math.min(4.5, P.h * 0.013));
+    p.forEach((pp, i) => {
+      const x = P.X(pp);
+      g.strokeStyle = t.text; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(x, cy - eh * 0.42); g.lineTo(x, cy - eh); g.stroke();
+      g.beginPath(); g.moveTo(x, cy); g.lineTo(x, cy - eh * 0.28); g.stroke();
+      g.fillStyle = i === 0 ? t.text : t.s[(i - 1) % 7];
+      g.beginPath(); g.arc(x, cy, dotR, 0, Math.PI * 2); g.fill();
     });
+    g.restore();
 
-    g.fillStyle = '#378ADD'; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('blue lines = wave peaks, ' + L.toFixed(1) + ' cm apart — that gap is one wavelength (λ)', 12, 10);
+    g.save();
+    g.fillStyle = t.text2; g.font = t.font(fs); g.textAlign = 'center'; g.textBaseline = 'top';
+    let lastX = -1e9;
+    p.forEach((pp, i) => {
+      const s2 = 'A' + (i + 1), tw = g.measureText(s2).width;
+      const x = Math.min(Math.max(P.X(pp), P.x0 + tw / 2 + 2), P.x1 - tw / 2 - 2);
+      if (x - lastX < tw + 5) return;
+      g.fillText(s2, x, cy + fs * 0.45);
+      lastX = x;
+    });
+    g.restore();
+
+    g.fillStyle = t.s7;
+    g.beginPath(); g.arc(emx, emy, Math.max(3, Math.min(6, P.h * 0.019)), 0, Math.PI * 2); g.fill();
+    P.unclip(g);
+
+    if (M > 0) {
+      const dy = cy + (P.y1 - cy) * 0.60;
+      dimension(g, P.X(0), dy, P.X(M), dy, fmtNum(M, 1) + ' cm', { size: fs });
+    }
+    if (gap > 16 && isFinite(gap)) {
+      const base = Rpx * 0.40, lat = P.w * 0.11;
+      const ax0 = cx + ux * base + qx * lat, ay0 = cy + uy * base + qy * lat;
+      const ax1 = ax0 + ux * gap, ay1 = ay0 + uy * gap;
+      const inside = (x, y) => x > P.x0 + 4 && x < P.x1 - 4 && y > P.y0 + 4 && y < P.y1 - 4;
+      if (inside(ax0, ay0) && inside(ax1, ay1)) {
+        dimension(g, ax0, ay0, ax1, ay1,
+          (step > 1 ? step + ' × λ = ' : 'λ = ') + fmtNum(L * step, 2) + ' cm',
+          { size: fs, colour: t.s1 });
+      }
+    }
+    leader(g, emx, emy, 'emitter', { box: P, colour: t.s7, size: fs, dot: false, dx: ux >= 0 ? -34 : 34, dy: 26 });
+    if (Math.abs(S.th) > 1) {
+      const ra = Math.min(P.h * 0.30, P.w * 0.11);
+      const m = (-Math.PI / 2 + Math.atan2(uy, ux)) / 2;
+      leader(g, cx + Math.cos(m) * ra, cy + Math.sin(m) * ra, 'θ = ' + fmtNum(S.th, 0) + '°',
+        { box: P, colour: t.text2, size: fs, dot: false, dx: S.th >= 0 ? 32 : -32, dy: -10 });
+    }
+    leader(g, P.X(p[0]), cy - eh, 'reference element', { box: P, colour: t.text2, size: fs, dx: 34, dy: -28 });
   }
 
-  function drawScope(time) {
-    const c = $('scope'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const ink = cvv('--text-primary'), sub = cvv('--text-secondary'), bd = cvv('--border');
-    const ph = [0].concat(truePhases());
-    const lx = 96, rx = w - 12, t = 14, b = 24;
-    const rh = (h - t - b) / ph.length;
-    const lp = (rx - lx) / 3;
-    const amp = Math.min(rh * 0.3, 26);
-    const scroll = (time * 0.04) % lp;
-    const x0 = lx + lp + ((0.25 * lp + scroll) % lp + lp) % lp;
+  function drawScope() {
+    const c = $('scope'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = fsFor(w);
+    const ph = [0].concat(measPhases());
+    const n = ph.length;
+    const T = 1 / Math.max(0.01, S.f);                 /* period, ns */
+    const half = Math.max(1, S.cy) / 2 * T;
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
-    g.beginPath(); g.moveTo(x0, t); g.lineTo(x0, h - b); g.stroke();
-    g.setLineDash([]);
-    g.globalAlpha = 0.3; g.setLineDash([2, 6]);
-    for (let k = Math.ceil((lx - x0) / lp); x0 + k * lp <= rx; k++) {
-      const xk = x0 + k * lp;
-      if (k === 0 || xk < lx) continue;
-      g.beginPath(); g.moveTo(xk, t); g.lineTo(xk, h - b); g.stroke();
-    }
-    g.setLineDash([]); g.globalAlpha = 1;
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -half, max: half, unit: 'ns', label: 'time from trigger' },
+      { min: n + 0.5, max: 0.5, label: 'element',
+        fmt: v => { const r = Math.round(v); return (Math.abs(v - r) < 1e-6 && r >= 1 && r <= n) ? 'A' + r : ''; } },
+      { fontSize: fs });
 
-    for (let i = 0; i < ph.length; i++) {
-      const yc = t + rh * i + rh / 2;
-      const col = i === 0 ? ink : PC[i - 1];
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(lx, yc); g.lineTo(rx, yc); g.stroke();
+    const amp = 0.38;
+    const pkR = Math.max(2.5, Math.min(4, P.h * 0.013));
+    let worst = -1, worstK = 0;
+
+    P.clip(g);
+    g.save();
+    g.strokeStyle = t.text2; g.globalAlpha = 0.7; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(P.X(0), P.y0); g.lineTo(P.X(0), P.y1); g.stroke();
+    g.restore();
+
+    for (let i = 0; i < n; i++) {
+      const col = i === 0 ? t.text : t.s[(i - 1) % 7];
+      const row = i + 1;
+      g.strokeStyle = t.grid; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(P.x0, P.Y(row)); g.lineTo(P.x1, P.Y(row)); g.stroke();
 
       g.strokeStyle = col; g.lineWidth = 1.8;
       g.beginPath();
-      for (let x = lx; x <= rx; x += 2) {
-        const y = yc - amp * Math.sin(2 * Math.PI * (x - x0) / lp + Math.PI / 2 + ph[i] * Math.PI / 180);
-        if (x === lx) g.moveTo(x, y); else g.lineTo(x, y);
+      const N = Math.max(40, Math.round(P.w));
+      for (let k = 0; k <= N; k++) {
+        const tau = -half + 2 * half * k / N;
+        const v = Math.sin(2 * Math.PI * tau / T + Math.PI / 2 + ph[i] * RAD);
+        const x = P.X(tau), y = P.Y(row - amp * v);
+        if (k === 0) g.moveTo(x, y); else g.lineTo(x, y);
       }
       g.stroke();
 
-      const xm = x0 - ph[i] / 360 * lp;
-      g.globalAlpha = 0.7; g.fillStyle = col;
-      for (let k = Math.ceil((lx - xm) / lp); xm + k * lp <= rx; k++) {
-        const cxk = xm + k * lp;
-        if (cxk >= lx) { g.beginPath(); g.arc(cxk, yc - amp, 3.5, 0, 7); g.fill(); }
+      const tTrue = -ph[i] / 360 * T;
+      g.save(); g.globalAlpha = 0.7; g.fillStyle = col;
+      const kmin = Math.ceil((-half - tTrue) / T), kmax = Math.floor((half - tTrue) / T);
+      for (let k = kmin; k <= kmax && k - kmin < 60; k++) {
+        g.beginPath(); g.arc(P.X(tTrue + k * T), P.Y(row - amp), pkR, 0, Math.PI * 2); g.fill();
       }
-      g.globalAlpha = 1;
-      const xc = x0 - wrap(ph[i]) / 360 * lp;
-      g.fillStyle = col;
-      g.beginPath(); g.arc(xc, yc - amp, 4.5, 0, 7); g.fill();
+      g.restore();
 
-      g.fillStyle = col; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'middle';
-      g.fillText('A' + (i + 1), 12, yc - 7);
-      g.fillStyle = sub; g.font = fnt(12);
-      g.fillText(i === 0 ? 'ref' : wrap(ph[i]).toFixed(0) + '°', 12, yc + 9);
+      const tRead = -wrap(ph[i]) / 360 * T;
+      g.fillStyle = col;
+      g.beginPath(); g.arc(P.X(tRead), P.Y(row - amp), pkR * 1.35, 0, Math.PI * 2); g.fill();
+
       const turns = Math.round((ph[i] - wrap(ph[i])) / 360);
       if (turns !== 0) {
-        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(12);
-        g.fillText((turns > 0 ? '+' : '') + turns + ' hidden', 12, yc + 24);
-        if (xm >= lx && xm <= rx) {
-          g.strokeStyle = cvv('--text-warning') || sub; g.lineWidth = 1.5;
-          g.beginPath(); g.arc(xm, yc - amp, 8.5, 0, 7); g.stroke();
+        if (Math.abs(turns) > Math.abs(worstK)) { worst = i; worstK = turns; }
+        if (tTrue >= -half && tTrue <= half) {
+          g.strokeStyle = t.warn; g.lineWidth = 1.5;
+          g.beginPath(); g.arc(P.X(tTrue), P.Y(row - amp), pkR * 2.4, 0, Math.PI * 2); g.stroke();
         }
       }
     }
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('time →', lx + (rx - lx) / 2, h - 4);
+    P.unclip(g);
+
+    leader(g, P.X(0), P.Y(1 - amp), 'A1 peak, the trigger',
+      { box: P, colour: t.text, size: fs, dx: 34, dy: -22 });
+    if (worst > 0) {
+      const tTrue = -ph[worst] / 360 * T, tRead = -wrap(ph[worst]) / 360 * T;
+      leader(g, P.X(tRead), P.Y(worst + 1 - amp),
+        'receiver reads this peak', { box: P, colour: t.s[(worst - 1) % 7], size: fs, dx: -34, dy: 26 });
+      if (tTrue >= -half && tTrue <= half) {
+        leader(g, P.X(tTrue), P.Y(worst + 1 - amp),
+          fmtNum(Math.abs(worstK), 0) + ' cycle' + (Math.abs(worstK) === 1 ? '' : 's') + ' hidden',
+          { box: P, colour: t.warn, size: fs, dot: false, dx: 34, dy: -24 });
+      }
+    }
   }
 
   function drawChart() {
-    const c = $('ch'), wh = fit(c), w = wh[0], h = wh[1], g = c.getContext('2d');
-    g.clearRect(0, 0, w, h);
-    const sub = cvv('--text-secondary'), bd = cvv('--border');
-    const l = 56, r = 14, t = 12, b = 34;
-    const X = a => l + (a + 90) / 180 * (w - l - r);
-    const Y = v => t + (180 - v) / 360 * (h - t - b);
-    const L = lam();
+    const c = $('ch'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const fs = fsFor(w);
+    const sp = Math.max(5, S.an);
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: -sp, max: sp, unit: '°', label: 'emitter angle' },
+      { min: -180, max: 180, unit: '°', label: 'phase difference', dec: 0 },
+      { fontSize: fs });
 
-    g.font = fnt(12); g.fillStyle = sub;
-    [-180, -90, 0, 90, 180].forEach(v => {
-      g.strokeStyle = bd; g.lineWidth = v === 0 ? 1 : 0.5;
-      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
-      g.textAlign = 'right'; g.textBaseline = 'middle';
-      g.fillText(v + '°', l - 8, Y(v));
-    });
-    [-90, -45, 0, 45, 90].forEach(a => {
-      g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(a + '°', X(a), h - b + 8);
-    });
-    g.textAlign = 'center';
-    g.fillText('emitter angle', l + (w - l - r) / 2, h - 13);
-
-    S.pos.slice(1).forEach((d, j) => {
-      g.strokeStyle = PC[j]; g.lineWidth = 1.8;
+    const L = lam(), p = eff(), mp = measPhases();
+    P.clip(g);
+    p.slice(1).forEach((d, j) => {
+      if (!(d > 0) || !(L > 0)) return;
+      g.strokeStyle = t.s[j % 7]; g.lineWidth = 1.8;
       g.beginPath();
       let prev = null;
-      for (let a = -90; a <= 90; a += 0.25) {
-        const v = wrap(360 * d * Math.sin(a * Math.PI / 180) / L);
-        if (prev === null || Math.abs(v - prev) > 180) g.moveTo(X(a), Y(v));
-        else g.lineTo(X(a), Y(v));
+      const N = Math.max(120, Math.round(P.w * 2));
+      for (let k = 0; k <= N; k++) {
+        const a = -sp + 2 * sp * k / N;
+        const v = wrap(360 * d * Math.sin(a * RAD) / L);
+        if (prev === null || Math.abs(v - prev) > 180) g.moveTo(P.X(a), P.Y(v));
+        else g.lineTo(P.X(a), P.Y(v));
         prev = v;
       }
       g.stroke();
     });
 
-    g.strokeStyle = sub; g.lineWidth = 1; g.setLineDash([4, 4]);
-    g.beginPath(); g.moveTo(X(S.th), t); g.lineTo(X(S.th), h - b); g.stroke();
-    g.setLineDash([]);
-    truePhases().forEach((tp, j) => {
-      g.fillStyle = PC[j];
-      g.beginPath(); g.arc(X(S.th), Y(wrap(tp)), 4, 0, 7); g.fill();
-    });
+    const onScale = Math.abs(S.th) <= sp;
+    if (onScale) {
+      g.save();
+      g.strokeStyle = t.text2; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(P.X(S.th), P.y0); g.lineTo(P.X(S.th), P.y1); g.stroke();
+      g.restore();
+      const r = Math.max(3, Math.min(5.5, P.h * 0.018));
+      mp.forEach((v, j) => {
+        g.fillStyle = t.s[j % 7];
+        g.beginPath(); g.arc(P.X(S.th), P.Y(wrap(v)), r, 0, Math.PI * 2); g.fill();
+      });
+    }
+    P.unclip(g);
+
+    if (onScale && mp.length) {
+      leader(g, P.X(S.th), P.Y(wrap(mp[0])), 'A2 reads ' + fmtNum(wrap(mp[0]), 0) + '°',
+        { box: P, colour: t.s1, size: fs, dx: 34, dy: -24 });
+      const last = mp.length - 1;
+      if (last > 0) {
+        leader(g, P.X(S.th), P.Y(wrap(mp[last])), 'A' + (last + 2) + ' reads ' + fmtNum(wrap(mp[last]), 0) + '°',
+          { box: P, colour: t.s[last % 7], size: fs, dx: -34, dy: 26 });
+      }
+    }
   }
 
-  [2, 3, 4, 5, 6].forEach(n => {
-    $('c' + n).addEventListener('click', () => {
-      S.n = n; S.pos = DEF[n].slice();
-      [2, 3, 4, 5, 6].forEach(o => $('c' + o).classList.remove('on'));
-      $('c' + n).classList.add('on');
-      buildPos(); updateUI();
-    });
-  });
-  $('th').addEventListener('input', () => { S.th = +$('th').value; updateUI(); });
-  $('fr').addEventListener('input', () => setF(+$('fr').value));
-  $('frn').addEventListener('change', () => setF(+$('frn').value || 2));
+  /* --- controls ------------------------------------------------- */
+
+  function setRange(id, v) { $(id).value = v; $(id + 'N').value = $(id).value; }
+
+  bindPair($('th'), $('thN'), v => { S.th = v; update(); });
+  bindPair($('fr'), $('frN'), v => { S.f = v; update(); });
+  bindPair($('bs'), $('bsN'), v => { S.bs = v; update(); });
+  bindPair($('sg'), $('sgN'), v => { S.sg = v; update(); });
+  bindPair($('vf'), $('vfN'), v => { S.vf = v; update(); });
+  bindPair($('cy'), $('cyN'), v => { S.cy = v; update(); });
+  bindPair($('ws'), $('wsN'), v => { S.ws = v; update(); });
+  bindPair($('an'), $('anN'), v => { S.an = v; update(); });
+
+  const NBTN = [2, 3, 4, 5, 6];
+  function setN(n, keep) {
+    S.n = n;
+    if (!keep) S.pos = DEF[n].slice();
+    NBTN.forEach(o => $('c' + o).classList.toggle('on', o === n));
+    buildPos();
+  }
+  NBTN.forEach(n => $('c' + n).addEventListener('click', () => { setN(n); update(); }));
+
+  $('rs').addEventListener('click', () => { reseed(); update(); });
   $('pp').addEventListener('click', () => {
     S.playing = !S.playing;
     $('pp').textContent = S.playing ? 'Pause' : 'Continue';
   });
   $('pp').textContent = S.playing ? 'Pause' : 'Continue';
 
-  const TOUR = [
-    { th: 0, f: 2, m: 'Broadside — every antenna hears the same phase; all cards read 0°.' },
-    { th: 30, f: 2, m: 'Tilt to 30° — each baseline now reads a different phase difference.' },
-    { th: 30, f: 8, m: 'Higher frequency — long baselines wrap; amber rings mark hidden cycles.' },
-    { th: 30, f: 18, m: 'At 18 GHz even the shortest baseline is ambiguous — recovery starts wrong.' }
+  const PRESETS = [
+    { id: 'pr1', th: 30, f: 1.5, pos: [0, 9] },
+    { id: 'pr2', th: 20, f: 1.575, pos: [0, 9, 38] },
+    { id: 'pr3', th: 30, f: 2.4, pos: [0, 2.4, 10, 30] },
+    { id: 'pr4', th: -40, f: 10, pos: [0, 1.2, 5, 18] },
+    { id: 'pr5', th: 12, f: 15, pos: [0, 0.9, 3.6, 14, 55] }
   ];
-  const tbs = document.querySelectorAll('.tb');
-  tbs.forEach(b => b.addEventListener('click', () => {
-    const st = TOUR[+b.dataset.s];
-    tbs.forEach(o => o.classList.remove('on'));
-    b.classList.add('on');
-    S.th = st.th; $('th').value = st.th;
-    setF(st.f);
-    $('tmsg').textContent = st.m;
+  PRESETS.forEach(pr => $(pr.id).addEventListener('click', () => {
+    PRESETS.forEach(o => $(o.id).classList.remove('on'));
+    $(pr.id).classList.add('on');
+    S.th = pr.th; setRange('th', pr.th);
+    S.f = pr.f; setRange('fr', pr.f);
+    S.bs = 1; setRange('bs', 1);
+    S.pos = pr.pos.slice();
+    setN(pr.pos.length, true);
+    update();
   }));
 
-  buildPos(); updateUI();
+  const TOUR = [
+    { id: 'tr0', th: 0, f: 2.4, m: 'Broadside: every element hears the same phase, all cards read 0°.' },
+    { id: 'tr1', th: 30, f: 2.4, m: 'Tilted to 30°: each baseline now reads a different phase difference.' },
+    { id: 'tr2', th: 30, f: 8, m: 'Higher frequency: long baselines wrap, amber rings mark the hidden cycles.' },
+    { id: 'tr3', th: 30, f: 18, m: 'At 18 GHz even the shortest baseline is ambiguous, so recovery starts wrong.' },
+    { id: 'trR', th: 30, f: 2.4, m: 'Back to the Wi-Fi case: a four-element array that resolves cleanly.' }
+  ];
+  TOUR.forEach(st => $(st.id).addEventListener('click', () => {
+    TOUR.forEach(o => $(o.id).classList.remove('on'));
+    $(st.id).classList.add('on');
+    if (st.id === 'trR') {
+      S.bs = 1; setRange('bs', 1);
+      S.sg = 0; setRange('sg', 0);
+      S.vf = 1; setRange('vf', 1);
+      S.pos = DEF[4].slice();
+      setN(4, true);
+    }
+    S.th = st.th; setRange('th', st.th);
+    S.f = st.f; setRange('fr', st.f);
+    $('tourNote').textContent = st.m;
+    update();
+  }));
+
+  buildPos();
+  update();
+
   let animT = 0, last = null;
   function frame(ts) {
     if (last === null) last = ts;
     if (S.playing) animT += Math.min(ts - last, 50);
     last = ts;
-    drawGeo(animT); drawScope(animT); drawChart();
+    drawGeo(animT); drawScope(); drawChart();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
