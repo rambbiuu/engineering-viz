@@ -121,14 +121,12 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 <div class="legend">
   <span><span class="dot" style="background:#C0504D"></span>Emitter, drag it</span>
   <span><span class="dot" style="background:#4F81BD"></span>A receiver site</span>
-  <span><span class="dot" style="background:#8a8985"></span>Fix from the crossing bearings</span>
 </div>
 
 <p class="sec"><b>2 &middot; Inside the crossing region</b> <span>Zoomed in: widen the bearing accuracy and watch the overlap grow</span></p>
 <canvas id="zoom" style="height: 320px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#C0504D"></span>True emitter</span>
-  <span><span class="dot" style="background:#8a8985"></span>Fix from the bearings</span>
   <span><span class="dot" style="background:#4F81BD"></span>Each site&rsquo;s &plusmn;&sigma; wedge &mdash; the overlap is where it can be</span>
 </div>
 
@@ -243,17 +241,6 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     }
     g.restore();
 
-    var f = fix();
-    if (f) {
-      var fx = X(f.x), fy = Y(f.y);
-      var zw = zoomHalfKm();
-      g.strokeStyle = '#8064A2'; g.lineWidth = 1; g.setLineDash([4, 3]);
-      g.strokeRect(X(f.x - zw), Y(f.y + zw), X(f.x + zw) - X(f.x - zw), Y(f.y - zw) - Y(f.y + zw));
-      g.setLineDash([]);
-      g.strokeStyle = mut; g.lineWidth = 1.4;
-      g.beginPath(); g.moveTo(fx - 7, fy); g.lineTo(fx + 7, fy);
-      g.moveTo(fx, fy - 7); g.lineTo(fx, fy + 7); g.stroke();
-    }
 
     for (var j = 0; j < S.n; j++) {
       var sx = X(S.sx[j]), sy = Y(S.sy[j]);
@@ -403,12 +390,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.setLineDash([]);
     }
     g.restore();
-
-    // fix and truth
-    var fxp = PX(f.x), fyp = PY(f.y);
-    g.strokeStyle = mut; g.lineWidth = 1.6;
-    g.beginPath(); g.moveTo(fxp - 8, fyp); g.lineTo(fxp + 8, fyp);
-    g.moveTo(fxp, fyp - 8); g.lineTo(fxp, fyp + 8); g.stroke();
+    // the true emitter
     g.fillStyle = '#C0504D';
     g.beginPath(); g.arc(PX(S.ex), PY(S.ey), 5.5, 0, 7); g.fill();
 
