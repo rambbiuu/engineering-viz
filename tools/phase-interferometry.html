@@ -83,7 +83,7 @@ input:focus-visible, button:focus-visible { outline: 2px solid #4472C4; outline-
 .pair { display: flex; align-items: center; gap: 6px; }
 .sec { margin: 1.5rem 0 6px; font-size: 14px; }
 .sec b { font-weight: 700; }
-.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 14px; }
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-primary); }
@@ -120,10 +120,10 @@ canvas { width: 100%; display: block; }
   <button id="pp" style="margin-left: auto;">Pause</button>
 </div>
 
-<p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, red dot = emitter</span></p>
+<p class="sec"><b>1 &middot; Sky view</b> <span>looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, red dot = emitter</span></p>
 <canvas id="geo" style="height: 290px;"></canvas>
 
-<p class="sec"><b>2 &middot; Measured phase differences</b> <span>&mdash; the numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
+<p class="sec"><b>2 &middot; Measured phase differences</b> <span>the numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
 <div class="cards">
   <div class="card">
     <div class="hd"><span class="dot" style="background: #ED7D31;"></span>A2 &minus; A1</div>
@@ -142,10 +142,10 @@ canvas { width: 100%; display: block; }
   </div>
 </div>
 
-<p class="sec"><b>3 &middot; Scope view</b> <span>&mdash; voltage out of each antenna cable vs time; the slide between traces is the phase difference (dashed line tracks one crest of A1)</span></p>
+<p class="sec"><b>3 &middot; Scope view</b> <span>voltage out of each antenna cable vs time; the slide between traces is the phase difference (dashed line tracks one crest of A1)</span></p>
 <canvas id="scope" style="height: 310px;"></canvas>
 
-<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>&mdash; sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
+<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
 <canvas id="ch" style="height: 230px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background: #ED7D31;"></span><span id="lg2">A2 &minus; A1</span></span>
@@ -453,7 +453,7 @@ canvas { width: 100%; display: block; }
     <div class="ft" id="sb3">&mdash;</div>
   </div>
 </div>
-<p class="sec"><b>Candidate angles per pair</b> <span>&mdash; hollow dots = every angle that pair's reading could mean; filled dot = the lap the algorithm picked; they only line up in one column</span></p>
+<p class="sec"><b>Candidate angles per pair</b> <span>hollow dots = every angle that pair's reading could mean; filled dot = the lap the algorithm picked; they only line up in one column</span></p>
 <canvas id="cand" style="height: 190px;"></canvas>
 <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 1.25rem; flex-wrap: wrap;">
   <span class="lbl">Estimated angle of arrival</span>

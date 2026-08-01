@@ -86,7 +86,7 @@ input:focus-visible, button:focus-visible { outline: 2px solid #94B6D2; outline-
 .sm { font-size: 13.5px; color: var(--text-primary); }
 .sec { margin: 1.5rem 0 6px; font-size: 14px; }
 .sec b { font-weight: 700; }
-.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 14px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-primary); }
@@ -114,7 +114,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   <span class="sm">ns rms</span>
 </div>
 
-<p class="sec"><b>1 &middot; The map</b> <span>&mdash; one curve per site pair; where they cross is the emitter; 12 &times; 8 km</span></p>
+<p class="sec"><b>1 &middot; The map</b> <span>one curve per site pair; where they cross is the emitter; 12 &times; 8 km</span></p>
 <canvas id="map" style="height: 380px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#C0504D"></span>Emitter, drag it</span>
@@ -122,7 +122,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   <span><span class="dot" style="background:#8a8985"></span>Fix from the crossing curves</span>
 </div>
 
-<p class="sec"><b>2 &middot; When each site heard it</b> <span>&mdash; arrival time against site 1; below the line means it heard the pulse earlier</span></p>
+<p class="sec"><b>2 &middot; When each site heard it</b> <span>arrival time against site 1; below the line means it heard the pulse earlier</span></p>
 <canvas id="toa" style="height: 260px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#94B6D2"></span>Arrival, relative to site 1</span>
@@ -130,7 +130,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 </div>
 <div class="cards" id="cards" style="margin-top: 1rem;"></div>
 
-<p class="sec"><b>3 &middot; Clock error becomes distance error</b> <span>&mdash; light travels 300 m in one microsecond, so that is the exchange rate</span></p>
+<p class="sec"><b>3 &middot; Clock error becomes distance error</b> <span>light travels 300 m in one microsecond, so that is the exchange rate</span></p>
 <canvas id="err" style="height: 260px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#94B6D2"></span>Position error = c &middot; &Delta;t</span>

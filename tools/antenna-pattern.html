@@ -85,7 +85,7 @@ input:focus-visible, button:focus-visible { outline: 2px solid #4472C4; outline-
 .sm { font-size: 13.5px; color: var(--text-primary); }
 .sec { margin: 1.5rem 0 6px; font-size: 14px; }
 .sec b { font-weight: 700; }
-.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 14px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { font-size: 13.5px; color: var(--text-primary); }
@@ -117,7 +117,7 @@ canvas { width: 100%; display: block; }
   <span class="sm" id="apNote" style="margin-left: auto;"></span>
 </div>
 
-<p class="sec"><b>1 &middot; The pattern</b> <span>&mdash; a cut through the beam, rings are decibels below the peak</span></p>
+<p class="sec"><b>1 &middot; The pattern</b> <span>a cut through the beam, rings are decibels below the peak</span></p>
 <canvas id="pol" style="height: 340px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#4472C4"></span>Radiated power</span>
@@ -125,10 +125,10 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#C0504D"></span>Boresight, the aiming direction</span>
 </div>
 
-<p class="sec"><b>2 &middot; Read off the curve</b> <span>&mdash; every number below is measured from the pattern you are looking at</span></p>
+<p class="sec"><b>2 &middot; Read off the curve</b> <span>every number below is measured from the pattern you are looking at</span></p>
 <div class="cards" id="cards"></div>
 
-<p class="sec"><b>3 &middot; The same pattern, unrolled</b> <span>&mdash; how a datasheet prints it: decibels against angle</span></p>
+<p class="sec"><b>3 &middot; The same pattern, unrolled</b> <span>how a datasheet prints it: decibels against angle</span></p>
 <canvas id="rect" style="height: 260px;"></canvas>
 
 <script>
