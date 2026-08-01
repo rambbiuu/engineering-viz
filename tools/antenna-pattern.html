@@ -117,7 +117,7 @@ canvas { width: 100%; display: block; }
   <span class="sm" id="apNote" style="margin-left: auto;"></span>
 </div>
 
-<p class="sec"><b>1 &middot; The pattern</b> <span>a cut through the beam, rings are decibels below the peak</span></p>
+<p class="sec"><b>1 &middot; The pattern</b> <span>A cut through the beam, rings are decibels below the peak</span></p>
 <canvas id="pol" style="height: 340px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#4472C4"></span>Radiated power</span>
@@ -125,10 +125,10 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#C0504D"></span>Boresight, the aiming direction</span>
 </div>
 
-<p class="sec"><b>2 &middot; Read off the curve</b> <span>every number below is measured from the pattern you are looking at</span></p>
+<p class="sec"><b>2 &middot; Read off the curve</b> <span>Every number below is measured from the pattern you are looking at</span></p>
 <div class="cards" id="cards"></div>
 
-<p class="sec"><b>3 &middot; The same pattern, unrolled</b> <span>how a datasheet prints it: decibels against angle</span></p>
+<p class="sec"><b>3 &middot; The same pattern, unrolled</b> <span>How a datasheet prints it: decibels against angle</span></p>
 <canvas id="rect" style="height: 260px;"></canvas>
 
 <script>
@@ -346,7 +346,7 @@ canvas { width: 100%; display: block; }
       g.beginPath(); g.moveTo(l, Y(sl)); g.lineTo(w - r, Y(sl)); g.stroke();
       g.setLineDash([]);
       g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
-      g.fillText('first sidelobe ' + sl.toFixed(1) + ' dB', w - r - 2, Y(sl) - 3);
+      g.fillText('First sidelobe ' + sl.toFixed(1) + ' dB', w - r - 2, Y(sl) - 3);
     }
   }
 

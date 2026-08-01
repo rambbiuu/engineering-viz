@@ -106,7 +106,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   <span class="lbl">Receiver sites</span>
   <button id="n2">2</button><button id="n3" class="on">3</button>
   <button id="n4">4</button><button id="n5">5</button>
-  <span class="sm" style="margin-left: auto;">drag a site or the emitter</span>
+  <span class="sm" style="margin-left: auto;">Drag a site or the emitter</span>
 </div>
 <div class="row" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="sg" style="min-width: 148px;">Bearing accuracy &sigma;</label>
@@ -115,7 +115,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   <span class="sm">&deg; rms</span>
 </div>
 
-<p class="sec"><b>1 &middot; The map</b> <span>each site's measured bearing, with its &plusmn;&sigma; wedge; 12 &times; 8 km</span></p>
+<p class="sec"><b>1 &middot; The map</b> <span>Each site's measured bearing, with its &plusmn;&sigma; wedge; 12 &times; 8 km</span></p>
 <canvas id="map" style="height: 380px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#C0504D"></span>Emitter, drag it</span>
@@ -123,15 +123,24 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   <span><span class="dot" style="background:#8a8985"></span>Fix from the crossing bearings</span>
 </div>
 
-<p class="sec"><b>2 &middot; What each site measures</b> <span>how far each site’s reading fell from the true bearing</span></p>
-<canvas id="brg" style="height: 260px;"></canvas>
+<p class="sec"><b>2 &middot; Inside the crossing region</b> <span>Zoomed on the fix: the error ellipse, and the circle half the fixes land inside</span></p>
+<canvas id="zoom" style="height: 320px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#C0504D"></span>True emitter</span>
+  <span><span class="dot" style="background:#8a8985"></span>Fix from the bearings</span>
+  <span><span class="dot" style="background:#8064A2"></span>1&sigma; error ellipse</span>
+  <span><span class="dot" style="background:#4BACC6"></span>CEP, half the fixes land inside</span>
+</div>
+
+<p class="sec"><b>3 &middot; What each site measures</b> <span>How far each site’s reading fell from the true bearing</span></p>
+<canvas id="brg" style="height: 330px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#4F81BD"></span>How far that site's reading was off</span>
   <span><span class="dot" style="background:#8a8985; opacity:0.35"></span>The &plusmn;&sigma; it is specified to</span>
 </div>
 <div class="cards" id="cards" style="margin-top: 1rem;"></div>
 
-<p class="sec"><b>3 &middot; Angle error becomes distance error</b> <span>the same &sigma; misses by more the further away the emitter is</span></p>
+<p class="sec"><b>4 &middot; Angle error becomes distance error</b> <span>The same &sigma; misses by more the further away the emitter is</span></p>
 <canvas id="rng" style="height: 260px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#4F81BD"></span>Cross-range miss, 2R&thinsp;tan&sigma;</span>
@@ -238,6 +247,10 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     var f = fix();
     if (f) {
       var fx = X(f.x), fy = Y(f.y);
+      var zw = zoomHalfKm();
+      g.strokeStyle = '#8064A2'; g.lineWidth = 1; g.setLineDash([4, 3]);
+      g.strokeRect(X(f.x - zw), Y(f.y + zw), X(f.x + zw) - X(f.x - zw), Y(f.y - zw) - Y(f.y + zw));
+      g.setLineDash([]);
       g.strokeStyle = mut; g.lineWidth = 1.4;
       g.beginPath(); g.moveTo(fx - 7, fy); g.lineTo(fx + 7, fy);
       g.moveTo(fx, fy - 7); g.lineTo(fx, fy + 7); g.stroke();
@@ -309,6 +322,119 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     g.fillText(nearest.toFixed(1) + ' km → ' + em.toFixed(0) + ' m', lx, Y(em) - 7);
   }
 
+  // 1-sigma position covariance implied by the bearing geometry, in km^2
+  function cov() {
+    var f = fix();
+    if (!f) return null;
+    var a = 0, b = 0, c = 0;
+    for (var i = 0; i < S.n; i++) {
+      var R = Math.hypot(f.x - S.sx[i], f.y - S.sy[i]);
+      if (R < 1e-6) continue;
+      var m = measBrg(i);
+      var ux = Math.cos(m), uy = -Math.sin(m);       // across the bearing
+      var wgt = 1 / Math.pow(R * S.sig * D2R, 2);    // tighter at short range
+      a += wgt * ux * ux; b += wgt * ux * uy; c += wgt * uy * uy;
+    }
+    var det = a * c - b * b;
+    if (!isFinite(det) || Math.abs(det) < 1e-12) return null;
+    var vxx = c / det, vxy = -b / det, vyy = a / det;
+    var tr = vxx + vyy;
+    var d2 = Math.sqrt(Math.max(0, (vxx - vyy) * (vxx - vyy) / 4 + vxy * vxy));
+    var l1 = tr / 2 + d2, l2 = tr / 2 - d2;
+    if (!(l1 > 0) || !(l2 > 0)) return null;
+    return {
+      f: f,
+      semiMajor: Math.sqrt(l1), semiMinor: Math.sqrt(l2),
+      ang: 0.5 * Math.atan2(2 * vxy, vxx - vyy),
+      cep: 0.59 * (Math.sqrt(l1) + Math.sqrt(l2))
+    };
+  }
+  function zoomHalfKm() {
+    var c = cov();
+    var base = c ? Math.max(c.semiMajor * 2.6, c.cep * 2.6) : 0.4;
+    return Math.min(Math.max(base, 0.05), 4);
+  }
+
+  function drawZoom() {
+    var c2 = $('zoom'), wh = fit(c2), w = wh[0], h = wh[1], g = c2.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var cvv2 = cov();
+    if (!cvv2) {
+      g.fillStyle = mut; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('The bearings do not cross at a single point from here', w / 2, h / 2);
+      return;
+    }
+    var half = zoomHalfKm();
+    var pad = 30, fw = w - 2 * pad, fh = h - 2 * pad;
+    var cx = w / 2, cy = h / 2;
+    var K = Math.min(fw, fh) / (2 * half);
+    var PX = function (kx) { return cx + (kx - cvv2.f.x) * K; };
+    var PY = function (ky) { return cy - (ky - cvv2.f.y) * K; };
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    var stepKm = half / 2;
+    for (var q = -4; q <= 4; q++) {
+      var off = q * stepKm;
+      g.beginPath(); g.moveTo(PX(cvv2.f.x + off), cy - fh / 2); g.lineTo(PX(cvv2.f.x + off), cy + fh / 2); g.stroke();
+      g.beginPath(); g.moveTo(cx - fw / 2, PY(cvv2.f.y + off)); g.lineTo(cx + fw / 2, PY(cvv2.f.y + off)); g.stroke();
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(cx - fw / 2, cy - fh / 2, fw, fh);
+
+    var barM = stepKm * 1000;
+    g.strokeStyle = mut; g.lineWidth = 1.4;
+    var bx1 = cx - fw / 2 + 10, bx2 = bx1 + stepKm * K, by = cy + fh / 2 - 12;
+    g.beginPath(); g.moveTo(bx1, by); g.lineTo(bx2, by);
+    g.moveTo(bx1, by - 4); g.lineTo(bx1, by + 4);
+    g.moveTo(bx2, by - 4); g.lineTo(bx2, by + 4); g.stroke();
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText(barM >= 1000 ? (barM / 1000).toFixed(1) + ' km' : barM.toFixed(0) + ' m', bx1, by - 6);
+
+    g.save();
+    g.beginPath(); g.rect(cx - fw / 2, cy - fh / 2, fw, fh); g.clip();
+    for (var i = 0; i < S.n; i++) {
+      var m2 = measBrg(i), L = 40;
+      g.strokeStyle = COL[i]; g.lineWidth = 1.2; g.globalAlpha = 0.75; g.setLineDash([5, 4]);
+      g.beginPath();
+      g.moveTo(PX(S.sx[i] - Math.sin(m2) * L), PY(S.sy[i] - Math.cos(m2) * L));
+      g.lineTo(PX(S.sx[i] + Math.sin(m2) * L), PY(S.sy[i] + Math.cos(m2) * L));
+      g.stroke();
+      g.setLineDash([]); g.globalAlpha = 1;
+    }
+
+    g.save();
+    g.translate(PX(cvv2.f.x), PY(cvv2.f.y));
+    g.rotate(-cvv2.ang);
+    g.strokeStyle = '#8064A2'; g.fillStyle = '#8064A2'; g.lineWidth = 1.8;
+    g.globalAlpha = 0.13;
+    g.beginPath(); g.ellipse(0, 0, cvv2.semiMajor * K, cvv2.semiMinor * K, 0, 0, 7);
+    g.fill(); g.globalAlpha = 1; g.stroke();
+    g.restore();
+
+    g.strokeStyle = '#4BACC6'; g.lineWidth = 1.6; g.setLineDash([6, 4]);
+    g.beginPath(); g.arc(PX(cvv2.f.x), PY(cvv2.f.y), cvv2.cep * K, 0, 7); g.stroke();
+    g.setLineDash([]);
+    g.restore();
+
+    var fxp = PX(cvv2.f.x), fyp = PY(cvv2.f.y);
+    g.strokeStyle = mut; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(fxp - 8, fyp); g.lineTo(fxp + 8, fyp);
+    g.moveTo(fxp, fyp - 8); g.lineTo(fxp, fyp + 8); g.stroke();
+    g.fillStyle = '#C0504D';
+    g.beginPath(); g.arc(PX(S.ex), PY(S.ey), 5.5, 0, 7); g.fill();
+
+    var miss = Math.hypot(cvv2.f.x - S.ex, cvv2.f.y - S.ey) * 1000;
+    g.fillStyle = sub; g.font = fnt(12);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('Miss ' + miss.toFixed(0) + ' m', cx - fw / 2 + 8, cy - fh / 2 + 7);
+    g.textAlign = 'right';
+    g.fillText('CEP ' + (cvv2.cep * 1000).toFixed(0) + ' m', cx + fw / 2 - 8, cy - fh / 2 + 7);
+    g.textBaseline = 'bottom';
+    g.fillText('Ellipse ' + (cvv2.semiMajor * 1000).toFixed(0) + ' \u00d7 ' +
+               (cvv2.semiMinor * 1000).toFixed(0) + ' m', cx + fw / 2 - 8, cy + fh / 2 - 7);
+  }
+
   function drawBrg() {
     var cv = $('brg'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
@@ -317,8 +443,8 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 
     var err = [];
     for (var i = 0; i < S.n; i++) err.push((measBrg(i) - trueBrg(i)) / D2R);
-    var lim = S.sig * 2.2;
-    for (var k = 0; k < err.length; k++) lim = Math.max(lim, Math.abs(err[k]) * 1.3);
+    var lim = S.sig * 1.45;
+    for (var k = 0; k < err.length; k++) lim = Math.max(lim, Math.abs(err[k]) * 1.28);
 
     var X = function (i) { return l + (i + 0.5) / S.n * (w - l - r); };
     var Y = function (deg) { return t + (lim - deg) / (2 * lim) * (h - t - b); };
@@ -342,10 +468,6 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     // zero = the true bearing to the emitter
     g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
-    g.fillText('True bearing to the emitter', w - r - 3, Y(0) - 5);
-
-    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('Receiver site', l + (w - l - r) / 2, h - 6);
     g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
     g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('Bearing error (°)', 0, 0); g.restore();
@@ -382,7 +504,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     }
   }
 
-  function redraw() { drawMap(); drawBrg(); drawRange(); cards(); }
+  function redraw() { drawMap(); drawZoom(); drawBrg(); drawRange(); cards(); }
 
   // ---- dragging: sites and the emitter ----
   function toKm(cv, ev) {

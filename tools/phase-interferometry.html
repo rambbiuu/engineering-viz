@@ -120,10 +120,10 @@ canvas { width: 100%; display: block; }
   <button id="pp" style="margin-left: auto;">Pause</button>
 </div>
 
-<p class="sec"><b>1 &middot; Sky view</b> <span>looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, red dot = emitter</span></p>
+<p class="sec"><b>1 &middot; Sky view</b> <span>Looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, red dot = emitter</span></p>
 <canvas id="geo" style="height: 290px;"></canvas>
 
-<p class="sec"><b>2 &middot; Measured phase differences</b> <span>the numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
+<p class="sec"><b>2 &middot; Measured phase differences</b> <span>The numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
 <div class="cards">
   <div class="card">
     <div class="hd"><span class="dot" style="background: #ED7D31;"></span>A2 &minus; A1</div>
@@ -142,10 +142,10 @@ canvas { width: 100%; display: block; }
   </div>
 </div>
 
-<p class="sec"><b>3 &middot; Scope view</b> <span>voltage out of each antenna cable vs time; the slide between traces is the phase difference (dashed line tracks one crest of A1)</span></p>
+<p class="sec"><b>3 &middot; Scope view</b> <span>Voltage out of each antenna cable vs time; the slide between traces is the phase difference (dashed line tracks one crest of A1)</span></p>
 <canvas id="scope" style="height: 310px;"></canvas>
 
-<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
+<p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>Sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
 <canvas id="ch" style="height: 230px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background: #ED7D31;"></span><span id="lg2">A2 &minus; A1</span></span>
@@ -310,7 +310,7 @@ canvas { width: 100%; display: block; }
       g.beginPath(); g.arc(xc, yc - amp, 4.5, 0, 7); g.fill();
       if (i === 0) {
         g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
-        g.fillText('crest (top of the bump)', xc + 9, yc - amp - 3);
+        g.fillText('Crest (top of the bump)', xc + 9, yc - amp - 3);
       }
 
       if (i > 0 && Math.abs(x0 - xc) > 6) {
@@ -362,7 +362,7 @@ canvas { width: 100%; display: block; }
       g.fillText(a + '°', X(a), h - b + 8);
     });
     g.textAlign = 'center';
-    g.fillText('emitter angle', l + (w - l - r) / 2, h - 13);
+    g.fillText('Emitter angle', l + (w - l - r) / 2, h - 13);
 
     for (let j = 0; j < 3; j++) {
       const d = S.pos[j + 1];
@@ -453,7 +453,7 @@ canvas { width: 100%; display: block; }
     <div class="ft" id="sb3">&mdash;</div>
   </div>
 </div>
-<p class="sec"><b>Candidate angles per pair</b> <span>hollow dots = every angle that pair's reading could mean; filled dot = the lap the algorithm picked; they only line up in one column</span></p>
+<p class="sec"><b>Candidate angles per pair</b> <span>Hollow dots = every angle that pair's reading could mean; filled dot = the lap the algorithm picked; they only line up in one column</span></p>
 <canvas id="cand" style="height: 190px;"></canvas>
 <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 1.25rem; flex-wrap: wrap;">
   <span class="lbl">Estimated angle of arrival</span>
@@ -565,7 +565,7 @@ canvas { width: 100%; display: block; }
       });
     }
     g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.fillText('angle', l + (w - l - rt) / 2, h - 4);
+    g.fillText('Angle', l + (w - l - rt) / 2, h - 4);
   }
 
   function recalc() { readState(); solve(); updateUI(); }

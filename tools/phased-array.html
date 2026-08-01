@@ -109,13 +109,13 @@ canvas { width: 100%; display: block; }
   <button id="bU">Uniform &lambda;/2</button>
 </div>
 
-<p class="sec"><b>1 &middot; Beam shape</b> <span>how strongly the array radiates in each direction; dashed line = where you asked the beam to point</span></p>
+<p class="sec"><b>1 &middot; Beam shape</b> <span>How strongly the array radiates in each direction; dashed line = where you asked the beam to point</span></p>
 <canvas id="pol" style="height: 300px;"></canvas>
 
-<p class="sec"><b>2 &middot; Same pattern, flat</b> <span>radiated strength vs angle, 1.0 = all four elements adding perfectly in phase</span></p>
+<p class="sec"><b>2 &middot; Same pattern, flat</b> <span>Radiated strength vs angle, 1.0 = all four elements adding perfectly in phase</span></p>
 <canvas id="rc" style="height: 220px;"></canvas>
 
-<p class="sec"><b>3 &middot; Feed phases</b> <span>the phase shift each element is driven with to steer the beam (this is the DF measurement run backwards)</span></p>
+<p class="sec"><b>3 &middot; Feed phases</b> <span>The phase shift each element is driven with to steer the beam (this is the DF measurement run backwards)</span></p>
 <div class="chips" id="chips"></div>
 
 <div class="cards" style="margin-top: 1.5rem;">
@@ -267,7 +267,7 @@ canvas { width: 100%; display: block; }
       g.beginPath(); g.arc(x, cy + 12, 4.5, 0, 7); g.fill();
     });
     g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('the four elements', cx, cy + 21);
+    g.fillText('The four elements', cx, cy + 21);
   }
 
   function drawRect() {
@@ -290,7 +290,7 @@ canvas { width: 100%; display: block; }
       g.fillText(a + '°', X(a), h - b + 8);
     });
     g.textAlign = 'center';
-    g.fillText('direction', l + (w - l - r) / 2, h - 13);
+    g.fillText('Direction', l + (w - l - r) / 2, h - 13);
 
     g.strokeStyle = '#809EC2'; g.lineWidth = 1.8;
     g.beginPath();
