@@ -158,9 +158,8 @@ canvas { width: 100%; display: block; }
   var NAMES = ['Isotropic', 'Collinear omni', 'Half-wave dipole', 'Quarter-wave monopole',
                'Patch', 'Yagi-Uda', 'Log-periodic', 'Horn', 'Parabolic dish'];
   var OMNI = { 1: 1, 2: 1, 3: 1 };             // nothing to choose between directions in azimuth
-  var HALFSPACE = { 3: 1 };                    // radiates into a half space only
   var YAGI = { N: 4, d: 0.25, r: 0.5 };        // directors, spacing in lambda, reflector strength
-  var LPDA = { N: 2, d: 0.30, r: 0.45 };
+  var LPDA = { N: 4, d: 0.30, r: 0.4 };
   var PATCH = { L: 0.35, W: 0.44 };            // patch edges in free-space wavelengths
 
   function sinc(x) { return Math.abs(x) < 1e-9 ? 1 : Math.sin(x) / x; }
@@ -188,12 +187,12 @@ canvas { width: 100%; display: block; }
     switch (S.kind) {
       case 0: return 1;
       case 1: {                                  // four half-wave elements stacked in line
-        var N = 4, d = 0.9, sn = Math.sin(t), psi = 2 * Math.PI * d * sn, sh = Math.sin(psi / 2);
+        var N = 4, d = 0.75, sn = Math.sin(t), psi = 2 * Math.PI * d * sn, sh = Math.sin(psi / 2);
         var af = Math.abs(sh) < 1e-9 ? 1 : Math.abs(Math.sin(N * psi / 2) / (N * sh));
         return dipoleEl(t) * af;
       }
       case 2: return dipoleEl(t);
-      case 3: return Math.abs(t) > Math.PI / 2 ? 0 : dipoleEl(t);       // ground plane below
+      case 3: return Math.sin(t) < 0 ? 0 : dipoleEl(t);                 // ground plane below it
       case 4: return Math.abs(t) > Math.PI / 2 ? 0 : Math.abs(Math.cos(Math.PI * PATCH.L * Math.sin(t)));
       case 5: return fieldH(th) * dipoleEl(t);   // elements lie in this plane
       case 6: return fieldH(th) * dipoleEl(t);
@@ -256,9 +255,8 @@ canvas { width: 100%; display: block; }
         f = fieldV(a); w = Math.abs(Math.cos(a * D2R));
         den += f * f * w; num += w;
       }
-      var d = num / den;
-      if (HALFSPACE[S.kind]) d *= 2;
-      return 10 * Math.log10(d);
+      // the ground plane already shows up as a zeroed half of this integral
+      return 10 * Math.log10(num / den);
     }
     if (S.kind === 8) {                          // round beam: spin the cut about boresight
       for (i = 0; i < N; i++) {
@@ -273,12 +271,14 @@ canvas { width: 100%; display: block; }
     return 10 * Math.log10(41253 / (bv * bh));
   }
 
-  function hpbw(fn) {
-    for (var th = 0; th <= 180; th += 0.02) {
-      if (dB(th, fn) <= -3) return 2 * th;
-    }
-    return null;                                  // never drops 3 dB in this cut
+  function hpEdges(fn) {
+    var hi = null, lo = null, th;
+    for (th = 0; th <= 180; th += 0.02) { if (dB(th, fn) <= -3) { hi = th; break; } }
+    for (th = 0; th >= -180; th -= 0.02) { if (dB(th, fn) <= -3) { lo = th; break; } }
+    if (hi === null || lo === null) return null;  // never drops 3 dB in this cut
+    return { lo: lo, hi: hi, w: hi - lo };
   }
+  function hpbw(fn) { var e = hpEdges(fn); return e === null ? null : e.w; }
 
   function firstSidelobe(fn) {
     var prev = dB(0, fn), rising = false;
@@ -302,11 +302,16 @@ canvas { width: 100%; display: block; }
   var FLOOR = -40;                                // dB shown at the centre of the polar plot
   function rad(db, R) { return Math.max(0, (db - FLOOR) / (0 - FLOOR)) * R; }
 
-  function drawPolar(id, fn, col) {
+  function drawPolar(id, fn, col, vert) {
     var cv = $(id), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
     var cx = w / 2, cy = h / 2, R = Math.min(w / 2 - 62, h / 2 - 40);
+    // vertical cut is a side view, so 0 deg points at the horizon and 90 deg is straight up.
+    // horizontal cut is a plan view, so 0 deg points up the page.
+    var pt = vert
+      ? function (th, rr) { var a = th * D2R; return [cx + Math.cos(a) * rr, cy - Math.sin(a) * rr]; }
+      : function (th, rr) { var a = th * D2R; return [cx + Math.sin(a) * rr, cy - Math.cos(a) * rr]; };
 
     g.strokeStyle = bd; g.lineWidth = 0.5;
     g.font = fnt(12); g.fillStyle = mut;
@@ -314,13 +319,10 @@ canvas { width: 100%; display: block; }
       g.beginPath(); g.arc(cx, cy, rad(dbv, R), 0, 7); g.stroke();
     });
     for (var a = 0; a < 360; a += 30) {
-      var ar = (a - 90) * D2R;
-      g.beginPath(); g.moveTo(cx, cy);
-      g.lineTo(cx + Math.cos(ar) * R, cy + Math.sin(ar) * R); g.stroke();
-      var lx = cx + Math.cos(ar) * (R + 20), ly = cy + Math.sin(ar) * (R + 20);
-      var deg = a > 180 ? a - 360 : a;
+      var sp = pt(a, R), lb = pt(a, R + 20);
+      g.beginPath(); g.moveTo(cx, cy); g.lineTo(sp[0], sp[1]); g.stroke();
       g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(deg + '°', lx, ly);
+      g.fillText((a > 180 ? a - 360 : a) + '°', lb[0], lb[1]);
     }
 
     // the pattern itself
@@ -328,9 +330,8 @@ canvas { width: 100%; display: block; }
     g.globalAlpha = 0.14;
     g.beginPath();
     for (var t = -180; t <= 180; t += 0.5) {
-      var rr2 = rad(dB(t, fn), R), ar2 = (t - 90) * D2R;
-      var px = cx + Math.cos(ar2) * rr2, py = cy + Math.sin(ar2) * rr2;
-      if (t === -180) g.moveTo(px, py); else g.lineTo(px, py);
+      var q = pt(t, rad(dB(t, fn), R));
+      if (t === -180) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]);
     }
     g.closePath(); g.fill(); g.globalAlpha = 1; g.stroke();
 
@@ -347,24 +348,22 @@ canvas { width: 100%; display: block; }
     });
 
     // boresight
+    var bs = pt(0, R + 8);
     g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, cy - R - 8); g.stroke();
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(bs[0], bs[1]); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = RED; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.fillText('Boresight', cx + 8, cy - R - 6);
 
     // half-power edges
-    var bw = hpbw(fn);
-    if (bw !== null) {
+    var ed = hpEdges(fn);
+    if (ed !== null) {
       g.strokeStyle = ORANGE; g.lineWidth = 1.2;
-      [-bw / 2, bw / 2].forEach(function (t2) {
-        var ar3 = (t2 - 90) * D2R, rr3 = rad(-3, R);
-        g.beginPath(); g.moveTo(cx, cy);
-        g.lineTo(cx + Math.cos(ar3) * rr3, cy + Math.sin(ar3) * rr3); g.stroke();
+      [ed.lo, ed.hi].forEach(function (t2) {
+        var e3 = pt(t2, rad(-3, R));
+        g.beginPath(); g.moveTo(cx, cy); g.lineTo(e3[0], e3[1]); g.stroke();
       });
-      g.fillStyle = ORANGE; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
-      var ar4 = (bw / 2 - 90) * D2R, rr4 = rad(-3, R);
-      g.fillText(bw.toFixed(1) + '° wide', cx + Math.cos(ar4) * rr4 + 6, cy + Math.sin(ar4) * rr4);
+      g.fillStyle = ORANGE; g.font = fnt(13);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText(ed.w.toFixed(1) + '° wide', 4, 4);
     }
   }
 
@@ -393,10 +392,10 @@ canvas { width: 100%; display: block; }
     g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('dB below peak', 0, 0); g.restore();
 
-    var bw = hpbw(fieldV);
-    if (bw !== null) {
+    var ed = hpEdges(fieldV);
+    if (ed !== null) {
       g.fillStyle = ORANGE; g.globalAlpha = 0.12;
-      g.fillRect(X(-bw / 2), t, X(bw / 2) - X(-bw / 2), h - t - b);
+      g.fillRect(X(ed.lo), t, X(ed.hi) - X(ed.lo), h - t - b);
       g.globalAlpha = 1;
     }
 
@@ -457,8 +456,8 @@ canvas { width: 100%; display: block; }
 
   function redraw() {
     syncControls();
-    drawPolar('polV', fieldV, BLUE);
-    drawPolar('polH', fieldH, GREEN);
+    drawPolar('polV', fieldV, BLUE, true);
+    drawPolar('polH', fieldH, GREEN, false);
     drawRect(); cards();
   }
 
