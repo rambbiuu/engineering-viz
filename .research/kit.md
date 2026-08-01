@@ -64,16 +64,14 @@ body { margin: 0; background: var(--bg); color: var(--text-primary);
   font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
   font-variant-numeric: tabular-nums; }
 
-.wrap { width: min(1500px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
+.wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 1.4rem 0 4rem;
   display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start; }
 .rail, .stage { min-width: 0; }
-.rail { display: flex; flex-direction: column; gap: 1rem; }
+.rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.35rem 1.9rem; align-items: start; }
+.rail > .hero, .rail > .presets, .rail > .tour, .rail > .tour-note,
+.rail > details, .rail > .full { grid-column: 1 / -1; }
 .stage { display: flex; flex-direction: column; }
-@media (min-width: 1100px) {
-  .wrap { grid-template-columns: minmax(280px, 340px) 1fr; column-gap: 2rem; }
-  .wrap > .full { grid-column: 1 / -1; }
-  .rail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
-}
 
 h1 { font-size: 23px; font-weight: 500; margin: 0 0 5px; letter-spacing: -0.01em; }
 .sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 6px; max-width: 78ch; }
@@ -170,7 +168,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
 | Class | Use |
 | --- | --- |
-| `.wrap` | Page container. `width: min(1500px, 94vw)`, CSS grid. Everything lives inside it. |
+| `.wrap` | Page container. `width: min(1180px, 94vw)`, CSS grid. Everything lives inside it. |
 | `header.full` | Back link, `h1`, intro, prerequisite line. Spans both columns on wide screens. |
 | `.rail` | Left rail ≥1100 px: hero readout, primary controls, presets, cards. Stacks on top on narrow screens. |
 | `.stage` | The canvases and their section headings and legends. |

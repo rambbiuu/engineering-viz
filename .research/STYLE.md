@@ -136,10 +136,18 @@ ratios." A fixed narrow centred column is a defect. Rules:
   `fit()` helper already follows CSS size — keep drawing everything relative to the
   measured width/height so the drawing scales, and re-derive label positions from w/h,
   never from hardcoded pixel offsets that only work at one size.
-- On wide viewports (≥1100px) reclaim the empty sides: controls + hero readout + cards in
-  a left rail beside the canvases (CSS grid, `grid-template-columns: minmax(280px, 340px)
-  1fr`), or side-by-side canvas pairs where two views are meant to be compared. On narrow
-  viewports everything stacks in one column. Use grid + media queries, no JS layout.
+- **NO SIDE RAIL. The owner rejected it explicitly (2026-07-29): "I don't like how you set
+  control to one side and the simulation to the other — the previous layout is better."**
+  The page is ALWAYS a single column: header, then controls, then the canvas full width
+  below, then legend, cards and collapsed details. Never place controls beside the plot.
+- Reclaim wide-screen space by making the CONTROLS flow horizontally, not by moving them
+  aside: `.rail` is a grid of `repeat(auto-fit, minmax(250px, 1fr))`, so control blocks sit
+  in 3–4 columns across the top on a laptop and collapse to one column on a phone. The hero
+  readout, preset rows and tour rows span all columns (`grid-column: 1 / -1`).
+- Container is `width: min(1180px, 94vw)` — wide enough to fill a laptop without stretching
+  a single column of text to an unreadable line length.
+- Side-by-side canvas *pairs* are still fine where two views are meant to be compared
+  (`.cv-pair`, two columns above 900px). That is content, not chrome.
 - Test mentally at 375, 768, 1366 and 1920 wide: no horizontal scroll ever, no canvas
   that shrinks its text into illegibility, no dead margins wider than the content.
 

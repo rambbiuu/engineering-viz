@@ -2,6 +2,15 @@
 
 These come directly from the repository owner. They override conflicting guidance elsewhere.
 
+## Every tool — NO SIDE RAIL, single column (owner, 2026-07-29)
+
+"I don't like how you set control to one side and the simulation to the other, totally not
+a fan — the previous layout is better." Controls go ABOVE the canvas, full width, always.
+The canvas spans the full column below them. Fill a wide screen by letting control blocks
+flow into 3–4 columns horizontally (`.rail` = auto-fit minmax(250px, 1fr)), never by
+putting them in a sidebar. Container `min(1180px, 94vw)`. Already applied to the 14
+restyled tools; any tool restyled later must follow the same shape.
+
 ## Every tool — nothing may spill out of its box (owner, 2026-07-29)
 
 "Make sure the words don't spill out of the box, proper spacing and aspect." See the
