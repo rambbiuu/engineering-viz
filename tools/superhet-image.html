@@ -812,6 +812,17 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     return rejRaw() > S.cap ? '> ' + fmtNum(S.cap, 0) + DB : fmtNum(rejDisp(), 1) + DB;
   };
 
+  // Vertical dimension inside a plot. The rotated label runs along the line, so
+  // when the two ends are close it would hang off the canvas — hand it to leader()
+  // instead, which clamps to the plot box.
+  function vdim(g, P, x, ya, yb, text, colour, size) {
+    const y0 = clamp(ya, P.y0 + 1, P.y1 - 1), y1 = clamp(yb, P.y0 + 1, P.y1 - 1);
+    const room = Math.abs(y0 - y1) > size * 5.5;
+    dimension(g, x, y0, x, y1, room ? text : '', { colour: colour, size: size });
+    if (!room) leader(g, x, (y0 + y1) / 2, text,
+      { box: P, colour: colour, size: size, dx: P.w * 0.05, dy: P.h * 0.10, dot: false });
+  }
+
   // ---------- 1 · block diagram ----------
   function drawChain() {
     const c = $('cvChain'), wh = fit(c), w = wh[0], h = wh[1];
@@ -894,7 +905,8 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
     g.fillStyle = t.text2; g.font = t.font(z.tick);
     g.textAlign = 'right'; g.textBaseline = 'bottom';
-    g.fillText('to demodulator', xEnd, wireY - z.tick * 0.6);
+    const dem = 'to demodulator';
+    if (g.measureText(dem).width + 8 < xEnd - (xF2 + bwid / 2)) g.fillText(dem, xEnd, wireY - z.tick * 0.6);
 
     // annotations
     leader(g, xAnt, wireY - ah * 1.05, hasImage() ? 'wanted + image in' : 'wanted signal in',
@@ -920,7 +932,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     if (top - bot < 30) bot = top - 30;
     if (top - bot > 150) bot = top - 150;
 
-    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h - 3 },
       { min: f0, max: f1, unit: 'MHz', label: 'frequency at the antenna' },
       { min: bot, max: top, unit: 'dBm', label: 'level' },
       { fontSize: z.tick });
@@ -962,24 +974,26 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     }
     P.unclip(g);
 
-    leader(g, xlo, P.y0 + P.h * 0.08, 'LO ' + fmtNum(flo(), 2) + MHZ,
-      { box: P, colour: t.s4, size: z.ann, dx: P.w * 0.04, dy: P.h * 0.05, dot: false });
-    leader(g, pWant.x, pWant.y, 'wanted ' + fmtNum(S.frf, 1) + MHZ,
+    // the LO label sits mid-height on the wanted-signal side, so it clears the
+    // image label even when a small IF puts the two markers almost on top of each other
+    leader(g, xlo, P.y0 + P.h * 0.42, P.w > 480 ? 'LO ' + fmtNum(flo(), 2) + MHZ : 'LO',
+      { box: P, colour: t.s4, size: z.ann, dx: (S.hi ? -1 : 1) * P.w * 0.05, dy: -P.h * 0.05, dot: false });
+    // a narrow plot has no room for the frequencies beside the spikes; the cards carry them
+    const roomy = P.w > 480;
+    leader(g, pWant.x, pWant.y, roomy ? 'wanted ' + fmtNum(S.frf, 1) + MHZ : 'wanted',
       { box: P, colour: t.s5, size: z.ann, dx: -P.w * 0.05, dy: -P.h * 0.10 });
 
     if (hasImage()) {
-      leader(g, pOut.x, pOut.y, 'image ' + fmtNum(fimg(), 1) + MHZ,
-        { box: P, colour: t.s2, size: z.ann, dx: P.w * 0.05, dy: -P.h * 0.08 });
-
-      // rejection, as a dimensioned drop
+      // rejection, as a dimensioned drop; the image label takes the other side of the spike
       let bx = pIn.x + P.w * 0.05;
       if (bx > P.x1 - P.w * 0.12) bx = pIn.x - P.w * 0.05;
       bx = clamp(bx, P.x0 + 4, P.x1 - 4);
-      dimension(g, bx, pIn.y, bx, pOut.y, 'rejection ' + rejText(),
-        { colour: t.s2, size: z.ann });
+      leader(g, pOut.x, pOut.y, roomy ? 'image ' + fmtNum(fimg(), 1) + MHZ : 'image',
+        { box: P, colour: t.s2, size: z.ann, dx: (bx >= pIn.x ? -1 : 1) * P.w * 0.05, dy: -P.h * 0.14 });
+      vdim(g, P, bx, pIn.y, pOut.y, 'rejection ' + rejText(), t.s2, z.ann);
 
       // the 2 x IF gap
-      const yb = P.y1 - P.h * 0.07;
+      const yb = P.y1 - P.h * 0.05;
       dimension(g, P.X(S.frf), yb, P.X(fimg()), yb,
         '2 × IF = ' + fmtNum(2 * S.fif, 3) + MHZ, { colour: t.text2, size: z.ann });
     } else {
@@ -1004,7 +1018,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     if (top - bot < 40) bot = top - 40;
     if (top - bot > 150) bot = top - 150;
 
-    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h - 3 },
       { min: f0, max: f1, unit: 'MHz', label: 'frequency after the mixer' },
       { min: bot, max: top, unit: 'dBm', label: 'level' },
       { fontSize: z.tick });
@@ -1023,16 +1037,17 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     }
     P.unclip(g);
 
-    leader(g, x - nx, yW, 'wanted ' + fmtNum(S.pw, 0) + DBM,
+    // a narrow plot has no room for the levels beside the spikes; the cards carry them
+    const roomy = P.w > 480;
+    leader(g, x - nx, yW, roomy ? 'wanted ' + fmtNum(S.pw, 0) + DBM : 'wanted',
       { box: P, colour: t.s5, size: z.ann, dx: -P.w * 0.06, dy: -P.h * 0.10 });
 
     if (hasImage()) {
-      leader(g, x + nx, yI, 'image ' + fmtNum(levImg, 1) + DBM,
+      leader(g, x + nx, yI, roomy ? 'image ' + fmtNum(levImg, 1) + DBM : 'image',
         { box: P, colour: t.s2, size: z.ann, dx: P.w * 0.06, dy: -P.h * 0.16 });
       const ci = S.pw - levImg;
-      const bx = clamp(x + P.w * 0.24, P.x0 + 4, P.x1 - 4);
-      dimension(g, bx, yW, bx, yI, 'margin ' + fmtNum(ci, 1) + DB,
-        { colour: ci >= 10 ? t.text2 : t.bad, size: z.ann });
+      const bx = clamp(x + P.w * 0.30, P.x0 + 4, P.x1 - 4);
+      vdim(g, P, bx, yW, yI, 'margin ' + fmtNum(ci, 1) + DB, ci >= 10 ? t.text2 : t.bad, z.ann);
     } else {
       g.fillStyle = t.good; g.font = t.font(z.ann);
       g.textAlign = 'left'; g.textBaseline = 'top';
@@ -1047,7 +1062,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
     const hiv = S.oip3 + 12, lov = hiv - 130;
 
-    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h - 3 },
       { min: lov, max: hiv, unit: 'dBm', label: 'drive per tone' },
       { min: lov, max: hiv, unit: 'dBm', label: 'output' },
       { fontSize: z.tick });
@@ -1099,23 +1114,30 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     let bx = xd + P.w * 0.06;
     if (bx > P.x1 - P.w * 0.14) bx = xd - P.w * 0.06;
     bx = clamp(bx, P.x0 + 4, P.x1 - 4);
-    dimension(g, bx, yF, bx, yIc, fmtNum(sfWindow(), 0) + DB + ' free',
-      { colour: t.text2, size: z.ann });
+    vdim(g, P, bx, yF, yIc, fmtNum(sfWindow(), 0) + DB + ' free', t.text2, z.ann);
 
-    // one label per line, placed on the line itself
-    const pF = lov + (hiv - lov) * 0.30;
-    leader(g, P.X(pF), P.Y(pF), 'fundamental, slope 1',
-      { box: P, colour: t.s5, size: z.ann, dx: P.w * 0.04, dy: P.h * 0.10, dot: false });
+    // one label per line, placed on the line itself; a narrow plot keeps only the
+    // third-order line, because three long labels cannot clear each other there
+    const roomy = P.w > 480;
+    if (roomy) {
+      const pF = lov + (hiv - lov) * 0.30;
+      leader(g, P.X(pF), P.Y(pF), 'fundamental, slope 1',
+        { box: P, colour: t.s5, size: z.ann, dx: P.w * 0.04, dy: P.h * 0.10, dot: false });
+    }
 
-    const vI = lov + (hiv - lov) * 0.62;
-    const dI = clamp((vI + 2 * S.oip3) / 3, lov, hiv);
-    leader(g, P.X(dI), P.Y(clamp(3 * dI - 2 * S.oip3, lov, hiv)), 'IM3, slope 3',
-      { box: P, colour: t.s2, size: z.ann, dx: -P.w * 0.05, dy: -P.h * 0.06, dot: false });
+    if (roomy) {
+      const vI = lov + (hiv - lov) * 0.62;
+      const dI = clamp((vI + 2 * S.oip3) / 3, lov, hiv);
+      leader(g, P.X(dI), P.Y(clamp(3 * dI - 2 * S.oip3, lov, hiv)), 'IM3, slope 3',
+        { box: P, colour: t.s2, size: z.ann, dx: -P.w * 0.05, dy: -P.h * 0.06, dot: false });
+    }
 
-    const vV = lov + (hiv - lov) * 0.36;
-    const dV = clamp((vV + 4 * oip5()) / 5, lov, hiv);
-    leader(g, P.X(dV), P.Y(clamp(5 * dV - 4 * oip5(), lov, hiv)), 'IM5, slope 5',
-      { box: P, colour: t.s3, size: z.ann, dx: -P.w * 0.05, dy: P.h * 0.08, dot: false });
+    if (roomy) {
+      const vV = lov + (hiv - lov) * 0.30;
+      const dV = clamp((vV + 4 * oip5()) / 5, lov, hiv);
+      leader(g, P.X(dV), P.Y(clamp(5 * dV - 4 * oip5(), lov, hiv)), 'IM5, slope 5',
+        { box: P, colour: t.s3, size: z.ann, dx: P.w * 0.05, dy: P.h * 0.09, dot: false });
+    }
 
     leader(g, P.X(S.oip3), P.Y(S.oip3), 'OIP3 ' + sgn(S.oip3, 0) + DBM,
       { box: P, colour: t.s2, size: z.ann, dx: -P.w * 0.06, dy: P.h * 0.08, dot: false });

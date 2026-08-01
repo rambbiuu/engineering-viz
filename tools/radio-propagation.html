@@ -1140,19 +1140,21 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     if (fM < 10) return base;
     return Math.min(base + sphDiffDb(dKm), troposDb(dKm));
   }
+  const REACH_MAX = 5000;
   function reach() {
-    const fM = fMHz(), lo = -2, hi = L10(5000);
+    const fM = fMHz(), lo = -2, hi = L10(REACH_MAX);
     let best = 0;
     for (let i = 0; i <= 360; i++) {
       const d = Math.pow(10, lo + (hi - lo) * i / 360);
       if (lossAt(d) <= S.budget) best = d;
     }
     let via = verdict().n.toLowerCase();
+    let capped = best >= REACH_MAX * 0.999;
     if (fM <= 30 && S.foF2 * secSph(hopMaxKm()) >= fM) {
       const sky = hopMaxKm();
-      if (sky > best) { best = sky; via = 'sky wave, one hop'; }
+      if (sky > best) { best = sky; via = 'sky wave, one hop'; capped = false; }
     }
-    return { km: best, via: via };
+    return { km: best, via: via, capped: capped };
   }
 
   /* ---- 1 : the path, drawn to scale --------------------------------------- */
@@ -1349,7 +1351,386 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
         { box: P, colour: t.text2, dot: false, dy: 18 });
     }
   }
-/*TOOL2*/
+  /* ---- 4 : two rays, one ground -------------------------------------------- */
+  function draw4() {
+    const c = $('c4'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const dlo = Math.max(0.01, 10 * lamM() / 1000), dhi = 500;
+    const P0 = { x: 0, y: 0, w: w, h: h };
+    if (fMHz() < 30) {
+      const P = graticule(g, P0,
+        { min: dlo, max: dhi, log: true, label: 'distance', unit: 'km' },
+        { min: -200, max: 0, unit: 'dB', label: 'received power' });
+      leader(g, P.x0 + P.w * 0.5, P.y0 + P.h * 0.45,
+        'below 30 MHz the surface wave carries it', { box: P, colour: t.text2, dot: false, dy: -20 });
+      return;
+    }
+    const Pw = d => -(fsl(fGHz(), d) - twoRayDb(d));
+    const Pfs = d => -fsl(fGHz(), d);
+    const Ppe = d => -planeEarthLoss(d);
+    let hi = Math.ceil((Pfs(dlo) + 10) / 20) * 20;
+    let lo = Math.floor((Math.min(Ppe(dhi), Pfs(dhi)) - 15) / 20) * 20;
+    const P = graticule(g, P0,
+      { min: dlo, max: dhi, log: true, label: 'distance', unit: 'km' },
+      { min: lo, max: hi, unit: 'dB', label: 'received power' });
+    const Yc = v => P.Y(Math.min(Math.max(v, lo), hi));
+    const dOf = px => Math.pow(10, L10(dlo) + (px - P.x0) / P.w * (L10(dhi) - L10(dlo)));
+
+    const line = (fn, col, wid, dash) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.setLineDash(dash || []);
+      g.beginPath();
+      for (let px = P.x0; px <= P.x1; px++) {
+        const y = Yc(fn(dOf(px)));
+        if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    };
+    P.clip(g);
+    line(Pfs, t.s3, 1.2, [6, 4]);
+    line(Ppe, t.s5, 1.2, [6, 4]);
+
+    const phase = d => 2 * Math.PI * S.h1 * S.h2 / (lamM() * Math.max(d, 1e-9) * 1000);
+    let aliasedTo = P.x0 - 1;
+    for (let px = P.x0; px < P.x1; px++) {
+      if (Math.abs(phase(dOf(px)) - phase(dOf(px + 1))) > 0.8) aliasedTo = px + 1;
+    }
+    if (aliasedTo > P.x0) {
+      g.save(); g.globalAlpha = 0.16; g.fillStyle = t.s1;
+      g.beginPath(); g.moveTo(P.x0, P.y1);
+      for (let px = P.x0; px <= aliasedTo; px++) g.lineTo(px, Yc(Pfs(dOf(px)) + 6.02));
+      g.lineTo(aliasedTo, P.y1); g.closePath(); g.fill(); g.restore();
+    }
+    g.strokeStyle = t.s1; g.lineWidth = 1.8;
+    g.beginPath();
+    let st = false;
+    for (let px = Math.max(aliasedTo, P.x0); px <= P.x1; px++) {
+      const y = Yc(Pw(dOf(px)));
+      if (!st) { g.moveTo(px, y); st = true; } else g.lineTo(px, y);
+    }
+    g.stroke();
+    P.unclip(g);
+
+    const db = breakKm();
+    if (db >= dlo && db <= dhi) {
+      g.save(); g.strokeStyle = t.s2; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(P.X(db), P.y0); g.lineTo(P.X(db), P.y1); g.stroke(); g.restore();
+      leader(g, P.X(db), P.y0 + P.h * 0.14, 'breakpoint ' + fmtEng(db * 1000, 'm', 1),
+        { box: P, colour: t.s2, dot: false, dy: -14 });
+    } else {
+      leader(g, P.x0 + P.w * 0.06, P.y0 + P.h * 0.12,
+        'breakpoint ' + fmtEng(db * 1000, 'm', 1) + ' is off this chart',
+        { box: P, colour: t.s2, dot: false, dy: 16 });
+    }
+    const dl = dLos();
+    if (dl >= dlo && dl <= dhi) {
+      g.save(); g.strokeStyle = t.text2; g.lineWidth = 1; g.setLineDash([2, 4]);
+      g.beginPath(); g.moveTo(P.X(dl), P.y0); g.lineTo(P.X(dl), P.y1); g.stroke(); g.restore();
+      leader(g, P.X(dl), P.y1 - P.h * 0.12, 'horizon, model ends',
+        { box: P, colour: t.text2, dot: false, dx: -30, dy: -10 });
+    }
+    leader(g, P.X(dhi * 0.55), Yc(Pfs(dhi * 0.55)), 'free space, d' + sup('-2'),
+      { box: P, colour: t.s3, dy: -22, dx: -30 });
+    if (S.d >= dlo && S.d <= dhi) {
+      leader(g, P.X(S.d), Yc(Pw(S.d)), 'your path, ' + fmtEng(Pw(S.d), 'dB', 1),
+        { box: P, colour: t.text, dy: 26 });
+    }
+  }
+
+  /* ---- 5 : beyond the horizon ---------------------------------------------- */
+  function draw5() {
+    const c = $('c5'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const dlo = 1, dhi = 500;
+    const gasR = fGHz() >= 1 ? gasGamma(fGHz()) + rainGamma(fGHz(), S.rain, S.vert) : gasGamma(1);
+    const Lfs = d => fsl(fGHz(), d) + gasR * d;
+    const Ldif = d => Lfs(d) + sphDiffDb(d);
+    const Lts = d => troposDb(d);
+    const lo = Math.floor((Lfs(dlo) - 10) / 25) * 25;
+    const hi = Math.ceil(Math.min(Math.max(Lfs(dhi), Lts(dhi)) + 20, lo + 500) / 25) * 25;
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: dlo, max: dhi, log: true, label: 'distance', unit: 'km' },
+      { min: lo, max: hi, unit: 'dB', label: 'basic transmission loss' });
+
+    const line = (fn, col, wid, dash, dFrom) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.setLineDash(dash || []);
+      g.beginPath();
+      let started = false;
+      for (let px = P.x0; px <= P.x1; px++) {
+        const d = Math.pow(10, L10(dlo) + (px - P.x0) / P.w * (L10(dhi) - L10(dlo)));
+        if (dFrom && d < dFrom) { started = false; continue; }
+        const v = fn(d);
+        if (!(v >= lo && v <= hi)) { started = false; continue; }
+        const y = P.Y(v);
+        if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    };
+    P.clip(g);
+    line(Lfs, t.s1, 1.4, [6, 4]);
+    line(Lts, t.s6, 2, [], Math.max(dLos(), dlo));
+    if (fMHz() >= 10) line(Ldif, t.s3, 2.2);
+    P.unclip(g);
+
+    if (fMHz() >= 10) {
+      let cross = 0;
+      for (let px = P.x0; px <= P.x1; px++) {
+        const d = Math.pow(10, L10(dlo) + (px - P.x0) / P.w * (L10(dhi) - L10(dlo)));
+        if (Ldif(d) > Lts(d)) { cross = d; break; }
+      }
+      if (cross > 0) {
+        g.save(); g.strokeStyle = t.s6; g.lineWidth = 1; g.setLineDash([3, 4]);
+        g.beginPath(); g.moveTo(P.X(cross), P.y0); g.lineTo(P.X(cross), P.y1); g.stroke(); g.restore();
+        leader(g, P.X(cross), P.y1 - P.h * 0.16, 'scatter takes over at ' + fmtEng(cross, 'km', 0),
+          { box: P, colour: t.s6, dot: false, dy: -14 });
+      }
+      const dm = Math.min(Math.max(60, dLos() * 1.5), dhi * 0.8);
+      if (Ldif(dm) >= lo && Ldif(dm) <= hi)
+        leader(g, P.X(dm), P.Y(Ldif(dm)), 'diffraction', { box: P, colour: t.s3, dy: -24, dx: -30 });
+    } else {
+      leader(g, P.x0 + P.w * 0.06, P.y0 + P.h * 0.12,
+        'below 10 MHz P.526 does not model diffraction',
+        { box: P, colour: t.text2, dot: false, dy: 16 });
+    }
+    const dl = dLos();
+    if (dl >= dlo && dl <= dhi) {
+      g.save(); g.strokeStyle = t.warn; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(P.X(dl), P.y0); g.lineTo(P.X(dl), P.y1); g.stroke(); g.restore();
+      leader(g, P.X(dl), P.y0 + P.h * 0.14, 'horizon ' + fmtEng(dl, 'km', 1),
+        { box: P, colour: t.warn, dot: false, dy: -12 });
+    }
+    if (S.d >= dlo && S.d <= dhi) {
+      const v = fMHz() >= 10 ? Math.min(Ldif(S.d), Lts(S.d)) : Lts(S.d);
+      if (v >= lo && v <= hi)
+        leader(g, P.X(S.d), P.Y(v), 'your path, ' + fmtEng(v, 'dB', 0),
+          { box: P, colour: t.text, dy: 26 });
+    }
+  }
+
+  /* ---- 6 : maximum usable frequency ---------------------------------------- */
+  function draw6() {
+    const c = $('c6'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const Dmax = 5000;
+    const vmax = Math.max(12, Math.ceil(S.foF2 * secFlat(Dmax) / 10) * 10);
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: 0, max: Dmax, unit: 'km', label: 'hop ground range' },
+      { min: 0, max: vmax, unit: 'MHz', label: 'MUF' });
+
+    const line = (fn, col, wid, dash) => {
+      g.strokeStyle = col; g.lineWidth = wid; g.setLineDash(dash || []);
+      g.beginPath();
+      for (let px = P.x0; px <= P.x1; px++) {
+        const d = (px - P.x0) / P.w * Dmax;
+        const y = P.Y(Math.min(Math.max(fn(d), 0), vmax));
+        if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke(); g.setLineDash([]);
+    };
+    P.clip(g);
+    line(d => S.foF2 * secFlat(d), t.text2, 1.2, [6, 4]);
+    line(d => S.foF2 * secSph(d), t.s4, 2.4);
+    P.unclip(g);
+
+    const dm = hopMaxKm();
+    if (dm <= Dmax) {
+      g.save(); g.strokeStyle = t.s5; g.lineWidth = 1.2; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(P.X(dm), P.y0); g.lineTo(P.X(dm), P.y1); g.stroke(); g.restore();
+      leader(g, P.X(dm), P.y0 + P.h * 0.16, 'longest hop ' + fmtEng(dm, 'km', 0),
+        { box: P, colour: t.s5, dot: false, dx: -30, dy: -12 });
+    }
+    const fM = fMHz();
+    if (fM >= 0.5 && fM <= vmax) {
+      g.save(); g.strokeStyle = t.s2; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(P.x0, P.Y(fM)); g.lineTo(P.x1, P.Y(fM)); g.stroke(); g.restore();
+      leader(g, P.x0 + P.w * 0.3, P.Y(fM), 'you, ' + fM.toFixed(2) + ' MHz',
+        { box: P, colour: t.s2, dot: false, dy: -20 });
+    } else {
+      leader(g, P.x0 + P.w * 0.06, P.y0 + P.h * 0.12, 'no return at ' + fmtEng(fHz(), 'Hz', 2),
+        { box: P, colour: t.text2, dot: false, dy: 16 });
+    }
+    const dp = Math.min(S.d, Dmax), mv = Math.min(S.foF2 * secSph(dp), vmax);
+    leader(g, P.X(dp), P.Y(mv), 'MUF ' + mv.toFixed(1) + ' MHz', { box: P, colour: t.s4, dy: 26 });
+  }
+
+  /* ---- 7 : external noise --------------------------------------------------- */
+  function draw7() {
+    const c = $('c7'), wh = fit(c), w = wh[0], h = wh[1];
+    const g = c.getContext('2d'), t = theme();
+    const f0 = 0.3, f1 = 250, vlo = -20, vhi = 100;
+    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+      { min: f0, max: f1, log: true, label: 'frequency', unit: 'MHz' },
+      { min: vlo, max: vhi, unit: 'dB', label: 'F' + sub('a') + ' above kT' + sub('0') + 'b' });
+
+    const keys = ['city', 'residential', 'rural', 'quiet', 'galactic'];
+    const cols = [t.s7, t.s2, t.s3, t.s5, t.s4];
+    P.clip(g);
+    keys.forEach((kk, i) => {
+      const on = kk === S.env;
+      g.strokeStyle = cols[i]; g.lineWidth = on ? 2.4 : 1.1;
+      g.globalAlpha = on ? 1 : 0.55;
+      g.beginPath();
+      for (let px = P.x0; px <= P.x1; px++) {
+        const f = Math.pow(10, L10(f0) + (px - P.x0) / P.w * (L10(f1) - L10(f0)));
+        const y = P.Y(Math.min(Math.max(famDb(kk, f), vlo), vhi));
+        if (px === P.x0) g.moveTo(px, y); else g.lineTo(px, y);
+      }
+      g.stroke();
+      g.globalAlpha = 1;
+    });
+    P.unclip(g);
+
+    const iy = keys.indexOf(S.env);
+    const col = cols[iy < 0 ? 2 : iy];
+    leader(g, P.X(1.5), P.Y(Math.min(Math.max(famDb(S.env, 1.5), vlo), vhi)),
+      NOISE[S.env][2], { box: P, colour: col, dy: -24 });
+    const fM = fMHz();
+    if (fM >= f0 && fM <= f1) {
+      const v = famDb(S.env, fM);
+      g.save();
+      g.strokeStyle = t.text2; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(P.X(fM), P.y0); g.lineTo(P.X(fM), P.y1); g.stroke();
+      g.restore();
+      leader(g, P.X(fM), P.Y(Math.min(Math.max(v, vlo), vhi)), fmtEng(v, 'dB', 1),
+        { box: P, colour: t.text, dy: 24 });
+    } else {
+      leader(g, P.x0 + P.w * 0.06, P.y0 + P.h * 0.12,
+        'outside the 0.3–250 MHz range of P.372',
+        { box: P, colour: t.text2, dot: false, dy: 16 });
+    }
+  }
+
+  /* ---- readouts ------------------------------------------------------------ */
+  function updateUI() {
+    for (let i = 0; i < 8; i++) $('bd' + i).classList.toggle('on', i === bandIx());
+    $('pH').classList.toggle('on', !S.vert); $('pV').classList.toggle('on', S.vert);
+    $('a0').classList.toggle('on', !S.dish); $('a1').classList.toggle('on', S.dish);
+    ['city', 'residential', 'rural', 'quiet', 'galactic'].forEach((kk, i) =>
+      $('e' + i).classList.toggle('on', S.env === kk));
+
+    const a = atmosGamma(), aPath = (a.gas + a.rain) * S.d, dl = dLos(), db = breakKm();
+    const muf = S.foF2 * secSph(S.d), fM = fMHz(), B = BANDS[bandIx()];
+    const dLam = S.d * 1000 / lamM();
+    const R = reach(), vd = verdict();
+
+    $('heroVal').innerHTML = fmtNum(R.km, R.km < 10 ? 2 : 0) + '<span class="u">km</span>';
+    const bad = R.km < S.d * 0.8, warn = !bad && R.km < S.d;
+    $('heroBadge').className = 'badge ' + (bad ? 'bad' : warn ? 'warn' : 'good');
+    $('heroBadge').textContent = bad ? 'path fails' : warn ? 'marginal' : 'path closes';
+    $('heroFt').textContent = R.capped
+      ? 'via ' + R.via + ', past the 5 000 km scan limit'
+      : 'via ' + R.via + ', at a ' + S.budget.toFixed(0) + ' dB budget';
+
+    $('kBand').textContent = B.k;
+    $('kBandN').textContent = B.use;
+    $('kLam').textContent = fmtEng(lamM(), 'm', 2);
+    $('kFsl').textContent = dLam >= 10 ? fmtEng(fsl(fGHz(), S.d), 'dB', 1) : 'near field';
+    $('kFslN').textContent = dLam >= 10
+      ? '92.4 + 20 log f + 20 log d'
+      : 'path is ' + dLam.toFixed(dLam < 1 ? 3 : 1) + ' λ, needs 10';
+    $('kAtm').textContent = fmtEng(aPath, 'dB', aPath < 10 ? 2 : aPath < 1000 ? 1 : 0);
+    $('kAtmN').textContent = a.clamped
+      ? 'upper bound, anchors start at 1 GHz'
+      : 'gases ' + a.gas.toFixed(3) + ' + rain ' + a.rain.toFixed(3) + ' dB/km';
+    $('kHor').textContent = fmtEng(dl, 'km', 1);
+    $('kHorN').textContent = '√(2kaH), k = ' + S.k.toFixed(3);
+    $('kBrk').textContent = fmtEng(db * 1000, 'm', 1);
+    $('kBrkN').innerHTML = 'd<sub>b</sub> = 4h<sub>1</sub>h<sub>2</sub>/&lambda;, '
+      + (S.d < db ? 'you are inside' : 'you are past');
+    $('kMuf').textContent = muf.toFixed(2) + ' MHz';
+    $('kMufN').textContent = 'f' + sub('o') + 'F2 ' + S.foF2.toFixed(1) + ' MHz × sec θ ' + secSph(S.d).toFixed(3);
+    const inFa = fM >= 0.3 && fM <= 250;
+    $('kFa').textContent = inFa ? fmtEng(famDb(S.env, fM), 'dB', 1)
+      : fM > 250 ? 'receiver-limited' : 'atmospherics';
+    $('kFaN').textContent = inFa
+      ? NOISE[S.env][2] + ', ' + NOISE[S.env][0].toFixed(1) + ' − ' + NOISE[S.env][1].toFixed(1) + ' log f'
+      : fM > 250 ? 'above 250 MHz your set dominates' : 'below 0.3 MHz P.372 gives charts';
+    $('kDom').textContent = vd.n;
+    $('kDomN').textContent = vd.t;
+
+    const e = Math.abs(2 * Math.sin(2 * Math.PI * S.h1 * S.h2 / (lamM() * Math.max(S.d, 1e-9) * 1000)));
+    const rows = [
+      'λ = c/f = 2.99792458×10⁸ / ' + fHz().toExponential(3) + ' Hz = <b>' + fmtEng(lamM(), 'm', 2) + '</b>',
+      'Free-space loss = 92.4478 + 20·log₁₀(' + fGHz().toExponential(3) + ') + 20·log₁₀(' + S.d.toFixed(1) + ') = <b>' + fsl(fGHz(), S.d).toFixed(2) + ' dB</b>',
+      'Horizon = √(2·' + S.k.toFixed(3) + '·6371·' + S.h1.toFixed(0) + '/1000) + √(2·' + S.k.toFixed(3) + '·6371·' + S.h2.toFixed(0) + '/1000) = ' + horizonKm(S.h1, S.k).toFixed(2) + ' + ' + horizonKm(S.h2, S.k).toFixed(2) + ' = <b>' + dl.toFixed(2) + ' km</b>',
+      'Breakpoint = 4·' + S.h1.toFixed(0) + '·' + S.h2.toFixed(0) + '/' + lamM().toPrecision(4) + ' m = <b>' + (db * 1000).toPrecision(4) + ' m</b>',
+      'Two-ray factor = 2|sin(2π·' + S.h1.toFixed(0) + '·' + S.h2.toFixed(0) + '/(' + lamM().toPrecision(4) + '·' + (S.d * 1000).toFixed(0) + '))| = ' + e.toFixed(4) + ' = <b>' + (20 * L10(Math.max(e, 1e-6))).toFixed(2) + ' dB</b> on free space',
+      'Gases + rain = (' + a.gas.toFixed(4) + ' + ' + a.rain.toFixed(4) + ') dB/km × ' + S.d.toFixed(1) + ' km = <b>' + aPath.toFixed(2) + ' dB</b>',
+      'MUF = ' + S.foF2.toFixed(1) + ' × sec θᵢ, tan θᵢ = r·sin γ/(1 − r·cos γ) with γ = ' + (S.d / (2 * A_E0)).toFixed(5) + ' rad, r = ' + (A_E0 / (A_E0 + S.H0)).toFixed(5) + ' → <b>' + muf.toFixed(2) + ' MHz</b>'
+    ];
+    $('work').innerHTML = rows.map(r => '<li>' + r + '</li>').join('');
+  }
+
+  function drawAll() { draw1(); draw2(); draw3(); draw4(); draw5(); draw6(); draw7(); }
+  function refresh() { updateUI(); drawAll(); }
+
+  /* ---- controls ------------------------------------------------------------ */
+  const PAIRS = [['ds', 'd'], ['h1', 'h1'], ['h2', 'h2'], ['rn', 'rain'], ['bg', 'budget'],
+    ['kf', 'k'], ['fo', 'foF2'], ['hv', 'H0'], ['gn', 'gain'], ['dd', 'dishD'],
+    ['de', 'dishEta'], ['n0', 'N0'], ['er', 'eps'], ['sg', 'sig']];
+
+  function syncFreq() { $('fqN').value = +(fHz() / 1e6).toPrecision(5); }
+  function pushControls() {
+    PAIRS.forEach(p => { $(p[0]).value = S[p[1]]; $(p[0] + 'N').value = S[p[1]]; });
+    $('fq').value = S.u; syncFreq();
+  }
+
+  PAIRS.forEach(p => bindPair($(p[0]), $(p[0] + 'N'), v => { S[p[1]] = v; refresh(); }));
+  $('fq').addEventListener('input', () => { S.u = +$('fq').value; syncFreq(); refresh(); });
+  $('fqN').addEventListener('change', () => {
+    const v = parseFloat($('fqN').value);
+    if (!isFinite(v) || !(v > 0)) { syncFreq(); return; }
+    S.u = uOf(Math.min(FHI, Math.max(FLO, v * 1e6)));
+    $('fq').value = S.u; syncFreq(); refresh();
+  });
+
+  BANDS.forEach((B, i) => $('bd' + i).addEventListener('click', () => {
+    S.u = uOf(B.mid); $('fq').value = S.u; syncFreq(); refresh();
+  }));
+  $('pH').addEventListener('click', () => { S.vert = false; refresh(); });
+  $('pV').addEventListener('click', () => { S.vert = true; refresh(); });
+  $('a0').addEventListener('click', () => { S.dish = false; refresh(); });
+  $('a1').addEventListener('click', () => { S.dish = true; refresh(); });
+  ['city', 'residential', 'rural', 'quiet', 'galactic'].forEach((kk, i) =>
+    $('e' + i).addEventListener('click', () => { S.env = kk; refresh(); }));
+
+  const apply = o => { Object.keys(o).forEach(kk => { S[kk] = o[kk]; }); pushControls(); refresh(); };
+  const PRESETS = [
+    { u: uOf(1e6), d: 120, h1: 150, h2: 5, rain: 0, env: 'residential' },
+    { u: uOf(1e7), d: 1500, h1: 30, h2: 10, rain: 0, env: 'rural' },
+    { u: uOf(9e8), d: 20, h1: 30, h2: 10, rain: 0, env: 'city' },
+    { u: uOf(1.8e10), d: 15, h1: 60, h2: 60, rain: 25, env: 'rural' },
+    { u: uOf(2.8e10), d: 0.5, h1: 10, h2: 2, rain: 50, env: 'city' }
+  ];
+  PRESETS.forEach((p, i) => $('p' + i).addEventListener('click', () => apply(p)));
+
+  const TOUR = [
+    { s: { u: uOf(9e8), d: 20, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 1 — 900 MHz over 20 km: past the breakpoint, inside the horizon.' },
+    { s: { u: uOf(5e6), d: 1500, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'city' },
+      t: 'Step 2 — 5 MHz: the ionosphere returns it, and city noise dominates.' },
+    { s: { u: uOf(2.8e10), d: 20, h1: 30, h2: 10, rain: 50, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 3 — 28 GHz in 50 mm/h rain: the 20 km path is gone.' },
+    { s: { u: uOf(6e10), d: 2, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 4 — 60 GHz: oxygen alone takes 14.7 dB every kilometre.' },
+    { s: { u: uOf(9e8), d: 300, h1: 30, h2: 10, rain: 0, k: 1.333, dish: false, env: 'rural' },
+      t: 'Step 5 — 300 km at 900 MHz: only troposcatter is left.' }
+  ];
+  TOUR.forEach((T, i) => $('t' + (i + 1)).addEventListener('click', () => {
+    apply(T.s); $('tourtext').textContent = T.t;
+  }));
+  $('t0').addEventListener('click', () => {
+    apply({ u: 0.684640, d: 20, h1: 30, h2: 10, rain: 0, k: 1.333, vert: false, foF2: 8,
+      gain: 35, dish: false, env: 'rural', budget: 150, H0: 300, dishD: 1, dishEta: 0.6,
+      N0: 350, eps: 15, sig: 0.005 });
+    $('tourtext').textContent = 'Back to 900 MHz over 20 km, masts of 30 m and 10 m.';
+  });
+
+  pushControls();
+  refresh();
+  let rt = 0;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', drawAll);
 })();
 </script>
 </body>

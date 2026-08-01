@@ -977,14 +977,16 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     }
 
     /* mast and radiated arcs */
-    const mxx = wide ? w * 0.70 : w * 0.72, top = h * 0.16;
+    const mxx = wide ? w * 0.70 : w * 0.72, top = h * 0.22;
     g.strokeStyle = t.text2; g.lineWidth = 1;
     arrow(g, cx1 + w * 0.008, yc, mxx - w * 0.04);
     mast(g, mxx, gy, gy - top);
     g.strokeStyle = t.s1; g.lineWidth = 1.2;
-    for (let i = 1; i <= 3; i++) {
-      const r = w * 0.028 * i + w * 0.012;
-      g.beginPath(); g.arc(mxx, top - h * 0.02, r, -Math.PI / 3, Math.PI / 3); g.stroke();
+    const acy = top - h * 0.02;
+    const rmax = Math.max(6, Math.min(w * 0.09, (acy - pad) / Math.sin(Math.PI / 3), w - pad - mxx));
+    for (let i = 0; i < 3; i++) {
+      const r = rmax * (0.45 + 0.275 * i);
+      g.beginPath(); g.arc(mxx, acy, r, -Math.PI / 3, Math.PI / 3); g.stroke();
     }
     g.restore();
 
@@ -1030,7 +1032,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     const c = $('msg'), wh = fit(c), w = wh[0], h = wh[1];
     const g = c.getContext('2d'), t = theme();
     const fs = tickFs(w), af = annFs(w), dig = DIG(S.mode);
-    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+    const P = graticule(g, { x: 1, y: 1, w: w - 2, h: h - 2 },
       { min: 0, max: 1, unit: 's', label: 'time' },
       dig ? { min: -0.3, max: 1.4, label: 'bit level', dec: 0 }
           : { min: -1.4, max: 1.4, unit: 'norm.', label: 'message', dec: 1 },
@@ -1079,7 +1081,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     const c = $('mod'), wh = fit(c), w = wh[0], h = wh[1];
     const g = c.getContext('2d'), t = theme();
     const fs = tickFs(w), af = annFs(w);
-    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+    const P = graticule(g, { x: 1, y: 1, w: w - 2, h: h - 2 },
       { min: 0, max: 1, unit: 's', label: 'time' },
       { min: -1.45, max: 1.45, unit: 'norm.', label: 'amplitude', dec: 1 },
       { fontSize: fs });
@@ -1127,9 +1129,10 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     dimSafe(g, P.X(0), P.X(1 / Math.max(1, S.fc)), P.Y(-1.28),
       'T' + sub('c') + ' ' + fmtEng(1 / Math.max(1, S.fc), 's', 0), af, P);
 
+    const inY = v => Math.min(P.y1, Math.max(P.y0, P.Y(v)));
     let pi = 1;
     for (let i = 1; i <= Math.min(n, Math.round(n * 0.35)); i++) if (Math.abs(y[i]) > Math.abs(y[pi])) pi = i;
-    leader(g, P.X(pi / n), P.Y(y[pi]), fmtEng(S.fc, 'Hz', 0) + ' carrier',
+    leader(g, P.X(pi / n), inY(y[pi]), fmtEng(S.fc, 'Hz', 0) + ' carrier',
       { box: P, colour: t.s1, size: af, dy: -P.h * 0.14 });
 
     if (S.mode === 'am') {
@@ -1150,7 +1153,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
       leader(g, P.X(flips.at[0]), P.Y(0), 'phase flip',
         { box: P, colour: t.s4, size: af, dy: P.h * 0.26 });
     } else {
-      leader(g, P.X(0.5), P.Y(y[Math.round(n * 0.5)]), 'no flip in this pattern',
+      leader(g, P.X(0.5), inY(y[Math.round(n * 0.5)]), 'no flip in this pattern',
         { box: P, colour: t.text2, size: af, dy: P.h * 0.24 });
     }
   }
@@ -1178,7 +1181,7 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
     const c = $('spec'), wh = fit(c), w = wh[0], h = wh[1];
     const g = c.getContext('2d'), t = theme();
     const fs = tickFs(w), af = annFs(w), span = S.span;
-    const P = graticule(g, { x: 0, y: 0, w: w, h: h },
+    const P = graticule(g, { x: 1, y: 1, w: w - 2, h: h - 2 },
       { min: 0, max: span, unit: 'Hz', label: 'frequency', dec: 0 },
       { min: -60, max: 5, unit: 'dB', label: 'level, relative to peak', dec: 0 },
       { fontSize: fs });
@@ -1280,41 +1283,40 @@ th:first-child, td:first-child { text-align: left; color: var(--text-secondary);
 
   /* --- controls -------------------------------------------------- */
   const MODES = { am: 'bam', fm: 'bfm', pm: 'bpm', ook: 'book', fsk: 'bfsk', psk: 'bpsk', qpsk: 'bqpsk' };
+  /* the depth slider means a different quantity per scheme, so each keeps its own value */
+  const DEV = { am: 80, pm: 50, fm: 6, fsk: 6 };
 
   function setDevRange(mn, mx, st) {
-    const r = $('dev'), nEl = $('devN'), prev = parseFloat(r.value);
+    const r = $('dev'), nEl = $('devN');
     r.min = mn; r.max = mx; r.step = st;
     nEl.min = mn; nEl.max = mx; nEl.step = st;
-    return prev;
+    r.value = DEV[S.mode];
   }
   function syncControls() {
     const dig = DIG(S.mode);
     $('anaCtl').style.display = dig ? 'none' : '';
     $('digCtl').style.display = dig ? '' : 'none';
-    const hasDev = S.mode === 'am' || S.mode === 'fm' || S.mode === 'pm' || S.mode === 'fsk';
+    const hasDev = DEV[S.mode] != null;
     $('devCtl').style.display = hasDev ? '' : 'none';
     $('pmxCtl').style.display = S.mode === 'pm' ? '' : 'none';
-    const r = $('dev');
     if (S.mode === 'am') {
-      const prev = setDevRange(0, 100, 5);
-      if (!(prev >= 0 && prev <= 100)) r.value = 80;
+      setDevRange(0, 100, 5);
       $('devLbl').textContent = 'Depth'; $('devUnit').textContent = '%';
     } else if (S.mode === 'pm') {
-      const prev = setDevRange(0, 100, 5);
-      if (!(prev > 10 && prev <= 100)) r.value = 50;
+      setDevRange(0, 100, 5);
       $('devLbl').textContent = 'Phase swing'; $('devUnit').textContent = '%';
     } else if (hasDev) {
-      const prev = setDevRange(1, 10, 1);
-      if (!(prev >= 1 && prev <= 10)) r.value = 6;
+      setDevRange(1, 10, 1);
       $('devLbl').textContent = 'Deviation Δf'; $('devUnit').textContent = 'Hz';
     }
-    $('devN').value = r.value;
+    $('devN').value = $('dev').value;
   }
 
   function readState() {
     const num = (id, fb) => { const v = parseFloat($(id).value); return isFinite(v) ? v : fb; };
     S.fc = num('fc', 20);
     S.dev = num('dev', 80);
+    if (DEV[S.mode] != null) DEV[S.mode] = S.dev;
     S.fm = Math.max(0.1, num('fm', 2));
     S.pmMax = Math.max(0.1, num('pmx', 3));
     S.snr = num('snr', 40);
