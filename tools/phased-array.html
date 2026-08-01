@@ -60,6 +60,8 @@ button {
 button:hover { background: var(--surface-1); }
 input:focus-visible, button:focus-visible { outline: 2px solid #809EC2; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
 .lbl { font-size: 14px; color: var(--text-primary); }
 .sm { font-size: 13.5px; color: var(--text-primary); }
 .pair { display: flex; align-items: center; gap: 6px; }
@@ -84,6 +86,7 @@ canvas { width: 100%; display: block; }
 </style>
 </head>
 <body>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Phased-array beam pattern</h1>
 <p class="sub">The same 4 antennas run in reverse. Direction finding reads phase differences to learn an angle; a phased array writes phase differences to choose one. Feed each element the right phase and the four ripples add up in only one direction &mdash; the beam.</p>
 

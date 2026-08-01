@@ -78,6 +78,8 @@ button {
 button:hover { background: var(--surface-1); }
 input:focus-visible, button:focus-visible { outline: 2px solid #4472C4; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
 .lbl { font-size: 14px; color: var(--text-primary); }
 .sm { font-size: 13.5px; color: var(--text-primary); }
 .pair { display: flex; align-items: center; gap: 6px; }
@@ -96,6 +98,7 @@ canvas { width: 100%; display: block; }
 .legend span { display: flex; align-items: center; gap: 6px; }
 </style>
 
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
 <h1>Phase interferometry</h1>
 <p class="sub">One equation runs everything here: &Delta;&phi; = 360&deg; &middot; d &middot; sin&theta; / &lambda;, wrapped to &plusmn;180&deg;. Antennas on one line, spaced unequally, turn that into an angle of arrival.</p>
 
