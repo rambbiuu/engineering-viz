@@ -121,8 +121,13 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   <span><span class="dot" style="background:#8a8985"></span>fix from the crossing curves</span>
 </div>
 
-<p class="sec"><b>2 &middot; What each pair measures</b> <span>&mdash; the time difference against site 1, and the distance it stands for</span></p>
-<div class="cards" id="cards"></div>
+<p class="sec"><b>2 &middot; When each site heard it</b> <span>&mdash; arrival time against site 1; below the line means it heard the pulse earlier</span></p>
+<canvas id="toa" style="height: 260px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#94B6D2"></span>arrival, relative to site 1</span>
+  <span><span class="dot" style="background:#8a8985"></span>site 1, the reference</span>
+</div>
+<div class="cards" id="cards" style="margin-top: 1rem;"></div>
 
 <p class="sec"><b>3 &middot; Clock error becomes distance error</b> <span>&mdash; light travels 300 m in one microsecond, so that is the exchange rate</span></p>
 <canvas id="err" style="height: 260px;"></canvas>
@@ -327,6 +332,60 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     g.fillText(S.ck + ' ns → ' + (S.ck * C).toFixed(0) + ' m', lx, Y(S.ck * C) + 9);
   }
 
+  function drawToa() {
+    var cv = $('toa'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 58, r = 16, t = 20, b = 40;
+
+    var dts = [];
+    for (var i = 0; i < S.n; i++) dts.push(dtUs(i));
+    var lim = 0;
+    for (var k = 0; k < dts.length; k++) lim = Math.max(lim, Math.abs(dts[k]));
+    lim = Math.max(lim * 1.25, 1);
+
+    var X = function (i) { return l + (i + 0.5) / S.n * (w - l - r); };
+    var Y = function (us) { return t + (lim - us) / (2 * lim) * (h - t - b); };
+
+    // horizontal guides
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.font = fnt(11); g.fillStyle = mut;
+    for (var q = -1; q <= 1; q += 0.5) {
+      var v = lim * q;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText((v >= 0 ? '+' : '') + v.toFixed(1), l - 6, Y(v));
+    }
+
+    // the zero line is site 1 itself
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(l, Y(0)); g.lineTo(w - r, Y(0)); g.stroke();
+    g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('site 1 hears it here', w - r - 2, Y(0) - 5);
+
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('receiver site', l + (w - l - r) / 2, h - 6);
+    g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('arrival after site 1 (µs)', 0, 0); g.restore();
+
+    for (var j = 0; j < S.n; j++) {
+      var x = X(j), y = Y(dts[j]);
+      g.strokeStyle = COL[j]; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(x, Y(0)); g.lineTo(x, y); g.stroke();
+      g.fillStyle = COL[j];
+      g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill();
+
+      var above = dts[j] >= 0;
+      g.font = fnt(11); g.textAlign = 'center';
+      g.textBaseline = above ? 'bottom' : 'top';
+      g.fillText((dts[j] >= 0 ? '+' : '') + dts[j].toFixed(2) + ' µs', x, y + (above ? -9 : 9));
+
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText('site ' + (j + 1), x, h - b + 6);
+    }
+  }
+
   function cards() {
     var box = $('cards');
     box.innerHTML = '';
@@ -342,7 +401,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     }
   }
 
-  function redraw() { drawMap(); drawErr(); cards(); }
+  function redraw() { drawMap(); drawToa(); drawErr(); cards(); }
 
   function toKm(cv, ev) {
     var r = cv.getBoundingClientRect(), pad = 26;
