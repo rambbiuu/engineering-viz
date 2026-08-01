@@ -51,14 +51,14 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  max-width: 760px;
+  max-width: min(1100px, 94vw);
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
   line-height: 1.5;
 }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
+h1 { font-size: 26px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
 h2 { font-size: 17px; font-weight: 500; margin: 3rem 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+.sub { font-size: 15px; color: var(--text-secondary); margin: 0 0 2rem; }
 input, button { font: inherit; color: inherit; }
 input[type="number"] {
   background: transparent;
@@ -77,16 +77,16 @@ button {
 button:hover { background: var(--surface-1); }
 input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
+.lbl { font-size: 14.5px; color: var(--text-secondary); }
 .sm { font-size: 13px; color: var(--text-secondary); }
 .pair { display: flex; align-items: center; gap: 6px; }
-.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec { margin: 1.5rem 0 6px; font-size: 15.5px; }
 .sec b { font-weight: 500; }
 .sec span { color: var(--text-secondary); font-size: 12px; }
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 canvas { width: 100%; display: block; }
@@ -249,7 +249,7 @@ canvas { width: 100%; display: block; }
     g.strokeStyle = sub; g.globalAlpha = 0.7; g.lineWidth = 1; g.setLineDash([3, 5]);
     g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, Math.max(12, cy - R2 - 8)); g.stroke();
     g.setLineDash([]); g.globalAlpha = 1;
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(14); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('0° (straight ahead)', cx, Math.max(12, cy - R2 - 12));
 
     if (Math.abs(S.th) > 1) {
@@ -257,13 +257,13 @@ canvas { width: 100%; display: block; }
       g.strokeStyle = sub;
       g.beginPath(); g.arc(cx, cy, 40, -Math.PI / 2, a, S.th < 0); g.stroke();
       const m = (-Math.PI / 2 + a) / 2;
-      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = sub; g.font = fnt(14); g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText('θ = ' + S.th + '°', cx + Math.cos(m) * 62, cy + Math.sin(m) * 62);
     }
 
     g.fillStyle = '#D4537E';
     g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(14); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('emitter', ex, ey - 11);
 
     g.strokeStyle = bd; g.lineWidth = 1;
@@ -272,11 +272,11 @@ canvas { width: 100%; display: block; }
     ax.forEach((x, i) => {
       g.fillStyle = dotCol[i];
       g.beginPath(); g.arc(x, cy, 5, 0, 7); g.fill();
-      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillStyle = sub; g.font = fnt(14); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText('A' + (i + 1), x, cy + 12);
     });
 
-    g.fillStyle = '#378ADD'; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = '#378ADD'; g.font = fnt(14); g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('blue lines = wave peaks, ' + lam.toFixed(1) + ' cm apart — that gap is one wavelength (λ)', 12, 10);
   }
 
@@ -329,7 +329,7 @@ canvas { width: 100%; display: block; }
       g.fillStyle = cols[i];
       g.beginPath(); g.arc(xc, yc - amp, 4.5, 0, 7); g.fill();
       if (i === 0) {
-        g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+        g.fillStyle = sub; g.font = fnt(14); g.textAlign = 'left'; g.textBaseline = 'bottom';
         g.fillText('crest (top of the bump)', xc + 9, yc - amp - 3);
       }
 
@@ -346,13 +346,13 @@ canvas { width: 100%; display: block; }
         g.stroke();
       }
 
-      g.fillStyle = cols[i]; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillStyle = cols[i]; g.font = fnt(15); g.textAlign = 'left'; g.textBaseline = 'middle';
       g.fillText('A' + (i + 1), 12, yc - 8);
-      g.fillStyle = sub; g.font = fnt(12);
+      g.fillStyle = sub; g.font = fnt(14);
       g.fillText(i === 0 ? 'ref' : wrap(ph[i]).toFixed(0) + '°', 12, yc + 10);
       const turns = Math.round((ph[i] - wrap(ph[i])) / 360);
       if (turns !== 0) {
-        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(11);
+        g.fillStyle = cvv('--text-warning') || sub; g.font = fnt(14);
         g.fillText((turns > 0 ? '+' : '') + turns + ' turn hidden', 12, yc + 26);
         if (xm >= lx && xm <= rx) {
           g.strokeStyle = cvv('--text-warning') || sub; g.lineWidth = 1.5;
@@ -361,7 +361,7 @@ canvas { width: 100%; display: block; }
       }
     }
 
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(14); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('time →', lx + (rx - lx) / 2, h - 6);
   }
 
@@ -374,7 +374,7 @@ canvas { width: 100%; display: block; }
     const Y = v => t + (180 - v) / 360 * (h - t - b);
     const lam = 30 / S.f;
 
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(14); g.fillStyle = sub;
     [-180, -90, 0, 90, 180].forEach(v => {
       g.strokeStyle = bd; g.lineWidth = v === 0 ? 1 : 0.5;
       g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
@@ -559,7 +559,7 @@ canvas { width: 100%; display: block; }
     const X = a => l + (a + 90) / 180 * (w - l - rt);
     const s = D.sol;
 
-    g.font = fnt(11); g.fillStyle = sub;
+    g.font = fnt(14); g.fillStyle = sub;
     [-90, -45, 0, 45, 90].forEach(a => {
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(X(a), t); g.lineTo(X(a), h - b); g.stroke();
@@ -574,7 +574,7 @@ canvas { width: 100%; display: block; }
     const rh = (h - t - b) / 3;
     for (let i = 0; i < 3; i++) {
       const yc = t + rh * i + rh / 2;
-      g.fillStyle = PC[i]; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillStyle = PC[i]; g.font = fnt(14); g.textAlign = 'left'; g.textBaseline = 'middle';
       g.fillText('A' + (i + 2) + '−A1 (' + D.d[i].toFixed(1) + ')', 10, yc);
       const pick = s.steps[i].k;
       s.cands[i].forEach(cd => {
@@ -588,7 +588,7 @@ canvas { width: 100%; display: block; }
         }
       });
     }
-    g.fillStyle = sub; g.font = fnt(11); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub; g.font = fnt(14); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('angle', l + (w - l - rt) / 2, h - 4);
   }
 
