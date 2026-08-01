@@ -126,14 +126,14 @@ canvas { width: 100%; display: block; }
 
 <p class="sec"><b>1 &middot; The antenna</b> <span>Drawn with its elements vertical, so this is a vertically polarised mounting</span></p>
 <div class="planes">
-  <div><canvas id="antS" style="height: 210px;"></canvas><p class="plane">Side view</p></div>
-  <div><canvas id="antT" style="height: 210px;"></canvas><p class="plane">Top view</p></div>
+  <div><canvas id="antS" style="height: 280px;"></canvas><p class="plane">Side view</p></div>
+  <div><canvas id="antT" style="height: 280px;"></canvas><p class="plane">Top view</p></div>
 </div>
 
 <p class="sec"><b>2 &middot; The pattern</b> <span>The side view gives the vertical cut, the top view the horizontal one</span></p>
 <div class="planes">
-  <div><canvas id="polV" style="height: 320px;"></canvas><p class="plane">Vertical plane</p></div>
-  <div><canvas id="polH" style="height: 320px;"></canvas><p class="plane">Horizontal plane</p></div>
+  <div><canvas id="polV" style="height: 380px;"></canvas><p class="plane">Vertical plane</p></div>
+  <div><canvas id="polH" style="height: 380px;"></canvas><p class="plane">Horizontal plane</p></div>
 </div>
 <div class="legend">
   <span><span class="dot" style="background:#4472C4"></span>Vertical</span>
@@ -312,7 +312,7 @@ canvas { width: 100%; display: block; }
     var cv = $(id), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var cx = w / 2, cy = h / 2, R = Math.min(w / 2 - 62, h / 2 - 40);
+    var cx = w / 2, cy = h / 2, R = Math.min(w / 2 - 46, h / 2 - 34);
     // vertical cut is a side view, so 0 deg points at the horizon and 90 deg is straight up.
     // horizontal cut is a plan view, so 0 deg points up the page.
     var pt = vert
@@ -374,152 +374,285 @@ canvas { width: 100%; display: block; }
   }
 
   // Schematic of the antenna itself. u runs along boresight, v across it in
-  // whichever plane the view shows, so one set of dimensions serves both views.
+  // whichever plane the view shows. Anything genuinely vertical collapses to a
+  // point in the top view rather than rotating, hence element() and dot().
   function drawAnt(id, top) {
     var cv = $(id), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
-    var sub = cvv('--text-secondary'), mut = cvv('--text-muted');
-    var cx = w / 2, cy = h / 2;
-    var span = Math.min(w, h) * 0.40;
-    var P = top ? function (u, v) { return [cx + v * span, cy - u * span]; }
-                : function (u, v) { return [cx + u * span, cy - v * span]; };
-    function line(u1, v1, u2, v2, lw, col) {
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var METAL = cvv('--text-primary');
+    var cx = w / 2, cy = h / 2, OFF = 1.22;
+    var span = Math.min(w, h) * 0.30, uMid = 0, vMid = 0, bx;
+    // P also records its extent, so a first pass can measure the drawing and a
+    // second can scale it to fill the canvas whatever shape that canvas is.
+    var P = top
+      ? function (u, v) {
+          if (bx) { bx.u0 = Math.min(bx.u0, u); bx.u1 = Math.max(bx.u1, u);
+                    bx.v0 = Math.min(bx.v0, v); bx.v1 = Math.max(bx.v1, v); }
+          return [cx + (v - vMid) * span, cy - (u - uMid) * span];
+        }
+      : function (u, v) {
+          if (bx) { bx.u0 = Math.min(bx.u0, u); bx.u1 = Math.max(bx.u1, u);
+                    bx.v0 = Math.min(bx.v0, v); bx.v1 = Math.max(bx.v1, v); }
+          return [cx + (u - uMid) * span, cy - (v - vMid) * span];
+        };
+
+    function bar(u1, v1, u2, v2, lw, col) {        // a conductor: a thick round-capped bar
       var a = P(u1, v1), b = P(u2, v2);
-      g.strokeStyle = col || sub; g.lineWidth = lw || 1.8;
+      g.lineCap = 'round';
+      g.strokeStyle = col || METAL; g.lineWidth = lw || 3;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      g.lineCap = 'butt';
+    }
+    function thin(u1, v1, u2, v2, lw, col) {
+      var a = P(u1, v1), b = P(u2, v2);
+      g.strokeStyle = col || mut; g.lineWidth = lw || 1;
       g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
     }
     function dot(u, v, r, col) {
-      var a = P(u, v);
-      g.fillStyle = col || sub;
+      var a = P(u, v); g.fillStyle = col || METAL;
       g.beginPath(); g.arc(a[0], a[1], r, 0, 7); g.fill();
     }
-    // a vertical element: a rod in the side view, seen end-on in the top view
-    function element(u, len, col, lw) {
-      if (top) dot(u, 0, 3, col);
-      else line(u, -len / 2, u, len / 2, lw || 2.2, col);
+    function ring(u, v, r, lw, col, dash) {
+      var a = P(u, v); g.strokeStyle = col || mut; g.lineWidth = lw || 1;
+      if (dash) g.setLineDash(dash);
+      g.beginPath(); g.arc(a[0], a[1], r, 0, 7); g.stroke(); g.setLineDash([]);
     }
-    function arrow(u, v, len) {                    // boresight, pointing along +u
+    function poly(pts, lw, col, fill, alpha) {
+      g.beginPath();
+      pts.forEach(function (q, k) { var z = P(q[0], q[1]); if (k === 0) g.moveTo(z[0], z[1]); else g.lineTo(z[0], z[1]); });
+      g.closePath();
+      if (fill) { g.fillStyle = fill; g.globalAlpha = alpha === undefined ? 0.16 : alpha; g.fill(); g.globalAlpha = 1; }
+      if (lw) { g.strokeStyle = col || sub; g.lineWidth = lw; g.stroke(); }
+    }
+    function hatch(u1, u2, v, depth, n) {          // ground hatching, engineering style
+      for (var q = 0; q <= n; q++) {
+        var uu = u1 + (u2 - u1) * q / n;
+        thin(uu, v, uu - depth * 0.7, v - depth, 1, mut);
+      }
+    }
+    function coil(u, v1, v2) {                     // phasing section between elements
+      var n = 3, a = P(u, v1), b = P(u, v2);
+      var dx = (b[0] - a[0]) / n, dy = (b[1] - a[1]) / n, r = 2.6;
+      g.strokeStyle = mut; g.lineWidth = 1.3;
+      for (var q = 0; q < n; q++) {
+        g.beginPath();
+        g.arc(a[0] + dx * (q + 0.5), a[1] + dy * (q + 0.5), r, 0, Math.PI * 2);
+        g.stroke();
+      }
+    }
+    function element(u, half, col, lw) {           // a vertical rod: end on from above
+      if (top) dot(u, 0, (lw || 3) * 0.75 + 1, col);
+      else bar(u, -half, u, half, lw || 3, col);
+    }
+    function head(x, y, dx, dy, sz, col) {         // filled arrowhead at (x,y) pointing (dx,dy)
+      var m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
+      g.beginPath(); g.moveTo(x, y);
+      g.lineTo(x - dx * sz - dy * sz * 0.42, y - dy * sz + dx * sz * 0.42);
+      g.lineTo(x - dx * sz + dy * sz * 0.42, y - dy * sz - dx * sz * 0.42);
+      g.closePath(); g.fillStyle = col; g.fill();
+    }
+    function arrow(u, v, len) {                    // boresight
       var a = P(u, v), b = P(u + len, v);
-      g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+      g.strokeStyle = RED; g.lineWidth = 1.5; g.setLineDash([5, 4]);
       g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
       g.setLineDash([]);
-      var back = P(u + len - 0.11, v), side = 0.055 * span;
-      var dx = b[0] - back[0], dy = b[1] - back[1];
-      var nx = -dy / Math.hypot(dx, dy) * side, ny = dx / Math.hypot(dx, dy) * side;
-      g.beginPath(); g.moveTo(b[0], b[1]);
-      g.lineTo(back[0] + nx, back[1] + ny); g.lineTo(back[0] - nx, back[1] - ny);
-      g.closePath(); g.fillStyle = RED; g.fill();
+      head(b[0], b[1], b[0] - a[0], b[1] - a[1], 8, RED);
     }
-    function scaleBar(nLam) {                      // how many wavelengths across
-      var px = span * 1.6 / nLam;
-      if (px < 6) return;
-      var y = h - 10, x1 = 8;
-      g.strokeStyle = mut; g.lineWidth = 1.2;
-      g.beginPath(); g.moveTo(x1, y); g.lineTo(x1 + px, y);
-      g.moveTo(x1, y - 4); g.lineTo(x1, y + 4);
-      g.moveTo(x1 + px, y - 4); g.lineTo(x1 + px, y + 4); g.stroke();
-      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText('\u03bb', x1 + px + 5, y + 5);
+    // dimension line: arrowheads inward, a short witness stub square to each end
+    function dim(p1, p2, txt) {
+      var A = P(p1[0], p1[1]), B = P(p2[0], p2[1]);
+      var dx = B[0] - A[0], dy = B[1] - A[1], m = Math.hypot(dx, dy) || 1;
+      var nx = -dy / m, ny = dx / m;               // square to the dimension line
+      g.strokeStyle = mut; g.lineWidth = 0.9;
+      [A, B].forEach(function (q) {
+        g.beginPath();
+        g.moveTo(q[0] - nx * 6, q[1] - ny * 6);
+        g.lineTo(q[0] + nx * 6, q[1] + ny * 6);
+        g.stroke();
+      });
+      g.lineWidth = 1;
+      g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke();
+      head(A[0], A[1], -dx, -dy, 6.5, mut);
+      head(B[0], B[1], dx, dy, 6.5, mut);
+      var mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2;
+      g.font = fnt(12);
+      var tw = g.measureText(txt).width;
+      // a vertical dimension gets a vertical label, so it needs no width of its own
+      g.save();
+      g.translate(mx, my);
+      if (Math.abs(dy) > Math.abs(dx)) g.rotate(-Math.PI / 2);
+      g.fillStyle = cvv('--bg');
+      g.fillRect(-tw / 2 - 4, -8, tw + 8, 16);
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(txt, 0, 0);
+      g.restore();
     }
+    // across the view: the extent that sets this view's beamwidth
+    function dimV(v1, v2, txt) { dim([-OFF, v1], [-OFF, v2], txt); }
+    function dimU(u1, u2, v, txt) { dim([u1, v], [u2, v], txt); }
 
-    var i, n;
+    function render() {
+    var ax1 = P(-1.2, 0), ax2 = P(1.55, 0);        // boresight axis, faint
+    g.strokeStyle = bd; g.lineWidth = 0.5; g.setLineDash([3, 4]);
+    g.beginPath(); g.moveTo(ax1[0], ax1[1]); g.lineTo(ax2[0], ax2[1]); g.stroke();
+    g.setLineDash([]);
+
+    var i, n, ap = (S.ap < 10 ? S.ap.toFixed(1) : S.ap.toFixed(0)) + ' \u03bb';
     switch (S.kind) {
       case 0:                                      // isotropic: a bare point source
-        for (i = 0; i < 12; i++) {
-          var a0 = i * 30 * D2R;
-          line(0.18 * Math.cos(a0), 0.18 * Math.sin(a0), 0.42 * Math.cos(a0), 0.42 * Math.sin(a0), 1.2, mut);
+        ring(0, 0, 0.30 * span, 1, bd, [3, 4]);
+        ring(0, 0, 0.46 * span, 1, bd, [3, 4]);
+        for (i = 0; i < 16; i++) {
+          var a0 = i * 22.5 * D2R, c0 = Math.cos(a0), s0 = Math.sin(a0);
+          thin(0.16 * c0, 0.16 * s0, 0.60 * c0, 0.60 * s0, 1.1, mut);
+          var tp = P(0.60 * c0, 0.60 * s0), bk = P(0.50 * c0, 0.50 * s0);
+          head(tp[0], tp[1], tp[0] - bk[0], tp[1] - bk[1], 5, mut);
         }
-        dot(0, 0, 6, ORANGE);
+        dot(0, 0, 8, ORANGE);
         break;
-      case 1:                                      // collinear: elements stacked up the mast
-        if (top) {                                 // a vertical stack, seen end on
-          var c1 = P(0, 0); g.strokeStyle = mut; g.lineWidth = 1;
-          g.beginPath(); g.arc(c1[0], c1[1], 0.12 * span, 0, 7); g.stroke();
-          dot(0, 0, 5, ORANGE);
+
+      case 1:                                      // collinear: elements stacked in a radome
+        if (top) {
+          ring(0, 0, 0.30 * span, 1.6, sub);
+          ring(0, 0, 0.30 * span, 0, mut);
+          poly([[0.30, 0]], 0, mut, mut, 0.10);
+          dot(0, 0, 6, ORANGE);
+          dimV(-0.30, 0.30, '0.2 \u03bb');
         } else {
-          line(0, -0.95, 0, 0.95, 1, mut);         // mast
+          poly([[-0.14, -1.0], [0.14, -1.0], [0.14, 1.02], [-0.14, 1.02]], 1.2, mut, mut, 0.10);
+          bar(0, -0.86, 0, 0.98, 1.4, mut);        // the feed line up the middle
           for (i = 0; i < 4; i++) {
-            var vc = -0.72 + i * 0.48;
-            line(0, vc - 0.17, 0, vc + 0.17, 3.4, i === 1 ? ORANGE : sub);
-            if (i < 3) dot(0, vc + 0.24, 3, mut);  // phasing section between elements
+            var vc = -0.72 + i * 0.5;
+            bar(0, vc - 0.19, 0, vc + 0.19, 5, i === 1 ? ORANGE : METAL);
+            if (i < 3) coil(0, vc + 0.21, vc + 0.29);
           }
+          bar(0, -1.0, 0, -1.18, 4, mut);          // mast
+          poly([[-0.07, -1.18], [0.07, -1.18], [0.07, -1.3], [-0.07, -1.3]], 1.2, sub, sub, 0.4);
+          dimV(-0.91, 0.91, '2.75 \u03bb');
         }
-        arrow(0.34, 0, 0.5);
+        arrow(0.34, 0, 0.62);
         break;
+
       case 2:                                      // half-wave dipole, fed at the centre
-        if (top) dot(0, 0, 5, ORANGE);
+        if (top) { ring(0, 0, 7, 1.4, mut); dot(0, 0, 5, ORANGE); }
         else {
-          line(0, 0.035, 0, 0.62, 3, ORANGE);
-          line(0, -0.035, 0, -0.62, 3, ORANGE);
-          line(-0.16, 0.03, -0.02, 0.03, 1.2, mut); line(-0.16, -0.03, -0.02, -0.03, 1.2, mut);
+          bar(0, 0.05, 0, 0.7, 5, ORANGE); bar(0, -0.05, 0, -0.7, 5, ORANGE);
+          thin(-0.02, 0.05, -0.24, 0.05, 1.4, mut);     // twin feeder
+          thin(-0.02, -0.05, -0.24, -0.05, 1.4, mut);
+          thin(-0.24, -0.05, -0.24, 0.05, 1.4, mut);
+          dot(0, 0.05, 2.6, mut); dot(0, -0.05, 2.6, mut);
+          dimV(-0.7, 0.7, '0.5 \u03bb');
         }
-        arrow(0.30, 0, 0.5);
+        arrow(0.32, 0, 0.62);
         break;
+
       case 3:                                      // monopole standing on its ground plane
         if (top) {
-          var c2 = P(0, 0); g.strokeStyle = mut; g.lineWidth = 1.4;
-          g.beginPath(); g.arc(c2[0], c2[1], 0.62 * span, 0, 7); g.stroke();
-          dot(0, 0, 5, ORANGE);
+          ring(0, 0, 0.78 * span, 1.6, sub);
+          poly([[0, 0]], 0, mut, mut, 0);
+          g.fillStyle = mut; g.globalAlpha = 0.10;
+          var cc = P(0, 0);
+          g.beginPath(); g.arc(cc[0], cc[1], 0.78 * span, 0, 7); g.fill(); g.globalAlpha = 1;
+          for (i = 0; i < 12; i++) {
+            var ar = i * 30 * D2R;
+            thin(0.62 * Math.cos(ar), 0.62 * Math.sin(ar), 0.78 * Math.cos(ar), 0.78 * Math.sin(ar), 1, mut);
+          }
+          dot(0, 0, 6, ORANGE);
+          dimV(-0.78, 0.78, '1.5 \u03bb');
         } else {
-          line(-0.62, 0, 0.62, 0, 1.8, mut);       // ground plane, edge on
-          for (i = -3; i <= 3; i++) line(i * 0.2, 0, i * 0.2 - 0.06, -0.09, 1, mut);
-          line(0, 0.02, 0, 0.62, 3, ORANGE);
+          bar(-0.78, 0, 0.78, 0, 3.5, sub);        // ground plane, edge on
+          hatch(-0.74, 0.74, -0.01, 0.13, 12);
+          bar(0, 0.03, 0, 0.7, 5, ORANGE);
+          thin(0, -0.03, 0, -0.22, 1.6, mut);      // coax through the plane
+          ring(0, -0.24, 3, 1.2, mut);
+          dimV(0.03, 0.7, '0.25 \u03bb');
         }
-        arrow(0.30, top ? 0 : 0.30, 0.5);
+        arrow(0.36, top ? 0 : 0.45, 0.56);
         break;
+
       case 4: {                                    // patch: board edge on, radiating forwards
-        var e4 = top ? 0.70 : 0.56;                // wider than it is tall
-        line(0, -e4 - 0.08, 0, e4 + 0.08, 2, mut); // ground plane
-        line(0.07, -e4 - 0.08, 0.07, e4 + 0.08, 1, mut);
-        line(0.07, -e4, 0.07, e4, 4.5, ORANGE);    // the patch itself
-        for (i = -2; i <= 2; i++) line(0, i * 0.3, 0.07, i * 0.3, 1, mut);
-        arrow(0.24, 0, 0.5);
+        var e4 = top ? 0.72 : 0.57;
+        poly([[0, -e4 - 0.12], [0.11, -e4 - 0.12], [0.11, e4 + 0.12], [0, e4 + 0.12]], 1.2, mut, BLUE, 0.13);
+        bar(0, -e4 - 0.12, 0, e4 + 0.12, 3.5, sub);      // ground plane
+        bar(0.11, -e4, 0.11, e4, 6, ORANGE);             // the patch
+        thin(0, -0.2, 0.11, -0.2, 1.6, mut);             // feed pin
+        dot(0.11, -0.2, 2.6, mut);
+        dimV(-e4, e4, top ? '0.44 \u03bb' : '0.35 \u03bb');
+        arrow(0.28, 0, 0.62);
         break;
       }
+
       case 5:                                      // Yagi: reflector, driven, directors
-        line(-0.42, 0, 0.92, 0, 1.6, mut);         // boom
-        element(-0.42, 1.16, sub, 2.2);            // reflector, the long one at the back
-        element(-0.18, 1.04, ORANGE, 3);           // driven
-        for (i = 0; i < 4; i++) element(0.08 + i * 0.28, 0.94 - i * 0.06, sub, 2.2);
-        arrow(1.02, 0, 0.42);
+        thin(-0.5, 0.035, 0.98, 0.035, 1.6, sub);  // twin boom
+        thin(-0.5, -0.035, 0.98, -0.035, 1.6, sub);
+        element(-0.45, 0.62, METAL, 3.4);          // reflector, longest, at the back
+        element(-0.2, 0.56, ORANGE, 4.4);          // driven
+        for (i = 0; i < 4; i++) element(0.1 + i * 0.28, 0.5 - i * 0.028, METAL, 3);
+        if (!top) {
+          thin(-0.2, 0, -0.36, -0.3, 1.4, mut);    // feed
+          ring(-0.38, -0.32, 3, 1.2, mut);
+          dimV(-0.62, 0.62, '0.52 \u03bb');
+        }
+        dimU(-0.45, 0.94, top ? 0.66 : -0.82, '1.3 \u03bb');
+        arrow(1.06, 0, 0.42);
         break;
+
       case 6:                                      // log-periodic: the taper, fed at the nose
-        line(-0.92, 0, 0.96, 0, 1.6, mut);
-        n = 9;
+        thin(-0.94, 0.035, 1.0, 0.035, 1.6, sub);  // twin boom, elements alternate between them
+        thin(-0.94, -0.035, 1.0, -0.035, 1.6, sub);
+        n = 13;
         for (i = 0; i < n; i++) {
-          var f = i / (n - 1);
-          var u6 = -0.88 + f * 1.74, len6 = 1.24 * Math.pow(0.80, i);
-          element(u6, len6, i === n - 1 ? ORANGE : (i % 2 ? mut : sub), 2.4);
+          var f6 = i / (n - 1), u6 = -0.9 + f6 * 1.86, h6 = 0.68 * Math.pow(0.86, i);
+          element(u6, h6, i === n - 1 ? ORANGE : (i % 2 ? mut : METAL), 3.2 - i * 0.12);
         }
-        arrow(1.06, 0, 0.36);
+        if (!top) {
+          thin(0.96, 0, 1.06, -0.26, 1.4, mut);    // fed at the nose, the short end
+          ring(1.08, -0.28, 3, 1.2, mut);
+          dimV(-0.68, 0.68, '0.6 \u03bb');
+        }
+        dimU(-0.9, 0.96, top ? 0.68 : -0.86, '1.7 \u03bb');
+        arrow(1.14, 0, 0.34);
         break;
+
       case 7:                                      // horn: waveguide flaring to its mouth
-        line(-0.86, -0.16, -0.28, -0.16, 2, sub);  // guide
-        line(-0.86, 0.16, -0.28, 0.16, 2, sub);
-        line(-0.86, -0.16, -0.86, 0.16, 2, sub);
-        line(-0.28, -0.16, 0.34, -0.62, 2, sub);   // flare
-        line(-0.28, 0.16, 0.34, 0.62, 2, sub);
-        line(0.34, -0.62, 0.34, 0.62, 2.4, ORANGE);  // the aperture
-        arrow(0.42, 0, 0.46);
-        scaleBar(S.ap);
+        poly([[-0.95, -0.19], [-0.34, -0.19], [0.32, -0.72], [0.32, 0.72], [-0.34, 0.19], [-0.95, 0.19]],
+             2.2, sub, BLUE, 0.15);
+        bar(-0.95, -0.19, -0.95, 0.19, 2.4, sub);
+        poly([[0.32, -0.82], [0.4, -0.82], [0.4, 0.82], [0.32, 0.82]], 1.4, sub, sub, 0.35);  // flange
+        bar(0.32, -0.72, 0.32, 0.72, 3.6, ORANGE); // the aperture
+        thin(-0.95, -0.1, -1.12, -0.1, 1.4, mut);  // waveguide feed
+        dimV(-0.72, 0.72, ap);
+        arrow(0.5, 0, 0.56);
         break;
-      case 8:                                      // dish with a feed at the focus
-        var pts = [];
-        for (i = -22; i <= 22; i++) {
-          var vv = i / 22 * 0.72;
-          pts.push(P(vv * vv * 0.62 - 0.34, vv));  // parabola opening along +u
-        }
-        g.strokeStyle = sub; g.lineWidth = 2.6;
-        g.beginPath();
-        pts.forEach(function (q, k) { if (k === 0) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]); });
-        g.stroke();
-        line(-0.34, 0, 0.15, 0, 1, mut);           // feed support
-        line(0.15, -0.1, 0.15, 0.1, 1, mut);
-        dot(0.15, 0, 5, ORANGE);                   // feed at the focus
-        arrow(0.34, 0, 0.46);
-        scaleBar(S.ap);
+
+      case 8: {                                    // dish with a feed at the focus
+        var f = 0.6, front = [], back = [];
+        for (i = -24; i <= 24; i++) { var vv = i / 24 * 0.8; front.push([vv * vv * f - 0.38, vv]); }
+        for (i = 24; i >= -24; i--) { var v2 = i / 24 * 0.8; back.push([v2 * v2 * f - 0.45, v2]); }
+        poly(front.concat(back), 2, sub, BLUE, 0.18);   // reflector, with thickness
+        thin(-0.45, 0, -0.62, 0, 2, mut);               // back mount
+        poly([[-0.62, -0.1], [-0.72, -0.1], [-0.72, 0.1], [-0.62, 0.1]], 1.2, sub, sub, 0.35);
+        thin(-0.38 + 0.8 * 0.8 * f, 0.8, 0.18, 0.06, 1, mut);   // struts to the focus
+        thin(-0.38 + 0.8 * 0.8 * f, -0.8, 0.18, -0.06, 1, mut);
+        poly([[0.1, -0.11], [0.24, -0.16], [0.24, 0.16], [0.1, 0.11]], 1.4, sub, ORANGE, 0.5);  // feed horn
+        dot(0.14, 0, 3.4, ORANGE);
+        dimV(-0.8, 0.8, ap);
+        arrow(0.42, 0, 0.6);
         break;
+      }
     }
+    }
+
+    bx = { u0: 1e9, u1: -1e9, v0: 1e9, v1: -1e9 };
+    render();                                      // pass one: measure
+    var bU = Math.max(bx.u1 - bx.u0, 0.2), bV = Math.max(bx.v1 - bx.v0, 0.2);
+    uMid = (bx.u0 + bx.u1) / 2; vMid = (bx.v0 + bx.v1) / 2;
+    var alongU = top ? h : w, alongV = top ? w : h;
+    span = Math.min((alongU - 26) / bU, (alongV - 26) / bV);
+    bx = null;
+    g.clearRect(0, 0, w, h);
+    render();                                      // pass two: draw it to fill
   }
 
   function drawRect() {
