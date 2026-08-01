@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TDoA multilateration</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #b4b2a9;
+    --text-muted: #888780;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #5f5e5a;
+  --text-muted: #8a8985;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19;
+  --text-primary: #ececea;
+  --text-secondary: #b4b2a9;
+  --text-muted: #888780;
+  --text-warning: #FAC775;
+  --border: #34342f;
+  --border-strong: #56554e;
+  --surface-1: #262624;
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; text-wrap: balance; }
+h2 { font-size: 17px; font-weight: 500; margin: 3rem 0 4px; }
+.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.back:hover { text-decoration: underline; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #94B6D2; color: #94B6D2; }
+input:focus-visible, button:focus-visible { outline: 2px solid #94B6D2; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-secondary); }
+.sm { font-size: 13px; color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 500; }
+.sec span { color: var(--text-secondary); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.card .big { font-size: 24px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+canvas { width: 100%; display: block; cursor: crosshair; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<h1>TDoA multilateration</h1>
+<p class="sub">No bearings, no antenna arrays &mdash; just clocks. Each pair of sites turns its arrival-time difference into a curve of possible positions, and the curves cross at the emitter.</p>
+
+<div class="row">
+  <span class="lbl">Receiver sites</span>
+  <button id="n3" class="on">3</button><button id="n4">4</button><button id="n5">5</button>
+  <span class="sm" style="margin-left: auto;">drag a site or the emitter</span>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="ck" style="min-width: 148px;">Clock error per site</label>
+  <input type="range" id="ck" min="0" max="500" step="5" value="50" style="flex: 1;">
+  <input type="number" id="ckn" min="0" max="500" step="5" value="50" style="width: 80px;">
+  <span class="sm">ns rms</span>
+</div>
+
+<p class="sec"><b>1 &middot; The map</b> <span>&mdash; one curve per site pair; where they cross is the emitter; 12 &times; 8 km</span></p>
+<canvas id="map" style="height: 380px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#C0504D"></span>emitter, drag it</span>
+  <span><span class="dot" style="background:#94B6D2"></span>a receiver site</span>
+  <span><span class="dot" style="background:#8a8985"></span>fix from the crossing curves</span>
+</div>
+
+<p class="sec"><b>2 &middot; What each pair measures</b> <span>&mdash; the time difference against site 1, and the distance it stands for</span></p>
+<div class="cards" id="cards"></div>
+
+<p class="sec"><b>3 &middot; Clock error becomes distance error</b> <span>&mdash; light travels 300 m in one microsecond, so that is the exchange rate</span></p>
+<canvas id="err" style="height: 260px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#94B6D2"></span>position error = c &middot; &Delta;t</span>
+  <span><span class="dot" style="background:#C0504D"></span>your current clock error</span>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var KMX = 12, KMY = 8;
+  var C = 0.299792458;                 // km per microsecond
+  // Office "Median" palette
+  var COL = ['#94B6D2', '#DD8047', '#A5AB81', '#D8B25C', '#7BA79D'];
+  var EMIT = '#C0504D';                // Office red, the emitter everywhere
+
+  var LAYOUT = {
+    3: [[2.0, 1.4], [10.0, 1.4], [6.0, 6.6]],
+    4: [[1.8, 1.3], [10.2, 1.3], [1.8, 6.7], [10.2, 6.7]],
+    5: [[1.8, 1.3], [10.2, 1.3], [6.0, 7.0], [2.6, 4.4], [9.4, 4.4]]
+  };
+
+  var S = { n: 3, ck: 50, sx: [], sy: [], ex: 6.0, ey: 4.2, drag: -1 };
+  function setN(n) {
+    S.n = n;
+    S.sx = LAYOUT[n].map(function (p) { return p[0]; });
+    S.sy = LAYOUT[n].map(function (p) { return p[1]; });
+  }
+  setN(3);
+
+  // fixed unit-normal draws, scaled by the clock-error slider, so dragging is stable
+  var Z = [0.48, -0.85, 0.61, -0.32, 0.77];
+
+  function rangeKm(i) { return Math.hypot(S.ex - S.sx[i], S.ey - S.sy[i]); }
+  function toaUs(i) { return rangeKm(i) / C + Z[i] * S.ck / 1000; }   // ns -> us
+  function dtUs(i) { return toaUs(i) - toaUs(0); }                     // against site 1
+
+  // least-squares position from the time differences, Gauss-Newton from the centre
+  function fix() {
+    var x = KMX / 2, y = KMY / 2;
+    for (var it = 0; it < 40; it++) {
+      var A = [], r = [];
+      var r0 = Math.hypot(x - S.sx[0], y - S.sy[0]);
+      if (r0 < 1e-6) r0 = 1e-6;
+      for (var i = 1; i < S.n; i++) {
+        var ri = Math.hypot(x - S.sx[i], y - S.sy[i]);
+        if (ri < 1e-6) ri = 1e-6;
+        A.push([(x - S.sx[i]) / ri - (x - S.sx[0]) / r0,
+                (y - S.sy[i]) / ri - (y - S.sy[0]) / r0]);
+        r.push(dtUs(i) * C - (ri - r0));
+      }
+      var a = 0, b = 0, c = 0, d = 0, e = 0;
+      for (var k = 0; k < A.length; k++) {
+        a += A[k][0] * A[k][0]; b += A[k][0] * A[k][1]; c += A[k][1] * A[k][1];
+        d += A[k][0] * r[k];    e += A[k][1] * r[k];
+      }
+      var det = a * c - b * b;
+      if (!isFinite(det) || Math.abs(det) < 1e-12) return null;
+      var dx = (c * d - b * e) / det, dy = (a * e - b * d) / det;
+      if (!isFinite(dx) || !isFinite(dy)) return null;
+      dx = Math.max(-2, Math.min(2, dx)); dy = Math.max(-2, Math.min(2, dy));
+      x += dx; y += dy;
+      if (Math.hypot(dx, dy) < 1e-7) break;
+    }
+    if (!isFinite(x) || !isFinite(y)) return null;
+    return { x: x, y: y };
+  }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // one branch of the hyperbola: |P-Si| - |P-Sj| = dd  (dd in km)
+  function hyperbola(g, i, j, dd, X, Y) {
+    var fx = (S.sx[i] + S.sx[j]) / 2, fy = (S.sy[i] + S.sy[j]) / 2;
+    var half = Math.hypot(S.sx[j] - S.sx[i], S.sy[j] - S.sy[i]) / 2;
+    if (half < 1e-6) return;
+    var a = dd / 2;
+    if (Math.abs(a) >= half - 1e-6) return;              // degenerate, no curve
+    var b = Math.sqrt(half * half - a * a);
+    var ux = (S.sx[j] - S.sx[i]) / (2 * half), uy = (S.sy[j] - S.sy[i]) / (2 * half);
+    var vx = -uy, vy = ux;
+    g.beginPath();
+    var started = false;
+    for (var t = -3.0; t <= 3.0; t += 0.03) {
+      var lx = -a * Math.cosh(t), ly = b * Math.sinh(t);   // branch nearer site i
+      var gx = fx + ux * lx + vx * ly, gy = fy + uy * lx + vy * ly;
+      var px = X(gx), py = Y(gy);
+      if (!started) { g.moveTo(px, py); started = true; } else g.lineTo(px, py);
+    }
+    g.stroke();
+  }
+
+  function drawMap() {
+    var cv = $('map'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var pad = 26;
+    var X = function (kx) { return pad + kx / KMX * (w - 2 * pad); };
+    var Y = function (ky) { return h - pad - ky / KMY * (h - 2 * pad); };
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (var kx = 2; kx < KMX; kx += 2) { g.beginPath(); g.moveTo(X(kx), Y(0)); g.lineTo(X(kx), Y(KMY)); g.stroke(); }
+    for (var ky = 2; ky < KMY; ky += 2) { g.beginPath(); g.moveTo(X(0), Y(ky)); g.lineTo(X(KMX), Y(ky)); g.stroke(); }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(X(0), Y(KMY), X(KMX) - X(0), Y(0) - Y(KMY));
+
+    g.font = fnt(11); g.fillStyle = mut;
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (var t1 = 0; t1 <= KMX; t1 += 4) g.fillText(t1, X(t1), Y(0) + 5);
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (var u1 = 0; u1 <= KMY; u1 += 4) g.fillText(u1, X(0) - 5, Y(u1));
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('km east', X(KMX), Y(0) + 19);
+
+    g.save();
+    g.beginPath(); g.rect(X(0), Y(KMY), X(KMX) - X(0), Y(0) - Y(KMY)); g.clip();
+    for (var i = 1; i < S.n; i++) {
+      g.strokeStyle = COL[i]; g.lineWidth = 1.8;
+      hyperbola(g, 0, i, dtUs(i) * C, X, Y);
+    }
+    g.restore();
+
+    var f = fix();
+    if (f) {
+      var fx2 = X(f.x), fy2 = Y(f.y);
+      g.strokeStyle = mut; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(fx2 - 7, fy2); g.lineTo(fx2 + 7, fy2);
+      g.moveTo(fx2, fy2 - 7); g.lineTo(fx2, fy2 + 7); g.stroke();
+      var miss = Math.hypot(f.x - S.ex, f.y - S.ey) * 1000;
+      g.fillStyle = mut; g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillText('fix, ' + miss.toFixed(0) + ' m out', fx2 + 10, fy2 + 10);
+    }
+
+    for (var j = 0; j < S.n; j++) {
+      var sx = X(S.sx[j]), sy = Y(S.sy[j]);
+      g.fillStyle = COL[j];
+      g.beginPath(); g.arc(sx, sy, 5.5, 0, 7); g.fill();
+      g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText('site ' + (j + 1), sx, sy + 9);
+    }
+
+    var ex = X(S.ex), ey = Y(S.ey);
+    g.fillStyle = EMIT;
+    g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('emitter', ex, ey - 11);
+  }
+
+  function drawErr() {
+    var cv = $('err'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 56, r = 14, t = 16, b = 34;
+    var NMAX = 500, EMAX = NMAX * C;                       // ns -> metres (c in km/us = m/ns)
+    var X = function (ns) { return l + ns / NMAX * (w - l - r); };
+    var Y = function (m) { return h - b - m / EMAX * (h - t - b); };
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.font = fnt(11); g.fillStyle = mut;
+    for (var k = 0; k <= 3; k++) {
+      var yv = EMAX * k / 3;
+      g.beginPath(); g.moveTo(l, Y(yv)); g.lineTo(w - r, Y(yv)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(Math.round(yv), l - 6, Y(yv));
+    }
+    for (var ns = 0; ns <= NMAX; ns += 100) {
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(ns, X(ns), h - b + 5);
+    }
+    g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('clock error (ns rms)', l + (w - l - r) / 2, h - 6);
+    g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('position error (m)', 0, 0); g.restore();
+
+    g.strokeStyle = COL[0]; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(NMAX), Y(EMAX)); g.stroke();
+
+    // reference markers an engineer recognises, labelled above the line,
+    // and skipped when they would sit under the current-value marker
+    [[10, 'GPS-disciplined'], [100, 'LTE OTDOA']].forEach(function (m) {
+      if (Math.abs(X(m[0]) - X(S.ck)) < 78) return;
+      g.fillStyle = mut;
+      g.beginPath(); g.arc(X(m[0]), Y(m[0] * C), 3, 0, 7); g.fill();
+      g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText(m[1] + ', ' + (m[0] * C).toFixed(0) + ' m', X(m[0]) + 7, Y(m[0] * C) - 8);
+    });
+
+    g.fillStyle = EMIT;
+    g.beginPath(); g.arc(X(S.ck), Y(S.ck * C), 5, 0, 7); g.fill();
+    g.font = fnt(11); g.textAlign = 'left'; g.textBaseline = 'top';
+    var lx = X(S.ck) + 9;
+    if (lx > w - r - 110) { g.textAlign = 'right'; lx = X(S.ck) - 9; }
+    g.fillText(S.ck + ' ns → ' + (S.ck * C).toFixed(0) + ' m', lx, Y(S.ck * C) + 9);
+  }
+
+  function cards() {
+    var box = $('cards');
+    box.innerHTML = '';
+    for (var i = 1; i < S.n; i++) {
+      var dt = dtUs(i), dd = dt * C * 1000;
+      var el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd"><span class="dot" style="background:' + COL[i] + '"></span>Site ' + (i + 1) + ' &minus; site 1</div>' +
+        '<div class="big" style="color:' + COL[i] + '">' + (dt >= 0 ? '+' : '') + dt.toFixed(2) + ' &micro;s</div>' +
+        '<div class="ft">' + (dd >= 0 ? '+' : '') + dd.toFixed(0) + ' m of path &middot; ' +
+        (dt >= 0 ? 'site 1 hears it first' : 'site ' + (i + 1) + ' hears it first') + '</div>';
+      box.appendChild(el);
+    }
+  }
+
+  function redraw() { drawMap(); drawErr(); cards(); }
+
+  function toKm(cv, ev) {
+    var r = cv.getBoundingClientRect(), pad = 26;
+    var kx = (ev.clientX - r.left - pad) / (r.width - 2 * pad) * KMX;
+    var ky = (r.height - pad - (ev.clientY - r.top)) / (r.height - 2 * pad) * KMY;
+    return [Math.min(Math.max(kx, 0), KMX), Math.min(Math.max(ky, 0), KMY)];
+  }
+  var map = $('map');
+  map.addEventListener('pointerdown', function (ev) {
+    var p = toKm(map, ev), best = -1, near = 0.55;
+    for (var i = 0; i < S.n; i++) {
+      var d = Math.hypot(p[0] - S.sx[i], p[1] - S.sy[i]);
+      if (d < near) { near = d; best = i; }
+    }
+    if (Math.hypot(p[0] - S.ex, p[1] - S.ey) < near) best = 99;
+    S.drag = best === -1 ? 99 : best;
+    if (S.drag === 99) { S.ex = p[0]; S.ey = p[1]; }
+    map.setPointerCapture(ev.pointerId);
+    redraw();
+  });
+  map.addEventListener('pointermove', function (ev) {
+    if (S.drag === -1) return;
+    var p = toKm(map, ev);
+    if (S.drag === 99) { S.ex = p[0]; S.ey = p[1]; }
+    else { S.sx[S.drag] = p[0]; S.sy[S.drag] = p[1]; }
+    redraw();
+  });
+  map.addEventListener('pointerup', function () { S.drag = -1; });
+
+  ['n3', 'n4', 'n5'].forEach(function (id, k) {
+    $(id).addEventListener('click', function () {
+      setN(k + 3);
+      ['n3', 'n4', 'n5'].forEach(function (o) { $(o).classList.remove('on'); });
+      $(id).classList.add('on');
+      redraw();
+    });
+  });
+  function setCk(v) {
+    S.ck = Math.min(500, Math.max(0, isFinite(v) ? v : 50));
+    $('ck').value = S.ck; $('ckn').value = S.ck;
+    redraw();
+  }
+  $('ck').addEventListener('input', function () { setCk(parseFloat($('ck').value)); });
+  $('ckn').addEventListener('change', function () { setCk(parseFloat($('ckn').value)); });
+  window.addEventListener('resize', redraw);
+
+  redraw();
+})();
+</script>

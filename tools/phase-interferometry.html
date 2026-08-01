@@ -75,7 +75,7 @@ button {
   cursor: pointer;
 }
 button:hover { background: var(--surface-1); }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+input:focus-visible, button:focus-visible { outline: 2px solid #4472C4; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .lbl { font-size: 14px; color: var(--text-secondary); }
 .sm { font-size: 13px; color: var(--text-secondary); }
@@ -119,23 +119,23 @@ canvas { width: 100%; display: block; }
   <button id="pp" style="margin-left: auto;">Pause</button>
 </div>
 
-<p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, pink dot = emitter</span></p>
+<p class="sec"><b>1 &middot; Sky view</b> <span>&mdash; looking down at the antenna table: dots = antennas, blue lines = incoming wavefronts, red dot = emitter</span></p>
 <canvas id="geo" style="height: 290px;"></canvas>
 
 <p class="sec"><b>2 &middot; Measured phase differences</b> <span>&mdash; the numbers your receiver extracts, wrapped to &plusmn;180&deg;</span></p>
 <div class="cards">
   <div class="card">
-    <div class="hd"><span class="dot" style="background: #7F77DD;"></span>A2 &minus; A1</div>
+    <div class="hd"><span class="dot" style="background: #ED7D31;"></span>A2 &minus; A1</div>
     <div class="big" id="w2">&mdash;</div>
     <div class="ft" id="s2">&mdash;</div>
   </div>
   <div class="card">
-    <div class="hd"><span class="dot" style="background: #1D9E75;"></span>A3 &minus; A1</div>
+    <div class="hd"><span class="dot" style="background: #70AD47;"></span>A3 &minus; A1</div>
     <div class="big" id="w3">&mdash;</div>
     <div class="ft" id="s3">&mdash;</div>
   </div>
   <div class="card">
-    <div class="hd"><span class="dot" style="background: #D85A30;"></span>A4 &minus; A1</div>
+    <div class="hd"><span class="dot" style="background: #FFC000;"></span>A4 &minus; A1</div>
     <div class="big" id="w4">&mdash;</div>
     <div class="ft" id="s4">&mdash;</div>
   </div>
@@ -147,15 +147,15 @@ canvas { width: 100%; display: block; }
 <p class="sec"><b>4 &middot; Phase difference vs emitter angle</b> <span>&mdash; sawtooth jumps = wrapping; dots = what the cards read right now</span></p>
 <canvas id="ch" style="height: 230px;"></canvas>
 <div class="legend">
-  <span><span class="dot" style="background: #7F77DD;"></span><span id="lg2">A2 &minus; A1</span></span>
-  <span><span class="dot" style="background: #1D9E75;"></span><span id="lg3">A3 &minus; A1</span></span>
-  <span><span class="dot" style="background: #D85A30;"></span><span id="lg4">A4 &minus; A1</span></span>
+  <span><span class="dot" style="background: #ED7D31;"></span><span id="lg2">A2 &minus; A1</span></span>
+  <span><span class="dot" style="background: #70AD47;"></span><span id="lg3">A3 &minus; A1</span></span>
+  <span><span class="dot" style="background: #FFC000;"></span><span id="lg4">A4 &minus; A1</span></span>
 </div>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const PC = ['#7F77DD', '#1D9E75', '#D85A30'];
+  const PC = ['#ED7D31', '#70AD47', '#FFC000'];
   const S = { th: 30, f: 2, pos: [0, 2.4, 10, 30], playing: true };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { S.playing = false; }
   const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
@@ -226,7 +226,7 @@ canvas { width: 100%; display: block; }
 
     g.save();
     g.beginPath(); g.rect(0, 0, w, cy); g.clip();
-    g.strokeStyle = '#378ADD'; g.globalAlpha = 0.4; g.lineWidth = 1.5;
+    g.strokeStyle = '#4472C4'; g.globalAlpha = 0.4; g.lineWidth = 1.5;
     const off = (time * 0.05) % lp;
     for (let k = -2; k * lp < R * 1.2; k++) {
       const s = k * lp - off;
@@ -255,7 +255,7 @@ canvas { width: 100%; display: block; }
       g.fillText('θ = ' + S.th + '°', cx + Math.cos(m) * 62, cy + Math.sin(m) * 62);
     }
 
-    g.fillStyle = '#D4537E';
+    g.fillStyle = '#C0504D';
     g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
     g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('emitter', ex, ey - 11);
@@ -270,7 +270,7 @@ canvas { width: 100%; display: block; }
       g.fillText('A' + (i + 1), x, cy + 12);
     });
 
-    g.fillStyle = '#378ADD'; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = '#4472C4'; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('λ = ' + lam.toFixed(1) + ' cm · each blue line = one crest seen from above', 12, 10);
   }
 
@@ -425,9 +425,9 @@ canvas { width: 100%; display: block; }
 </div>
 <div class="row">
   <span class="lbl">Phase readings (&deg;)</span>
-  <span class="pair"><label style="font-size: 13px; color: #7F77DD;" for="q2">A2&minus;A1</label><input type="number" id="q2" value="29" step="1" min="-180" max="180" style="width: 68px;"></span>
-  <span class="pair"><label style="font-size: 13px; color: #1D9E75;" for="q3">A3&minus;A1</label><input type="number" id="q3" value="120" step="1" min="-180" max="180" style="width: 68px;"></span>
-  <span class="pair"><label style="font-size: 13px; color: #D85A30;" for="q4">A4&minus;A1</label><input type="number" id="q4" value="0" step="1" min="-180" max="180" style="width: 68px;"></span>
+  <span class="pair"><label style="font-size: 13px; color: #ED7D31;" for="q2">A2&minus;A1</label><input type="number" id="q2" value="29" step="1" min="-180" max="180" style="width: 68px;"></span>
+  <span class="pair"><label style="font-size: 13px; color: #70AD47;" for="q3">A3&minus;A1</label><input type="number" id="q3" value="120" step="1" min="-180" max="180" style="width: 68px;"></span>
+  <span class="pair"><label style="font-size: 13px; color: #FFC000;" for="q4">A4&minus;A1</label><input type="number" id="q4" value="0" step="1" min="-180" max="180" style="width: 68px;"></span>
 </div>
 <div class="row" style="margin-bottom: 1.25rem;">
   <span style="font-size: 13px; color: var(--text-muted);">or simulate a reading:</span>
@@ -463,7 +463,7 @@ canvas { width: 100%; display: block; }
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const PC = ['#7F77DD', '#1D9E75', '#D85A30'];
+  const PC = ['#ED7D31', '#70AD47', '#FFC000'];
   const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const fnt = s => s + 'px ' + (cvv('--font-sans') || 'sans-serif');

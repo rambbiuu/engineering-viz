@@ -8,6 +8,7 @@ Small, self-contained interactive simulators for building engineering intuition.
 |---|---|
 | [Phase interferometry](tools/phase-interferometry.html) | Geolocation with an unequally spaced array: phase differences, wrapping, ambiguity resolution, and a working phases-to-angle solver |
 | [AoA triangulation](tools/aoa-triangulation.html) | Crossing bearings from 2–5 sites, and how bearing error becomes position error with range |
+| [TDoA multilateration](tools/tdoa.html) | Hyperbolic position curves from arrival-time differences, and how clock error becomes position error |
 | [Phased-array beam pattern](tools/phased-array.html) | The reverse direction: phase-steering a beam, beamwidth vs aperture, sidelobes and grating lobes |
 
 ## Run locally

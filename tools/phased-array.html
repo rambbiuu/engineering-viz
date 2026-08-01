@@ -57,7 +57,7 @@ button {
   cursor: pointer;
 }
 button:hover { background: var(--surface-1); }
-input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
+input:focus-visible, button:focus-visible { outline: 2px solid #809EC2; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .lbl { font-size: 14px; color: var(--text-secondary); }
 .sm { font-size: 13px; color: var(--text-secondary); }
@@ -135,7 +135,7 @@ canvas { width: 100%; display: block; }
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const COLS = ['#888', '#7F77DD', '#1D9E75', '#D85A30'];
+  const COLS = ['#888', '#9C85C0', '#A5B592', '#F3A447'];
   const S = { st: 20, f: 3, pos: [0, 2.4, 10, 30] };
   const wrap = x => ((x + 180) % 360 + 360) % 360 - 180;
   const cvv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -235,7 +235,7 @@ canvas { width: 100%; display: block; }
     g.strokeStyle = bds; g.lineWidth = 1;
     g.beginPath(); g.moveTo(cx - R - 8, cy); g.lineTo(cx + R + 8, cy); g.stroke();
 
-    g.strokeStyle = '#378ADD'; g.lineWidth = 2; g.fillStyle = '#378ADD';
+    g.strokeStyle = '#809EC2'; g.lineWidth = 2; g.fillStyle = '#809EC2';
     g.globalAlpha = 0.15;
     g.beginPath();
     g.moveTo(cx, cy);
@@ -291,7 +291,7 @@ canvas { width: 100%; display: block; }
     g.textAlign = 'center';
     g.fillText('direction', l + (w - l - r) / 2, h - 13);
 
-    g.strokeStyle = '#378ADD'; g.lineWidth = 1.8;
+    g.strokeStyle = '#809EC2'; g.lineWidth = 1.8;
     g.beginPath();
     for (let a = -90; a <= 90; a += 0.25) {
       const x = X(a), y = Y(af(a));
