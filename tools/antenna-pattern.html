@@ -6,8 +6,8 @@
 :root {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #3f3d39;
-  --text-muted: #6b6a64;
+  --text-secondary: #24231f;
+  --text-muted: #4a4944;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -19,8 +19,8 @@
   :root {
     --bg: #1b1b19;
     --text-primary: #ececea;
-    --text-secondary: #d8d5cc;
-    --text-muted: #a5a39b;
+    --text-secondary: #eae7de;
+    --text-muted: #c4c1b8;
     --text-warning: #FAC775;
     --border: #34342f;
     --border-strong: #56554e;
@@ -30,8 +30,8 @@
 :root[data-theme="light"] {
   --bg: #fbfaf7;
   --text-primary: #1e1d1a;
-  --text-secondary: #3f3d39;
-  --text-muted: #6b6a64;
+  --text-secondary: #24231f;
+  --text-muted: #4a4944;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
@@ -40,8 +40,8 @@
 :root[data-theme="dark"] {
   --bg: #1b1b19;
   --text-primary: #ececea;
-  --text-secondary: #d8d5cc;
-  --text-muted: #a5a39b;
+  --text-secondary: #eae7de;
+  --text-muted: #c4c1b8;
   --text-warning: #FAC775;
   --border: #34342f;
   --border-strong: #56554e;
@@ -55,7 +55,7 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
   line-height: 1.5;
-  font-weight: 500;
+  font-weight: 600;
 }
 h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
 .sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
@@ -135,7 +135,7 @@ canvas { width: 100%; display: block; }
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-  var fnt = function (s) { return '500 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
   var D2R = Math.PI / 180;
   var BLUE = '#4472C4', ORANGE = '#ED7D31', RED = '#C0504D', GREY = '#A5A5A5';
 
