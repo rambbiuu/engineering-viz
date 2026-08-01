@@ -6,23 +6,24 @@
 <title>Phased arrays — beam steering, sidelobes and grating lobes</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --bg: #fbfaf7; --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
   --text-warning: #854F0B; --text-good: #3B6D11; --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
   --s1: #378ADD; --s2: #1D9E75; --s3: #D85A30; --s4: #7F77DD;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --bg: #1b1b19; --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
     --text-warning: #FAC775; --text-good: #C0DD97; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
     --s1: #6FB3F0; --s2: #4FC79B; --s3: #F0855A; --s4: #A49CF0;
   }
 }
 body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  max-width: min(1180px, 94vw); margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
 h2 { font-size: 16px; font-weight: 500; margin: 2rem 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 1.25rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
@@ -39,17 +40,17 @@ input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px 
 .ctl input[type=range] { flex: 1; min-width: 90px; }
 .ctl .v { font-size: 13px; font-weight: 500; min-width: 66px; text-align: right; font-variant-numeric: tabular-nums; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.row .lbl { font-size: 13px; color: var(--text-secondary); margin-right: 2px; }
-.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.row .lbl { font-size: 14.5px; color: var(--text-secondary); margin-right: 2px; }
+.sec { margin: 1.75rem 0 6px; font-size: 16px; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
+.sec span { color: var(--text-secondary); font-size: 14px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.5rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.card .hd { font-size: 14px; color: var(--text-secondary); }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
 canvas { width: 100%; display: block; }
-.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 7px 0 0; padding-left: 1.15rem; }
+.legend-note { font-size: 14px; color: var(--text-secondary); margin: 7px 0 0; padding-left: 1.15rem; }
 .legend-note li { margin: 3px 0; }
 .note { background: var(--surface-1); border-radius: var(--radius); padding: 0.75rem 0.95rem;
   font-size: 13px; color: var(--text-secondary); margin: 0 0 1.25rem; }
@@ -57,7 +58,7 @@ canvas { width: 100%; display: block; }
 .tour { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
 details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.9rem; margin: 0 0 1.25rem; }
 details[open] { padding-bottom: 0.8rem; }
-summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
 details .grid2 { margin: 0.7rem 0 0; }
 ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.25rem; margin: 0.4rem 0 0; }
 ol.work li { margin: 5px 0; }

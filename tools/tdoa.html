@@ -7,9 +7,9 @@
 <style>
 :root {
   --bg: #fbfaf7;
-  --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-primary: #14181d;
+  --text-secondary: #2f3742;
+  --text-muted: #5c6672;
   --text-warning: #854F0B;
   --text-good: #3B6D11;
   --border: #e2e0d8;
@@ -23,14 +23,15 @@
   --series-4: #1D9E75;
   --emitter: #D4537E;
   --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1b1b19;
-    --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
+    --text-primary: #f2f5f8;
+    --text-secondary: #d4dae1;
+    --text-muted: #9aa5b1;
     --text-warning: #FAC775;
     --text-good: #C0DD97;
     --border: #34342f;
@@ -46,9 +47,9 @@
   }
 }
 body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 1.25rem; }
+  max-width: min(1180px, 94vw); margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 1.25rem; }
 .note { font-size: 13px; color: var(--text-muted); margin: 0 0 1.25rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
@@ -65,28 +66,28 @@ canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ctl input[type=range] { flex: 1; }
 .ctl .v { font-size: 13px; font-weight: 500; min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.6rem; }
-.row .lbl { font-size: 13px; color: var(--text-secondary); min-width: 128px; }
+.row .lbl { font-size: 14.5px; color: var(--text-secondary); min-width: 128px; }
 .row .rd { font-size: 13px; color: var(--text-muted); }
 details { margin: 0.4rem 0 1rem; }
 summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
 .det { padding: 0.75rem 0 0.25rem; }
 .tour { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 1.25rem 0 0.5rem; }
 .tour button { padding: 5px 11px; font-size: 13px; }
-.tour .lbl { font-size: 13px; color: var(--text-secondary); }
+.tour .lbl { font-size: 14.5px; color: var(--text-secondary); }
 .narr { font-size: 13px; color: var(--text-secondary); margin: 0 0 0.5rem; min-height: 2.6em; }
-.sec { margin: 1.75rem 0 6px; font-size: 14px; }
+.sec { margin: 1.75rem 0 6px; font-size: 16px; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
-.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 0; list-style: none; }
+.sec span { color: var(--text-secondary); font-size: 14px; }
+.legend-note { font-size: 14px; color: var(--text-secondary); margin: 8px 0 0; padding-left: 0; list-style: none; }
 .legend-note li { margin: 3px 0; display: flex; align-items: center; gap: 8px; }
 .sw { width: 14px; height: 4px; border-radius: 2px; flex: none; display: inline-block; }
 .sw.dot { width: 9px; height: 9px; border-radius: 50%; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; margin-top: 1.25rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 21px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .big.narrow { font-size: 17px; }
-.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 canvas { width: 100%; display: block; border: 0.5px solid var(--border); border-radius: var(--radius); }
 #cv1, #cv2 { cursor: crosshair; touch-action: none; }
 ol.work { font-size: 13px; color: var(--text-secondary); padding-left: 1.35rem; margin: 0.5rem 0 0; font-variant-numeric: tabular-nums; }

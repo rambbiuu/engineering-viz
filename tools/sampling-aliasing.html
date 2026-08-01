@@ -6,25 +6,26 @@
 <title>Sampling and aliasing</title>
 <style>
 :root {
-  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #5f5e5a; --text-muted: #8a8985;
+  --bg: #fbfaf7; --text-primary: #14181d; --text-secondary: #2f3742; --text-muted: #5c6672;
   --text-warning: #854F0B; --text-good: #3B6D11; --text-bad: #9C3A1B;
   --border: #e2e0d8; --border-strong: #b9b7ae;
-  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --surface-1: #f1efe8; --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
   --series-1: #378ADD; --series-2: #D85A30; --series-3: #B4831C; --series-4: #1D9E75;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #b4b2a9; --text-muted: #888780;
+    --bg: #1b1b19; --text-primary: #f2f5f8; --text-secondary: #d4dae1; --text-muted: #9aa5b1;
     --text-warning: #FAC775; --text-good: #C0DD97; --text-bad: #FF9E7A;
     --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
     --series-1: #5AA6E8; --series-2: #EE7B52; --series-3: #E3B14A; --series-4: #35BE92;
   }
 }
 body { background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
-  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  max-width: min(1180px, 94vw); margin: 0 auto; padding: 2rem 1rem 4rem; font-size: 16px; line-height: 1.65; }
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
 h2 { font-size: 15px; font-weight: 500; margin: 2rem 0 0.35rem; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 2rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
@@ -40,20 +41,20 @@ input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px 
 .ctl input[type=range] { flex: 1; }
 .ctl .v { font-size: 13px; font-weight: 500; min-width: 68px; text-align: right; font-variant-numeric: tabular-nums; }
 .btnrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0.4rem 0; }
-.btnrow .lbl { font-size: 13px; color: var(--text-secondary); min-width: 132px; }
+.btnrow .lbl { font-size: 14.5px; color: var(--text-secondary); min-width: 132px; }
 details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.85rem; margin: 0 0 1.25rem; }
-summary { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+summary { font-size: 14.5px; color: var(--text-secondary); cursor: pointer; }
 details[open] summary { margin-bottom: 0.7rem; }
-.sec { margin: 1.6rem 0 6px; font-size: 14px; }
+.sec { margin: 1.6rem 0 6px; font-size: 16px; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
+.sec span { color: var(--text-secondary); font-size: 14px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-top: 1.5rem; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
-.card .hd { font-size: 13px; color: var(--text-secondary); }
-.card .big { font-size: 22px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.card .ft { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.card .hd { font-size: 14px; color: var(--text-secondary); }
+.card .big { font-size: 26px; font-weight: 500; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 canvas { width: 100%; display: block; }
-ul.legend-note { font-size: 12.5px; color: var(--text-secondary); margin: 7px 0 0; padding: 0.6rem 0.9rem 0.65rem 1.9rem; background: var(--surface-1); border-radius: var(--radius); }
+ul.legend-note { font-size: 14px; color: var(--text-secondary); margin: 7px 0 0; padding: 0.6rem 0.9rem 0.65rem 1.9rem; background: var(--surface-1); border-radius: var(--radius); }
 ul.legend-note li { margin: 3px 0; }
 .steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.4rem 0 0; }
 .tour-note { font-size: 13px; color: var(--text-secondary); margin: 0.6rem 0 0; }

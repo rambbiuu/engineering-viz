@@ -7,22 +7,23 @@
 <style>
 :root {
   --bg: #fbfaf7;
-  --text-primary: #1e1d1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
+  --text-primary: #14181d;
+  --text-secondary: #2f3742;
+  --text-muted: #5c6672;
   --text-warning: #854F0B;
   --border: #e2e0d8;
   --border-strong: #b9b7ae;
   --surface-1: #f1efe8;
   --radius: 8px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1b1b19;
-    --text-primary: #ececea;
-    --text-secondary: #b4b2a9;
-    --text-muted: #888780;
+    --text-primary: #f2f5f8;
+    --text-secondary: #d4dae1;
+    --text-muted: #9aa5b1;
     --text-warning: #FAC775;
     --border: #34342f;
     --border-strong: #56554e;
@@ -33,13 +34,13 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  max-width: 760px;
+  max-width: min(1180px, 94vw);
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
-  line-height: 1.5;
+  font-size: 16px; line-height: 1.65;
 }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 2rem; }
+h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 15.5px; color: var(--text-secondary); margin: 0 0 2rem; }
 a { color: inherit; }
 .back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
 .back:hover { text-decoration: underline; }
@@ -63,10 +64,10 @@ button:hover { background: var(--surface-1); }
 button.on { border-color: #378ADD; color: #378ADD; }
 input:focus-visible, button:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.lbl { font-size: 14px; color: var(--text-secondary); }
-.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.lbl { font-size: 14.5px; color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 16px; }
 .sec b { font-weight: 500; }
-.sec span { color: var(--text-secondary); font-size: 12px; }
+.sec span { color: var(--text-secondary); font-size: 14px; }
 .note {
   background: var(--surface-1);
   border-radius: var(--radius);
