@@ -122,6 +122,13 @@ canvas { width: 100%; display: block; }
   <input type="number" id="nrn" min="2" max="8" step="1" value="4" style="width: 76px;">
   <span class="sm" id="nNote" style="margin-left: auto;"></span>
 </div>
+<div class="row" id="fRow">
+  <label class="lbl" for="fq" style="min-width: 132px;">Frequency in band</label>
+  <span class="sm">Low</span>
+  <input type="range" id="fq" min="0" max="1" step="0.01" value="0.5" style="flex: 1;">
+  <span class="sm">High</span>
+  <span class="sm" id="fqNote" style="margin-left: auto;"></span>
+</div>
 <div class="row" id="szRow" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="ap" style="min-width: 132px;">Aperture width</label>
   <input type="range" id="ap" min="0.5" max="20" step="0.1" value="5" style="flex: 1;">
@@ -166,12 +173,12 @@ canvas { width: 100%; display: block; }
   var D2R = Math.PI / 180;
   var BLUE = '#4472C4', GREEN = '#70AD47', ORANGE = '#ED7D31', RED = '#C0504D', GREY = '#A5A5A5';
 
-  var S = { kind: 2, ap: 5, cnt: { 1: 4, 4: 4, 5: 4 } };
+  var S = { kind: 2, ap: 5, fq: 0.5, cnt: { 1: 4, 4: 4, 5: 4 } };
   // what the count means for each type, and the range it makes sense over
   var COUNT = {
     1: { min: 2, max: 8, label: 'Stacked elements', note: 'more stacking flattens the beam toward the horizon' },
     4: { min: 1, max: 8, label: 'Directors', note: 'each director adds gain and narrows the beam' },
-    5: { min: 2, max: 6, label: 'Active elements', note: 'only the elements near resonance radiate' }
+    5: { min: 2, max: 6, label: 'Active elements', note: 'how many sit near resonance at once' }
   };
   function nOf() { return S.cnt[S.kind] || 4; }
   var NAMES = ['Isotropic', 'Collinear omni', 'Half-wave dipole', 'Quarter-wave monopole',
@@ -605,9 +612,12 @@ canvas { width: 100%; display: block; }
           thin(us[0], -hs[0], uEnd, 0, 1, mut);
         }
         rails(us[0] - 0.06, uEnd, 0.038, 4);        // twin boom, elements alternate between them
-        var act = nOf();
+        // Only the elements near half-wave resonance radiate. Raise the frequency
+        // and that group walks toward the short end; the pattern barely changes,
+        // which is the whole point of building the taper.
+        var act = nOf(), mid = S.fq * (n - 1), half = (act - 1) / 2;
         for (i = 0; i < n; i++) {
-          var live = i >= n - act;                 // only these are near resonance
+          var live = i >= mid - half - 0.5 && i <= mid + half + 0.5;
           element(us[i], hs[i], live ? ORANGE : (i % 2 ? GREY : METAL),
                   Math.max(2.6, 6.4 - i * 0.2), true);
         }
@@ -728,6 +738,10 @@ canvas { width: 100%; display: block; }
     var needsSize = S.kind === 6;
     $('szRow').style.display = needsSize ? 'flex' : 'none';
     $('apNote').textContent = needsSize ? 'a horn mouth this many wavelengths wide' : '';
+    $('fRow').style.display = S.kind === 5 ? 'flex' : 'none';
+    if (S.kind === 5) {
+      $('fqNote').textContent = 'the lit group is what radiates at this frequency';
+    }
     var c = COUNT[S.kind];
     $('nRow').style.display = c ? 'flex' : 'none';
     if (c) {
@@ -757,6 +771,10 @@ canvas { width: 100%; display: block; }
       redraw();
     });
   });
+  $('fq').addEventListener('input', function () {
+    S.fq = parseFloat($('fq').value); redraw();
+  });
+
   function setN(v) {
     var c = COUNT[S.kind];
     if (!c) return;
