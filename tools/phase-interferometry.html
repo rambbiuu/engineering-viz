@@ -187,8 +187,8 @@ canvas { width: 100%; display: block; }
     truePhases().forEach((t, i) => {
       const d = S.pos[i + 1];
       $('w' + (i + 2)).textContent = wrap(t).toFixed(0) + '°';
-      const amb = d > lam / 2 ? ' · <span style="color: var(--text-warning);">ambiguous</span>' : '';
-      $('s' + (i + 2)).innerHTML = 'true ' + t.toFixed(0) + '° · d ' + d.toFixed(1) + ' cm = ' + (d / lam).toFixed(2) + ' λ' + amb;
+      const amb = d > lam / 2 ? ' · <span style="color: var(--text-warning);">Ambiguous</span>' : '';
+      $('s' + (i + 2)).innerHTML = 'True ' + t.toFixed(0) + '° · d ' + d.toFixed(1) + ' cm = ' + (d / lam).toFixed(2) + ' λ' + amb;
       $('lg' + (i + 2)).textContent = 'A' + (i + 2) + ' − A1 (' + d.toFixed(1) + ' cm)';
     });
   }
