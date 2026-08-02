@@ -61,8 +61,13 @@ h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
 h2 { font-size: 17px; font-weight: 700; margin: 3rem 0 4px; }
 .sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
 a { color: inherit; }
-.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
-.back:hover { text-decoration: underline; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
 input, button { font: inherit; color: inherit; }
 input[type="number"] {
   background: transparent;
@@ -99,7 +104,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 .legend span { display: flex; align-items: center; gap: 6px; }
 </style>
 
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
 <h1>TDoA multilateration</h1>
 <p class="sub">No bearings, no antenna arrays &mdash; just clocks. Each pair of sites turns its arrival-time difference into a curve of possible positions, and the curves cross at the emitter.</p>
 
@@ -393,7 +398,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       el.innerHTML = '<div class="hd"><span class="dot" style="background:' + COL[i] + '"></span>Site ' + (i + 1) + ' &minus; site 1</div>' +
         '<div class="big" style="color:' + COL[i] + '">' + (dt >= 0 ? '+' : '') + dt.toFixed(2) + ' &micro;s</div>' +
         '<div class="ft">' + (dd >= 0 ? '+' : '') + dd.toFixed(0) + ' m of path &middot; ' +
-        (dt >= 0 ? 'site 1 hears it first' : 'Site ' + (i + 1) + ' hears it first') + '</div>';
+        (dt >= 0 ? 'Site 1 hears it first' : 'Site ' + (i + 1) + ' hears it first') + '</div>';
       box.appendChild(el);
     }
   }

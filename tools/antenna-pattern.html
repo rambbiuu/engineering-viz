@@ -60,8 +60,13 @@ body {
 h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
 .sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
 a { color: inherit; }
-.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
-.back:hover { text-decoration: underline; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
 input, button { font: inherit; color: inherit; }
 input[type="number"] {
   background: transparent;
@@ -102,7 +107,7 @@ canvas { width: 100%; display: block; }
 .legend .wedge { width: 13px; height: 13px; border-radius: 3px; background: #ED7D31; opacity: 0.55; border: 1px solid #ED7D31; }
 </style>
 
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
 <h1>Antenna beam pattern</h1>
 <p class="sub">Every antenna sends more energy in some directions than others. That map is its radiation pattern, and gain, beamwidth, sidelobes and front-to-back are all read off it.</p>
 
@@ -177,18 +182,18 @@ canvas { width: 100%; display: block; }
   // a length in wavelengths, for the types whose pattern is set by one
   var SIZE = {
     2: { min: 0.25, max: 1.25, step: 0.05, label: 'Length',
-         note: 'end to end; past 1.25 the lobe splits' },
+         note: 'End to end; past 1.25 the lobe splits' },
     3: { min: 0.125, max: 0.7, step: 0.025, label: 'Height',
-         note: 'over the ground plane; gain peaks at 5/8' },
+         note: 'Over the ground plane; gain peaks at 5/8' },
     6: { min: 0.5, max: 20, step: 0.1, label: 'Aperture width',
-         note: 'a horn mouth this many wavelengths wide' }
+         note: 'A horn mouth this many wavelengths wide' }
   };
   function szOf() { return S.size[S.kind]; }
   // what the count means for each type, and the range it makes sense over
   var COUNT = {
-    1: { min: 2, max: 8, label: 'Stacked elements', note: 'more stacking flattens the beam toward the horizon' },
-    4: { min: 1, max: 8, label: 'Directors', note: 'each director adds gain and narrows the beam' },
-    5: { min: 2, max: 6, label: 'Active elements', note: 'how many sit near resonance at once' }
+    1: { min: 2, max: 8, label: 'Stacked elements', note: 'More stacking flattens the beam toward the horizon' },
+    4: { min: 1, max: 8, label: 'Directors', note: 'Each director adds gain and narrows the beam' },
+    5: { min: 2, max: 6, label: 'Active elements', note: 'How many sit near resonance at once' }
   };
   function nOf() { return S.cnt[S.kind] || 4; }
   var NAMES = ['Isotropic', 'Collinear omni', 'Dipole', 'Monopole',
@@ -745,11 +750,11 @@ canvas { width: 100%; display: block; }
   function cards() {
     var bv = hpbw(fieldV), bh = hpbw(fieldH), sl = worstSidelobe(), fb = dB(180, fieldV);
     var rows = [
-      ['Gain', gainDbi().toFixed(1) + ' dBi', 'against an isotropic radiator'],
-      ['Beamwidth, vertical', bv === null ? 'no 3 dB point' : bv.toFixed(1) + '°', 'the &minus;3 dB width in this cut'],
-      ['Beamwidth, horizontal', bh === null ? 'all round' : bh.toFixed(1) + '°', 'the &minus;3 dB width in this cut'],
-      ['First sidelobe', sl === null || sl <= FLOOR ? 'none' : sl.toFixed(1) + ' dB', 'worst of the two cuts'],
-      ['Front-to-back', (fb <= FLOOR ? '&gt; 40' : (-fb).toFixed(1)) + ' dB', 'peak versus straight behind']
+      ['Gain', gainDbi().toFixed(1) + ' dBi', 'Against an isotropic radiator'],
+      ['Beamwidth, vertical', bv === null ? 'No 3 dB point' : bv.toFixed(1) + '°', 'The &minus;3 dB width in this cut'],
+      ['Beamwidth, horizontal', bh === null ? 'All round' : bh.toFixed(1) + '°', 'The &minus;3 dB width in this cut'],
+      ['First sidelobe', sl === null || sl <= FLOOR ? 'None' : sl.toFixed(1) + ' dB', 'Worst of the two cuts'],
+      ['Front-to-back', (fb <= FLOOR ? '&gt; 40' : (-fb).toFixed(1)) + ' dB', 'Peak versus straight behind']
     ];
     var box = $('cards');
     box.innerHTML = '';
@@ -774,7 +779,7 @@ canvas { width: 100%; display: block; }
     }
     $('fRow').style.display = S.kind === 5 ? 'flex' : 'none';
     if (S.kind === 5) {
-      $('fqNote').textContent = 'the lit group is what radiates at this frequency';
+      $('fqNote').textContent = 'The lit group is what radiates at this frequency';
     }
     var c = COUNT[S.kind];
     $('nRow').style.display = c ? 'flex' : 'none';

@@ -60,8 +60,13 @@ button {
 button:hover { background: var(--surface-1); }
 input:focus-visible, button:focus-visible { outline: 2px solid #809EC2; outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.back { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
-.back:hover { text-decoration: underline; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
 .lbl { font-size: 14px; color: var(--text-primary); }
 .sm { font-size: 13.5px; color: var(--text-primary); }
 .pair { display: flex; align-items: center; gap: 6px; }
@@ -86,7 +91,7 @@ canvas { width: 100%; display: block; }
 </style>
 </head>
 <body>
-<p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
 <h1>Phased-array beam pattern</h1>
 <p class="sub">The same 4 antennas run in reverse. Direction finding reads phase differences to learn an angle; a phased array writes phase differences to choose one. Feed each element the right phase and the four ripples add up in only one direction &mdash; the beam.</p>
 
@@ -196,7 +201,7 @@ canvas { width: 100%; display: block; }
     if (m.sl === null) {
       $('mSL').textContent = '—';
     } else if (m.sl > 0.99) {
-      $('mSL').textContent = 'grating lobe';
+      $('mSL').textContent = 'Grating lobe';
       $('mSL').style.color = 'var(--text-warning)';
     } else {
       $('mSL').textContent = (20 * Math.log10(Math.max(m.sl, 1e-4))).toFixed(1) + ' dB';
