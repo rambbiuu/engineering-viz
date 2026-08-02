@@ -116,6 +116,12 @@ canvas { width: 100%; display: block; }
   <button id="a5">Log-periodic</button>
   <button id="a6">Horn</button>
 </div>
+<div class="row" id="nRow">
+  <label class="lbl" for="nr" id="nLabel" style="min-width: 132px;">Elements</label>
+  <input type="range" id="nr" min="2" max="8" step="1" value="4" style="flex: 1;">
+  <input type="number" id="nrn" min="2" max="8" step="1" value="4" style="width: 76px;">
+  <span class="sm" id="nNote" style="margin-left: auto;"></span>
+</div>
 <div class="row" id="szRow" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="ap" style="min-width: 132px;">Aperture width</label>
   <input type="range" id="ap" min="0.5" max="20" step="0.1" value="5" style="flex: 1;">
@@ -160,7 +166,14 @@ canvas { width: 100%; display: block; }
   var D2R = Math.PI / 180;
   var BLUE = '#4472C4', GREEN = '#70AD47', ORANGE = '#ED7D31', RED = '#C0504D', GREY = '#A5A5A5';
 
-  var S = { kind: 2, ap: 5 };
+  var S = { kind: 2, ap: 5, cnt: { 1: 4, 4: 4, 5: 4 } };
+  // what the count means for each type, and the range it makes sense over
+  var COUNT = {
+    1: { min: 2, max: 8, label: 'Stacked elements', note: 'more stacking flattens the beam toward the horizon' },
+    4: { min: 1, max: 8, label: 'Directors', note: 'each director adds gain and narrows the beam' },
+    5: { min: 2, max: 6, label: 'Active elements', note: 'only the elements near resonance radiate' }
+  };
+  function nOf() { return S.cnt[S.kind] || 4; }
   var NAMES = ['Isotropic', 'Collinear omni', 'Half-wave dipole', 'Quarter-wave monopole',
                'Yagi-Uda', 'Log-periodic', 'Horn'];
   var OMNI = { 1: 1, 2: 1, 3: 1 };             // nothing to choose between directions in azimuth
@@ -191,8 +204,8 @@ canvas { width: 100%; display: block; }
     var t = th * D2R;
     switch (S.kind) {
       case 0: return 1;
-      case 1: {                                  // four half-wave elements stacked in line
-        var N = 4, d = 0.75, sn = Math.sin(t), psi = 2 * Math.PI * d * sn, sh = Math.sin(psi / 2);
+      case 1: {                                  // half-wave elements stacked in line
+        var N = nOf(), d = 0.75, sn = Math.sin(t), psi = 2 * Math.PI * d * sn, sh = Math.sin(psi / 2);
         var af = Math.abs(sh) < 1e-9 ? 1 : Math.abs(Math.sin(N * psi / 2) / (N * sh));
         return dipoleEl(t) * af;
       }
@@ -208,8 +221,8 @@ canvas { width: 100%; display: block; }
     var t = th * D2R;
     switch (S.kind) {
       case 0: case 1: case 2: case 3: return 1;  // omni: every azimuth looks the same
-      case 4: return endfire(t, YAGI.N, YAGI.d, -Math.PI / YAGI.N) * refl(t, YAGI.r);
-      case 5: return endfire(t, LPDA.N, LPDA.d, 0) * refl(t, LPDA.r);
+      case 4: return endfire(t, nOf(), YAGI.d, -Math.PI / nOf()) * refl(t, YAGI.r);
+      case 5: return endfire(t, nOf(), LPDA.d, 0) * refl(t, LPDA.r);
       case 6: {                                  // horn: cosine taper across the wide wall
         if (Math.abs(t) > Math.PI / 2) return 0;
         var u = Math.PI * S.ap * Math.sin(t), q = 2 * u / Math.PI;
@@ -517,14 +530,15 @@ canvas { width: 100%; display: block; }
         } else {
           poly([[-0.14, -1.0], [0.14, -1.0], [0.14, 1.02], [-0.14, 1.02]], 1.2, mut, mut, 0.10);
           bar(0, -0.86, 0, 0.98, 2, mut);          // the feed line up the middle
-          for (i = 0; i < 4; i++) {
-            var vc = -0.72 + i * 0.5;
-            bar(0, vc - 0.19, 0, vc + 0.19, 7, i === 1 ? ORANGE : METAL, true);
-            if (i < 3) coil(0, vc + 0.21, vc + 0.29);
+          var nc = nOf(), stepc = 1.9 / nc;
+          for (i = 0; i < nc; i++) {
+            var vc = -0.95 + stepc * (i + 0.5);
+            bar(0, vc - stepc * 0.38, 0, vc + stepc * 0.38, 7, i === (nc > 1 ? 1 : 0) ? ORANGE : METAL, true);
+            if (i < nc - 1) coil(0, vc + stepc * 0.42, vc + stepc * 0.5);
           }
           bar(0, -1.0, 0, -1.18, 6, GREY);         // mast
           poly([[-0.07, -1.18], [0.07, -1.18], [0.07, -1.3], [-0.07, -1.3]], 1.2, sub, sub, 0.4);
-          dimV(-0.91, 0.91, '2.75 \u03bb');
+          dimV(-0.95, 0.95, (0.5 + 0.75 * (nOf() - 1)).toFixed(2) + ' \u03bb');
         }
         arrow(0.34, 0, 0.62);
         break;
@@ -567,17 +581,18 @@ canvas { width: 100%; display: block; }
         break;
 
       case 4:                                      // Yagi: reflector, driven, directors
-        rails(-0.52, 1.0, 0.038, 4);               // twin boom
+        var nd = nOf(), sp = Math.min(0.28, 1.25 / nd), uEndY = 0.1 + (nd - 1) * sp;
+        rails(-0.52, uEndY + 0.1, 0.038, 4);       // twin boom
         element(-0.45, 0.62, METAL, 6, true);      // reflector, longest, at the back
         element(-0.2, 0.56, ORANGE, 7, true);      // driven
-        for (i = 0; i < 4; i++) element(0.1 + i * 0.28, 0.5 - i * 0.028, METAL, 5.4, true);
+        for (i = 0; i < nd; i++) element(0.1 + i * sp, 0.5 - i * 0.02, METAL, 5.4, true);
         if (!top) {
           thin(-0.2, 0, -0.36, -0.3, 1.4, mut);    // feed
           ring(-0.38, -0.32, 3, 1.2, mut);
           dimV(-0.62, 0.62, '0.52 \u03bb');
         }
-        dimU(-0.45, 0.94, top ? 0.66 : -0.82, '1.3 \u03bb');
-        arrow(1.06, 0, 0.42);
+        dimU(-0.45, uEndY + 0.06, top ? 0.66 : -0.82, ((uEndY + 0.51) * 0.93).toFixed(1) + ' \u03bb');
+        arrow(uEndY + 0.18, 0, 0.42);
         break;
 
       case 5:                                      // log-periodic: the taper, fed at the nose
@@ -590,8 +605,10 @@ canvas { width: 100%; display: block; }
           thin(us[0], -hs[0], uEnd, 0, 1, mut);
         }
         rails(us[0] - 0.06, uEnd, 0.038, 4);        // twin boom, elements alternate between them
+        var act = nOf();
         for (i = 0; i < n; i++) {
-          element(us[i], hs[i], i === n - 1 ? ORANGE : (i % 2 ? GREY : METAL),
+          var live = i >= n - act;                 // only these are near resonance
+          element(us[i], hs[i], live ? ORANGE : (i % 2 ? GREY : METAL),
                   Math.max(2.6, 6.4 - i * 0.2), true);
         }
         if (!top) {
@@ -711,6 +728,15 @@ canvas { width: 100%; display: block; }
     var needsSize = S.kind === 6;
     $('szRow').style.display = needsSize ? 'flex' : 'none';
     $('apNote').textContent = needsSize ? 'a horn mouth this many wavelengths wide' : '';
+    var c = COUNT[S.kind];
+    $('nRow').style.display = c ? 'flex' : 'none';
+    if (c) {
+      $('nLabel').textContent = c.label;
+      $('nNote').textContent = c.note;
+      $('nr').min = $('nrn').min = c.min;
+      $('nr').max = $('nrn').max = c.max;
+      $('nr').value = $('nrn').value = nOf();
+    }
   }
 
   function redraw() {
@@ -731,6 +757,15 @@ canvas { width: 100%; display: block; }
       redraw();
     });
   });
+  function setN(v) {
+    var c = COUNT[S.kind];
+    if (!c) return;
+    S.cnt[S.kind] = Math.min(c.max, Math.max(c.min, Math.round(isFinite(v) ? v : c.min)));
+    redraw();
+  }
+  $('nr').addEventListener('input', function () { setN(parseFloat($('nr').value)); });
+  $('nrn').addEventListener('change', function () { setN(parseFloat($('nrn').value)); });
+
   function setAp(v) {
     S.ap = Math.min(20, Math.max(0.5, isFinite(v) ? v : 5));
     $('ap').value = S.ap; $('apn').value = S.ap;
