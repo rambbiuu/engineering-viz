@@ -98,6 +98,8 @@ input:focus-visible, button:focus-visible { outline: 2px solid #4472C4; outline-
 canvas { width: 100%; display: block; }
 .legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
 .legend span { display: flex; align-items: center; gap: 6px; }
+.legend .dash { width: 17px; height: 0; border-top: 2px dashed #C0504D; }
+.legend .wedge { width: 13px; height: 13px; border-radius: 3px; background: #ED7D31; opacity: 0.55; border: 1px solid #ED7D31; }
 </style>
 
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html">&larr; all tools</a></p>
@@ -110,11 +112,9 @@ canvas { width: 100%; display: block; }
   <button id="a1">Omni (collinear)</button>
   <button id="a2" class="on">Half-wave dipole</button>
   <button id="a3">&frac14;-wave monopole</button>
-  <button id="a4">Patch</button>
-  <button id="a5">Yagi</button>
-  <button id="a6">Log-periodic</button>
-  <button id="a7">Horn</button>
-  <button id="a8">Dish</button>
+  <button id="a4">Yagi</button>
+  <button id="a5">Log-periodic</button>
+  <button id="a6">Horn</button>
 </div>
 <div class="row" id="szRow" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="ap" style="min-width: 132px;">Aperture width</label>
@@ -138,8 +138,8 @@ canvas { width: 100%; display: block; }
 <div class="legend">
   <span><span class="dot" style="background:#4472C4"></span>Vertical</span>
   <span><span class="dot" style="background:#70AD47"></span>Horizontal</span>
-  <span><span class="dot" style="background:#ED7D31"></span>Half-power (&minus;3 dB) edges</span>
-  <span><span class="dot" style="background:#C0504D"></span>Boresight</span>
+  <span><span class="wedge"></span>Half-power beam: the arc within 3 dB of the peak</span>
+  <span><span class="dash"></span>Boresight</span>
 </div>
 
 <p class="sec"><b>3 &middot; Read off the curve</b> <span>Every number below is measured from the pattern you are looking at</span></p>
@@ -162,11 +162,10 @@ canvas { width: 100%; display: block; }
 
   var S = { kind: 2, ap: 5 };
   var NAMES = ['Isotropic', 'Collinear omni', 'Half-wave dipole', 'Quarter-wave monopole',
-               'Patch', 'Yagi-Uda', 'Log-periodic', 'Horn', 'Parabolic dish'];
+               'Yagi-Uda', 'Log-periodic', 'Horn'];
   var OMNI = { 1: 1, 2: 1, 3: 1 };             // nothing to choose between directions in azimuth
   var YAGI = { N: 4, d: 0.25, r: 0.5 };        // directors, spacing in lambda, reflector strength
   var LPDA = { N: 4, d: 0.30, r: 0.4 };
-  var PATCH = { L: 0.35, W: 0.44 };            // patch edges in free-space wavelengths
 
   function sinc(x) { return Math.abs(x) < 1e-9 ? 1 : Math.sin(x) / x; }
   // half-wave dipole, theta from broadside
@@ -199,15 +198,9 @@ canvas { width: 100%; display: block; }
       }
       case 2: return dipoleEl(t);
       case 3: return Math.sin(t) < 0 ? 0 : dipoleEl(t);                 // ground plane below it
-      case 4: return Math.abs(t) > Math.PI / 2 ? 0 : Math.abs(Math.cos(Math.PI * PATCH.L * Math.sin(t)));
-      case 5: return fieldH(th) * dipoleEl(t);   // elements lie in this plane
-      case 6: return fieldH(th) * dipoleEl(t);
-      case 7: return Math.abs(t) > Math.PI / 2 ? 0 : Math.abs(sinc(Math.PI * S.ap * Math.sin(t)));
-      case 8: {                                  // dish: circular aperture, the same all round
-        if (Math.abs(t) > Math.PI / 2) return 0;
-        var v = Math.PI * S.ap * Math.sin(t);
-        return Math.abs(v) < 1e-9 ? 1 : Math.abs(2 * j1(v) / v);
-      }
+      case 4: return fieldH(th) * dipoleEl(t);   // elements lie in this plane
+      case 5: return fieldH(th) * dipoleEl(t);
+      case 6: return Math.abs(t) > Math.PI / 2 ? 0 : Math.abs(sinc(Math.PI * S.ap * Math.sin(t)));
     }
     return 1;
   }
@@ -215,39 +208,17 @@ canvas { width: 100%; display: block; }
     var t = th * D2R;
     switch (S.kind) {
       case 0: case 1: case 2: case 3: return 1;  // omni: every azimuth looks the same
-      case 4: return Math.abs(t) > Math.PI / 2 ? 0
-                   : Math.abs(sinc(Math.PI * PATCH.W * Math.sin(t)) * Math.cos(t));
-      case 5: return endfire(t, YAGI.N, YAGI.d, -Math.PI / YAGI.N) * refl(t, YAGI.r);
-      case 6: return endfire(t, LPDA.N, LPDA.d, 0) * refl(t, LPDA.r);
-      case 7: {                                  // horn: cosine taper across the wide wall
+      case 4: return endfire(t, YAGI.N, YAGI.d, -Math.PI / YAGI.N) * refl(t, YAGI.r);
+      case 5: return endfire(t, LPDA.N, LPDA.d, 0) * refl(t, LPDA.r);
+      case 6: {                                  // horn: cosine taper across the wide wall
         if (Math.abs(t) > Math.PI / 2) return 0;
         var u = Math.PI * S.ap * Math.sin(t), q = 2 * u / Math.PI;
         return Math.abs(Math.abs(1 - q * q) < 1e-9 ? Math.PI / 4 : Math.cos(u) / (1 - q * q));
       }
-      case 8: return fieldV(th);
     }
     return 1;
   }
 
-  // first-order Bessel, enough accuracy for a pattern plot
-  function j1(x) {
-    var ax = Math.abs(x), y, ans1, ans2, ans;
-    if (ax < 8) {
-      y = x * x;
-      ans1 = x * (72362614232.0 + y * (-7895059235.0 + y * (242396853.1 + y * (-2972611.439 +
-            y * (15704.48260 + y * (-30.16036606))))));
-      ans2 = 144725228442.0 + y * (2300535178.0 + y * (18583304.74 + y * (99447.43394 +
-            y * (376.9991397 + y))));
-      ans = ans1 / ans2;
-    } else {
-      var z = 8 / ax, y2 = z * z, xx = ax - 2.356194491;
-      ans1 = 1 + y2 * (0.183105e-2 + y2 * (-0.3516396496e-4 + y2 * (0.2457520174e-5 + y2 * (-0.240337019e-6))));
-      ans2 = 0.04687499995 + y2 * (-0.2002690873e-3 + y2 * (0.8449199096e-5 + y2 * (-0.88228987e-6 + y2 * 0.105787412e-6)));
-      ans = Math.sqrt(0.636619772 / ax) * (Math.cos(xx) * ans1 - z * Math.sin(xx) * ans2);
-      if (x < 0) ans = -ans;
-    }
-    return ans;
-  }
   function dB(th, fn) { return 20 * Math.log10(Math.max((fn || fieldV)(th), 1e-6)); }
 
   // Directivity. Exact where the geometry allows it, Kraus from the two
@@ -262,14 +233,6 @@ canvas { width: 100%; display: block; }
         den += f * f * w; num += w;
       }
       // the ground plane already shows up as a zeroed half of this integral
-      return 10 * Math.log10(num / den);
-    }
-    if (S.kind === 8) {                          // round beam: spin the cut about boresight
-      for (i = 0; i < N; i++) {
-        a = (i + 0.5) / N * 180;
-        f = fieldV(a); w = Math.sin(a * D2R);
-        den += f * f * w; num += w;
-      }
       return 10 * Math.log10(num / den);
     }
     var bv = hpbw(fieldV), bh = hpbw(fieldH);
@@ -331,6 +294,17 @@ canvas { width: 100%; display: block; }
       g.fillText((a > 180 ? a - 360 : a) + '°', lb[0], lb[1]);
     }
 
+    // the half-power sector, under the pattern: the angular width the beam covers
+    var ed = hpEdges(fn);
+    if (ed !== null) {
+      g.fillStyle = ORANGE; g.globalAlpha = 0.17;
+      g.beginPath(); g.moveTo(cx, cy);
+      for (var q = ed.lo; q <= ed.hi + 1e-9; q += Math.max((ed.hi - ed.lo) / 90, 0.5)) {
+        var qe = pt(q, rad(-3, R)); g.lineTo(qe[0], qe[1]);
+      }
+      g.closePath(); g.fill(); g.globalAlpha = 1;
+    }
+
     // the pattern itself
     g.strokeStyle = col; g.lineWidth = 1.8; g.fillStyle = col;
     g.globalAlpha = 0.14;
@@ -360,7 +334,6 @@ canvas { width: 100%; display: block; }
     g.setLineDash([]);
 
     // half-power edges
-    var ed = hpEdges(fn);
     if (ed !== null) {
       g.strokeStyle = ORANGE; g.lineWidth = 1.2;
       [ed.lo, ed.hi].forEach(function (t2) {
@@ -593,19 +566,7 @@ canvas { width: 100%; display: block; }
         arrow(0.36, top ? 0 : 0.45, 0.56);
         break;
 
-      case 4: {                                    // patch: board edge on, radiating forwards
-        var e4 = top ? 0.72 : 0.57;
-        poly([[0, -e4 - 0.12], [0.11, -e4 - 0.12], [0.11, e4 + 0.12], [0, e4 + 0.12]], 1.2, mut, BLUE, 0.13);
-        bar(0, -e4 - 0.12, 0, e4 + 0.12, 6, GREY);       // ground plane
-        bar(0.11, -e4, 0.11, e4, 8, ORANGE);             // the patch
-        thin(0, -0.2, 0.11, -0.2, 1.6, mut);             // feed pin
-        dot(0.11, -0.2, 2.6, mut);
-        dimV(-e4, e4, top ? '0.44 \u03bb' : '0.35 \u03bb');
-        arrow(0.28, 0, 0.62);
-        break;
-      }
-
-      case 5:                                      // Yagi: reflector, driven, directors
+      case 4:                                      // Yagi: reflector, driven, directors
         rails(-0.52, 1.0, 0.038, 4);               // twin boom
         element(-0.45, 0.62, METAL, 6, true);      // reflector, longest, at the back
         element(-0.2, 0.56, ORANGE, 7, true);      // driven
@@ -619,8 +580,8 @@ canvas { width: 100%; display: block; }
         arrow(1.06, 0, 0.42);
         break;
 
-      case 6:                                      // log-periodic: the taper, fed at the nose
-        n = 20;
+      case 5:                                      // log-periodic: the taper, fed at the nose
+        n = 15;
         var us = [], hs = [], uu = -1.02, tau = 0.915;
         for (i = 0; i < n; i++) { hs.push(0.8 * Math.pow(tau, i)); us.push(uu); uu += 0.155 * Math.pow(tau, i); }
         var uEnd = us[n - 1] + 0.16;
@@ -642,7 +603,7 @@ canvas { width: 100%; display: block; }
         arrow(uEnd + 0.24, 0, 0.34);
         break;
 
-      case 7:                                      // horn: waveguide flaring to its mouth
+      case 6:                                      // horn: waveguide flaring to its mouth
         poly([[-0.95, -0.19], [-0.34, -0.19], [0.32, -0.72], [0.32, 0.72], [-0.34, 0.19], [-0.95, 0.19]],
              2.2, sub, BLUE, 0.15);
         bar(-0.95, -0.19, -0.95, 0.19, 2.4, sub);
@@ -653,21 +614,6 @@ canvas { width: 100%; display: block; }
         arrow(0.5, 0, 0.56);
         break;
 
-      case 8: {                                    // dish with a feed at the focus
-        var f = 0.6, front = [], back = [];
-        for (i = -24; i <= 24; i++) { var vv = i / 24 * 0.8; front.push([vv * vv * f - 0.38, vv]); }
-        for (i = 24; i >= -24; i--) { var v2 = i / 24 * 0.8; back.push([v2 * v2 * f - 0.45, v2]); }
-        poly(front.concat(back), 2, sub, BLUE, 0.18);   // reflector, with thickness
-        thin(-0.45, 0, -0.62, 0, 2, mut);               // back mount
-        poly([[-0.62, -0.1], [-0.72, -0.1], [-0.72, 0.1], [-0.62, 0.1]], 1.2, sub, sub, 0.35);
-        thin(-0.38 + 0.8 * 0.8 * f, 0.8, 0.18, 0.06, 1, mut);   // struts to the focus
-        thin(-0.38 + 0.8 * 0.8 * f, -0.8, 0.18, -0.06, 1, mut);
-        poly([[0.1, -0.11], [0.24, -0.16], [0.24, 0.16], [0.1, 0.11]], 1.4, sub, ORANGE, 0.5);  // feed horn
-        dot(0.14, 0, 3.4, ORANGE);
-        dimV(-0.8, 0.8, ap);
-        arrow(0.42, 0, 0.6);
-        break;
-      }
     }
     }
 
@@ -762,11 +708,9 @@ canvas { width: 100%; display: block; }
   }
 
   function syncControls() {
-    var needsSize = S.kind === 7 || S.kind === 8;
+    var needsSize = S.kind === 6;
     $('szRow').style.display = needsSize ? 'flex' : 'none';
-    $('apNote').textContent = needsSize
-      ? (S.kind === 8 ? 'a dish this many wavelengths across' : 'a horn mouth this many wavelengths wide')
-      : '';
+    $('apNote').textContent = needsSize ? 'a horn mouth this many wavelengths wide' : '';
   }
 
   function redraw() {
@@ -778,7 +722,7 @@ canvas { width: 100%; display: block; }
     drawRect(); cards();
   }
 
-  var IDS = ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
+  var IDS = ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6'];
   IDS.forEach(function (id, k) {
     $(id).addEventListener('click', function () {
       S.kind = k;
