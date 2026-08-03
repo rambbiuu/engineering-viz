@@ -107,7 +107,7 @@ canvas { width: 100%; display: block; }
   <button id="d1">Night</button>
 </div>
 
-<p class="sec"><b>1 &middot; The spectrum</b> <span>Eight bands, each a decade wide, and the letter names used above 1 GHz</span></p>
+<p class="sec"><b>1 &middot; The spectrum</b> <span>Colour is how it travels, the same three as below; the letter names run on their own scale</span></p>
 <canvas id="spec" style="height: 196px;"></canvas>
 
 <p class="sec"><b>2 &middot; The path it takes</b> <span>Solid is the mode that carries at this frequency; the faded ones are not available here</span></p>
@@ -230,17 +230,21 @@ canvas { width: 100%; display: block; }
     // 15 px on the shared axis and unreadable at any font size.
     var LLO = Math.log10(1e9), LHI = Math.log10(110e9);
     var LX = function (f) { return l + (Math.log10(f) - LLO) / (LHI - LLO) * (w - l - r); };
+    var lgrad = g.createLinearGradient(l, 0, w - r, 0);
+    lgrad.addColorStop(0, BLUE);                 // all line of sight up here, but the
+    lgrad.addColorStop(0.55, BLUE);              // atmosphere gets steadily hungrier
+    lgrad.addColorStop(1, RED);
     LETTER.forEach(function (L, i) {
       var x0 = LX(L.lo), x1 = LX(L.hi);
       var on = S.f >= L.lo && S.f < L.hi;
-      g.fillStyle = on ? ORANGE : mut; g.globalAlpha = on ? 0.30 : (i % 2 ? 0.14 : 0.07);
+      g.fillStyle = lgrad; g.globalAlpha = on ? 0.55 : (i % 2 ? 0.22 : 0.13);
       g.fillRect(x0, letT, x1 - x0, letH); g.globalAlpha = 1;
-      g.strokeStyle = on ? ORANGE : bd; g.lineWidth = on ? 1.6 : 0.5;
+      g.strokeStyle = on ? cvv('--text-primary') : bd; g.lineWidth = on ? 1.8 : 0.5;
       g.strokeRect(x0, letT, x1 - x0, letH);
-      g.fillStyle = on ? ORANGE : sub; g.font = fnt(on ? 17 : 15);
+      g.fillStyle = on ? cvv('--text-primary') : sub; g.font = fnt(on ? 17 : 15);
       g.textAlign = 'center'; g.textBaseline = 'bottom';
       g.fillText(L.n, (x0 + x1) / 2, letT + letH / 2 + 2);
-      g.fillStyle = on ? ORANGE : mut; g.font = fnt(11);
+      g.fillStyle = on ? cvv('--text-primary') : mut; g.font = fnt(11);
       g.textBaseline = 'top';
       g.fillText((L.lo / 1e9) + '\u2013' + (L.hi / 1e9), (x0 + x1) / 2, letT + letH / 2 + 4);
     });
@@ -252,22 +256,33 @@ canvas { width: 100%; display: block; }
       g.beginPath(); g.moveTo(lmx, letT); g.lineTo(lmx, letT + letH); g.stroke();
     }
 
+    // Colour runs with the propagation mode, the same three colours section 2
+    // uses, so the bar says which way a wave goes as well as what it is called.
+    var grad = g.createLinearGradient(l, 0, w - r, 0);
+    var gp = function (f) { return (X(f) - l) / (w - r - l); };
+    grad.addColorStop(0, TEAL);
+    grad.addColorStop(gp(2e6), TEAL);
+    grad.addColorStop(gp(4e6), ORANGE);
+    grad.addColorStop(gp(2.4e7), ORANGE);
+    grad.addColorStop(gp(4.5e7), BLUE);
+    grad.addColorStop(1, BLUE);
+
     BANDS.forEach(function (B, i) {
       var x0 = Math.max(X(B.lo), l), x1 = Math.min(X(B.hi), w - r);
       if (x1 <= x0) return;
       var on = S.f >= B.lo && S.f < B.hi;
-      g.fillStyle = on ? BLUE : mut;
-      g.globalAlpha = on ? 0.28 : 0.10;
+      g.fillStyle = grad;
+      g.globalAlpha = on ? 0.62 : 0.20;
       g.fillRect(x0, barT, x1 - x0, barH);
       g.globalAlpha = 1;
-      g.strokeStyle = on ? BLUE : bd; g.lineWidth = on ? 1.4 : 0.5;
+      g.strokeStyle = on ? cvv('--text-primary') : bd; g.lineWidth = on ? 1.8 : 0.5;
       g.strokeRect(x0, barT, x1 - x0, barH);
-      g.fillStyle = on ? BLUE : sub; g.font = fnt(on ? 14 : 13);
+      g.fillStyle = on ? cvv('--text-primary') : sub; g.font = fnt(on ? 14 : 13);
       g.textAlign = 'center';
       g.textBaseline = (x1 - x0 > 62) ? 'bottom' : 'middle';
       g.fillText(B.n, (x0 + x1) / 2, barT + barH / 2 + ((x1 - x0 > 62) ? 1 : 0));
       if (x1 - x0 > 62) {
-        g.fillStyle = on ? BLUE : mut; g.font = fnt(11.5);
+        g.fillStyle = on ? cvv('--text-primary') : mut; g.font = fnt(11.5);
         g.textBaseline = 'top';
         g.fillText(rangeTxt(B), (x0 + x1) / 2, barT + barH / 2 + 3);
       }
@@ -320,6 +335,19 @@ canvas { width: 100%; display: block; }
 
     var dom = dom0;
     var IONO = 150, D_H = IONO * 0.42, E_H = IONO * 0.64;                              // drawn height, exaggerated on purpose
+
+    // sky, so the day and night switch is felt and not only read
+    var sky = g.createLinearGradient(0, 0, 0, P(0, 0)[1]);
+    if (S.night) {
+      sky.addColorStop(0, 'rgba(38, 44, 96, 0.42)');
+      sky.addColorStop(0.65, 'rgba(30, 34, 74, 0.20)');
+      sky.addColorStop(1, 'rgba(20, 22, 44, 0.05)');
+    } else {
+      sky.addColorStop(0, 'rgba(78, 103, 200, 0.20)');
+      sky.addColorStop(0.6, 'rgba(94, 204, 243, 0.10)');
+      sky.addColorStop(1, 'rgba(255, 193, 7, 0.09)');
+    }
+    g.fillStyle = sky; g.fillRect(0, 0, w, P(0, 0)[1]);
 
     // ---- the ionosphere, layer by layer ----
     var ionOn = dom === 'sky';
