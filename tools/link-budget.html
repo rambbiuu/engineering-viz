@@ -405,8 +405,8 @@ canvas { width: 100%; display: block; }
     var cells = [
       { top: 'Arrives', v: prx.toFixed(1) + ' dBm', col: BLUE, op: '\u2212' },
       { top: 'Noise floor', v: nf.toFixed(1) + ' dBm', col: RED, op: '=' },
-      { top: 'Signal to noise', v: snr.toFixed(1) + ' dB', col: sub, op: '\u2212 ' + S.req + ' needed' },
-      { top: 'Margin', v: (mg >= 0 ? '+' : '') + mg.toFixed(1) + ' dB', col: mg >= 0 ? GREEN : RED, op: null }
+      { top: 'Signal to noise', v: snr.toFixed(1) + ' dB', col: sub, op: '\u2212 ' + S.req },
+      { top: 'Margin left over', v: (mg >= 0 ? '+' : '') + mg.toFixed(1) + ' dB', col: mg >= 0 ? GREEN : RED, op: null }
     ];
     cells.forEach(function (c, i) {
       box(xx, y1, cw, bh2, c.col, c.col);
