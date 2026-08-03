@@ -107,8 +107,8 @@ canvas { width: 100%; display: block; }
   <button id="d1">Night</button>
 </div>
 
-<p class="sec"><b>1 &middot; The spectrum</b> <span>Eight bands, each a decade wide; the wavelength is what actually changes</span></p>
-<canvas id="spec" style="height: 214px;"></canvas>
+<p class="sec"><b>1 &middot; The spectrum</b> <span>Eight bands, each a decade wide, and the letter names used above 1 GHz</span></p>
+<canvas id="spec" style="height: 196px;"></canvas>
 
 <p class="sec"><b>2 &middot; The path it takes</b> <span>Solid is the mode that carries at this frequency; the faded ones are not available here</span></p>
 <canvas id="earth" style="height: 268px;"></canvas>
@@ -149,20 +149,6 @@ canvas { width: 100%; display: block; }
     { lo: 1e9, hi: 2e9, n: 'L' }, { lo: 2e9, hi: 4e9, n: 'S' }, { lo: 4e9, hi: 8e9, n: 'C' },
     { lo: 8e9, hi: 12e9, n: 'X' }, { lo: 12e9, hi: 18e9, n: 'Ku' }, { lo: 18e9, hi: 27e9, n: 'K' },
     { lo: 27e9, hi: 40e9, n: 'Ka' }, { lo: 40e9, hi: 75e9, n: 'V' }, { lo: 75e9, hi: 110e9, n: 'W' }
-  ];
-  var MARKS = [
-    { f: 198e3, t: 'Long wave', r: 0 },
-    { f: 1e6, t: 'AM', r: 1 },
-    { f: 7e6, t: 'Shortwave', r: 0 },
-    { f: 27e6, t: 'CB', r: 1 },
-    { f: 100e6, t: 'FM', r: 0 },
-    { f: 156e6, t: 'Marine', r: 1 },
-    { f: 900e6, t: 'GSM', r: 0 },
-    { f: 1575e6, t: 'GPS', r: 1 },
-    { f: 2450e6, t: 'Wi-Fi', r: 0 },
-    { f: 10e9, t: 'X-band', r: 1 },
-    { f: 24e9, t: 'Car radar', r: 0 },
-    { f: 60e9, t: 'O\u2082 peak', r: 1 }
   ];
 
   // ---- the three ways a wave can get there ----
@@ -233,27 +219,38 @@ canvas { width: 100%; display: block; }
     var cv = $('spec'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var l = 14, r = 14, t = 62;
+    var l = 14, r = 14, t = 36;
     var LO = Math.log10(3e3), HI = Math.log10(3e11);   // the eight bands, end to end
     var X = function (f) { return l + (Math.log10(f) - LO) / (HI - LO) * (w - l - r); };
-    var letT = t, letH = 22;
-    var barT = t + letH + 6, barH = 50;
+    var letT = t, letH = 34;
+    var barT = t + letH + 28, barH = 52;
 
-    // letter bands sit above, over the stretch where anyone uses them
+    // Letter bands only run 1 to 110 GHz, which is a quarter of the axis below,
+    // so they get their own strip stretched across the full width. Ku and Ka are
+    // 15 px on the shared axis and unreadable at any font size.
+    var LLO = Math.log10(1e9), LHI = Math.log10(110e9);
+    var LX = function (f) { return l + (Math.log10(f) - LLO) / (LHI - LLO) * (w - l - r); };
     LETTER.forEach(function (L, i) {
-      var x0 = Math.max(X(L.lo), l), x1 = Math.min(X(L.hi), w - r);
-      if (x1 <= x0) return;
+      var x0 = LX(L.lo), x1 = LX(L.hi);
       var on = S.f >= L.lo && S.f < L.hi;
-      g.fillStyle = on ? ORANGE : mut; g.globalAlpha = on ? 0.30 : (i % 2 ? 0.13 : 0.07);
+      g.fillStyle = on ? ORANGE : mut; g.globalAlpha = on ? 0.30 : (i % 2 ? 0.14 : 0.07);
       g.fillRect(x0, letT, x1 - x0, letH); g.globalAlpha = 1;
-      g.strokeStyle = on ? ORANGE : bd; g.lineWidth = on ? 1.4 : 0.5;
+      g.strokeStyle = on ? ORANGE : bd; g.lineWidth = on ? 1.6 : 0.5;
       g.strokeRect(x0, letT, x1 - x0, letH);
-      g.fillStyle = on ? ORANGE : sub; g.font = fnt(on ? 13 : 12);
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      if (x1 - x0 > 13) g.fillText(L.n, (x0 + x1) / 2, letT + letH / 2);
+      g.fillStyle = on ? ORANGE : sub; g.font = fnt(on ? 17 : 15);
+      g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText(L.n, (x0 + x1) / 2, letT + letH / 2 + 2);
+      g.fillStyle = on ? ORANGE : mut; g.font = fnt(11);
+      g.textBaseline = 'top';
+      g.fillText((L.lo / 1e9) + '\u2013' + (L.hi / 1e9), (x0 + x1) / 2, letT + letH / 2 + 4);
     });
-    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.fillText('Letter bands', l + 2, letT + letH / 2);
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('Letter bands, GHz \u2014 own scale', l, letT - 7);
+    if (S.f >= 1e9 && S.f <= 110e9) {           // where you are on this strip
+      var lmx = LX(S.f);
+      g.strokeStyle = RED; g.lineWidth = 1.8;
+      g.beginPath(); g.moveTo(lmx, letT); g.lineTo(lmx, letT + letH); g.stroke();
+    }
 
     BANDS.forEach(function (B, i) {
       var x0 = Math.max(X(B.lo), l), x1 = Math.min(X(B.hi), w - r);
@@ -277,45 +274,19 @@ canvas { width: 100%; display: block; }
     });
 
     // decade ticks with the wavelength that goes with them
-    g.font = fnt(12); g.textAlign = 'center';
-    var skip = (w - l - r) / 8 < 76 ? 2 : 1;         // a phone cannot hold eight of them
-    for (var e = 4; e <= 11; e++) {
-      var f = Math.pow(10, e), x = X(f);
-      g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(x, barT + barH); g.lineTo(x, barT + barH + 6); g.stroke();
-      if ((e - 4) % skip) continue;
-      g.fillStyle = mut; g.textBaseline = 'top';
-      g.fillText(fmt(f), x, barT + barH + 10);
-      g.globalAlpha = 0.75;
-      g.fillText(tidy(fmtLam(lam(f))), x, barT + barH + 26);
-      g.globalAlpha = 1;
-    }
-
-    // what actually lives where. On a narrow canvas these would overprint the
-    // letter row and each other, so they go.
-    if (w >= 560) MARKS.forEach(function (m) {
-      var x = X(m.f);
-      if (x < l || x > w - r) return;
-      var y = letT - 8 - m.r * 15;
-      g.strokeStyle = mut; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(x, letT); g.lineTo(x, y + 2); g.stroke();
-      g.fillStyle = mut; g.font = fnt(12); g.textBaseline = 'bottom';
-      var tw = g.measureText(m.t).width;
-      g.textAlign = x - tw / 2 < 0 ? 'left' : x + tw / 2 > w ? 'right' : 'center';
-      g.fillText(m.t, x, y + 2);
-    });
-
     // where you are: pointed at from above and below, never drawn across a label
     var mx = Math.max(l + 1, Math.min(w - r - 1, X(S.f)));
     g.fillStyle = RED;
-    g.beginPath();
-    g.moveTo(mx, letT - 3); g.lineTo(mx - 6, letT - 12); g.lineTo(mx + 6, letT - 12);
+    g.beginPath();                               // sits over the bar it belongs to,
+    g.moveTo(mx, barT - 3);                      // not over the letter strip, which
+    g.lineTo(mx - 6, barT - 12);                 // runs on a different scale
+    g.lineTo(mx + 6, barT - 12);
     g.closePath(); g.fill();
     g.strokeStyle = RED; g.lineWidth = 1.8;
-    g.beginPath(); g.moveTo(mx, barT + barH + 1); g.lineTo(mx, barT + barH + 7); g.stroke();
+    g.beginPath(); g.moveTo(mx, barT + barH + 1); g.lineTo(mx, barT + barH + 8); g.stroke();
     g.font = fnt(14); g.textBaseline = 'top'; g.fillStyle = RED;
     g.textAlign = mx < 80 ? 'left' : mx > w - 80 ? 'right' : 'center';
-    g.fillText(fmt(S.f) + '  \u00b7  ' + tidy(fmtLam(lam(S.f))), mx, barT + barH + 46);
+    g.fillText(fmt(S.f) + '  \u00b7  ' + tidy(fmtLam(lam(S.f))), mx, barT + barH + 12);
   }
 
   // ---------------- 2: the path ----------------
