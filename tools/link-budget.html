@@ -145,7 +145,15 @@ canvas { width: 100%; display: block; }
   <span class="sm">km</span>
 </div>
 
-<p class="sec"><b>1 &middot; The ladder</b> <span>Each step is one term of the sum; what matters is where the last bar lands against the noise</span></p>
+<p class="sec"><b>1 &middot; The link</b> <span>Two masts and the air between them; the wave thins out as it spreads</span></p>
+<canvas id="scene" style="height: 300px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#418AB3"></span>The wave, spreading and thinning</span>
+  <span><span class="dot" style="background:#A6B727"></span>Antenna, gathering it back</span>
+  <span><span class="dot" style="background:#DF5327"></span>Noise the receiver makes on its own</span>
+</div>
+
+<p class="sec"><b>2 &middot; The ladder</b> <span>Each step is one term of the sum; what matters is where the last bar lands against the noise</span></p>
 <canvas id="lad" style="height: 360px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#418AB3"></span>Signal level</span>
@@ -155,7 +163,7 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#F69200"></span>Margin</span>
 </div>
 
-<p class="sec"><b>2 &middot; How far it reaches</b> <span>Margin against distance; the link holds while the curve is above zero</span></p>
+<p class="sec"><b>3 &middot; How far it reaches</b> <span>Margin against distance; the link holds while the curve is above zero</span></p>
 <canvas id="rng" style="height: 300px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#418AB3"></span>Margin</span>
@@ -163,7 +171,7 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#838383"></span>Radio horizon</span>
 </div>
 
-<p class="sec"><b>3 &middot; Read off the numbers</b> <span>Every one below comes from the ladder above</span></p>
+<p class="sec"><b>4 &middot; Read off the numbers</b> <span>Every one below comes from the ladder above</span></p>
 <div class="cards" id="cards"></div>
 
 <script>
@@ -208,7 +216,135 @@ canvas { width: 100%; display: block; }
     return [r.width, r.height];
   }
 
-  // ---------------- 1: the ladder ----------------
+  // ---------------- 1: the link itself ----------------
+  function drawScene() {
+    var cv = $('scene'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var METAL = cvv('--text-primary');
+    var ground = h - 46;
+
+    // ground
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(0, ground); g.lineTo(w, ground); g.stroke();
+    g.fillStyle = mut; g.globalAlpha = 0.10; g.fillRect(0, ground, w, h - ground); g.globalAlpha = 1;
+    for (var q = 8; q < w; q += 26) {
+      g.strokeStyle = mut; g.lineWidth = 1; g.globalAlpha = 0.5;
+      g.beginPath(); g.moveTo(q, ground); g.lineTo(q - 9, ground + 11); g.stroke();
+      g.globalAlpha = 1;
+    }
+
+    // masts, drawn to the heights you set, relative to each other
+    var tallest = Math.max(S.htx, S.hrx, 1);
+    var maxPx = ground - 66;
+    var hT = Math.max(18, maxPx * S.htx / tallest);
+    var hR = Math.max(14, maxPx * S.hrx / tallest);
+    var xT = 78, xR = w - 78;
+    var yT = ground - hT, yR = ground - hR;
+
+    function mast(x, base, top, lean) {          // a lattice tower
+      g.strokeStyle = METAL; g.lineWidth = 2.2;
+      g.beginPath(); g.moveTo(x - lean, base); g.lineTo(x, top);
+      g.moveTo(x + lean, base); g.lineTo(x, top); g.stroke();
+      g.lineWidth = 1; g.strokeStyle = mut;
+      var n = Math.max(2, Math.round((base - top) / 22));
+      for (var i = 1; i < n; i++) {
+        var f1 = i / n, f2 = (i + 1) / n;
+        var y1 = base + (top - base) * f1, y2 = base + (top - base) * f2;
+        var l1 = lean * (1 - f1), l2 = lean * (1 - f2);
+        g.beginPath(); g.moveTo(x - l1, y1); g.lineTo(x + l1, y1); g.stroke();
+        g.beginPath(); g.moveTo(x - l1, y1); g.lineTo(x + l2, y2); g.stroke();
+        g.beginPath(); g.moveTo(x + l1, y1); g.lineTo(x - l2, y2); g.stroke();
+      }
+    }
+    function yagi(x, y, dir, gain) {             // more gain, more directors
+      var n = Math.max(1, Math.min(7, Math.round(gain / 2.2)));
+      g.strokeStyle = GREEN; g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + dir * (10 + n * 7), y); g.stroke();
+      for (var i = 0; i <= n; i++) {
+        var ex = x + dir * (6 + i * 7), eh = 15 - i * 1.4;
+        g.lineWidth = 2.4;
+        g.beginPath(); g.moveTo(ex, y - eh); g.lineTo(ex, y + eh); g.stroke();
+      }
+    }
+
+    mast(xT, ground, yT, 11);
+    mast(xR, ground, yR, 9);
+    yagi(xT, yT, 1, S.gtx);
+    yagi(xR, yR, -1, S.grx);
+
+    // the wave: arcs that spread and thin as they go
+    var span = xR - xT - 40;
+    var prx = prxAt(S.d), nf = noiseFloor(), snr = prx - nf;
+    g.save();
+    g.beginPath(); g.rect(xT, 4, xR - xT, ground - 4); g.clip();
+    var src = xT + 18, reach = xR - 14 - src;
+    for (var k = 0; k < 7; k++) {
+      var f = (k + 0.6) / 7;
+      g.strokeStyle = BLUE; g.lineWidth = 2.0 - f * 1.1;
+      g.globalAlpha = 0.75 * (1 - f * 0.82) + 0.08;   // thinner as it spreads
+      g.beginPath();
+      g.arc(src, yT, reach * f, -Math.PI / 7, Math.PI / 7);
+      g.stroke();
+      g.globalAlpha = 1;
+    }
+    g.restore();
+
+    // how strong it still is, as a bar under the path
+    var barY = ground - 26, x0 = xT + 40, x1 = xR - 40;
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(x0, barY); g.lineTo(x1, barY); g.stroke();
+    var floorPx = 10, topPx = 46;
+    // the near field would run off the top, so start the sweep a little out
+    // scaled to the fall along this path, or a strong link would just saturate flat
+    var nearLv = prxAt(Math.max(S.d * 0.06, 1e-4)) - nf;
+    var swing = Math.max(nearLv, 8);
+    function lvlY(t2) {
+      var dkm = Math.max(S.d * (0.06 + 0.94 * t2), 1e-4);
+      var frac = Math.max(0, Math.min(1, (prxAt(dkm) - nf) / swing));
+      return barY - floorPx - frac * topPx;
+    }
+    g.beginPath();
+    g.moveTo(x0, lvlY(0));
+    for (var i = 1; i <= 80; i++) g.lineTo(x0 + (x1 - x0) * i / 80, lvlY(i / 80));
+    g.lineTo(x1, barY - floorPx); g.lineTo(x0, barY - floorPx); g.closePath();
+    g.fillStyle = BLUE; g.globalAlpha = 0.30; g.fill(); g.globalAlpha = 1;
+    g.beginPath();
+    g.moveTo(x0, lvlY(0));
+    for (var j = 1; j <= 80; j++) g.lineTo(x0 + (x1 - x0) * j / 80, lvlY(j / 80));
+    g.strokeStyle = BLUE; g.lineWidth = 1.8; g.stroke();
+
+    // the receiver's own noise, the level it can never hear below
+    g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(x0, barY - floorPx); g.lineTo(x1, barY - floorPx); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = RED; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('Noise floor', x0 + 2, barY - floorPx + 5);
+
+    // distance
+    g.strokeStyle = mut; g.lineWidth = 1;
+    var dy = ground + 26;
+    g.beginPath(); g.moveTo(xT, dy); g.lineTo(xR, dy);
+    g.moveTo(xT, dy - 4); g.lineTo(xT, dy + 4);
+    g.moveTo(xR, dy - 4); g.lineTo(xR, dy + 4); g.stroke();
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'middle';
+    var dt = S.d < 1 ? (S.d * 1000).toFixed(0) + ' m' : S.d.toFixed(2) + ' km';
+    var tw = g.measureText(dt).width;
+    g.fillStyle = cvv('--bg'); g.fillRect(w / 2 - tw / 2 - 4, dy - 8, tw + 8, 16);
+    g.fillStyle = mut; g.fillText(dt, w / 2, dy);
+
+    // what each end is doing
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillStyle = sub;
+    g.fillText(S.ptx.toFixed(0) + ' dBm out', xT, yT - 26);
+    g.fillStyle = snr >= S.req ? GREEN : RED;
+    g.fillText(prx.toFixed(1) + ' dBm in', xR, yR - 26);
+    g.fillStyle = mut; g.font = fnt(12); g.textBaseline = 'top';
+    g.fillText(S.htx + ' m', xT, ground + 6);
+    g.fillText(S.hrx + ' m', xR, ground + 6);
+  }
+
+  // ---------------- 2: the ladder ----------------
   function drawLadder() {
     var cv = $('lad'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
@@ -410,7 +546,7 @@ canvas { width: 100%; display: block; }
     });
   }
 
-  function redraw() { drawLadder(); drawRange(); cards(); }
+  function redraw() { drawScene(); drawLadder(); drawRange(); cards(); }
 
   // ---------------- controls ----------------
   var NUMS = ['ptx', 'gtx', 'grx', 'loss', 'bw', 'nf', 'req', 'htx', 'hrx'];
