@@ -153,7 +153,10 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#DF5327"></span>Noise the receiver makes on its own</span>
 </div>
 
-<p class="sec"><b>2 &middot; The ladder</b> <span>Each step is one term of the sum; what matters is where the last bar lands against the noise</span></p>
+<p class="sec"><b>2 &middot; The chain</b> <span>The same sum as a signal chain: every box either gives you decibels or takes them</span></p>
+<canvas id="flow" style="height: 250px;"></canvas>
+
+<p class="sec"><b>3 &middot; The ladder</b> <span>Each step is one term of the sum; what matters is where the last bar lands against the noise</span></p>
 <canvas id="lad" style="height: 360px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#418AB3"></span>Signal level</span>
@@ -163,7 +166,7 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#F69200"></span>Margin</span>
 </div>
 
-<p class="sec"><b>3 &middot; How far it reaches</b> <span>Margin against distance; the link holds while the curve is above zero</span></p>
+<p class="sec"><b>4 &middot; How far it reaches</b> <span>Margin against distance; the link holds while the curve is above zero</span></p>
 <canvas id="rng" style="height: 300px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#418AB3"></span>Margin</span>
@@ -171,7 +174,7 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#838383"></span>Radio horizon</span>
 </div>
 
-<p class="sec"><b>4 &middot; Read off the numbers</b> <span>Every one below comes from the ladder above</span></p>
+<p class="sec"><b>5 &middot; Read off the numbers</b> <span>Every one below comes from the ladder above</span></p>
 <div class="cards" id="cards"></div>
 
 <script>
@@ -344,7 +347,84 @@ canvas { width: 100%; display: block; }
     g.fillText(S.hrx + ' m', xR, ground + 6);
   }
 
-  // ---------------- 2: the ladder ----------------
+  // ---------------- 2: the chain, as blocks ----------------
+  function drawFlow() {
+    var cv = $('flow'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var loss = fspl(S.d, S.f), prx = prxAt(S.d), nf = noiseFloor(), snr = prx - nf, mg = snr - S.req;
+
+    function box(x, y, bw, bh, col, fill) {
+      g.fillStyle = fill || cvv('--surface-1');
+      g.globalAlpha = fill ? 0.20 : 1; g.fillRect(x, y, bw, bh); g.globalAlpha = 1;
+      g.strokeStyle = col; g.lineWidth = 1.4;
+      g.strokeRect(x, y, bw, bh);
+    }
+    function arrow(x0, x1, y) {
+      g.strokeStyle = mut; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(x0, y); g.lineTo(x1 - 6, y); g.stroke();
+      g.beginPath(); g.moveTo(x1, y); g.lineTo(x1 - 8, y - 4.5); g.lineTo(x1 - 8, y + 4.5);
+      g.closePath(); g.fillStyle = mut; g.fill();
+    }
+    function label(x, y, bw, top, mid, col) {
+      g.textAlign = 'center';
+      g.fillStyle = mut; g.font = fnt(12); g.textBaseline = 'top';
+      g.fillText(top, x + bw / 2, y + 7);
+      g.fillStyle = col; g.font = fnt(17); g.textBaseline = 'bottom';
+      g.fillText(mid, x + bw / 2, y + 44);
+    }
+
+    // one row: source, four things done to it, and what is left
+    var steps = [
+      { top: 'Antenna, TX', v: S.gtx, up: true },
+      { top: 'Path loss', v: -loss, up: false },
+      { top: 'Cables', v: -S.loss, up: false },
+      { top: 'Antenna, RX', v: S.grx, up: true }
+    ];
+    var endW = 116, midW = (w - 8 - endW * 2 - 5 * 20) / 4, y0 = 16, bh = 52;
+    var x = 4;
+    box(x, y0, endW, bh, BLUE, BLUE);
+    label(x, y0, endW, 'Transmitter', S.ptx.toFixed(0) + ' dBm', BLUE);
+    x += endW;
+    steps.forEach(function (st) {
+      arrow(x, x + 20, y0 + bh / 2); x += 20;
+      var col = st.up ? GREEN : RED;
+      box(x, y0, midW, bh, col, col);
+      label(x, y0, midW, st.top, (st.up ? '+' : '\u2212') + Math.abs(st.v).toFixed(1), col);
+      x += midW;
+    });
+    arrow(x, x + 20, y0 + bh / 2); x += 20;
+    box(x, y0, endW, bh, BLUE, BLUE);
+    label(x, y0, endW, 'Receiver', prx.toFixed(1), BLUE);
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('dBm', x + endW / 2, y0 + bh + 5);
+
+    // second row: what arrives, set against what the receiver can hear
+    var y1 = y0 + bh + 40, bh2 = 52, cw = (w - 8 - 3 * 22) / 4;
+    var xx = 4;
+    var cells = [
+      { top: 'Arrives', v: prx.toFixed(1) + ' dBm', col: BLUE, op: '\u2212' },
+      { top: 'Noise floor', v: nf.toFixed(1) + ' dBm', col: RED, op: '=' },
+      { top: 'Signal to noise', v: snr.toFixed(1) + ' dB', col: sub, op: '\u2212 ' + S.req + ' needed' },
+      { top: 'Margin', v: (mg >= 0 ? '+' : '') + mg.toFixed(1) + ' dB', col: mg >= 0 ? GREEN : RED, op: null }
+    ];
+    cells.forEach(function (c, i) {
+      box(xx, y1, cw, bh2, c.col, c.col);
+      label(xx, y1, cw, c.top, c.v, c.col);
+      xx += cw;
+      if (c.op) {
+        g.fillStyle = mut; g.font = fnt(c.op.length > 3 ? 12 : 18);
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(c.op, xx + 11, y1 + bh2 / 2);
+        xx += 22;
+      }
+    });
+    g.fillStyle = mg >= 0 ? GREEN : RED; g.font = fnt(13);
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText(mg >= 0 ? 'The link closes' : 'The link does not close', w - 6, y1 + bh2 + 7);
+  }
+
+  // ---------------- 3: the ladder ----------------
   function drawLadder() {
     var cv = $('lad'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
@@ -546,7 +626,7 @@ canvas { width: 100%; display: block; }
     });
   }
 
-  function redraw() { drawScene(); drawLadder(); drawRange(); cards(); }
+  function redraw() { drawScene(); drawFlow(); drawLadder(); drawRange(); cards(); }
 
   // ---------------- controls ----------------
   var NUMS = ['ptx', 'gtx', 'grx', 'loss', 'bw', 'nf', 'req', 'htx', 'hrx'];
