@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bands and how radio travels</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --text-primary: #1e1d1a;
+  --text-secondary: #24231f;
+  --text-muted: #4a4944;
+  --text-warning: #854F0B;
+  --border: #e2e0d8;
+  --border-strong: #b9b7ae;
+  --surface-1: #f1efe8;
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19;
+    --text-primary: #ececea;
+    --text-secondary: #eae7de;
+    --text-muted: #c4c1b8;
+    --text-warning: #FAC775;
+    --border: #34342f;
+    --border-strong: #56554e;
+    --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+  --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+}
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #4E67C8; color: #4E67C8; }
+input:focus-visible, button:focus-visible { outline: 2px solid #4E67C8; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-primary); }
+.sm { font-size: 13.5px; color: var(--text-primary); }
+.pair { display: inline-flex; align-items: center; gap: 6px; }
+.pair .sm { color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 700; }
+.sec b::after { content: ':'; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13.5px; color: var(--text-primary); }
+.card .big { font-size: 23px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+canvas { width: 100%; display: block; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
+<h1>Bands and how radio travels</h1>
+<p class="sub">A radio wave gets from one place to another in one of three ways, and which one you get is decided almost entirely by the frequency. Move along the spectrum and watch the path change.</p>
+
+<div class="row">
+  <span class="lbl">Jump to</span>
+  <button id="j0">Long wave</button>
+  <button id="j1">AM broadcast</button>
+  <button id="j2">Shortwave</button>
+  <button id="j3" class="on">FM radio</button>
+  <button id="j4">Wi-Fi</button>
+  <button id="j5">Car radar</button>
+</div>
+<div class="row">
+  <label class="lbl" for="fr" style="min-width: 92px;">Frequency</label>
+  <input type="range" id="fr" min="4" max="11" step="0.001" value="8" style="flex: 1;">
+  <input type="number" id="frn" step="0.1" value="100" style="width: 92px;">
+  <select id="un" style="background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 6px;">
+    <option>kHz</option><option selected>MHz</option><option>GHz</option>
+  </select>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <span class="pair"><span class="sm">Mast height</span><input type="number" id="htx" step="1" min="1" value="30" style="width: 70px;"><span class="sm">m</span></span>
+  <span class="pair"><span class="sm">Receiver height</span><input type="number" id="hrx" step="1" min="1" value="2" style="width: 70px;"><span class="sm">m</span></span>
+  <span class="lbl" style="margin-left: 8px;">Ionosphere</span>
+  <button id="d0" class="on">Day</button>
+  <button id="d1">Night</button>
+</div>
+
+<p class="sec"><b>1 &middot; The spectrum</b> <span>Eight bands, each a decade wide; the wavelength is what actually changes</span></p>
+<canvas id="spec" style="height: 168px;"></canvas>
+
+<p class="sec"><b>2 &middot; The path it takes</b> <span>Solid is the mode that carries at this frequency; the faded ones are not available here</span></p>
+<canvas id="earth" style="height: 250px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#5DCEAF"></span>Ground wave, hugging the surface</span>
+  <span><span class="dot" style="background:#FF8021"></span>Sky wave, off the ionosphere</span>
+  <span><span class="dot" style="background:#4E67C8"></span>Line of sight, to the horizon</span>
+</div>
+
+<p class="sec"><b>3 &middot; How far each one reaches</b> <span>Only line of sight ignores frequency, which is why everything above VHF lives and dies by mast height</span></p>
+<canvas id="rng" style="height: 300px;"></canvas>
+
+<p class="sec"><b>4 &middot; Where you are</b> <span>Read off the band you have landed in</span></p>
+<div class="cards" id="cards"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  // Office "Slipstream" palette
+  var BLUE = '#4E67C8', TEAL = '#5DCEAF', LIME = '#A7EA52', ORANGE = '#FF8021', RED = '#F14124';
+
+  var S = { f: 100e6, htx: 30, hrx: 2, night: false };
+
+  var BANDS = [
+    { lo: 3e3, hi: 3e4, n: 'VLF', full: 'Very low frequency', use: 'Submarine signalling, navigation' },
+    { lo: 3e4, hi: 3e5, n: 'LF', full: 'Low frequency', use: 'Long wave broadcast, time signals' },
+    { lo: 3e5, hi: 3e6, n: 'MF', full: 'Medium frequency', use: 'AM broadcast, maritime' },
+    { lo: 3e6, hi: 3e7, n: 'HF', full: 'High frequency', use: 'Shortwave, aviation, amateur' },
+    { lo: 3e7, hi: 3e8, n: 'VHF', full: 'Very high frequency', use: 'FM radio, air band, marine' },
+    { lo: 3e8, hi: 3e9, n: 'UHF', full: 'Ultra high frequency', use: 'TV, mobile, GPS, Wi-Fi' },
+    { lo: 3e9, hi: 3e10, n: 'SHF', full: 'Super high frequency', use: 'Radar, satellite, 5 GHz Wi-Fi' },
+    { lo: 3e10, hi: 3e11, n: 'EHF', full: 'Extremely high frequency', use: 'Car radar, short-range links' }
+  ];
+  var MARKS = [
+    { f: 198e3, t: 'Long wave', r: 0 },
+    { f: 1e6, t: 'AM', r: 1 },
+    { f: 7e6, t: 'Shortwave', r: 0 },
+    { f: 27e6, t: 'CB', r: 1 },
+    { f: 100e6, t: 'FM', r: 0 },
+    { f: 156e6, t: 'Marine', r: 1 },
+    { f: 900e6, t: 'GSM', r: 0 },
+    { f: 1575e6, t: 'GPS', r: 1 },
+    { f: 2450e6, t: 'Wi-Fi', r: 0 },
+    { f: 10e9, t: 'X-band', r: 1 },
+    { f: 24e9, t: 'Car radar', r: 0 },
+    { f: 60e9, t: 'O\u2082 peak', r: 1 }
+  ];
+  var JUMPS = [198e3, 1e6, 7e6, 100e6, 2450e6, 24e9];
+
+  // ---- the three ways a wave can get there ----
+  // Indicative ranges. Ground wave depends on soil and power, sky wave on the
+  // hour and the sunspot number, so these are the shape of it, not a promise.
+  function bandOf(f) {
+    for (var i = 0; i < BANDS.length; i++) if (f >= BANDS[i].lo && f < BANDS[i].hi) return BANDS[i];
+    return f < 3e3 ? BANDS[0] : BANDS[BANDS.length - 1];
+  }
+  function groundKm(f) {                      // surface wave, dies as frequency rises
+    return 200 * Math.pow(f / 1e6, -0.8);
+  }
+  function skyKm(f) {                          // one hop off the F layer, when there is one
+    var mHz = f / 1e6;
+    var lo = S.night ? 0.3 : 5, hi = S.night ? 15 : 30;
+    return (mHz >= lo && mHz <= hi) ? 3000 : null;
+  }
+  function losKm() { return 4.12 * (Math.sqrt(S.htx) + Math.sqrt(S.hrx)); }
+  function dominant(f) {
+    var g = groundKm(f), s = skyKm(f), l = losKm();
+    if (s !== null && s >= g && s >= l) return 'sky';
+    return g >= l ? 'ground' : 'los';
+  }
+  function lam(f) { return 3e8 / f; }
+  function fmt(f) {
+    if (f >= 1e9) return (f / 1e9).toFixed(f / 1e9 < 10 ? 2 : 1) + ' GHz';
+    if (f >= 1e6) return (f / 1e6).toFixed(f / 1e6 < 10 ? 2 : 1) + ' MHz';
+    return (f / 1e3).toFixed(f / 1e3 < 10 ? 2 : 1) + ' kHz';
+  }
+  function fmtLam(m) {
+    if (m >= 1000) return (m / 1000).toFixed(m / 1000 < 10 ? 1 : 0) + ' km';
+    if (m >= 1) return m.toFixed(m < 10 ? 2 : 1) + ' m';
+    if (m >= 0.01) return (m * 100).toFixed(1) + ' cm';
+    return (m * 1000).toFixed(1) + ' mm';
+  }
+  function fmtKm(k) {
+    if (k === null) return '—';
+    return k >= 100 ? Math.round(k) + ' km' : k >= 1 ? k.toFixed(1) + ' km' : (k * 1000).toFixed(0) + ' m';
+  }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // ---------------- 1: the spectrum ----------------
+  function drawSpec() {
+    var cv = $('spec'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 14, r = 14, t = 34, b = 76;
+    var LO = 4, HI = 11;                        // log10 Hz, 10 kHz to 100 GHz
+    var X = function (f) { return l + (Math.log10(f) - LO) / (HI - LO) * (w - l - r); };
+    var barT = t, barH = 40;
+
+    BANDS.forEach(function (B, i) {
+      var x0 = Math.max(X(B.lo), l), x1 = Math.min(X(B.hi), w - r);
+      if (x1 <= x0) return;
+      var on = S.f >= B.lo && S.f < B.hi;
+      g.fillStyle = on ? BLUE : mut;
+      g.globalAlpha = on ? 0.28 : 0.10;
+      g.fillRect(x0, barT, x1 - x0, barH);
+      g.globalAlpha = 1;
+      g.strokeStyle = on ? BLUE : bd; g.lineWidth = on ? 1.4 : 0.5;
+      g.strokeRect(x0, barT, x1 - x0, barH);
+      g.fillStyle = on ? BLUE : sub; g.font = fnt(on ? 14 : 13);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(B.n, (x0 + x1) / 2, barT + barH / 2);
+    });
+
+    // decade ticks with the wavelength that goes with them
+    g.font = fnt(12);
+    for (var e = LO; e <= HI; e++) {
+      var f = Math.pow(10, e), x = X(f);
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(x, barT + barH); g.lineTo(x, barT + barH + 6); g.stroke();
+      // the two ends would hang off the canvas, so anchor them inward
+      g.textAlign = e === LO ? 'left' : e === HI ? 'right' : 'center';
+      g.fillStyle = mut; g.textBaseline = 'top';
+      g.fillText(fmt(f), x, barT + barH + 10);
+      g.globalAlpha = 0.75;
+      g.fillText(fmtLam(lam(f)), x, barT + barH + 26);
+      g.globalAlpha = 1;
+    }
+
+    // what actually lives where
+    MARKS.forEach(function (m) {
+      var x = X(m.f);
+      if (x < l || x > w - r) return;
+      var y = barT - 8 - m.r * 15;
+      g.strokeStyle = mut; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x, barT); g.lineTo(x, y + 2); g.stroke();
+      g.fillStyle = mut; g.font = fnt(12); g.textBaseline = 'bottom';
+      var tw = g.measureText(m.t).width;
+      g.textAlign = x - tw / 2 < 0 ? 'left' : x + tw / 2 > w ? 'right' : 'center';
+      g.fillText(m.t, x, y + 2);
+    });
+
+    // where you are, read out below the ticks so it clears the service marks
+    var mx = X(S.f);
+    g.strokeStyle = RED; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(mx, barT - 2); g.lineTo(mx, barT + barH + 2); g.stroke();
+    g.fillStyle = RED;
+    g.beginPath(); g.arc(mx, barT - 2, 5.5, 0, 7); g.fill();
+    g.font = fnt(14); g.textBaseline = 'top';
+    g.textAlign = mx < 70 ? 'left' : mx > w - 70 ? 'right' : 'center';
+    g.fillText(fmt(S.f) + '  \u00b7  ' + fmtLam(lam(S.f)), mx, barT + barH + 48);
+  }
+
+  // ---------------- 2: the path ----------------
+  function drawEarth() {
+    var cv = $('earth'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+
+    var dom0 = dominant(S.f);
+    // A line-of-sight hop is tens of km and a sky-wave hop is thousands, so a
+    // fixed span would leave one of them invisible. Frame it to whatever carries.
+    var SPAN = dom0 === 'sky' ? 8000
+             : dom0 === 'ground' ? Math.max(groundKm(S.f) * 2.6, 30)
+             : Math.max(losKm() * 2.8, 12);
+    var cx = w / 2, R = w * 2.4, cy = h - 40 + R;    // earth centre, well below the canvas
+    var ang = function (km) { return (km / SPAN) * (w / R); };   // km -> radians at this scale
+    var P = function (km, altPx) {
+      var a = -Math.PI / 2 + ang(km);
+      return [cx + (R + altPx) * Math.cos(a), cy + (R + altPx) * Math.sin(a)];
+    };
+    function arc(altPx, k0, k1, col, lw, dash, alpha) {
+      g.strokeStyle = col; g.lineWidth = lw; g.globalAlpha = alpha === undefined ? 1 : alpha;
+      if (dash) g.setLineDash(dash);
+      g.beginPath();
+      for (var i = 0; i <= 80; i++) {
+        var q = P(k0 + (k1 - k0) * i / 80, altPx);
+        if (i === 0) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]);
+      }
+      g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+    }
+
+    var dom = dom0;
+    var IONO = 150;                              // drawn height, exaggerated on purpose
+
+    // ionosphere
+    var ionOn = dom === 'sky';
+    var reaches = S.f <= 3e7;                    // above VHF it goes straight through
+    arc(IONO, -SPAN / 2, SPAN / 2, ionOn ? ORANGE : mut, ionOn ? 1.8 : 1, [7, 6], ionOn ? 0.95 : 0.3);
+    g.fillStyle = ionOn ? ORANGE : mut; g.font = fnt(12);
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.globalAlpha = ionOn ? 1 : 0.55;
+    g.fillText(ionOn ? (S.night ? 'Ionosphere, no D layer at night' : 'Ionosphere, reflecting')
+                     : (reaches ? 'Ionosphere, absorbing at this hour' : 'Ionosphere, the wave goes straight through'),
+               10, P(0, IONO)[1] - 8);
+    g.globalAlpha = 1;
+
+    // ground
+    g.fillStyle = mut; g.globalAlpha = 0.14;
+    g.beginPath();
+    for (var i = 0; i <= 80; i++) { var q = P(-SPAN / 2 + SPAN * i / 80, 0); if (i === 0) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]); }
+    g.lineTo(w, h); g.lineTo(0, h); g.closePath(); g.fill(); g.globalAlpha = 1;
+    arc(0, -SPAN / 2, SPAN / 2, cvv('--border-strong'), 1.8);
+
+    var tx = P(0, 0);
+    var mastPx = 26;
+
+    // ground wave: hugs the surface, dies out where it dies out
+    var gr = groundKm(S.f), grOn = dom === 'ground';
+    var grShow = Math.min(gr, SPAN / 2);
+    arc(3, 0, grShow, TEAL, grOn ? 2.6 : 1.6, null, grOn ? 1 : 0.28);
+    arc(3, 0, -grShow, TEAL, grOn ? 2.6 : 1.6, null, grOn ? 1 : 0.28);
+    if (grOn) {
+      var ge = P(grShow, 3);
+      g.fillStyle = TEAL; g.beginPath(); g.arc(ge[0], ge[1], 5.5, 0, 7); g.fill();
+      g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.fillText(fmtKm(gr), ge[0] - 6, ge[1] - 6);
+    }
+
+    // sky wave: up, off the ionosphere, back down
+    var sk = skyKm(S.f), skOn = dom === 'sky';
+    if (sk !== null) {
+      var half = Math.min(sk, SPAN * 0.45) / 2;
+      var up = P(half, IONO), down = P(half * 2, 0);
+      g.strokeStyle = ORANGE; g.lineWidth = skOn ? 2.6 : 1.6;
+      g.globalAlpha = skOn ? 1 : 0.25;
+      g.beginPath();
+      g.moveTo(tx[0], tx[1] - mastPx); g.lineTo(up[0], up[1]); g.lineTo(down[0], down[1]);
+      g.stroke(); g.globalAlpha = 1;
+      if (skOn) {
+        g.fillStyle = ORANGE;
+        g.beginPath(); g.arc(down[0], down[1], 5.5, 0, 7); g.fill();
+        g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
+        g.fillText(fmtKm(sk) + ' in one hop', down[0] - 8, down[1] - 8);
+      }
+    }
+
+    // line of sight: straight until the earth gets in the way
+    var lo = losKm(), loOn = dom === 'los';
+    var le = P(lo, 0);
+    g.strokeStyle = BLUE; g.lineWidth = loOn ? 2.6 : 1.6;
+    g.globalAlpha = loOn ? 1 : 0.28;
+    g.beginPath(); g.moveTo(tx[0], tx[1] - mastPx); g.lineTo(le[0], le[1]); g.stroke();
+    g.globalAlpha = 1;
+    if (loOn) {
+      g.fillStyle = BLUE;
+      g.beginPath(); g.arc(le[0], le[1], 5.5, 0, 7); g.fill();
+      g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText(fmtKm(lo), le[0] + 7, le[1] - 6);
+    }
+
+    // the mast
+    g.strokeStyle = sub; g.lineWidth = 2.4;
+    g.beginPath(); g.moveTo(tx[0], tx[1]); g.lineTo(tx[0], tx[1] - mastPx); g.stroke();
+    g.fillStyle = RED;
+    g.beginPath(); g.arc(tx[0], tx[1] - mastPx, 5.5, 0, 7); g.fill();
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Transmitter', tx[0], tx[1] + 9);
+
+    // scale, and the honest caveat about the drawing
+    var barKm = Math.pow(10, Math.round(Math.log10(SPAN / 5)));
+    var bx1 = 12, bx2 = bx1 + (barKm / SPAN) * w, by = h - 12;
+    g.strokeStyle = mut; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(bx1, by); g.lineTo(bx2, by);
+    g.moveTo(bx1, by - 4); g.lineTo(bx1, by + 4);
+    g.moveTo(bx2, by - 4); g.lineTo(bx2, by + 4); g.stroke();
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText(fmtKm(barKm), bx2 + 6, by + 5);
+    g.textAlign = 'right'; g.textBaseline = 'top';
+    g.fillText('Curvature and height exaggerated', w - 8, 6);
+  }
+
+  // ---------------- 3: reach against frequency ----------------
+  function drawRange() {
+    var cv = $('rng'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 62, r = 20, t = 20, b = 52;
+    var LO = 4, HI = 11, KLO = 0, KHI = 4.2;     // log10 Hz, log10 km
+    var X = function (f) { return l + (Math.log10(f) - LO) / (HI - LO) * (w - l - r); };
+    var Y = function (km) {
+      var v = Math.max(Math.min(Math.log10(Math.max(km, 1)), KHI), KLO);
+      return h - b - (v - KLO) / (KHI - KLO) * (h - t - b);
+    };
+
+    g.font = fnt(12);
+    for (var e = LO; e <= HI; e++) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(Math.pow(10, e)), t); g.lineTo(X(Math.pow(10, e)), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(fmt(Math.pow(10, e)), X(Math.pow(10, e)), h - b + 10);
+    }
+    for (var k = 0; k <= 4; k++) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(Math.pow(10, k))); g.lineTo(w - r, Y(Math.pow(10, k))); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(Math.pow(10, k) + '', l - 10, Y(Math.pow(10, k)));
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, h - t - b);
+
+    function trace(fn, col) {
+      g.strokeStyle = col; g.lineWidth = 1.8;
+      var drawing = false;
+      g.beginPath();
+      for (var i = 0; i <= 360; i++) {
+        var f = Math.pow(10, LO + (HI - LO) * i / 360), v = fn(f);
+        if (v === null) { drawing = false; continue; }
+        var px = X(f), py = Y(v);
+        if (!drawing) { g.moveTo(px, py); drawing = true; } else g.lineTo(px, py);
+      }
+      g.stroke();
+    }
+    trace(groundKm, TEAL);
+    trace(skyKm, ORANGE);
+    trace(function () { return losKm(); }, BLUE);
+
+    var mx = X(S.f);
+    g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(mx, t); g.lineTo(mx, h - b); g.stroke();
+    g.setLineDash([]);
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Frequency', l + (w - l - r) / 2, h - 8);
+    g.save(); g.translate(14, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Reach (km)', 0, 0); g.restore();
+  }
+
+  // ---------------- 4: the numbers ----------------
+  function cards() {
+    var B = bandOf(S.f), dom = dominant(S.f);
+    var name = { ground: 'Ground wave', sky: 'Sky wave', los: 'Line of sight' }[dom];
+    var reach = { ground: groundKm(S.f), sky: skyKm(S.f), los: losKm() }[dom];
+    var why = {
+      ground: 'Follows the curve of the earth',
+      sky: 'Bounces off the ionosphere',
+      los: 'Straight there, so the horizon is the limit'
+    }[dom];
+    var rows = [
+      ['Wavelength', fmtLam(lam(S.f)), 'Sets how big the antenna has to be'],
+      ['Band', B.n, B.full],
+      ['Travels by', name, why],
+      ['Reach', fmtKm(reach), dom === 'los' ? 'Raise the mast to get more' : 'Indicative; conditions decide'],
+      ['Used for', '', B.use]
+    ];
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (row) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd">' + row[0] + '</div>' +
+        (row[1] ? '<div class="big">' + row[1] + '</div>' : '') +
+        '<div class="ft"' + (row[1] ? '' : ' style="margin-top:6px;font-size:14px;color:var(--text-primary)"') + '>' + row[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  function redraw() { drawSpec(); drawEarth(); drawRange(); cards(); }
+
+  // ---------------- controls ----------------
+  function syncNum() {
+    var u = $('un').value, f = S.f;
+    var v = u === 'kHz' ? f / 1e3 : u === 'GHz' ? f / 1e9 : f / 1e6;
+    $('frn').value = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(3);
+  }
+  function setF(f) {
+    S.f = Math.min(1e11, Math.max(1e4, f));
+    $('fr').value = Math.log10(S.f);
+    var m = S.f / 1e6;
+    $('un').value = S.f >= 1e9 ? 'GHz' : S.f >= 1e6 ? 'MHz' : 'kHz';
+    syncNum();
+    redraw();
+  }
+  $('fr').addEventListener('input', function () { setF(Math.pow(10, parseFloat($('fr').value))); });
+  function fromNum() {
+    var v = parseFloat($('frn').value), u = $('un').value;
+    if (!isFinite(v)) return;
+    setF(v * (u === 'kHz' ? 1e3 : u === 'GHz' ? 1e9 : 1e6));
+  }
+  $('frn').addEventListener('change', fromNum);
+  $('un').addEventListener('change', function () { syncNum(); });
+  ['htx', 'hrx'].forEach(function (id) {
+    $(id).addEventListener('input', function () {
+      var v = parseFloat($(id).value);
+      if (isFinite(v) && v > 0) { S[id] = v; redraw(); }
+    });
+  });
+  ['j0', 'j1', 'j2', 'j3', 'j4', 'j5'].forEach(function (id, k) {
+    $(id).addEventListener('click', function () {
+      ['j0', 'j1', 'j2', 'j3', 'j4', 'j5'].forEach(function (o) { $(o).classList.remove('on'); });
+      $(id).classList.add('on');
+      setF(JUMPS[k]);
+    });
+  });
+  $('d0').addEventListener('click', function () {
+    S.night = false; $('d0').classList.add('on'); $('d1').classList.remove('on'); redraw();
+  });
+  $('d1').addEventListener('click', function () {
+    S.night = true; $('d1').classList.add('on'); $('d0').classList.remove('on'); redraw();
+  });
+
+  window.addEventListener('resize', redraw);
+  setF(S.f);
+})();
+</script>
