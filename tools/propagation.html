@@ -76,10 +76,10 @@ input:focus-visible, button:focus-visible { outline: 2px solid #4E67C8; outline-
 .sec b { font-weight: 700; }
 .sec b::after { content: ':'; }
 .sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { font-size: 13.5px; color: var(--text-primary); }
-.card .big { font-size: 23px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 19px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 canvas { width: 100%; display: block; }
@@ -91,15 +91,6 @@ canvas { width: 100%; display: block; }
 <h1>Bands and how radio travels</h1>
 <p class="sub">A radio wave gets from one place to another in one of three ways, and which one you get is decided almost entirely by the frequency. Move along the spectrum and watch the path change.</p>
 
-<div class="row">
-  <span class="lbl">Jump to</span>
-  <button id="j0">Long wave</button>
-  <button id="j1">AM broadcast</button>
-  <button id="j2">Shortwave</button>
-  <button id="j3" class="on">FM radio</button>
-  <button id="j4">Wi-Fi</button>
-  <button id="j5">Car radar</button>
-</div>
 <div class="row">
   <label class="lbl" for="fr" style="min-width: 92px;">Frequency</label>
   <input type="range" id="fr" min="4" max="11" step="0.001" value="8" style="flex: 1;">
@@ -117,10 +108,10 @@ canvas { width: 100%; display: block; }
 </div>
 
 <p class="sec"><b>1 &middot; The spectrum</b> <span>Eight bands, each a decade wide; the wavelength is what actually changes</span></p>
-<canvas id="spec" style="height: 168px;"></canvas>
+<canvas id="spec" style="height: 214px;"></canvas>
 
 <p class="sec"><b>2 &middot; The path it takes</b> <span>Solid is the mode that carries at this frequency; the faded ones are not available here</span></p>
-<canvas id="earth" style="height: 250px;"></canvas>
+<canvas id="earth" style="height: 268px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#5DCEAF"></span>Ground wave, hugging the surface</span>
   <span><span class="dot" style="background:#FF8021"></span>Sky wave, off the ionosphere</span>
@@ -150,8 +141,14 @@ canvas { width: 100%; display: block; }
     { lo: 3e6, hi: 3e7, n: 'HF', full: 'High frequency', use: 'Shortwave, aviation, amateur' },
     { lo: 3e7, hi: 3e8, n: 'VHF', full: 'Very high frequency', use: 'FM radio, air band, marine' },
     { lo: 3e8, hi: 3e9, n: 'UHF', full: 'Ultra high frequency', use: 'TV, mobile, GPS, Wi-Fi' },
-    { lo: 3e9, hi: 3e10, n: 'SHF', full: 'Super high frequency', use: 'Radar, satellite, 5 GHz Wi-Fi' },
+    { lo: 3e9, hi: 3e10, n: 'SHF', full: 'Super high frequency', use: 'Radar, satellite, 5\u00a0GHz Wi-Fi' },
     { lo: 3e10, hi: 3e11, n: 'EHF', full: 'Extremely high frequency', use: 'Car radar, short-range links' }
+  ];
+  // the letter bands an engineer quotes above 1 GHz, alongside the ITU names
+  var LETTER = [
+    { lo: 1e9, hi: 2e9, n: 'L' }, { lo: 2e9, hi: 4e9, n: 'S' }, { lo: 4e9, hi: 8e9, n: 'C' },
+    { lo: 8e9, hi: 12e9, n: 'X' }, { lo: 12e9, hi: 18e9, n: 'Ku' }, { lo: 18e9, hi: 27e9, n: 'K' },
+    { lo: 27e9, hi: 40e9, n: 'Ka' }, { lo: 40e9, hi: 75e9, n: 'V' }, { lo: 75e9, hi: 110e9, n: 'W' }
   ];
   var MARKS = [
     { f: 198e3, t: 'Long wave', r: 0 },
@@ -167,7 +164,6 @@ canvas { width: 100%; display: block; }
     { f: 24e9, t: 'Car radar', r: 0 },
     { f: 60e9, t: 'O\u2082 peak', r: 1 }
   ];
-  var JUMPS = [198e3, 1e6, 7e6, 100e6, 2450e6, 24e9];
 
   // ---- the three ways a wave can get there ----
   // Indicative ranges. Ground wave depends on soil and power, sky wave on the
@@ -185,6 +181,12 @@ canvas { width: 100%; display: block; }
     return (mHz >= lo && mHz <= hi) ? 3000 : null;
   }
   function losKm() { return 4.12 * (Math.sqrt(S.htx) + Math.sqrt(S.hrx)); }
+  // by day the D layer soaks up the low end; by night it is gone and they get through
+  function absorbed() {
+    var m = S.f / 1e6;
+    return !S.night && m >= 0.15 && m < 5;
+  }
+  function penetrates() { return S.f > 3e7; }    // above VHF it leaves through the top
   function dominant(f) {
     var g = groundKm(f), s = skyKm(f), l = losKm();
     if (s !== null && s >= g && s >= l) return 'sky';
@@ -202,6 +204,17 @@ canvas { width: 100%; display: block; }
     if (m >= 0.01) return (m * 100).toFixed(1) + ' cm';
     return (m * 1000).toFixed(1) + ' mm';
   }
+  function rangeTxt(B) {                        // the band's own edges, not the decade ticks
+    function one(f) {
+      if (f >= 1e9) return (f / 1e9) + ' GHz';
+      if (f >= 1e6) return (f / 1e6) + ' MHz';
+      return (f / 1e3) + ' kHz';
+    }
+    var a = one(B.lo), b = one(B.hi);
+    var ua = a.split(' ')[1], ub = b.split(' ')[1];
+    return ua === ub ? a.split(' ')[0] + '\u2013' + b : a + '\u2013' + b;
+  }
+  function tidy(t) { return t.replace(/\.0+(?= )/, ''); }   // 3.00 m and 3.0 km both read 3
   function fmtKm(k) {
     if (k === null) return '—';
     return k >= 100 ? Math.round(k) + ' km' : k >= 1 ? k.toFixed(1) + ' km' : (k * 1000).toFixed(0) + ' m';
@@ -220,10 +233,27 @@ canvas { width: 100%; display: block; }
     var cv = $('spec'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var l = 14, r = 14, t = 34, b = 76;
-    var LO = 4, HI = 11;                        // log10 Hz, 10 kHz to 100 GHz
+    var l = 14, r = 14, t = 62;
+    var LO = Math.log10(3e3), HI = Math.log10(3e11);   // the eight bands, end to end
     var X = function (f) { return l + (Math.log10(f) - LO) / (HI - LO) * (w - l - r); };
-    var barT = t, barH = 40;
+    var letT = t, letH = 22;
+    var barT = t + letH + 6, barH = 50;
+
+    // letter bands sit above, over the stretch where anyone uses them
+    LETTER.forEach(function (L, i) {
+      var x0 = Math.max(X(L.lo), l), x1 = Math.min(X(L.hi), w - r);
+      if (x1 <= x0) return;
+      var on = S.f >= L.lo && S.f < L.hi;
+      g.fillStyle = on ? ORANGE : mut; g.globalAlpha = on ? 0.30 : (i % 2 ? 0.13 : 0.07);
+      g.fillRect(x0, letT, x1 - x0, letH); g.globalAlpha = 1;
+      g.strokeStyle = on ? ORANGE : bd; g.lineWidth = on ? 1.4 : 0.5;
+      g.strokeRect(x0, letT, x1 - x0, letH);
+      g.fillStyle = on ? ORANGE : sub; g.font = fnt(on ? 13 : 12);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      if (x1 - x0 > 13) g.fillText(L.n, (x0 + x1) / 2, letT + letH / 2);
+    });
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText('Letter bands', l + 2, letT + letH / 2);
 
     BANDS.forEach(function (B, i) {
       var x0 = Math.max(X(B.lo), l), x1 = Math.min(X(B.hi), w - r);
@@ -236,47 +266,56 @@ canvas { width: 100%; display: block; }
       g.strokeStyle = on ? BLUE : bd; g.lineWidth = on ? 1.4 : 0.5;
       g.strokeRect(x0, barT, x1 - x0, barH);
       g.fillStyle = on ? BLUE : sub; g.font = fnt(on ? 14 : 13);
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(B.n, (x0 + x1) / 2, barT + barH / 2);
+      g.textAlign = 'center';
+      g.textBaseline = (x1 - x0 > 62) ? 'bottom' : 'middle';
+      g.fillText(B.n, (x0 + x1) / 2, barT + barH / 2 + ((x1 - x0 > 62) ? 1 : 0));
+      if (x1 - x0 > 62) {
+        g.fillStyle = on ? BLUE : mut; g.font = fnt(11.5);
+        g.textBaseline = 'top';
+        g.fillText(rangeTxt(B), (x0 + x1) / 2, barT + barH / 2 + 3);
+      }
     });
 
     // decade ticks with the wavelength that goes with them
-    g.font = fnt(12);
-    for (var e = LO; e <= HI; e++) {
+    g.font = fnt(12); g.textAlign = 'center';
+    var skip = (w - l - r) / 8 < 76 ? 2 : 1;         // a phone cannot hold eight of them
+    for (var e = 4; e <= 11; e++) {
       var f = Math.pow(10, e), x = X(f);
       g.strokeStyle = bd; g.lineWidth = 0.5;
       g.beginPath(); g.moveTo(x, barT + barH); g.lineTo(x, barT + barH + 6); g.stroke();
-      // the two ends would hang off the canvas, so anchor them inward
-      g.textAlign = e === LO ? 'left' : e === HI ? 'right' : 'center';
+      if ((e - 4) % skip) continue;
       g.fillStyle = mut; g.textBaseline = 'top';
       g.fillText(fmt(f), x, barT + barH + 10);
       g.globalAlpha = 0.75;
-      g.fillText(fmtLam(lam(f)), x, barT + barH + 26);
+      g.fillText(tidy(fmtLam(lam(f))), x, barT + barH + 26);
       g.globalAlpha = 1;
     }
 
-    // what actually lives where
-    MARKS.forEach(function (m) {
+    // what actually lives where. On a narrow canvas these would overprint the
+    // letter row and each other, so they go.
+    if (w >= 560) MARKS.forEach(function (m) {
       var x = X(m.f);
       if (x < l || x > w - r) return;
-      var y = barT - 8 - m.r * 15;
+      var y = letT - 8 - m.r * 15;
       g.strokeStyle = mut; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(x, barT); g.lineTo(x, y + 2); g.stroke();
+      g.beginPath(); g.moveTo(x, letT); g.lineTo(x, y + 2); g.stroke();
       g.fillStyle = mut; g.font = fnt(12); g.textBaseline = 'bottom';
       var tw = g.measureText(m.t).width;
       g.textAlign = x - tw / 2 < 0 ? 'left' : x + tw / 2 > w ? 'right' : 'center';
       g.fillText(m.t, x, y + 2);
     });
 
-    // where you are, read out below the ticks so it clears the service marks
-    var mx = X(S.f);
-    g.strokeStyle = RED; g.lineWidth = 1.8;
-    g.beginPath(); g.moveTo(mx, barT - 2); g.lineTo(mx, barT + barH + 2); g.stroke();
+    // where you are: pointed at from above and below, never drawn across a label
+    var mx = Math.max(l + 1, Math.min(w - r - 1, X(S.f)));
     g.fillStyle = RED;
-    g.beginPath(); g.arc(mx, barT - 2, 5.5, 0, 7); g.fill();
-    g.font = fnt(14); g.textBaseline = 'top';
-    g.textAlign = mx < 70 ? 'left' : mx > w - 70 ? 'right' : 'center';
-    g.fillText(fmt(S.f) + '  \u00b7  ' + fmtLam(lam(S.f)), mx, barT + barH + 48);
+    g.beginPath();
+    g.moveTo(mx, letT - 3); g.lineTo(mx - 6, letT - 12); g.lineTo(mx + 6, letT - 12);
+    g.closePath(); g.fill();
+    g.strokeStyle = RED; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(mx, barT + barH + 1); g.lineTo(mx, barT + barH + 7); g.stroke();
+    g.font = fnt(14); g.textBaseline = 'top'; g.fillStyle = RED;
+    g.textAlign = mx < 80 ? 'left' : mx > w - 80 ? 'right' : 'center';
+    g.fillText(fmt(S.f) + '  \u00b7  ' + tidy(fmtLam(lam(S.f))), mx, barT + barH + 46);
   }
 
   // ---------------- 2: the path ----------------
@@ -309,19 +348,53 @@ canvas { width: 100%; display: block; }
     }
 
     var dom = dom0;
-    var IONO = 150;                              // drawn height, exaggerated on purpose
+    var IONO = 150, D_H = IONO * 0.42, E_H = IONO * 0.64;                              // drawn height, exaggerated on purpose
 
-    // ionosphere
+    // ---- the ionosphere, layer by layer ----
     var ionOn = dom === 'sky';
-    var reaches = S.f <= 3e7;                    // above VHF it goes straight through
-    arc(IONO, -SPAN / 2, SPAN / 2, ionOn ? ORANGE : mut, ionOn ? 1.8 : 1, [7, 6], ionOn ? 0.95 : 0.3);
-    g.fillStyle = ionOn ? ORANGE : mut; g.font = fnt(12);
-    g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.globalAlpha = ionOn ? 1 : 0.55;
-    g.fillText(ionOn ? (S.night ? 'Ionosphere, no D layer at night' : 'Ionosphere, reflecting')
-                     : (reaches ? 'Ionosphere, absorbing at this hour' : 'Ionosphere, the wave goes straight through'),
-               10, P(0, IONO)[1] - 8);
-    g.globalAlpha = 1;
+    function layer(alt, col, lw, dash, alpha, label, sub2) {
+      arc(alt, -SPAN / 2, SPAN / 2, col, lw, dash, alpha);
+      // clear the arc across the whole width of the caption, not just at its start:
+      // the arc climbs to the right, so the far end of the text is the tight spot
+      g.font = fnt(12);
+      var tw = g.measureText(label).width;
+      var ly = P(-SPAN / 2 + SPAN * (14 + tw) / w, alt)[1];
+      g.fillStyle = col;
+      g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.globalAlpha = alpha;
+      g.fillText(label, 10, ly - 7);
+      if (sub2) {
+        g.font = fnt(11); g.globalAlpha = alpha * 0.8;
+        // the arc climbs rightward, so it is lowest at the start of the text:
+        // clear THAT and the whole line sits under it
+        var ly2 = P(-SPAN / 2 + SPAN * 10 / w, alt)[1];
+        g.fillText(sub2, 10, ly2 + 16);
+      }
+      g.globalAlpha = 1;
+    }
+    // F layer, the one that turns a wave around
+    layer(IONO, ionOn ? ORANGE : mut, ionOn ? 1.8 : 1, [7, 6], ionOn ? 0.95 : 0.32,
+          'F layer  ~300 km', ionOn ? 'Turning the wave back' : '');
+    // E layer, always there, weakly reflecting
+    layer(E_H, mut, 1, [4, 6], 0.30, 'E layer  ~110 km', '');
+    // D layer, the one that comes and goes with the sun
+    if (S.night) {
+      layer(D_H, mut, 1, [2, 7], 0.22, 'D layer gone after dark', '');
+    } else {
+      var dTop = D_H + 9, dBot = D_H - 9;
+      g.fillStyle = RED; g.globalAlpha = 0.13;
+      g.beginPath();
+      for (var q = 0; q <= 60; q++) { var z = P(-SPAN / 2 + SPAN * q / 60, dTop); if (q === 0) g.moveTo(z[0], z[1]); else g.lineTo(z[0], z[1]); }
+      for (var q2 = 60; q2 >= 0; q2--) { var z2 = P(-SPAN / 2 + SPAN * q2 / 60, dBot); g.lineTo(z2[0], z2[1]); }
+      g.closePath(); g.fill(); g.globalAlpha = 1;
+      layer(D_H, RED, 1.2, [4, 5], 0.75, 'D layer  ~75 km', 'Soaking up the low bands by day');
+    }
+    if (penetrates()) {
+      g.fillStyle = mut; g.font = fnt(12); g.globalAlpha = 0.7;
+      g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.fillText('Too high to be turned back \u2014 it leaves', w - 10, P(0, IONO)[1] - 6);
+      g.globalAlpha = 1;
+    }
 
     // ground
     g.fillStyle = mut; g.globalAlpha = 0.14;
@@ -331,19 +404,13 @@ canvas { width: 100%; display: block; }
     arc(0, -SPAN / 2, SPAN / 2, cvv('--border-strong'), 1.8);
 
     var tx = P(0, 0);
-    var mastPx = 26;
+    var mastPx = Math.max(16, Math.min(54, 12 + Math.sqrt(S.htx) * 2.4));
 
     // ground wave: hugs the surface, dies out where it dies out
     var gr = groundKm(S.f), grOn = dom === 'ground';
     var grShow = Math.min(gr, SPAN / 2);
     arc(3, 0, grShow, TEAL, grOn ? 2.6 : 1.6, null, grOn ? 1 : 0.28);
     arc(3, 0, -grShow, TEAL, grOn ? 2.6 : 1.6, null, grOn ? 1 : 0.28);
-    if (grOn) {
-      var ge = P(grShow, 3);
-      g.fillStyle = TEAL; g.beginPath(); g.arc(ge[0], ge[1], 5.5, 0, 7); g.fill();
-      g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
-      g.fillText(fmtKm(gr), ge[0] - 6, ge[1] - 6);
-    }
 
     // sky wave: up, off the ionosphere, back down
     var sk = skyKm(S.f), skOn = dom === 'sky';
@@ -355,12 +422,21 @@ canvas { width: 100%; display: block; }
       g.beginPath();
       g.moveTo(tx[0], tx[1] - mastPx); g.lineTo(up[0], up[1]); g.lineTo(down[0], down[1]);
       g.stroke(); g.globalAlpha = 1;
-      if (skOn) {
-        g.fillStyle = ORANGE;
-        g.beginPath(); g.arc(down[0], down[1], 5.5, 0, 7); g.fill();
-        g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
-        g.fillText(fmtKm(sk) + ' in one hop', down[0] - 8, down[1] - 8);
-      }
+    }
+
+    // a wave that climbs into the D layer by day and never comes out
+    if (absorbed()) {
+      var aUp = P(SPAN * 0.16, D_H);
+      g.strokeStyle = ORANGE; g.lineWidth = 2.2; g.globalAlpha = 0.85;
+      g.beginPath(); g.moveTo(tx[0], tx[1] - mastPx); g.lineTo(aUp[0], aUp[1]); g.stroke();
+      g.globalAlpha = 1;
+      g.strokeStyle = RED; g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(aUp[0] - 7, aUp[1] - 7); g.lineTo(aUp[0] + 7, aUp[1] + 7);
+      g.moveTo(aUp[0] + 7, aUp[1] - 7); g.lineTo(aUp[0] - 7, aUp[1] + 7);
+      g.stroke();
+      g.fillStyle = RED; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+      g.fillText('Absorbed', aUp[0] + 11, aUp[1] - 3);
     }
 
     // line of sight: straight until the earth gets in the way
@@ -370,30 +446,96 @@ canvas { width: 100%; display: block; }
     g.globalAlpha = loOn ? 1 : 0.28;
     g.beginPath(); g.moveTo(tx[0], tx[1] - mastPx); g.lineTo(le[0], le[1]); g.stroke();
     g.globalAlpha = 1;
-    if (loOn) {
-      g.fillStyle = BLUE;
-      g.beginPath(); g.arc(le[0], le[1], 5.5, 0, 7); g.fill();
-      g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-      g.fillText(fmtKm(lo), le[0] + 7, le[1] - 6);
-    }
+
+    // whoever is listening, drawn as whatever actually listens on this band
+    (function () {
+      var endKm = dom === 'sky' ? Math.min(skyKm(S.f) || 0, SPAN * 0.45)
+                : dom === 'ground' ? Math.min(groundKm(S.f), SPAN * 0.45)
+                : losKm();
+      var e = P(endKm, 0), col = dom === 'sky' ? ORANGE : dom === 'ground' ? TEAL : BLUE;
+      var m = S.f / 1e6, name, iconTop = e[1] - 26;
+      g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2;
+      if (m < 0.3) {                               // VLF and LF: ships and submarines
+        name = 'Ship';
+        g.beginPath();
+        g.moveTo(e[0] - 15, e[1] - 4); g.lineTo(e[0] + 15, e[1] - 4);
+        g.lineTo(e[0] + 10, e[1] + 4); g.lineTo(e[0] - 10, e[1] + 4);
+        g.closePath(); g.stroke();
+        g.beginPath(); g.moveTo(e[0], e[1] - 4); g.lineTo(e[0], e[1] - 22); g.stroke();
+      } else if (m < 3) {                          // MF: a radio in a house
+        name = 'Home radio';
+        g.beginPath();
+        g.moveTo(e[0] - 13, e[1]); g.lineTo(e[0] - 13, e[1] - 12);
+        g.lineTo(e[0], e[1] - 22); g.lineTo(e[0] + 13, e[1] - 12);
+        g.lineTo(e[0] + 13, e[1]); g.closePath(); g.stroke();
+      } else if (m < 30) {                         // HF: another station, continents away
+        name = 'Station abroad';
+        g.beginPath(); g.moveTo(e[0], e[1]); g.lineTo(e[0], e[1] - 26); g.stroke();
+        g.beginPath(); g.moveTo(e[0] - 9, e[1] - 26); g.lineTo(e[0] + 9, e[1] - 26); g.stroke();
+        g.beginPath(); g.arc(e[0], e[1] - 26, 3.4, 0, 7); g.fill();
+      } else if (m < 300) {                        // VHF: aircraft and marine
+        name = 'Aircraft';
+        var ay = e[1] - 34;
+        g.beginPath();
+        g.moveTo(e[0] - 16, ay); g.lineTo(e[0] + 14, ay);
+        g.lineTo(e[0] + 18, ay - 3); g.lineTo(e[0] + 13, ay - 4);
+        g.closePath(); g.stroke();
+        g.beginPath();
+        g.moveTo(e[0] - 4, ay); g.lineTo(e[0] - 12, ay - 12); g.lineTo(e[0] - 2, ay - 2); g.stroke();
+        g.beginPath(); g.moveTo(e[0] - 14, ay); g.lineTo(e[0] - 19, ay - 9); g.stroke();
+        g.strokeStyle = col; g.lineWidth = 1; g.setLineDash([3, 4]);
+        g.beginPath(); g.moveTo(e[0], ay + 4); g.lineTo(e[0], e[1]); g.stroke();
+        g.setLineDash([]);
+      } else if (m < 3000) {                       // UHF: a handset
+        name = 'Handset';
+        g.lineWidth = 2;
+        g.beginPath(); g.rect(e[0] - 7, e[1] - 24, 14, 24); g.stroke();
+        g.beginPath(); g.moveTo(e[0] - 4, e[1] - 19); g.lineTo(e[0] + 4, e[1] - 19); g.stroke();
+      } else {                                     // SHF and up: a dish on a stand
+        name = 'Dish';
+        var dcx = e[0] - 2, dcy = e[1] - 22;
+        g.lineWidth = 2.6;
+        g.beginPath();
+        for (var i2 = -9; i2 <= 9; i2++) {
+          var vv = i2 / 9 * 13, xx = dcx - 5 + vv * vv * 0.055, yy = dcy + vv;
+          if (i2 === -9) g.moveTo(xx, yy); else g.lineTo(xx, yy);
+        }
+        g.stroke();
+        g.lineWidth = 1.4;                           // feed on its boom, forward of the dish
+        g.beginPath(); g.moveTo(dcx - 5, dcy); g.lineTo(dcx + 9, dcy); g.stroke();
+        g.beginPath(); g.arc(dcx + 10, dcy, 3, 0, 7); g.fill();
+        g.lineWidth = 2;                             // stand
+        g.beginPath(); g.moveTo(dcx - 3, dcy + 6); g.lineTo(dcx - 3, e[1]); g.stroke();
+        g.beginPath(); g.moveTo(dcx - 9, e[1]); g.lineTo(dcx + 3, e[1]); g.stroke();
+        iconTop = dcy - 14;
+      }
+      // one label for the far end, above the icon, carrying the distance with it
+      g.fillStyle = col; g.font = fnt(12.5);
+      var txt2 = name + ', ' + fmtKm(endKm) + (dom === 'sky' ? ' in one hop' : '');
+      var tw3 = g.measureText(txt2).width, lx2 = e[0], al = 'center';
+      if (lx2 + tw3 / 2 > w - 6) { al = 'right'; lx2 = w - 6; }
+      else if (lx2 - tw3 / 2 < 6) { al = 'left'; lx2 = 6; }
+      g.textAlign = al; g.textBaseline = 'bottom';
+      g.fillText(txt2, lx2, iconTop - 6);
+    })();
 
     // the mast
     g.strokeStyle = sub; g.lineWidth = 2.4;
     g.beginPath(); g.moveTo(tx[0], tx[1]); g.lineTo(tx[0], tx[1] - mastPx); g.stroke();
     g.fillStyle = RED;
     g.beginPath(); g.arc(tx[0], tx[1] - mastPx, 5.5, 0, 7); g.fill();
-    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText('Transmitter', tx[0], tx[1] + 9);
+    g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Transmitter, ' + S.htx + ' m', tx[0], tx[1] - mastPx - 9);
 
     // scale, and the honest caveat about the drawing
     var barKm = Math.pow(10, Math.round(Math.log10(SPAN / 5)));
-    var bx1 = 12, bx2 = bx1 + (barKm / SPAN) * w, by = h - 12;
+    var bx1 = 12, bx2 = bx1 + (barKm / SPAN) * w, by = h - 10;
     g.strokeStyle = mut; g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(bx1, by); g.lineTo(bx2, by);
     g.moveTo(bx1, by - 4); g.lineTo(bx1, by + 4);
     g.moveTo(bx2, by - 4); g.lineTo(bx2, by + 4); g.stroke();
     g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText(fmtKm(barKm), bx2 + 6, by + 5);
+    g.fillText(barKm >= 1 ? Math.round(barKm) + ' km' : Math.round(barKm * 1000) + ' m', bx2 + 6, by + 5);
     g.textAlign = 'right'; g.textBaseline = 'top';
     g.fillText('Curvature and height exaggerated', w - 8, 6);
   }
@@ -412,11 +554,15 @@ canvas { width: 100%; display: block; }
     };
 
     g.font = fnt(12);
+    var everyOther = (w - l - r) / (HI - LO) < 74;    // no room for all eight on a phone
     for (var e = LO; e <= HI; e++) {
+      var xe = X(Math.pow(10, e));
       g.strokeStyle = bd; g.lineWidth = 0.5;
-      g.beginPath(); g.moveTo(X(Math.pow(10, e)), t); g.lineTo(X(Math.pow(10, e)), h - b); g.stroke();
-      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.fillText(fmt(Math.pow(10, e)), X(Math.pow(10, e)), h - b + 10);
+      g.beginPath(); g.moveTo(xe, t); g.lineTo(xe, h - b); g.stroke();
+      if (everyOther && (e - LO) % 2) continue;
+      g.fillStyle = mut; g.textBaseline = 'top';
+      g.textAlign = e === LO ? 'left' : e === HI ? 'right' : 'center';
+      g.fillText(fmt(Math.pow(10, e)), xe, h - b + 10);
     }
     for (var k = 0; k <= 4; k++) {
       g.strokeStyle = bd; g.lineWidth = 0.5;
@@ -427,21 +573,31 @@ canvas { width: 100%; display: block; }
     g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
     g.strokeRect(l, t, w - l - r, h - t - b);
 
-    function trace(fn, col) {
+    function trace(fn, col, name) {
       g.strokeStyle = col; g.lineWidth = 1.8;
-      var drawing = false;
+      var drawing = false, lastX = null, lastY = null;
       g.beginPath();
       for (var i = 0; i <= 360; i++) {
         var f = Math.pow(10, LO + (HI - LO) * i / 360), v = fn(f);
-        if (v === null) { drawing = false; continue; }
+        // stop rather than clamp: a clamped trace sat on the floor and read as
+        // though the ground wave still made a kilometre at 100 GHz
+        if (v === null || v < Math.pow(10, KLO)) { drawing = false; continue; }
         var px = X(f), py = Y(v);
         if (!drawing) { g.moveTo(px, py); drawing = true; } else g.lineTo(px, py);
+        lastX = px; lastY = py;
       }
       g.stroke();
+      if (lastX !== null && name) {                  // (3) label the trace, there is no legend
+        g.fillStyle = col; g.font = fnt(12);
+        var back = lastX > w - r - 6;
+        g.textAlign = back ? 'right' : 'left';
+        g.textBaseline = 'bottom';
+        g.fillText(name, Math.min(lastX + 6, w - r - 4), lastY - 6);
+      }
     }
-    trace(groundKm, TEAL);
-    trace(skyKm, ORANGE);
-    trace(function () { return losKm(); }, BLUE);
+    trace(groundKm, TEAL, 'Ground wave');
+    trace(skyKm, ORANGE, 'Sky wave');
+    trace(function () { return losKm(); }, BLUE, 'Line of sight');
 
     var mx = X(S.f);
     g.strokeStyle = RED; g.lineWidth = 1.4; g.setLineDash([5, 4]);
@@ -512,13 +668,6 @@ canvas { width: 100%; display: block; }
     $(id).addEventListener('input', function () {
       var v = parseFloat($(id).value);
       if (isFinite(v) && v > 0) { S[id] = v; redraw(); }
-    });
-  });
-  ['j0', 'j1', 'j2', 'j3', 'j4', 'j5'].forEach(function (id, k) {
-    $(id).addEventListener('click', function () {
-      ['j0', 'j1', 'j2', 'j3', 'j4', 'j5'].forEach(function (o) { $(o).classList.remove('on'); });
-      $(id).classList.add('on');
-      setF(JUMPS[k]);
     });
   });
   $('d0').addEventListener('click', function () {
