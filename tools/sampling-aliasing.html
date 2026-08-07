@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sampling, and the frequency that lies to you</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+  --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+}
+body {
+  background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; font-weight: 600;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #6BB1C9; color: #6BB1C9; }
+input:focus-visible, button:focus-visible { outline: 2px solid #6BB1C9; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-primary); }
+.sm { font-size: 13.5px; color: var(--text-primary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 700; }
+.sec b::after { content: ':'; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13.5px; color: var(--text-primary); }
+.card .big { font-size: 21px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
+<h1>Sampling, and the frequency that lies to you</h1>
+<p class="sub">Measure a wave often enough and the samples describe it exactly. Measure too slowly and they describe a different wave just as well &mdash; and nothing downstream can tell which one you meant.</p>
+
+<div class="row">
+  <label class="lbl" for="fs" style="min-width: 130px;">Sampling rate</label>
+  <input type="range" id="fs" min="2" max="48" step="0.5" value="20" style="flex: 1;">
+  <input type="number" id="fsn" min="2" max="48" step="0.5" value="20" style="width: 78px;">
+  <span class="sm">kHz</span>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="fi" style="min-width: 130px;">Signal</label>
+  <input type="range" id="fi" min="0.5" max="40" step="0.25" value="3" style="flex: 1;">
+  <input type="number" id="fin" min="0.5" max="40" step="0.25" value="3" style="width: 78px;">
+  <span class="sm">kHz</span>
+</div>
+
+<p class="sec"><b>1 &middot; The samples, and what they could have come from</b> <span>Every dot sits on both curves, so nothing downstream can tell them apart</span></p>
+<canvas id="tim" style="height: 320px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#6BB1C9"></span>What you sent</span>
+  <span><span class="dot" style="background:#CEB966"></span>The samples</span>
+  <span><span class="dot" style="background:#A379BB"></span>What comes back out</span>
+</div>
+
+<p class="sec"><b>2 &middot; Why it happens</b> <span>Sampling makes a copy of the spectrum around every multiple of the rate; aliasing is a copy landing where the original should be</span></p>
+<canvas id="spec" style="height: 280px;"></canvas>
+
+<p class="sec"><b>3 &middot; The verdict</b> <span>Nyquist in one line: the rate has to beat twice the highest frequency present</span></p>
+<div class="cards" id="cards"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  // Office "Apex" palette
+  var GOLD = '#CEB966', SAGE = '#9CB084', BLUE = '#6BB1C9', INDIGO = '#6585CF',
+      VIOLET = '#7E6BC9', PLUM = '#A379BB';
+  var RED = '#C0504D';
+
+  var S = { fs: 20, f: 3 };
+
+  // ---- the whole of it ----
+  // Samples of a sine at f, taken at fs, are identical to samples of a sine at
+  // |f - k*fs| for the k that brings it into the band below half the rate.
+  function alias() {
+    var k = Math.round(S.f / S.fs);
+    return Math.abs(S.f - k * S.fs);
+  }
+  function aliased() { return S.f > S.fs / 2 + 1e-9; }
+  function nyquist() { return S.fs / 2; }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // ---------------- 1: samples in time ----------------
+  function drawTime() {
+    var cv = $('tim'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 44, r = 18, t = 34, b = 50;
+    var NSAMP = 18, span = NSAMP / S.fs;             // ms, eighteen sample intervals
+    var X = function (tt) { return l + tt / span * (w - l - r); };
+    var Y = function (v) { return t + (1.25 - v) / 2.5 * (h - t - b); };
+    var al = alias(), isAl = aliased();
+
+    g.font = fnt(12); g.fillStyle = mut;
+    [-1, 0, 1].forEach(function (v) {
+      g.strokeStyle = bd; g.lineWidth = v === 0 ? 1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(v)); g.lineTo(w - r, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v, l - 10, Y(v));
+    });
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, h - t - b);
+
+    // what you actually sent
+    g.strokeStyle = BLUE; g.lineWidth = 1.8;
+    g.beginPath();
+    for (var i = 0; i <= 1600; i++) {
+      var tt = i / 1600 * span, y = Math.sin(2 * Math.PI * S.f * tt);
+      if (i === 0) g.moveTo(X(tt), Y(y)); else g.lineTo(X(tt), Y(y));
+    }
+    g.stroke();
+
+    // what a receiver would reconstruct from the samples
+    if (isAl) {
+      var kk = Math.round(S.f / S.fs), sgn = (S.f - kk * S.fs) >= 0 ? 1 : -1;
+      g.strokeStyle = PLUM; g.lineWidth = 2.2; g.setLineDash([7, 5]);
+      g.beginPath();
+      for (var j = 0; j <= 1600; j++) {
+        var t2 = j / 1600 * span, y2 = sgn * Math.sin(2 * Math.PI * al * t2);
+        if (j === 0) g.moveTo(X(t2), Y(y2)); else g.lineTo(X(t2), Y(y2));
+      }
+      g.stroke(); g.setLineDash([]);
+    }
+
+    // the samples themselves
+    for (var n = 0; n <= NSAMP; n++) {
+      var ts = n / S.fs, vs = Math.sin(2 * Math.PI * S.f * ts);
+      g.strokeStyle = GOLD; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(X(ts), Y(0)); g.lineTo(X(ts), Y(vs)); g.stroke();
+      g.fillStyle = GOLD;
+      g.beginPath(); g.arc(X(ts), Y(vs), 5, 0, 7); g.fill();
+    }
+
+    g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = BLUE;
+    g.fillText('Sent ' + S.f.toFixed(2) + ' kHz', l + 4, 6);
+    if (isAl) {
+      g.fillStyle = PLUM; g.textAlign = 'right';
+      g.fillText('Comes back as ' + al.toFixed(2) + ' kHz', w - r - 4, 6);
+    }
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Time (ms)', l + (w - l - r) / 2, h - 8);
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'right';
+    g.fillText(NSAMP + ' samples across ' + span.toFixed(2) + ' ms', w - r, h - 8);
+  }
+
+  // ---------------- 2: the copies ----------------
+  function drawSpec() {
+    var cv = $('spec'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 30, r = 18, t = 30, b = 52;
+    var HI = Math.max(S.f * 1.35, S.fs * 2.3);
+    var X = function (f) { return l + f / HI * (w - l - r); };
+    var base = h - b, tall = h - t - b;
+
+    // the band you can actually keep, up to half the rate
+    g.fillStyle = SAGE; g.globalAlpha = 0.13;
+    g.fillRect(l, t, Math.min(X(nyquist()), w - r) - l, tall);
+    g.globalAlpha = 1;
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, tall);
+
+    g.font = fnt(12);
+    var stepF = Math.max(1, Math.round(HI / 8));
+    for (var f2 = 0; f2 <= HI; f2 += stepF) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f2), t); g.lineTo(X(f2), base); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(f2, X(f2), base + 10);
+    }
+
+    function line(f, col, lw, lab, up) {
+      if (f < 0 || f > HI) return;
+      g.strokeStyle = col; g.lineWidth = lw;
+      g.beginPath(); g.moveTo(X(f), base); g.lineTo(X(f), t + tall * 0.18); g.stroke();
+      g.fillStyle = col;
+      g.beginPath(); g.arc(X(f), t + tall * 0.18, 4.5, 0, 7); g.fill();
+      if (lab) {
+        g.font = fnt(12); g.textBaseline = 'bottom';
+        var tw = g.measureText(lab).width;
+        g.textAlign = X(f) + tw / 2 > w - r ? 'right' : X(f) - tw / 2 < l ? 'left' : 'center';
+        g.fillText(lab, X(f), t + tall * 0.18 - 8 - (up ? 15 : 0));
+      }
+    }
+
+    // the copies sampling puts on either side of every multiple of the rate
+    for (var k = 1; k <= 3; k++) {
+      [k * S.fs - S.f, k * S.fs + S.f].forEach(function (f3) {
+        line(Math.abs(f3), mut, 1.4, null);
+      });
+    }
+    // the rate itself and its multiples
+    for (var m = 1; m <= 3; m++) {
+      if (m * S.fs > HI) break;
+      g.strokeStyle = INDIGO; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(X(m * S.fs), t); g.lineTo(X(m * S.fs), base); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = INDIGO; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(m === 1 ? 'Rate' : m + '×', X(m * S.fs), t + 4);
+    }
+    // half the rate: the edge of what survives
+    g.strokeStyle = SAGE; g.lineWidth = 1.6; g.setLineDash([6, 4]);
+    g.beginPath(); g.moveTo(X(nyquist()), t); g.lineTo(X(nyquist()), base); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = SAGE; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('Half the rate', X(nyquist()) + 5, t + 4);
+
+    line(S.f, BLUE, 2.6, 'Sent', false);
+    if (aliased()) line(alias(), PLUM, 2.6, 'Heard as this', true);
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Frequency (kHz)', l + (w - l - r) / 2, h - 8);
+  }
+
+  // ---------------- 3: the verdict ----------------
+  function cards() {
+    var al = alias(), isAl = aliased();
+    var edge = Math.abs(S.f - nyquist()) < 1e-6;   // exactly two samples a cycle
+    var rows = [
+      ['Sampling rate', S.fs.toFixed(1) + ' kHz', 'One sample every ' + (1000 / S.fs).toFixed(1) + ' µs'],
+      ['Highest it can keep', nyquist().toFixed(2) + ' kHz', 'Half the rate, and not a hertz more'],
+      ['Rate you needed', (2 * S.f).toFixed(2) + ' kHz', 'Twice the signal, which is Nyquist'],
+      ['What comes out', al.toFixed(2) + ' kHz', isAl ? 'Not what you put in' : 'Exactly what you put in'],
+      ['Verdict', isAl ? 'Aliased' : (edge ? 'On the limit' : 'Clean'),
+        isAl ? 'Filter it out before you sample, not after'
+             : (edge ? 'Two samples a cycle cannot pin down the phase' : 'The rate is fast enough')]
+    ];
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (row, i) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      var col = i >= 3 ? (isAl ? RED : edge ? GOLD : SAGE) : '';
+      el.innerHTML = '<div class="hd">' + row[0] + '</div>' +
+        '<div class="big"' + (col ? ' style="color:' + col + '"' : '') + '>' + row[1] + '</div>' +
+        '<div class="ft">' + row[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  function redraw() { drawTime(); drawSpec(); cards(); }
+
+  function bind(sl, nu, key, lo, hi) {
+    function set(v) {
+      if (!isFinite(v)) return;
+      v = Math.min(hi, Math.max(lo, v));
+      S[key] = v; $(sl).value = v; $(nu).value = v;
+      redraw();
+    }
+    $(sl).addEventListener('input', function () { set(parseFloat($(sl).value)); });
+    $(nu).addEventListener('change', function () { set(parseFloat($(nu).value)); });
+  }
+  bind('fs', 'fsn', 'fs', 2, 48);
+  bind('fi', 'fin', 'f', 0.5, 40);
+  window.addEventListener('resize', redraw);
+  redraw();
+})();
+</script>
