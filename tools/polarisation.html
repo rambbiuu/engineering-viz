@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polarisation and the loss for getting it wrong</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+  --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+}
+body {
+  background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; font-weight: 600;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #477BD1; color: #477BD1; }
+button.onb { border-color: #90BA4C; color: #90BA4C; }
+input:focus-visible, button:focus-visible { outline: 2px solid #477BD1; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-primary); min-width: 96px; }
+.sm { font-size: 13.5px; color: var(--text-primary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 700; }
+.sec b::after { content: ':'; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13.5px; color: var(--text-primary); }
+.card .big { font-size: 21px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+canvas { width: 100%; display: block; }
+.panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.pane { text-align: center; font-size: 13px; font-weight: 700; color: var(--text-secondary); margin: 0; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
+<h1>Polarisation and the loss for getting it wrong</h1>
+<p class="sub">A radio wave&rsquo;s electric field points somewhere, and a receiving antenna only picks up the part that lines up with it. Turn one of them and you throw away the rest.</p>
+
+<div class="row">
+  <span class="lbl">Transmit</span>
+  <button id="t0" class="on">Vertical</button>
+  <button id="t1">Horizontal</button>
+  <button id="t2">Slanted</button>
+  <button id="t3">Right circular</button>
+  <button id="t4">Left circular</button>
+</div>
+<div class="row" id="txRow">
+  <label class="lbl" for="ta">Its tilt</label>
+  <input type="range" id="ta" min="0" max="180" step="1" value="90" style="flex: 1;">
+  <input type="number" id="tan" min="0" max="180" step="1" value="90" style="width: 74px;">
+  <span class="sm">&deg;</span>
+</div>
+<div class="row">
+  <span class="lbl">Receive</span>
+  <button id="r0" class="onb">Vertical</button>
+  <button id="r1">Horizontal</button>
+  <button id="r2">Slanted</button>
+  <button id="r3">Right circular</button>
+  <button id="r4">Left circular</button>
+</div>
+<div class="row" id="rxRow" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="ra">Its tilt</label>
+  <input type="range" id="ra" min="0" max="180" step="1" value="90" style="flex: 1;">
+  <input type="number" id="ran" min="0" max="180" step="1" value="90" style="width: 74px;">
+  <span class="sm">&deg;</span>
+  <button id="pp" style="margin-left: auto;">Pause</button>
+</div>
+
+<p class="sec"><b>1 &middot; The wave on its way</b> <span>The arrows are the electric field; the line joins their tips as the wave travels</span></p>
+<canvas id="wave" style="height: 260px;"></canvas>
+
+<p class="sec"><b>2 &middot; Looking straight down the beam</b> <span>What the field traces out, against what the receiving antenna can take</span></p>
+<div class="panes">
+  <div><canvas id="endon" style="height: 300px;"></canvas><p class="pane">Head on</p></div>
+  <div><canvas id="loss" style="height: 300px;"></canvas><p class="pane">What a tilt costs</p></div>
+</div>
+<div class="legend">
+  <span><span class="dot" style="background:#477BD1"></span>Transmitted field</span>
+  <span><span class="dot" style="background:#90BA4C"></span>What the receiver accepts</span>
+  <span><span class="dot" style="background:#DD9D31"></span>Thrown away</span>
+</div>
+
+<p class="sec"><b>3 &middot; The damage</b> <span>Every number here comes from the angle between the two</span></p>
+<div class="cards" id="cards"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  var D2R = Math.PI / 180;
+  // Office "Celestial" palette
+  var PURPLE = '#AC3EC1', BLUE = '#477BD1', TEAL = '#46B298', GREEN = '#90BA4C',
+      AMBER = '#DD9D31', RED = '#E25247';
+
+  // kind: 0 linear (uses the angle), 1 right circular, 2 left circular
+  var S = { tx: 0, txA: 90, rx: 0, rxA: 90, playing: true, t: 0 };
+
+  // ---- the physics, all of it ----
+  // Linear against linear keeps the square of the cosine of the angle between
+  // them. Linear against circular always loses half. Circular against circular
+  // keeps everything or nothing, depending on the sense.
+  function plf() {
+    if (S.tx === 0 && S.rx === 0) {
+      var d = (S.txA - S.rxA) * D2R;
+      return Math.cos(d) * Math.cos(d);
+    }
+    if (S.tx === 0 || S.rx === 0) return 0.5;
+    return S.tx === S.rx ? 1 : 0;
+  }
+  function lossDb() {
+    var f = plf();
+    return f <= 1e-6 ? -Infinity : 10 * Math.log10(f);
+  }
+  function mismatchDeg() {
+    if (S.tx !== 0 || S.rx !== 0) return null;      // only linear pairs have an angle
+    var d = Math.abs(S.txA - S.rxA) % 180;
+    return d > 90 ? 180 - d : d;
+  }
+  // the field at a point along the wave, as (horizontal, vertical)
+  function field(kind, angDeg, phase) {
+    if (kind === 0) {
+      var a = angDeg * D2R, s = Math.sin(phase);
+      return [Math.cos(a) * s, Math.sin(a) * s];
+    }
+    var sgn = kind === 1 ? 1 : -1;
+    return [Math.cos(phase), sgn * Math.sin(phase)];
+  }
+  function kindName(k, a) {
+    if (k === 1) return 'Right circular';
+    if (k === 2) return 'Left circular';
+    if (a === 90) return 'Vertical';
+    if (a === 0 || a === 180) return 'Horizontal';
+    return 'Slanted ' + a + '°';
+  }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // ---------------- 1: the wave travelling ----------------
+  function drawWave() {
+    var cv = $('wave'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var ox = 96, oy = h / 2 + 20, len = w - ox - 40, T = Math.min(70, h * 0.30);
+
+    // an isometric frame: z runs right, the horizontal axis falls away, up is up
+    function P(z, xh, yv) {
+      return [ox + z * len - xh * T * 0.62, oy - yv * T + xh * T * 0.34];
+    }
+    function axis(x1, y1, x2, y2, col, lw, dash) {
+      g.strokeStyle = col; g.lineWidth = lw; if (dash) g.setLineDash(dash);
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.setLineDash([]);
+    }
+    var o = P(0, 0, 0), zEnd = P(1, 0, 0), up = P(0, 0, 1.35), side = P(0, 1.35, 0);
+    axis(o[0], o[1], zEnd[0], zEnd[1], cvv('--border-strong'), 1);
+    axis(o[0], o[1], up[0], up[1], bd, 1, [4, 4]);
+    axis(o[0], o[1], side[0], side[1], bd, 1, [4, 4]);
+    g.fillStyle = mut; g.font = fnt(12);
+    g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Up', up[0], up[1] - 6);
+    g.textAlign = side[0] < 52 ? 'left' : 'right'; g.textBaseline = 'top';
+    g.fillText('Across', side[0] < 52 ? 2 : side[0] - 4, side[1] + 4);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('Direction of travel', zEnd[0], zEnd[1] - 8);
+
+    var N = 260, TURNS = 2.35;
+    // the arrows first, so the tip curve lands on top of them
+    for (var i = 0; i <= 34; i++) {
+      var zz = i / 34, ph = zz * TURNS * 2 * Math.PI - S.t;
+      var f = field(S.tx, S.txA, ph);
+      var b = P(zz, 0, 0), tp = P(zz, f[0], f[1]);
+      g.strokeStyle = BLUE; g.lineWidth = 1.2; g.globalAlpha = 0.42;
+      g.beginPath(); g.moveTo(b[0], b[1]); g.lineTo(tp[0], tp[1]); g.stroke();
+      g.globalAlpha = 1;
+    }
+    g.strokeStyle = BLUE; g.lineWidth = 1.8;
+    g.beginPath();
+    for (var j = 0; j <= N; j++) {
+      var z2 = j / N, ph2 = z2 * TURNS * 2 * Math.PI - S.t;
+      var f2 = field(S.tx, S.txA, ph2), q = P(z2, f2[0], f2[1]);
+      if (j === 0) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]);
+    }
+    g.stroke();
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText(kindName(S.tx, S.txA), 6, 6);
+  }
+
+  // ---------------- 2: head on ----------------
+  function drawEndOn() {
+    var cv = $('endon'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.36;
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy);
+    g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+
+    // what the transmitted field traces out
+    g.strokeStyle = BLUE; g.lineWidth = 1.8;
+    g.beginPath();
+    for (var i = 0; i <= 160; i++) {
+      var f = field(S.tx, S.txA, i / 160 * 2 * Math.PI);
+      var x = cx + f[0] * R, y = cy - f[1] * R;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    // where it is right now
+    var fn = field(S.tx, S.txA, -S.t);
+    g.strokeStyle = BLUE; g.lineWidth = 2.6;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + fn[0] * R, cy - fn[1] * R); g.stroke();
+    g.fillStyle = BLUE;
+    g.beginPath(); g.arc(cx + fn[0] * R, cy - fn[1] * R, 5.5, 0, 7); g.fill();
+    if (S.tx !== 0) {                               // which way it turns
+      var swp = S.tx === 1 ? 1 : -1, a0 = Math.atan2(-fn[1], fn[0]);
+      g.strokeStyle = BLUE; g.lineWidth = 1.4;
+      g.beginPath(); g.arc(cx, cy, R * 0.72, a0, a0 - swp * 0.9, swp > 0); g.stroke();
+      var ae = a0 - swp * 0.9, ex = cx + Math.cos(ae) * R * 0.72, ey = cy + Math.sin(ae) * R * 0.72;
+      g.fillStyle = BLUE;
+      g.beginPath();
+      g.moveTo(ex, ey);
+      g.lineTo(ex + Math.cos(ae + swp * 2.3) * 8, ey + Math.sin(ae + swp * 2.3) * 8);
+      g.lineTo(ex + Math.cos(ae + swp * 1.4) * 8, ey + Math.sin(ae + swp * 1.4) * 8);
+      g.closePath(); g.fill();
+    }
+
+    // what the receiving antenna is lined up to take
+    if (S.rx === 0) {
+      var ar = S.rxA * D2R, rr = R * 1.12;
+      g.strokeStyle = GREEN; g.lineWidth = 3.4; g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(cx - Math.cos(ar) * rr, cy + Math.sin(ar) * rr);
+      g.lineTo(cx + Math.cos(ar) * rr, cy - Math.sin(ar) * rr);
+      g.stroke(); g.lineCap = 'butt';
+    } else {
+      g.strokeStyle = GREEN; g.lineWidth = 2.2; g.setLineDash([6, 5]);
+      g.beginPath(); g.arc(cx, cy, R * 1.12, 0, 7); g.stroke(); g.setLineDash([]);
+    }
+
+    // the angle between them, when both are linear
+    var mm = mismatchDeg();
+    if (mm !== null && mm > 0.5) {
+      var a1 = S.txA * D2R, a2 = S.rxA * D2R;
+      g.strokeStyle = AMBER; g.lineWidth = 1.4;
+      g.beginPath(); g.arc(cx, cy, R * 0.42, -a1, -a2, a2 > a1); g.stroke();
+      var am = -(a1 + a2) / 2;
+      g.fillStyle = AMBER; g.font = fnt(13);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      var lx = cx + Math.cos(am) * R * 0.6, ly = cy + Math.sin(am) * R * 0.6;
+      var txt = mm.toFixed(0) + '°', tw = g.measureText(txt).width;
+      g.fillStyle = cvv('--bg'); g.fillRect(lx - tw / 2 - 3, ly - 8, tw + 6, 16);
+      g.fillStyle = AMBER; g.fillText(txt, lx, ly);
+    }
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText(kindName(S.rx, S.rxA) + ' receiver', 6, 6);
+  }
+
+  // ---------------- 2b: the cost of a tilt ----------------
+  function drawLoss() {
+    var cv = $('loss'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 54, r = 18, t = 20, b = 50, FLOOR = -30;
+    var X = function (d) { return l + d / 90 * (w - l - r); };
+    var Y = function (db) { return t + (0 - Math.max(db, FLOOR)) / (0 - FLOOR) * (h - t - b); };
+
+    g.font = fnt(12);
+    for (var db = 0; db >= FLOOR; db -= 10) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(db)); g.lineTo(w - r, Y(db)); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(db, l - 10, Y(db));
+    }
+    for (var d2 = 0; d2 <= 90; d2 += 30) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(d2), t); g.lineTo(X(d2), h - b); g.stroke();
+      g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(d2 + '°', X(d2), h - b + 10);
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, h - t - b);
+
+    // half power, the number worth remembering
+    g.strokeStyle = AMBER; g.lineWidth = 1.2; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(l, Y(-3.01)); g.lineTo(w - r, Y(-3.01)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = AMBER; g.font = fnt(12); g.textAlign = 'left'; g.textBaseline = 'bottom';
+    g.fillText('Half the power', l + 6, Y(-3.01) - 5);
+
+    var linear = S.tx === 0;
+    g.strokeStyle = BLUE; g.lineWidth = 1.8;
+    g.beginPath();
+    for (var i = 0; i <= 180; i++) {
+      var d3 = i / 2, v;
+      if (linear) {
+        var c = Math.cos(d3 * D2R);
+        v = c * c <= 1e-6 ? FLOOR : 10 * Math.log10(c * c);
+      } else {
+        v = -3.01;                                  // circular loses half to any linear
+      }
+      var px = X(d3), py = Y(v);
+      if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.stroke();
+
+    var mm = mismatchDeg();
+    if (mm !== null) {
+      var ld = lossDb();
+      g.fillStyle = RED;
+      g.beginPath(); g.arc(X(mm), Y(ld === -Infinity ? FLOOR : ld), 6, 0, 7); g.fill();
+    }
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Angle between them', l + (w - l - r) / 2, h - 8);
+    g.save(); g.translate(13, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Loss (dB)', 0, 0); g.restore();
+  }
+
+  // ---------------- 3: the numbers ----------------
+  function cards() {
+    var f = plf(), ld = lossDb(), mm = mismatchDeg();
+    var lossTxt = ld === -Infinity ? 'Everything' : (-ld).toFixed(1) + ' dB';
+    var note = S.tx === 0 && S.rx === 0
+      ? 'Turn either one and this moves'
+      : (S.tx !== 0 && S.rx !== 0
+          ? (S.tx === S.rx ? 'Same sense, so nothing is lost' : 'Opposite senses reject each other')
+          : 'A circular wave splits its power evenly, so a linear antenna can only ever take half');
+    var rows = [
+      ['Transmitted', kindName(S.tx, S.txA), 'What leaves the antenna'],
+      ['Received', kindName(S.rx, S.rxA), 'What the far end is set up for'],
+      ['Angle between', mm === null ? '—' : mm.toFixed(0) + '°', mm === null ? 'Not an angle when circular is involved' : 'The whole story for two linear antennas'],
+      ['Power kept', (f * 100).toFixed(1) + '%', note],
+      ['Lost', lossTxt, ld === -Infinity ? 'Nothing gets through at all' : 'Add this to your link budget']
+    ];
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (row, i) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      var col = i === 4 ? (ld === -Infinity || ld < -10 ? RED : ld < -1 ? AMBER : GREEN) : '';
+      el.innerHTML = '<div class="hd">' + row[0] + '</div>' +
+        '<div class="big"' + (col ? ' style="color:' + col + '"' : '') + '>' + row[1] + '</div>' +
+        '<div class="ft">' + row[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  function syncRows() {
+    $('txRow').style.display = S.tx === 0 ? 'flex' : 'none';
+    $('rxRow').style.display = S.rx === 0 ? 'flex' : 'none';
+  }
+  function redraw() { syncRows(); drawWave(); drawEndOn(); drawLoss(); cards(); }
+
+  // ---------------- controls ----------------
+  var TXB = ['t0', 't1', 't2', 't3', 't4'], RXB = ['r0', 'r1', 'r2', 'r3', 'r4'];
+  function pick(which, k) {                          // 0 vertical, 1 horizontal, 2 slant, 3 rhcp, 4 lhcp
+    var kind = k <= 2 ? 0 : (k === 3 ? 1 : 2);
+    var ang = k === 0 ? 90 : k === 1 ? 0 : 45;
+    if (which === 'tx') {
+      S.tx = kind;
+      if (k <= 2) { S.txA = k === 2 ? S.txA : ang; $('ta').value = S.txA; $('tan').value = S.txA; }
+      TXB.forEach(function (o) { $(o).classList.remove('on'); });
+      $(TXB[k]).classList.add('on');
+    } else {
+      S.rx = kind;
+      if (k <= 2) { S.rxA = k === 2 ? S.rxA : ang; $('ra').value = S.rxA; $('ran').value = S.rxA; }
+      RXB.forEach(function (o) { $(o).classList.remove('onb'); });
+      $(RXB[k]).classList.add('onb');
+    }
+    redraw();
+  }
+  TXB.forEach(function (id, k) { $(id).addEventListener('click', function () { pick('tx', k); }); });
+  RXB.forEach(function (id, k) { $(id).addEventListener('click', function () { pick('rx', k); }); });
+
+  function setA(which, v) {
+    if (!isFinite(v)) return;
+    v = Math.min(180, Math.max(0, Math.round(v)));
+    if (which === 'tx') { S.txA = v; $('ta').value = v; $('tan').value = v; }
+    else { S.rxA = v; $('ra').value = v; $('ran').value = v; }
+    redraw();
+  }
+  $('ta').addEventListener('input', function () { setA('tx', +$('ta').value); });
+  $('tan').addEventListener('change', function () { setA('tx', +$('tan').value); });
+  $('ra').addEventListener('input', function () { setA('rx', +$('ra').value); });
+  $('ran').addEventListener('change', function () { setA('rx', +$('ran').value); });
+  $('pp').addEventListener('click', function () {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause' : 'Play';
+  });
+  window.addEventListener('resize', redraw);
+
+  function frame() {
+    if (S.playing) { S.t += 0.045; drawWave(); drawEndOn(); }
+    requestAnimationFrame(frame);
+  }
+  redraw();
+  requestAnimationFrame(frame);
+})();
+</script>
