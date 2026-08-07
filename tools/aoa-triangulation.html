@@ -112,7 +112,8 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   <span class="lbl">Receiver sites</span>
   <button id="n2">2</button><button id="n3" class="on">3</button>
   <button id="n4">4</button><button id="n5">5</button>
-  <span class="sm" style="margin-left: auto;">Drag a site or the emitter</span>
+  <button id="pp" style="margin-left: auto;">Pause</button>
+  <span class="sm">Drag a site or the emitter</span>
 </div>
 <div class="row" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="sg" style="min-width: 148px;">Bearing accuracy &sigma;</label>
@@ -164,7 +165,8 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     5: [[1.2, 1.3], [3.9, 0.9], [6.0, 1.6], [8.3, 0.9], [10.8, 1.3]]
   };
 
-  var S = { n: 3, sig: 2, sx: [], sy: [], ex: 6.0, ey: 5.6, drag: -1 };
+  var S = { n: 3, sig: 2, sx: [], sy: [], ex: 6.0, ey: 5.6, drag: -1, playing: true, t: 0 };
+  var WAVE_KM = 5.0, WAVE_MAX = 3.4;      // km per unit of the animation clock
   function setN(n) {
     S.n = n;
     S.sx = LAYOUT[n].map(function (p) { return p[0]; });
@@ -230,7 +232,24 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     var L = 40;   // km, long enough to leave the frame
     g.save();
     g.beginPath(); g.rect(X(0), Y(KMY), X(KMX) - X(0), Y(0) - Y(KMY)); g.clip();
+
+    // the wave going out, so a bearing is something a site takes when the
+    // signal gets there rather than a line that was always drawn
+    var kmPx = X(1) - X(0), wr = S.t * WAVE_KM;
+    if (wr > 0 && wr < WAVE_MAX * WAVE_KM) {
+      [0, 1, 2].forEach(function (q) {
+        var rr = (wr - q * 0.55) * kmPx;
+        if (rr <= 0) return;
+        g.strokeStyle = '#C0504D'; g.lineWidth = 1.8 - q * 0.45;
+        g.globalAlpha = Math.max(0, 1 - wr / (WAVE_MAX * WAVE_KM)) * (0.8 - q * 0.24);
+        g.beginPath(); g.arc(X(S.ex), Y(S.ey), rr, 0, 7); g.stroke();
+      });
+      g.globalAlpha = 1;
+    }
+
     for (var i = 0; i < S.n; i++) {
+      var reached = S.t >= rangeKm(i) / WAVE_KM;
+      g.globalAlpha = reached ? 1 : 0.16;
       var m = measBrg(i), sgr = S.sig * D2R;
       var px = X(S.sx[i]), py = Y(S.sy[i]);
       var tip = function (ang) { return [X(S.sx[i] + Math.sin(ang) * L), Y(S.sy[i] + Math.cos(ang) * L)]; };
@@ -243,11 +262,19 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.strokeStyle = COL[i]; g.lineWidth = 1.4; g.setLineDash([6, 5]);
       g.beginPath(); g.moveTo(px, py); g.lineTo(pc[0], pc[1]); g.stroke();
       g.setLineDash([]);
+      g.globalAlpha = 1;
     }
     g.restore();
 
 
     for (var j = 0; j < S.n; j++) {
+      var since = S.t - rangeKm(j) / WAVE_KM;
+      if (since >= 0 && since < 0.8) {
+        g.strokeStyle = COL[j]; g.lineWidth = 2;
+        g.globalAlpha = 1 - since / 0.8;
+        g.beginPath(); g.arc(X(S.sx[j]), Y(S.sy[j]), 8 + since * 26, 0, 7); g.stroke();
+        g.globalAlpha = 1;
+      }
       var sx = X(S.sx[j]), sy = Y(S.sy[j]);
       g.fillStyle = COL[j];
       g.beginPath(); g.arc(sx, sy, 5.5, 0, 7); g.fill();
@@ -521,6 +548,21 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   $('sg').addEventListener('input', function () { setSig(parseFloat($('sg').value)); });
   $('sgn').addEventListener('change', function () { setSig(parseFloat($('sgn').value)); });
   window.addEventListener('resize', redraw);
+  $('pp').addEventListener('click', function () {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause' : 'Play';
+  });
+  var last = 0;
+  function frame(now) {
+    if (S.playing) {
+      S.t += (now - last > 100 ? 16 : now - last) / 1000 * 1.4;
+      if (S.t > WAVE_MAX + 1.0) S.t = 0;
+      drawMap();
+    }
+    last = now;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 
   redraw();
 })();
