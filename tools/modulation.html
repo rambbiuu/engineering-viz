@@ -176,7 +176,9 @@ canvas { width: 100%; display: block; }
         if (Math.abs(a) < 0.008) continue;
         if (n === 0) out.push({ f: S.fc, a: Math.abs(a), carrier: true });
         else {
-          out.push({ f: S.fc - n * S.fm, a: Math.abs(a) });
+          // a sideband that would land below zero folds back up, it does not
+          // disappear, and leaving it out made the spectrum look lopsided
+          out.push({ f: Math.abs(S.fc - n * S.fm), a: Math.abs(a) });
           out.push({ f: S.fc + n * S.fm, a: Math.abs(a) });
         }
       }
@@ -323,10 +325,14 @@ canvas { width: 100%; display: block; }
     var bw = bandwidth(), u = useful();
     var carrierA = S.kind === 3 || S.kind === 4 ? besselJ(0, S.d) : (S.kind === 0 ? 1 : 0);
     var rows = [
-      ['Bandwidth', bw.toFixed(1) + ' kHz', S.kind >= 3 ? 'Carson: twice the deviation plus the message' : (S.kind === 2 ? 'One sideband, so half of AM' : 'Twice the message frequency')],
-      ['Sidebands', (lines().length - (S.kind === 0 || S.kind >= 3 ? 1 : 0)) + '', S.kind >= 3 ? 'In theory endless; these are the ones above 1%' : 'One each side, or just the one'],
+      ['Bandwidth', bw.toFixed(1) + ' kHz', S.kind >= 3 ? 'Carson: twice (' + (S.d * S.fm).toFixed(1) + ' kHz deviation + ' + S.fm + ' kHz message)' : (S.kind === 2 ? 'One sideband, so half of AM' : 'Twice the message frequency')],
+      ['Sidebands', lines().filter(function (e) { return !e.carrier; }).length + '',
+        S.kind >= 3 ? 'In theory endless; these are the ones above 1%' : 'One each side, or just the one'],
       ['Carrier left', Math.abs(carrierA).toFixed(3), S.kind >= 3 ? (Math.abs(carrierA) < 0.02 ? 'Gone: this is a carrier null' : 'Shrinks as you push the deviation') : (S.kind === 0 ? 'Full size, and carrying nothing' : 'Suppressed')],
-      ['Power doing work', (u * 100).toFixed(1) + '%', S.kind === 0 ? 'The rest is spent on the carrier' : 'All of it is in the sidebands']
+      ['Power doing work', (u * 100).toFixed(1) + '%',
+        S.kind === 0 ? 'The rest is spent on the carrier'
+        : S.kind <= 2 ? 'All of it is in the sidebands'
+        : (u < 0.5 ? 'Most of it is still in the carrier at this index' : 'Most of it has moved into the sidebands')]
     ];
     var box = $('cards');
     box.innerHTML = '';
@@ -341,11 +347,11 @@ canvas { width: 100%; display: block; }
 
   function sync() {
     var angle = S.kind >= 3;
-    $('dpLbl').textContent = angle ? 'Deviation' : 'Depth';
+    $('dpLbl').textContent = angle ? 'Modulation index' : 'Depth';
     $('dp').max = $('dpn').max = angle ? 8 : 1.5;
     if (S.d > (angle ? 8 : 1.5)) { S.d = angle ? 2.4 : 0.8; $('dp').value = S.d; $('dpn').value = S.d; }
     $('dpNote').textContent = angle
-      ? 'Modulation index β — try 2.40 for the carrier null'
+      ? 'β — deviation is β × message = ' + (S.d * S.fm).toFixed(1) + ' kHz. Try 2.405 for the carrier null'
       : (S.d > 1 ? 'Over 1, which overmodulates and wrecks the envelope' : 'Fraction of the carrier height');
   }
   function redraw() { sync(); drawTime(); drawSpec(); cards(); }
@@ -358,6 +364,9 @@ canvas { width: 100%; display: block; }
       $(id).classList.add('on');
       if (k >= 3 && S.d <= 1.5) S.d = 2.4;
       if (k < 3 && S.d > 1.5) S.d = 0.8;
+      // the range has to be widened before the value is written, or the input
+      // clamps it and the slider, the box and the model all disagree
+      $('dp').max = $('dpn').max = k >= 3 ? 8 : 1.5;
       $('dp').value = S.d; $('dpn').value = S.d;
       redraw();
     });

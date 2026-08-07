@@ -243,9 +243,10 @@ canvas { width: 100%; display: block; }
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
     var l = 46, r = 16, t = 18, b = 50;
     var list = terms();
-    var NMAX = Math.max(12, Math.min(41, (list.length ? list[list.length - 1].n : 1) + 2));
-    var top = 1.35;
+    var NMAX = Math.max(12, (list.length ? list[list.length - 1].n : 1) + 2);   // show every line the card counts
+    var top = 0.05;
     for (var q = 0; q < list.length; q++) top = Math.max(top, Math.abs(list[q].a) * 1.15);
+    top = Math.max(top, dc() * 1.15);
     var X = function (n) { return l + n / NMAX * (w - l - r); };
     var Y = function (a) { return h - b - a / top * (h - t - b); };
 
@@ -355,8 +356,8 @@ canvas { width: 100%; display: block; }
     var bw = hi * S.f0;
     var rows = [
       ['Fundamental', fmtF(S.f0), 'One cycle every ' + (1 / S.f0).toFixed(2) + ' ms'],
-      ['Sines added', S.nh + '', S.kind === 1 || S.kind === 2 ? 'Odd harmonics only' : 'Every harmonic'],
-      ['Highest one', fmtF(bw), 'Harmonic ' + hi],
+      ['Sines added', list.length + '', S.kind === 0 ? 'A sine is one sine' : (S.kind === 1 || S.kind === 2 ? 'Odd harmonics only' : 'Every harmonic')],
+      ['Highest one', 'Harmonic ' + hi, fmtF(bw) + ', the last one you added'],
       ['Bandwidth needed', fmtF(bw), 'Cut it shorter and the corners round off']
     ];
     if (S.kind === 4) {

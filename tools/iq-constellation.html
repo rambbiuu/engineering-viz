@@ -104,7 +104,7 @@ canvas { width: 100%; display: block; }
   <span><span class="dot" style="background:#DF5327"></span>Decided wrong</span>
 </div>
 
-<p class="sec"><b>2 &middot; How wrong it goes as the noise rises</b> <span>Every scheme, so you can see what the extra bits cost you</span></p>
+<p class="sec"><b>2 &middot; How wrong it goes as the noise rises</b> <span>Every scheme, against signal to noise per symbol; textbook curves are usually drawn per bit and sit further left</span></p>
 <canvas id="ber" style="height: 300px;"></canvas>
 
 <p class="sec"><b>3 &middot; The trade</b> <span>More bits per symbol, less room between them</span></p>
@@ -125,9 +125,15 @@ canvas { width: 100%; display: block; }
   var BITS = [1, 2, 3, 4, 6];
 
   // repeatable noise, so the picture only changes when you ask it to
+  // A plain LCG here overflowed 2^53 on the multiply and threw away its low
+  // bits: 15 800 distinct values in 200 000 draws and a tail nearly three times
+  // too heavy, which is exactly the part that decides an error rate. xorshift32
+  // stays inside 32 bits and does not.
   function rnd() {
-    S.seed = (S.seed * 1103515245 + 12345) & 0x7fffffff;
-    return S.seed / 0x7fffffff;
+    S.seed ^= S.seed << 13; S.seed |= 0;
+    S.seed ^= S.seed >>> 17;
+    S.seed ^= S.seed << 5; S.seed |= 0;
+    return ((S.seed >>> 0) + 1) / 4294967297;
   }
   function gauss() {
     var u = Math.max(rnd(), 1e-12), v = rnd();
@@ -207,7 +213,7 @@ canvas { width: 100%; display: block; }
     var Y = function (v) { return cy - v * R; };
 
     g.save();
-    g.beginPath(); g.rect(2, 18, w - 4, h - 22); g.clip();   // keep strays inside the box
+    g.beginPath(); g.rect(2, 30, w - 4, h - 34); g.clip();   // keep strays in, but clear of the labels
     g.strokeStyle = bd; g.lineWidth = 0.5;
     for (var q = -1.5; q <= 1.5; q += 0.5) {
       g.beginPath(); g.moveTo(X(-1.6), Y(q)); g.lineTo(X(1.6), Y(q)); g.stroke();
@@ -223,7 +229,7 @@ canvas { width: 100%; display: block; }
     g.fillText('Q', X(0) + 5, Y(1.6) + 12);
 
     // the symbols as they arrived
-    S.seed = 24680 + Math.round(S.snr * 7) + S.kind * 991 + S.seedBump * 1;
+    S.seed = (24680 + Math.round(S.snr * 7) + S.kind * 991 + S.seedBump) | 0 || 1;
     lastSyms = [];
     var wrong = 0;
     for (var k = 0; k < S.n; k++) {
@@ -265,7 +271,7 @@ canvas { width: 100%; display: block; }
     var X = function (u) { return l + u / NS * (w - l - r); };
 
     // a handful of symbols, the same each time so it can be read
-    S.seed = 555 + S.kind * 37 + S.seedBump;
+    S.seed = (555 + S.kind * 37 + S.seedBump) | 0 || 1;
     var seq = [];
     for (var i = 0; i < NS; i++) seq.push(p[Math.floor(rnd() * p.length) % p.length]);
 
@@ -308,7 +314,7 @@ canvas { width: 100%; display: block; }
     var cv = $('ber'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var l = 58, r = 96, t = 18, b = 50, LO = 0, HI = 34, EMIN = -4;
+    var l = 58, r = 96, t = 18, b = 50, LO = 0, HI = 34, EMIN = -3;   // what 8000 trials can actually resolve
     var X = function (s) { return l + (s - LO) / (HI - LO) * (w - l - r); };
     var Y = function (e) {
       var v = Math.max(Math.log10(Math.max(e, 1e-9)), EMIN);
@@ -342,7 +348,7 @@ canvas { width: 100%; display: block; }
       g.beginPath();
       var lastX = 0, lastY = 0, drawing = false;
       for (var s3 = LO; s3 <= HI; s3 += 1) {
-        var er = measure(s3, 4000);
+        var er = measure(s3, 8000);
         if (er < Math.pow(10, EMIN)) { drawing = false; continue; }
         var px = X(s3), py = Y(er);
         if (!drawing) { g.moveTo(px, py); drawing = true; } else g.lineTo(px, py);
@@ -384,7 +390,7 @@ canvas { width: 100%; display: block; }
       ['Room each way', hs.toFixed(3), 'Half the gap to the nearest neighbour'],
       ['Noise each way', sg.toFixed(3), 'At ' + S.snr + ' dB signal to noise'],
       ['Margin', (hs / sg).toFixed(2) + '×', hs / sg > 3 ? 'Comfortable' : hs / sg > 2 ? 'Getting tight' : 'Not enough'],
-      ['Symbols wrong', er === 0 ? 'Under 0.01%' : (er * 100).toFixed(2) + '%', 'Counted over 20 000, not predicted']
+      ['Symbols wrong', er === 0 ? 'Under 0.02%' : (er * 100).toFixed(2) + '%', 'Counted over 20 000, not predicted']
     ];
     var box = $('cards');
     box.innerHTML = '';

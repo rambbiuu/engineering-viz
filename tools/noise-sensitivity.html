@@ -90,10 +90,10 @@ canvas { width: 100%; display: block; }
 <div class="legend">
   <span><span class="dot" style="background:#46B5D2"></span>Signal</span>
   <span><span class="dot" style="background:#C0504D"></span>Noise</span>
-  <span><span class="dot" style="background:#9CBB58"></span>The gap between them, which is the signal to noise</span>
+  <span><span class="dot" style="background:#9CBB58"></span>The shaded gap, which is the signal to noise</span>
 </div>
 
-<p class="sec"><b>2 &middot; Who is to blame</b> <span>Friis: each stage's noise is divided by all the gain before it, so the first one is nearly the whole answer</span></p>
+<p class="sec"><b>2 &middot; Who is to blame</b> <span>Friis: each stage's noise is divided by all the gain before it, so the early stages carry it and the late ones barely register</span></p>
 <canvas id="blame" style="height: 250px;"></canvas>
 
 <p class="sec"><b>3 &middot; What it can hear</b> <span>The floor, and the faintest signal that still clears it</span></p>
@@ -145,7 +145,13 @@ canvas { width: 100%; display: block; }
     S.st.forEach(function (s) { g += s.g; });
     return g;
   }
-  function floorDbm() { return kTB() + friis(); }
+  // A noise figure is defined AT 290 K, so it cannot be rescaled by the source
+  // temperature. The receiver's own noise is an equivalent temperature,
+  // Te = (F-1)*290, added to the source: N = k(Ts + Te)B.
+  function teK() { return (Math.pow(10, friis() / 10) - 1) * 290; }
+  function floorDbm() {
+    return 10 * Math.log10(K * (S.T + teK()) * S.bw * 1000 * 1000);
+  }
   function sensitivity() { return floorDbm() + S.req; }
 
   function fit(cv) {
@@ -256,11 +262,12 @@ canvas { width: 100%; display: block; }
 
     sh.forEach(function (p, i) {
       var x0 = l + colW * i + colW * 0.18, bw2 = colW * 0.64;
-      g.fillStyle = i === 0 ? RED : VIOLET;
-      g.globalAlpha = i === 0 ? 0.85 : 0.55;
+      var worst = p >= Math.max.apply(null, sh) - 1e-9;
+      g.fillStyle = worst ? RED : VIOLET;
+      g.globalAlpha = worst ? 0.85 : 0.55;
       g.fillRect(x0, Y(p), bw2, Y(0) - Y(p));
       g.globalAlpha = 1;
-      g.fillStyle = i === 0 ? RED : VIOLET; g.font = fnt(13);
+      g.fillStyle = worst ? RED : VIOLET; g.font = fnt(13);
       g.textAlign = 'center'; g.textBaseline = 'bottom';
       g.fillText((p * 100).toFixed(1) + '%', x0 + bw2 / 2, Y(p) - 6);
       g.fillStyle = sub; g.font = fnt(12); g.textBaseline = 'top';
@@ -275,8 +282,8 @@ canvas { width: 100%; display: block; }
   function cards() {
     var nf = friis(), fl = floorDbm(), sen = sensitivity();
     var rows = [
-      ['Thermal floor', kTB().toFixed(1) + ' dBm', 'kTB in ' + S.bw + ' kHz at ' + S.T + ' K'],
-      ['Noise figure', nf.toFixed(2) + ' dB', 'The whole chain, by Friis'],
+      ['Thermal floor', kTB().toFixed(1) + ' dBm', 'kTB alone, in ' + S.bw + ' kHz at ' + S.T + ' K'],
+      ['Noise figure', nf.toFixed(2) + ' dB', 'The whole chain by Friis, worth ' + teK().toFixed(0) + ' K'],
       ['Noise floor', fl.toFixed(1) + ' dBm', 'What the receiver actually shows'],
       ['Sensitivity', sen.toFixed(1) + ' dBm', 'Faintest signal with ' + S.req + ' dB to spare'],
       ['Total gain', (totalGain() >= 0 ? '+' : '') + totalGain().toFixed(1) + ' dB', 'Which does not change any of the above']

@@ -263,12 +263,15 @@ canvas { width: 100%; display: block; }
   // ---------------- 3: the verdict ----------------
   function cards() {
     var al = alias(), isAl = aliased();
-    var edge = Math.abs(S.f - nyquist()) < 1e-6;   // exactly two samples a cycle
+    // exactly two samples a cycle, whether that is the signal itself or where
+    // it aliases to: every sample lands on a zero crossing
+    var edge = Math.abs(S.f - nyquist()) < 1e-6 || Math.abs(al - nyquist()) < 1e-6;
     var rows = [
       ['Sampling rate', S.fs.toFixed(1) + ' kHz', 'One sample every ' + (1000 / S.fs).toFixed(1) + ' µs'],
-      ['Highest it can keep', nyquist().toFixed(2) + ' kHz', 'Half the rate, and not a hertz more'],
+      ['Highest it can keep', nyquist().toFixed(2) + ' kHz', 'Just under half the rate; half itself does not work'],
       ['Rate you needed', (2 * S.f).toFixed(2) + ' kHz', 'Twice the signal, which is Nyquist'],
-      ['What comes out', al.toFixed(2) + ' kHz', isAl ? 'Not what you put in' : 'Exactly what you put in'],
+      ['What comes out', edge ? 'Nothing' : al.toFixed(2) + ' kHz',
+        edge ? 'Every sample lands on a zero crossing' : isAl ? 'Not what you put in' : 'Exactly what you put in'],
       ['Verdict', isAl ? 'Aliased' : (edge ? 'On the limit' : 'Clean'),
         isAl ? 'Filter it out before you sample, not after'
              : (edge ? 'Two samples a cycle cannot pin down the phase' : 'The rate is fast enough')]
