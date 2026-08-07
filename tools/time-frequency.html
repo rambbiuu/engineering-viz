@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time and frequency, the same signal twice</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+  --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+}
+body {
+  background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; font-weight: 600;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #4A9BDC; color: #4A9BDC; }
+input:focus-visible, button:focus-visible { outline: 2px solid #4A9BDC; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-primary); }
+.sm { font-size: 13.5px; color: var(--text-primary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 700; }
+.sec b::after { content: ':'; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13.5px; color: var(--text-primary); }
+.card .big { font-size: 21px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 10px; }
+.pane { text-align: center; font-size: 13px; font-weight: 700; color: var(--text-secondary); margin: 0; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
+<h1>Time and frequency, the same signal twice</h1>
+<p class="sub">Any repeating signal is a stack of pure sine waves added together. Watching it as a shape over time and as a list of its sines are two views of one thing &mdash; change either and the other has to move.</p>
+
+<div class="row">
+  <span class="lbl">Signal</span>
+  <button id="w0">Sine</button>
+  <button id="w1" class="on">Square</button>
+  <button id="w2">Triangle</button>
+  <button id="w3">Sawtooth</button>
+  <button id="w4">Pulses</button>
+</div>
+<div class="row">
+  <label class="lbl" for="f0" style="min-width: 116px;">Fundamental</label>
+  <input type="range" id="f0" min="0.5" max="5" step="0.1" value="1" style="flex: 1;">
+  <input type="number" id="f0n" min="0.5" max="5" step="0.1" value="1" style="width: 76px;">
+  <span class="sm">kHz</span>
+</div>
+<div class="row">
+  <label class="lbl" for="nh" style="min-width: 116px;">Sines added</label>
+  <input type="range" id="nh" min="1" max="40" step="1" value="9" style="flex: 1;">
+  <input type="number" id="nhn" min="1" max="40" step="1" value="9" style="width: 76px;">
+  <span class="sm" id="nhNote"></span>
+</div>
+<div class="row" id="dutyRow" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="du" style="min-width: 116px;">Pulse width</label>
+  <input type="range" id="du" min="2" max="50" step="1" value="20" style="flex: 1;">
+  <input type="number" id="dun" min="2" max="50" step="1" value="20" style="width: 76px;">
+  <span class="sm">% of the period</span>
+</div>
+
+<p class="sec"><b>1 &middot; The same signal, both ways</b> <span>A shape over time on the left, the sines it is made of on the right</span></p>
+<div class="panes">
+  <div><canvas id="tim" style="height: 280px;"></canvas><p class="pane">In time</p></div>
+  <div><canvas id="spec" style="height: 280px;"></canvas><p class="pane">In frequency</p></div>
+</div>
+<div class="legend">
+  <span><span class="dot" style="background:#4A9BDC"></span>The signal</span>
+  <span><span class="dot" style="background:#81BB42"></span>Its fundamental alone</span>
+  <span><span class="dot" style="background:#FE801A"></span>Everything you have added</span>
+</div>
+
+<p class="sec"><b>2 &middot; The sines it is made of</b> <span>Each one on its own, tallest first; add them up and you get the shape above</span></p>
+<canvas id="stack" style="height: 320px;"></canvas>
+
+<p class="sec"><b>3 &middot; What that costs you</b> <span>Sharper edges need more sines, and more sines means more bandwidth</span></p>
+<div class="cards" id="cards"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  // Office "Vapor Trail" palette
+  var RED = '#DF2E28', ORANGE = '#FE801A', YELLOW = '#E9BF35', GREEN = '#81BB42',
+      TEAL = '#32C7A9', BLUE = '#4A9BDC';
+  var HCOL = [GREEN, ORANGE, YELLOW, TEAL, RED, BLUE];
+
+  var S = { kind: 1, f0: 1, nh: 9, duty: 20 };
+  var NAMES = ['Sine', 'Square', 'Triangle', 'Sawtooth', 'Pulses'];
+
+  // ---- the Fourier series, straight out of the book ----
+  // Each entry is one sine or cosine: its harmonic number, its amplitude and
+  // which it is. Square is 4/(n pi) on odd n; triangle 8/(n^2 pi^2) on odd n
+  // with alternating sign; sawtooth 2/(n pi) on every n; a pulse train of duty
+  // d has 2d*sinc(nd) on every n, riding on a DC level of d.
+  function sinc(x) { return Math.abs(x) < 1e-12 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x); }
+  function terms() {
+    var out = [], n, k = S.nh;
+    if (S.kind === 0) return [{ n: 1, a: 1, cos: false }];
+    if (S.kind === 1) {
+      for (n = 1; out.length < k && n < 400; n += 2) out.push({ n: n, a: 4 / (n * Math.PI), cos: false });
+    } else if (S.kind === 2) {
+      var s = 1;
+      for (n = 1; out.length < k && n < 400; n += 2) {
+        out.push({ n: n, a: s * 8 / (n * n * Math.PI * Math.PI), cos: false });
+        s = -s;
+      }
+    } else if (S.kind === 3) {
+      for (n = 1; out.length < k; n++) out.push({ n: n, a: (n % 2 ? 1 : -1) * 2 / (n * Math.PI), cos: false });
+    } else {
+      var d = S.duty / 100;
+      for (n = 1; out.length < k; n++) out.push({ n: n, a: 2 * d * sinc(n * d), cos: true });
+    }
+    return out;
+  }
+  function dc() { return S.kind === 4 ? S.duty / 100 : 0; }
+  function value(t, list) {                        // t in periods
+    var v = dc();
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i], ph = 2 * Math.PI * e.n * t;
+      v += e.a * (e.cos ? Math.cos(ph) : Math.sin(ph));
+    }
+    return v;
+  }
+  function peak(list) {
+    var m = 0.001;
+    for (var i = 0; i <= 600; i++) m = Math.max(m, Math.abs(value(i / 600, list)));
+    return m;
+  }
+  function fmtF(kHz) {
+    var u = kHz >= 1000 ? ' MHz' : ' kHz', v = kHz >= 1000 ? kHz / 1000 : kHz;
+    var t = v.toFixed(2).replace(/\.?0+$/, '');   // 5.00 and 10 should look alike
+    return t + u;
+  }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+  function frame(g, l, t, w2, h2, bd) {
+    g.strokeStyle = bd; g.lineWidth = 1; g.strokeRect(l, t, w2, h2);
+  }
+
+  // ---------------- 1a: the shape over time ----------------
+  function drawTime() {
+    var cv = $('tim'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 46, r = 16, t = 18, b = 50, CYC = 2;
+    var list = terms();
+    var lim = Math.max(1.35, peak(list) * 1.12);
+    var X = function (tt) { return l + tt / CYC * (w - l - r); };
+    var Y = function (v) { return t + (lim - v) / (2 * lim) * (h - t - b); };
+
+    g.font = fnt(12); g.fillStyle = mut;
+    for (var v2 = -1; v2 <= 1; v2++) {
+      g.strokeStyle = bd; g.lineWidth = v2 === 0 ? 1 : 0.5;
+      g.beginPath(); g.moveTo(l, Y(v2)); g.lineTo(w - r, Y(v2)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v2, l - 10, Y(v2));
+    }
+    var per = 1 / S.f0;                              // ms
+    for (var c = 0; c <= CYC; c++) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(c), t); g.lineTo(X(c), h - b); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText((c * per).toFixed(2), X(c), h - b + 10);
+    }
+    frame(g, l, t, w - l - r, h - t - b, cvv('--border-strong'));
+
+    // the fundamental on its own, so the build-up has something to sit against
+    if (S.kind !== 0 && list.length) {
+      g.strokeStyle = GREEN; g.lineWidth = 1.4; g.globalAlpha = 0.85;
+      g.beginPath();
+      for (var i = 0; i <= 500; i++) {
+        var tt = i / 500 * CYC, e = list[0];
+        var vv = dc() + e.a * (e.cos ? Math.cos(2 * Math.PI * e.n * tt) : Math.sin(2 * Math.PI * e.n * tt));
+        if (i === 0) g.moveTo(X(tt), Y(vv)); else g.lineTo(X(tt), Y(vv));
+      }
+      g.stroke(); g.globalAlpha = 1;
+    }
+
+    g.strokeStyle = BLUE; g.lineWidth = 1.8;
+    g.beginPath();
+    for (var j = 0; j <= 900; j++) {
+      var t2 = j / 900 * CYC, y2 = value(t2, list);
+      if (j === 0) g.moveTo(X(t2), Y(y2)); else g.lineTo(X(t2), Y(y2));
+    }
+    g.stroke();
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Time (ms)', l + (w - l - r) / 2, h - 8);
+  }
+
+  // ---------------- 1b: the sines it is made of ----------------
+  function drawSpec() {
+    var cv = $('spec'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 46, r = 16, t = 18, b = 50;
+    var list = terms();
+    var NMAX = Math.max(12, Math.min(41, (list.length ? list[list.length - 1].n : 1) + 2));
+    var top = 1.35;
+    for (var q = 0; q < list.length; q++) top = Math.max(top, Math.abs(list[q].a) * 1.15);
+    var X = function (n) { return l + n / NMAX * (w - l - r); };
+    var Y = function (a) { return h - b - a / top * (h - t - b); };
+
+    g.font = fnt(12); g.fillStyle = mut;
+    for (var a2 = 0; a2 <= top; a2 += top > 1 ? 0.5 : 0.25) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(a2)); g.lineTo(w - r, Y(a2)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(a2.toFixed(2), l - 10, Y(a2));
+    }
+    var step = NMAX > 20 ? 10 : 5;
+    for (var n2 = 0; n2 <= NMAX; n2 += step) {
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(n2 === 0 ? '0' : fmtF(n2 * S.f0), X(n2), h - b + 10);
+    }
+    frame(g, l, t, w - l - r, h - t - b, cvv('--border-strong'));
+
+    // every line the signal really has, faint, so you can see what is missing
+    var all = [], saveN = S.nh;
+    S.nh = 40; all = terms(); S.nh = saveN;
+    all.forEach(function (e) {
+      if (e.n > NMAX) return;
+      g.strokeStyle = mut; g.lineWidth = 1.2; g.globalAlpha = 0.30;
+      g.beginPath(); g.moveTo(X(e.n), Y(0)); g.lineTo(X(e.n), Y(Math.abs(e.a))); g.stroke();
+      g.globalAlpha = 1;
+    });
+    // and the ones you have actually added
+    list.forEach(function (e, i) {
+      if (e.n > NMAX) return;
+      var col = i === 0 ? GREEN : ORANGE;
+      g.strokeStyle = col; g.lineWidth = 2.6;
+      g.beginPath(); g.moveTo(X(e.n), Y(0)); g.lineTo(X(e.n), Y(Math.abs(e.a))); g.stroke();
+      g.fillStyle = col;
+      g.beginPath(); g.arc(X(e.n), Y(Math.abs(e.a)), 3.6, 0, 7); g.fill();
+    });
+    if (dc() > 0) {
+      g.strokeStyle = BLUE; g.lineWidth = 2.6;
+      g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(0), Y(dc())); g.stroke();
+    }
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Frequency', l + (w - l - r) / 2, h - 8);
+  }
+
+  // ---------------- 2: each sine on its own ----------------
+  function drawStack() {
+    var cv = $('stack'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 96, r = 18, t = 14, b = 34, CYC = 2;
+    var list = terms().slice(0, 6);
+    var rows = list.length + 1;
+    var rh = (h - t - b) / rows;
+    var X = function (tt) { return l + tt / CYC * (w - l - r); };
+    var big = 1;
+    list.forEach(function (e) { big = Math.max(big, Math.abs(e.a)); });
+
+    list.forEach(function (e, i) {
+      var yc = t + rh * i + rh / 2, amp = rh * 0.34 * Math.abs(e.a) / big;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, yc); g.lineTo(w - r, yc); g.stroke();
+      var col = HCOL[i % HCOL.length];
+      g.strokeStyle = col; g.lineWidth = 1.8;
+      g.beginPath();
+      for (var k = 0; k <= 400; k++) {
+        var tt = k / 400 * CYC, ph = 2 * Math.PI * e.n * tt;
+        var vv = (e.a >= 0 ? 1 : -1) * (e.cos ? Math.cos(ph) : Math.sin(ph));
+        var y = yc - amp * vv;
+        if (k === 0) g.moveTo(X(tt), y); else g.lineTo(X(tt), y);
+      }
+      g.stroke();
+      g.fillStyle = col; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(e.n === 1 ? 'Fundamental' : 'Harmonic ' + e.n, 6, yc - 9);
+      g.fillStyle = mut; g.font = fnt(12);
+      g.fillText(fmtF(e.n * S.f0) + '  ·  ' + Math.abs(e.a).toFixed(3), 6, yc + 9);
+    });
+
+    // the sum of everything, on the bottom row
+    var ycS = t + rh * list.length + rh / 2;
+    var pk = peak(terms()), ampS = rh * 0.38;
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    g.beginPath(); g.moveTo(l, ycS); g.lineTo(w - r, ycS); g.stroke();
+    g.strokeStyle = BLUE; g.lineWidth = 2;
+    g.beginPath();
+    for (var m = 0; m <= 700; m++) {
+      var t3 = m / 700 * CYC, y3 = ycS - ampS * value(t3, terms()) / pk;
+      if (m === 0) g.moveTo(X(t3), y3); else g.lineTo(X(t3), y3);
+    }
+    g.stroke();
+    g.fillStyle = BLUE; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText('All of them', 6, ycS - 9);
+    g.fillStyle = mut; g.font = fnt(12);
+    g.fillText(S.nh + (S.nh === 1 ? ' sine' : ' sines'), 6, ycS + 9);
+
+    if (terms().length > 6) {
+      g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.fillText('Showing the first six of ' + terms().length, w - r, h - 8);
+    }
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Time', l + (w - l - r) / 2, h - 8);
+  }
+
+  // ---------------- 3: the numbers ----------------
+  function cards() {
+    var list = terms();
+    var hi = list.length ? list[list.length - 1].n : 1;
+    var bw = hi * S.f0;
+    var rows = [
+      ['Fundamental', fmtF(S.f0), 'One cycle every ' + (1 / S.f0).toFixed(2) + ' ms'],
+      ['Sines added', S.nh + '', S.kind === 1 || S.kind === 2 ? 'Odd harmonics only' : 'Every harmonic'],
+      ['Highest one', fmtF(bw), 'Harmonic ' + hi],
+      ['Bandwidth needed', fmtF(bw), 'Cut it shorter and the corners round off']
+    ];
+    if (S.kind === 4) {
+      var d = S.duty / 100;
+      rows.push(['First null', fmtF(S.f0 / d), 'One over the pulse width, so a shorter pulse spreads wider']);
+    }
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (row) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd">' + row[0] + '</div><div class="big">' + row[1] +
+        '</div><div class="ft">' + row[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  function sync() {
+    $('dutyRow').style.display = S.kind === 4 ? 'flex' : 'none';
+    $('nh').disabled = S.kind === 0;
+    $('nhn').disabled = S.kind === 0;
+    $('nhNote').textContent = S.kind === 0 ? 'A sine is already one sine'
+      : (S.kind === 1 || S.kind === 2) ? 'Odd harmonics only' : '';
+  }
+  function redraw() { sync(); drawTime(); drawSpec(); drawStack(); cards(); }
+
+  // ---------------- controls ----------------
+  var WB = ['w0', 'w1', 'w2', 'w3', 'w4'];
+  WB.forEach(function (id, k) {
+    $(id).addEventListener('click', function () {
+      S.kind = k;
+      WB.forEach(function (o) { $(o).classList.remove('on'); });
+      $(id).classList.add('on');
+      redraw();
+    });
+  });
+  function bind(sl, nu, key, lo, hi, round) {
+    function set(v) {
+      if (!isFinite(v)) return;
+      v = Math.min(hi, Math.max(lo, round ? Math.round(v) : v));
+      S[key] = v; $(sl).value = v; $(nu).value = round ? v : v.toFixed(1);
+      redraw();
+    }
+    $(sl).addEventListener('input', function () { set(parseFloat($(sl).value)); });
+    $(nu).addEventListener('change', function () { set(parseFloat($(nu).value)); });
+  }
+  bind('f0', 'f0n', 'f0', 0.5, 5, false);
+  bind('nh', 'nhn', 'nh', 1, 40, true);
+  bind('du', 'dun', 'duty', 2, 50, true);
+  window.addEventListener('resize', redraw);
+  redraw();
+})();
+</script>
