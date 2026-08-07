@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noise, and the weakest signal a receiver can hear</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+  --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+}
+body {
+  background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; font-weight: 600;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #46B5D2; color: #46B5D2; }
+input:focus-visible, button:focus-visible { outline: 2px solid #46B5D2; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-primary); }
+.sm { font-size: 13.5px; color: var(--text-primary); }
+.pair { display: inline-flex; align-items: center; gap: 6px; }
+.pair .sm { color: var(--text-secondary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 700; }
+.sec b::after { content: ':'; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13.5px; color: var(--text-primary); }
+.card .big { font-size: 21px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
+<h1>Noise, and the weakest signal a receiver can hear</h1>
+<p class="sub">Every resistor above absolute zero makes noise, and every stage of a receiver adds its own on top. That floor is what decides how faint a signal you can still pull out &mdash; and the first amplifier decides almost all of it.</p>
+
+<div class="row">
+  <span class="pair"><span class="sm">Bandwidth</span><input type="number" id="bw" step="1" min="0.1" value="200" style="width: 84px;"><span class="sm">kHz</span></span>
+  <span class="pair"><span class="sm">Temperature</span><input type="number" id="tk" step="5" min="20" max="400" value="290" style="width: 74px;"><span class="sm">K</span></span>
+  <span class="pair"><span class="sm">Needs</span><input type="number" id="req" step="1" value="10" style="width: 62px;"><span class="sm">dB SNR</span></span>
+</div>
+
+<p class="sec"><b>1 &middot; The chain</b> <span>Gain and noise figure for each stage; drag the numbers and watch which one matters</span></p>
+<div class="row" id="stageRow" style="margin-bottom: 0.5rem;"></div>
+<canvas id="chain" style="height: 300px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#46B5D2"></span>Signal</span>
+  <span><span class="dot" style="background:#C0504D"></span>Noise</span>
+  <span><span class="dot" style="background:#9CBB58"></span>Signal to noise at each point</span>
+</div>
+
+<p class="sec"><b>2 &middot; Who is to blame</b> <span>Friis: each stage's noise is divided by all the gain before it, so the first one is nearly the whole answer</span></p>
+<canvas id="blame" style="height: 250px;"></canvas>
+
+<p class="sec"><b>3 &middot; What it can hear</b> <span>The floor, and the faintest signal that still clears it</span></p>
+<div class="cards" id="cards"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  // Office "Metro" palette
+  var CYAN = '#46B5D2', RED = '#C0504D', LIME = '#9CBB58', VIOLET = '#7F63B8',
+      AMBER = '#F79646', TEAL = '#4BACC6';
+
+  var S = { bw: 200, T: 290, req: 10,
+            st: [{ n: 'Antenna lead', g: -1.5, f: 1.5 },
+                 { n: 'Low-noise amp', g: 20, f: 1.2 },
+                 { n: 'Filter', g: -2, f: 2 },
+                 { n: 'Mixer', g: 8, f: 8 },
+                 { n: 'IF amp', g: 30, f: 6 }] };
+
+  var K = 1.380649e-23;
+  function dbToLin(d) { return Math.pow(10, d / 10); }
+  // thermal noise in the band, in dBm
+  function kTB() { return 10 * Math.log10(K * S.T * S.bw * 1000 * 1000); }
+  // Friis: F = F1 + (F2-1)/G1 + (F3-1)/(G1 G2) + ...
+  function friis() {
+    var f = 0, gain = 1;
+    S.st.forEach(function (s, i) {
+      var fi = dbToLin(s.f);
+      f += i === 0 ? fi : (fi - 1) / gain;
+      gain *= dbToLin(s.g);
+    });
+    return 10 * Math.log10(f);
+  }
+  // how much of the excess noise each stage is responsible for
+  function shares() {
+    var gain = 1, parts = [], tot = 0;
+    S.st.forEach(function (s, i) {
+      var fi = dbToLin(s.f);
+      var c = i === 0 ? fi - 1 : (fi - 1) / gain;
+      parts.push(c); tot += c;
+      gain *= dbToLin(s.g);
+    });
+    return parts.map(function (p) { return tot > 0 ? p / tot : 0; });
+  }
+  function totalGain() {
+    var g = 0;
+    S.st.forEach(function (s) { g += s.g; });
+    return g;
+  }
+  function floorDbm() { return kTB() + friis(); }
+  function sensitivity() { return floorDbm() + S.req; }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // ---------------- 1: signal and noise down the chain ----------------
+  function drawChain() {
+    var cv = $('chain'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 58, r = 20, t = 22, b = 62;
+    var n = S.st.length;
+    var colW = (w - l - r) / (n + 1);
+    var X = function (i) { return l + colW * (i + 0.5); };
+
+    // walk the chain: a signal at the sensitivity level, and the noise with it
+    var sigIn = sensitivity(), sig = [sigIn], noi = [kTB()];
+    var gAcc = 0;
+    for (var i = 0; i < n; i++) {
+      gAcc += S.st[i].g;
+      sig.push(sigIn + gAcc);
+      // noise out = (noise in + this stage's own) times the gain
+      var nInLin = Math.pow(10, noi[i] / 10);
+      var own = (dbToLin(S.st[i].f) - 1) * Math.pow(10, kTB() / 10);
+      noi.push(10 * Math.log10((nInLin + own) * dbToLin(S.st[i].g)));
+    }
+    var lo = Math.min.apply(null, noi.concat(sig)) - 8;
+    var hi = Math.max.apply(null, noi.concat(sig)) + 8;
+    var Y = function (v) { return t + (hi - v) / (hi - lo) * (h - t - b); };
+
+    g.font = fnt(12); g.fillStyle = mut;
+    var stepDb = (hi - lo) > 140 ? 40 : 20;
+    for (var v2 = Math.ceil(lo / stepDb) * stepDb; v2 <= hi; v2 += stepDb) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(v2)); g.lineTo(w - r, Y(v2)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(v2, l - 10, Y(v2));
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, h - t - b);
+
+    // the gap between them is the whole point
+    g.fillStyle = LIME; g.globalAlpha = 0.15;
+    g.beginPath();
+    for (var a = 0; a <= n; a++) g.lineTo(X(a), Y(sig[a]));
+    for (var b2 = n; b2 >= 0; b2--) g.lineTo(X(b2), Y(noi[b2]));
+    g.closePath(); g.fill(); g.globalAlpha = 1;
+
+    [[sig, CYAN], [noi, RED]].forEach(function (pair) {
+      g.strokeStyle = pair[1]; g.lineWidth = 1.8;
+      g.beginPath();
+      pair[0].forEach(function (v, i2) { if (i2 === 0) g.moveTo(X(i2), Y(v)); else g.lineTo(X(i2), Y(v)); });
+      g.stroke();
+      pair[0].forEach(function (v, i3) {
+        g.fillStyle = pair[1];
+        g.beginPath(); g.arc(X(i3), Y(v), 4.5, 0, 7); g.fill();
+      });
+    });
+
+    // stage names along the bottom, between the points they sit between
+    g.font = fnt(12);
+    S.st.forEach(function (s, i4) {
+      var xm = (X(i4) + X(i4 + 1)) / 2;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(i4 + 1), t); g.lineTo(X(i4 + 1), h - b); g.stroke();
+      g.fillStyle = sub; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(s.n, xm, h - b + 8);
+      g.fillStyle = mut;
+      g.fillText((s.g >= 0 ? '+' : '') + s.g + ' dB · NF ' + s.f, xm, h - b + 24);
+    });
+
+    var snrIn = sig[0] - noi[0], snrOut = sig[n] - noi[n];
+    g.fillStyle = LIME; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText(snrIn.toFixed(1) + ' dB in', l + 6, t + 5);
+    g.textAlign = 'right';
+    g.fillText(snrOut.toFixed(1) + ' dB out', w - r - 6, t + 5);
+
+    g.fillStyle = sub; g.font = fnt(13);
+    g.save(); g.translate(15, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Power (dBm)', 0, 0); g.restore();
+  }
+
+  // ---------------- 2: who is to blame ----------------
+  function drawBlame() {
+    var cv = $('blame'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 46, r = 20, t = 24, b = 58;
+    var sh = shares(), n = sh.length;
+    var colW = (w - l - r) / n;
+    var Y = function (p) { return h - b - p * (h - t - b); };
+
+    g.font = fnt(12); g.fillStyle = mut;
+    for (var p2 = 0; p2 <= 1.0001; p2 += 0.25) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(p2)); g.lineTo(w - r, Y(p2)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText((p2 * 100).toFixed(0) + '%', l - 10, Y(p2));
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, h - t - b);
+
+    sh.forEach(function (p, i) {
+      var x0 = l + colW * i + colW * 0.18, bw2 = colW * 0.64;
+      g.fillStyle = i === 0 ? RED : VIOLET;
+      g.globalAlpha = i === 0 ? 0.85 : 0.55;
+      g.fillRect(x0, Y(p), bw2, Y(0) - Y(p));
+      g.globalAlpha = 1;
+      g.fillStyle = i === 0 ? RED : VIOLET; g.font = fnt(13);
+      g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText((p * 100).toFixed(1) + '%', x0 + bw2 / 2, Y(p) - 6);
+      g.fillStyle = sub; g.font = fnt(12); g.textBaseline = 'top';
+      g.fillText(S.st[i].n, x0 + bw2 / 2, h - b + 9);
+    });
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Share of the noise the receiver adds', l + (w - l - r) / 2, h - 8);
+  }
+
+  // ---------------- 3: what it can hear ----------------
+  function cards() {
+    var nf = friis(), fl = floorDbm(), sen = sensitivity();
+    var rows = [
+      ['Thermal floor', kTB().toFixed(1) + ' dBm', 'kTB in ' + S.bw + ' kHz at ' + S.T + ' K'],
+      ['Noise figure', nf.toFixed(2) + ' dB', 'The whole chain, by Friis'],
+      ['Noise floor', fl.toFixed(1) + ' dBm', 'What the receiver actually shows'],
+      ['Sensitivity', sen.toFixed(1) + ' dBm', 'Faintest signal with ' + S.req + ' dB to spare'],
+      ['Total gain', (totalGain() >= 0 ? '+' : '') + totalGain().toFixed(1) + ' dB', 'Which does not change any of the above']
+    ];
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (row, i) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd">' + row[0] + '</div>' +
+        '<div class="big"' + (i === 3 ? ' style="color:' + CYAN + '"' : '') + '>' + row[1] + '</div>' +
+        '<div class="ft">' + row[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  function redraw() { drawChain(); drawBlame(); cards(); }
+
+  // ---------------- controls ----------------
+  function buildStages() {
+    var row = $('stageRow');
+    row.innerHTML = '';
+    S.st.forEach(function (s, i) {
+      var sp = document.createElement('span');
+      sp.className = 'pair';
+      sp.innerHTML = '<span class="sm">' + s.n + '</span>' +
+        '<input type="number" id="g' + i + '" step="0.5" value="' + s.g + '" style="width:60px" title="Gain in dB">' +
+        '<input type="number" id="f' + i + '" step="0.1" min="0" value="' + s.f + '" style="width:56px" title="Noise figure in dB">';
+      row.appendChild(sp);
+      sp.querySelector('#g' + i).addEventListener('input', function (e) {
+        var v = parseFloat(e.target.value); if (isFinite(v)) { S.st[i].g = v; redraw(); }
+      });
+      sp.querySelector('#f' + i).addEventListener('input', function (e) {
+        var v = parseFloat(e.target.value); if (isFinite(v) && v >= 0) { S.st[i].f = v; redraw(); }
+      });
+    });
+  }
+  ['bw', 'tk', 'req'].forEach(function (id) {
+    var key = id === 'bw' ? 'bw' : id === 'tk' ? 'T' : 'req';
+    $(id).addEventListener('input', function () {
+      var v = parseFloat($(id).value);
+      if (isFinite(v) && (key === 'req' || v > 0)) { S[key] = v; redraw(); }
+    });
+  });
+  window.addEventListener('resize', redraw);
+  buildStages();
+  redraw();
+})();
+</script>
