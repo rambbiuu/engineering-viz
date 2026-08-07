@@ -57,7 +57,7 @@ input:focus-visible, button:focus-visible { outline: 2px solid #46B5D2; outline-
 .sec b { font-weight: 700; }
 .sec b::after { content: ':'; }
 .sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(126px, 1fr)); gap: 10px; align-items: start; }
 .card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .card .hd { font-size: 13.5px; color: var(--text-primary); }
 .card .big { font-size: 21px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
@@ -79,8 +79,13 @@ canvas { width: 100%; display: block; }
   <span class="pair"><span class="sm">Needs</span><input type="number" id="req" step="1" value="10" style="width: 62px;"><span class="sm">dB SNR</span></span>
 </div>
 
-<p class="sec"><b>1 &middot; The chain</b> <span>Gain and noise figure for each stage; drag the numbers and watch which one matters</span></p>
+<p class="sec"><b>1 &middot; The chain</b> <span>Change any stage and watch which one moves the answer; the slider is the first amplifier, which is the one that counts</span></p>
 <div class="row" id="stageRow" style="margin-bottom: 0.5rem;"></div>
+<div class="row" style="margin-bottom: 0.75rem;">
+  <label class="lbl" for="lna" style="min-width: 150px;">First amplifier noise</label>
+  <input type="range" id="lna" min="0.2" max="12" step="0.1" value="1.2" style="flex: 1;">
+  <span class="sm" id="lnav" style="min-width: 52px;">1.2 dB</span>
+</div>
 <canvas id="chain" style="height: 300px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#46B5D2"></span>Signal</span>
@@ -317,6 +322,14 @@ canvas { width: 100%; display: block; }
       var v = parseFloat($(id).value);
       if (isFinite(v) && (key === 'req' || v > 0)) { S[key] = v; redraw(); }
     });
+  });
+  $('lna').addEventListener('input', function () {
+    var v = parseFloat($('lna').value);
+    if (!isFinite(v)) return;
+    S.st[1].f = v;
+    $('lnav').textContent = v.toFixed(1) + ' dB';
+    var box = $('f1'); if (box) box.value = v;
+    redraw();
   });
   window.addEventListener('resize', redraw);
   buildStages();

@@ -100,6 +100,7 @@ canvas { width: 100%; display: block; }
     <label class="lbl" for="st" style="min-width: 92px;">Steer beam to</label>
     <input type="range" id="st" min="-90" max="90" step="1" value="20" style="flex: 1;">
     <span id="stv" style="font-size: 14px; font-weight: 500; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;">20&deg;</span>
+    <button id="sweep" style="padding:4px 10px;font-size:13px;">Sweep</button>
   </div>
   <div style="display: flex; align-items: center; gap: 12px;">
     <label class="lbl" for="fr">Frequency</label>
@@ -335,7 +336,27 @@ canvas { width: 100%; display: block; }
   });
 
   recalc();
-  function frame() { drawPolar(); drawRect(); requestAnimationFrame(frame); }
+  // This loop used to redraw an identical picture every frame forever. Now it
+  // earns itself: the beam sweeps, which is the one thing a phased array does
+  // that a fixed antenna cannot.
+  let sweeping = false, swDir = 1, last = 0;
+  $('sweep').addEventListener('click', () => {
+    sweeping = !sweeping;
+    $('sweep').textContent = sweeping ? 'Stop' : 'Sweep';
+    $('sweep').classList.toggle('on', sweeping);
+  });
+  function frame(now) {
+    if (sweeping) {
+      const dt = (now - last > 100 ? 16 : now - last) / 1000;
+      let v = S.st + swDir * dt * 40;
+      if (v >= 90) { v = 90; swDir = -1; }
+      if (v <= -90) { v = -90; swDir = 1; }
+      $('st').value = Math.round(v);
+      $('st').dispatchEvent(new Event('input'));
+    }
+    last = now;
+    requestAnimationFrame(frame);
+  }
   requestAnimationFrame(frame);
 })();
 </script>
