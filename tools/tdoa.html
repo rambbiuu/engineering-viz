@@ -111,7 +111,8 @@ canvas { width: 100%; display: block; cursor: crosshair; }
 <div class="row">
   <span class="lbl">Receiver sites</span>
   <button id="n3" class="on">3</button><button id="n4">4</button><button id="n5">5</button>
-  <span class="sm" style="margin-left: auto;">Drag a site or the emitter</span>
+  <button id="pp" style="margin-left: auto;">Pause</button>
+  <span class="sm">Drag a site or the emitter</span>
 </div>
 <div class="row" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="ck" style="min-width: 148px;">Clock error per site</label>
@@ -150,6 +151,9 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
   var KMX = 12, KMY = 8;
   var C = 0.299792458;                 // km per microsecond
+  // the animation runs the pulse at a walking pace so it can be followed;
+  // PULSE_KM is how many km of real path one unit of S.t stands for
+  var PULSE_KM = 4.2, PULSE_MAX = 4.6;
   // Office "Median" palette
   var COL = ['#94B6D2', '#DD8047', '#A5AB81', '#D8B25C', '#7BA79D'];
   var EMIT = '#C0504D';                // Office red, the emitter everywhere
@@ -160,7 +164,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     5: [[1.8, 1.3], [10.2, 1.3], [6.0, 7.0], [2.6, 4.4], [9.4, 4.4]]
   };
 
-  var S = { n: 3, ck: 50, sx: [], sy: [], ex: 6.0, ey: 4.2, drag: -1 };
+  var S = { n: 3, ck: 50, sx: [], sy: [], ex: 6.0, ey: 4.2, drag: -1, playing: true, t: 0 };
   function setN(n) {
     S.n = n;
     S.sx = LAYOUT[n].map(function (p) { return p[0]; });
@@ -275,15 +279,44 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.moveTo(fx2, fy2 - 7); g.lineTo(fx2, fy2 + 7); g.stroke();
     }
 
+    // the pulse on its way out, so the arrival times are something you watch
+    // rather than read: same speed everywhere, so the nearest site simply gets
+    // there first
+    var ex = X(S.ex), ey = Y(S.ey);
+    var pr = S.t * PULSE_KM;                       // how far it has travelled, km
+    var kmPx = (X(1) - X(0));
+    if (pr > 0 && pr < PULSE_MAX) {
+      g.save();
+      g.beginPath(); g.rect(X(0), Y(KMY), X(KMX) - X(0), Y(0) - Y(KMY)); g.clip();
+      [0, 1, 2].forEach(function (q) {             // a few rings, so it reads as a pulse
+        var rr = (pr - q * 0.45) * kmPx;
+        if (rr <= 0) return;
+        g.strokeStyle = EMIT; g.lineWidth = 1.8 - q * 0.45;
+        g.globalAlpha = Math.max(0, (1 - pr / PULSE_MAX)) * (0.85 - q * 0.25);
+        g.beginPath(); g.arc(ex, ey, rr, 0, 7); g.stroke();
+      });
+      g.globalAlpha = 1;
+      g.restore();
+    }
+
     for (var j = 0; j < S.n; j++) {
       var sx = X(S.sx[j]), sy = Y(S.sy[j]);
+      // has the pulse reached this one yet, and how recently
+      var arrive = rangeKm(j) / PULSE_KM;
+      var since = S.t - arrive;
+      var lit = since >= 0 && since < 0.9;
+      if (lit) {
+        g.strokeStyle = COL[j]; g.lineWidth = 2;
+        g.globalAlpha = 1 - since / 0.9;
+        g.beginPath(); g.arc(sx, sy, 8 + since * 26, 0, 7); g.stroke();
+        g.globalAlpha = 1;
+      }
       g.fillStyle = COL[j];
-      g.beginPath(); g.arc(sx, sy, 5.5, 0, 7); g.fill();
+      g.beginPath(); g.arc(sx, sy, lit ? 8 : 5.5, 0, 7); g.fill();
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText('Site ' + (j + 1), sx, sy + 9);
     }
 
-    var ex = X(S.ex), ey = Y(S.ey);
     g.fillStyle = EMIT;
     g.beginPath(); g.arc(ex, ey, 6, 0, 7); g.fill();
     g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'bottom';
@@ -371,8 +404,11 @@ canvas { width: 100%; display: block; cursor: crosshair; }
     g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText('Arrival after site 1 (µs)', 0, 0); g.restore();
 
+    // the same clock as the map: a site's marker appears when its pulse lands
     for (var j = 0; j < S.n; j++) {
       var x = X(j), y = Y(dts[j]);
+      var arrived = S.t >= rangeKm(j) / PULSE_KM;
+      g.globalAlpha = arrived ? 1 : 0.18;
       g.strokeStyle = COL[j]; g.lineWidth = 1.8;
       g.beginPath(); g.moveTo(x, Y(0)); g.lineTo(x, y); g.stroke();
       g.fillStyle = COL[j];
@@ -383,6 +419,7 @@ canvas { width: 100%; display: block; cursor: crosshair; }
       g.textBaseline = above ? 'bottom' : 'top';
       g.fillText((dts[j] >= 0 ? '+' : '') + dts[j].toFixed(2) + ' µs', x, y + (above ? -9 : 9));
 
+      g.globalAlpha = 1;
       g.fillStyle = sub; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
       g.fillText('Site ' + (j + 1), x, h - b + 12);
     }
@@ -449,7 +486,22 @@ canvas { width: 100%; display: block; cursor: crosshair; }
   $('ck').addEventListener('input', function () { setCk(parseFloat($('ck').value)); });
   $('ckn').addEventListener('change', function () { setCk(parseFloat($('ckn').value)); });
   window.addEventListener('resize', redraw);
+  $('pp').addEventListener('click', function () {
+    S.playing = !S.playing;
+    $('pp').textContent = S.playing ? 'Pause' : 'Play';
+  });
 
+  var last = 0;
+  function frame(now) {
+    if (S.playing) {
+      S.t += (now - last > 100 ? 16 : now - last) / 1000 * 1.5;
+      if (S.t > PULSE_MAX + 1.1) S.t = 0;          // wait a beat, then send another
+      drawMap(); drawToa();
+    }
+    last = now;
+    requestAnimationFrame(frame);
+  }
   redraw();
+  requestAnimationFrame(frame);
 })();
 </script>
