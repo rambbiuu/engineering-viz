@@ -63,28 +63,20 @@ a.card:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
 <h1>Engineering visualisation tools</h1>
 <p class="sub">Small, self-contained interactive simulators for RF and wireless communications. Each one is a single HTML file &mdash; open it, drag the sliders, build intuition. No installs, no dependencies.</p>
 
-<div class="group"><h2>Start here</h2> <span>What a radio link is, and how a wave gets anywhere</span></div>
+<div class="group"><h2>Start here</h2> <span>No background needed &mdash; open either of these first</span></div>
 <div class="grid">
   <a class="card" href="tools/propagation.html">
     <h2>Bands and how radio travels</h2>
     <p>Why AM reaches another country at night and Wi-Fi does not reach the next room. The eight bands, the wavelength that goes with each, and the three paths a wave can take &mdash; ground wave, off the ionosphere, or straight to the horizon.</p>
   </a>
-  <a class="card" href="tools/link-budget.html">
-    <h2>Link budget</h2>
-    <p>The one sum every radio link comes down to. Transmit power, antenna gain, the loss the distance takes, and whether what arrives still stands clear of the noise floor &mdash; with the horizon marked, because free space is not the whole story.</p>
-  </a>
-  <a class="card" href="tools/noise-sensitivity.html">
-    <h2>Noise and sensitivity</h2>
-    <p>Where the noise floor comes from and what sets it. kTB, the noise each stage adds on top, and why the first amplifier decides nearly the whole answer while everything after it barely matters.</p>
+  <a class="card" href="tools/time-frequency.html">
+    <h2>Time and frequency</h2>
+    <p>The same signal drawn as a shape over time and as the list of sine waves it is built from. Add them one at a time and watch a square wave appear &mdash; then see why a sharper edge, or a shorter pulse, always costs you bandwidth.</p>
   </a>
 </div>
 
 <div class="group"><h2>Signals</h2> <span>What a signal is actually made of</span></div>
 <div class="grid">
-  <a class="card" href="tools/time-frequency.html">
-    <h2>Time and frequency</h2>
-    <p>The same signal drawn as a shape over time and as the list of sine waves it is built from. Add them one at a time and watch a square wave appear &mdash; then see why a sharper edge, or a shorter pulse, always costs you bandwidth.</p>
-  </a>
   <a class="card" href="tools/modulation.html">
     <h2>Putting a message on a carrier</h2>
     <p>AM, double and single sideband, FM and PM. Watch the message ride the carrier in time, then see where it went in frequency &mdash; sidebands beside the carrier, and how much of your power is wasted holding a carrier that says nothing.</p>
@@ -112,6 +104,18 @@ a.card:focus-visible { outline: 2px solid #378ADD; outline-offset: 2px; }
   <a class="card" href="tools/polarisation.html">
     <h2>Polarisation</h2>
     <p>A wave&rsquo;s electric field points somewhere, and an antenna only takes the part lined up with it. Turn one 45&deg; and half the power is gone; turn it 90&deg; and all of it is. Linear, slanted and circular, with the loss for every combination.</p>
+  </a>
+</div>
+
+<div class="group"><h2>Will the link work</h2> <span>Everything here is in decibels: +3 dB is twice the power, &minus;3 dB is half</span></div>
+<div class="grid">
+  <a class="card" href="tools/link-budget.html">
+    <h2>Link budget</h2>
+    <p>The one sum every radio link comes down to. Transmit power, antenna gain, the loss the distance takes, and whether what arrives still stands clear of the noise floor &mdash; with the horizon marked, because free space is not the whole story.</p>
+  </a>
+  <a class="card" href="tools/noise-sensitivity.html">
+    <h2>Noise and sensitivity</h2>
+    <p>Where the noise floor comes from and what sets it. kTB, the noise each stage adds on top, and why the first amplifier decides nearly the whole answer while everything after it barely matters.</p>
   </a>
 </div>
 

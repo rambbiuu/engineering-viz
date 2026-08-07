@@ -68,7 +68,7 @@ canvas { width: 100%; display: block; }
 
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
 <h1>Putting a message on a carrier</h1>
-<p class="sub">A carrier on its own says nothing. Vary its height and you have AM, vary its rate and you have FM &mdash; and either way the message stops being at its own frequency and reappears as sidebands beside the carrier.</p>
+<p class="sub">A carrier is a steady tone that says nothing until you disturb it, and the disturbance is the message. Vary its height and you have AM, vary its rate and you have FM &mdash; and either way the message stops being at its own frequency and reappears as sidebands beside the carrier.</p>
 
 <div class="row">
   <span class="lbl">Scheme</span>
@@ -80,8 +80,8 @@ canvas { width: 100%; display: block; }
 </div>
 <div class="row">
   <label class="lbl" for="fc" style="min-width: 128px;">Carrier</label>
-  <input type="range" id="fc" min="8" max="40" step="1" value="20" style="flex: 1;">
-  <input type="number" id="fcn" min="8" max="40" step="1" value="20" style="width: 74px;">
+  <input type="range" id="fc" min="8" max="40" step="1" value="14" style="flex: 1;">
+  <input type="number" id="fcn" min="8" max="40" step="1" value="14" style="width: 74px;">
   <span class="sm">kHz</span>
 </div>
 <div class="row">
@@ -122,7 +122,7 @@ canvas { width: 100%; display: block; }
       AMBER = '#F5C040', CYAN = '#05E0DB';
 
   // 0 AM, 1 double sideband suppressed carrier, 2 single sideband, 3 FM, 4 PM
-  var S = { kind: 0, fc: 20, fm: 2, d: 0.8 };
+  var S = { kind: 0, fc: 14, fm: 2, d: 0.8 };
   var NAMES = ['AM', 'Double sideband', 'Single sideband', 'FM', 'PM'];
 
   // ---- Bessel of the first kind, for the FM sidebands ----
@@ -211,7 +211,9 @@ canvas { width: 100%; display: block; }
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
     var l = 108, r = 18, t = 14, b = 42;
-    var span = 2 / S.fm;                            // two message cycles, in ms
+    // angle modulation needs fewer carrier cycles on screen or the wiggle that
+    // is the whole point renders as a solid block
+    var span = (S.kind >= 3 ? 1 : 2) / S.fm;       // message cycles, in ms
     var X = function (tt) { return l + tt / span * (w - l - r); };
     var rows = 3, rh = (h - t - b) / rows;
 

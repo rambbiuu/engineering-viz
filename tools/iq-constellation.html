@@ -201,11 +201,13 @@ canvas { width: 100%; display: block; }
     var cv = $('iq'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
     g.clearRect(0, 0, w, h);
     var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
-    var cx = w / 2, cy = h / 2 - 6, R = Math.min(w, h - 20) * 0.40;
+    var cx = w / 2, cy = h / 2 - 6, R = Math.min(w, h - 20) * 0.30;   // room for the strays
     var p = points(), sg = noiseSigma(S.snr);
     var X = function (v) { return cx + v * R; };
     var Y = function (v) { return cy - v * R; };
 
+    g.save();
+    g.beginPath(); g.rect(2, 18, w - 4, h - 22); g.clip();   // keep strays inside the box
     g.strokeStyle = bd; g.lineWidth = 0.5;
     for (var q = -1.5; q <= 1.5; q += 0.5) {
       g.beginPath(); g.moveTo(X(-1.6), Y(q)); g.lineTo(X(1.6), Y(q)); g.stroke();
@@ -245,10 +247,11 @@ canvas { width: 100%; display: block; }
       g.stroke();
     });
 
+    g.restore();
     g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText(NAMES[S.kind] + ' · ' + BITS[S.kind] + (BITS[S.kind] === 1 ? ' bit' : ' bits') + ' a symbol', 6, 4);
     g.fillStyle = wrong ? ORANGE : sub; g.textAlign = 'right';
-    g.fillText(wrong + ' of ' + S.n + ' landed wrong', w - 6, 4);
+    g.fillText(wrong + ' of these ' + S.n + ' landed wrong', w - 6, 4);
   }
 
   // ---------------- 1b: the wave it becomes ----------------
@@ -381,7 +384,7 @@ canvas { width: 100%; display: block; }
       ['Room each way', hs.toFixed(3), 'Half the gap to the nearest neighbour'],
       ['Noise each way', sg.toFixed(3), 'At ' + S.snr + ' dB signal to noise'],
       ['Margin', (hs / sg).toFixed(2) + '×', hs / sg > 3 ? 'Comfortable' : hs / sg > 2 ? 'Getting tight' : 'Not enough'],
-      ['Symbols wrong', er === 0 ? 'None in 20 000' : (er * 100).toFixed(2) + '%', 'Counted, not predicted']
+      ['Symbols wrong', er === 0 ? 'Under 0.01%' : (er * 100).toFixed(2) + '%', 'Counted over 20 000, not predicted']
     ];
     var box = $('cards');
     box.innerHTML = '';

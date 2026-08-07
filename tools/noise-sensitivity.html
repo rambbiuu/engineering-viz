@@ -71,6 +71,7 @@ canvas { width: 100%; display: block; }
 <p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
 <h1>Noise, and the weakest signal a receiver can hear</h1>
 <p class="sub">Every resistor above absolute zero makes noise, and every stage of a receiver adds its own on top. That floor is what decides how faint a signal you can still pull out &mdash; and the first amplifier decides almost all of it.</p>
+<p class="sub" style="margin-top:-1.4rem;font-size:13.5px;color:var(--text-secondary)">Everything here is in decibels: +3 dB is twice the power, &minus;3 dB is half, +10 dB is ten times. dBm is the same scale measured from one milliwatt.</p>
 
 <div class="row">
   <span class="pair"><span class="sm">Bandwidth</span><input type="number" id="bw" step="1" min="0.1" value="200" style="width: 84px;"><span class="sm">kHz</span></span>
@@ -84,7 +85,7 @@ canvas { width: 100%; display: block; }
 <div class="legend">
   <span><span class="dot" style="background:#46B5D2"></span>Signal</span>
   <span><span class="dot" style="background:#C0504D"></span>Noise</span>
-  <span><span class="dot" style="background:#9CBB58"></span>Signal to noise at each point</span>
+  <span><span class="dot" style="background:#9CBB58"></span>The gap between them, which is the signal to noise</span>
 </div>
 
 <p class="sec"><b>2 &middot; Who is to blame</b> <span>Friis: each stage's noise is divided by all the gain before it, so the first one is nearly the whole answer</span></p>
@@ -296,9 +297,11 @@ canvas { width: 100%; display: block; }
     S.st.forEach(function (s, i) {
       var sp = document.createElement('span');
       sp.className = 'pair';
-      sp.innerHTML = '<span class="sm">' + s.n + '</span>' +
-        '<input type="number" id="g' + i + '" step="0.5" value="' + s.g + '" style="width:60px" title="Gain in dB">' +
-        '<input type="number" id="f' + i + '" step="0.1" min="0" value="' + s.f + '" style="width:56px" title="Noise figure in dB">';
+      sp.innerHTML = '<span class="sm" style="min-width:96px">' + s.n + '</span>' +
+        '<span class="sm" style="opacity:.75">gain</span>' +
+        '<input type="number" id="g' + i + '" step="0.5" value="' + s.g + '" style="width:58px" title="Gain in dB">' +
+        '<span class="sm" style="opacity:.75">noise</span>' +
+        '<input type="number" id="f' + i + '" step="0.1" min="0" value="' + s.f + '" style="width:54px" title="Noise figure in dB">';
       row.appendChild(sp);
       sp.querySelector('#g' + i).addEventListener('input', function (e) {
         var v = parseFloat(e.target.value); if (isFinite(v)) { S.st[i].g = v; redraw(); }

@@ -78,12 +78,12 @@ canvas { width: 100%; display: block; }
 </div>
 <div class="row" style="margin-bottom: 1.25rem;">
   <label class="lbl" for="fi" style="min-width: 130px;">Signal</label>
-  <input type="range" id="fi" min="0.5" max="40" step="0.25" value="3" style="flex: 1;">
-  <input type="number" id="fin" min="0.5" max="40" step="0.25" value="3" style="width: 78px;">
+  <input type="range" id="fi" min="0.5" max="40" step="0.25" value="18" style="flex: 1;">
+  <input type="number" id="fin" min="0.5" max="40" step="0.25" value="18" style="width: 78px;">
   <span class="sm">kHz</span>
 </div>
 
-<p class="sec"><b>1 &middot; The samples, and what they could have come from</b> <span>Every dot sits on both curves, so nothing downstream can tell them apart</span></p>
+<p class="sec"><b>1 &middot; The samples, and what they could have come from</b> <span>When the rate is too slow, every dot sits on both curves and nothing downstream can tell them apart</span></p>
 <canvas id="tim" style="height: 320px;"></canvas>
 <div class="legend">
   <span><span class="dot" style="background:#6BB1C9"></span>What you sent</span>
@@ -107,7 +107,7 @@ canvas { width: 100%; display: block; }
       VIOLET = '#7E6BC9', PLUM = '#A379BB';
   var RED = '#C0504D';
 
-  var S = { fs: 20, f: 3 };
+  var S = { fs: 20, f: 18 };   // open aliased: the point is only visible when it is
 
   // ---- the whole of it ----
   // Samples of a sine at f, taken at fs, are identical to samples of a sine at
