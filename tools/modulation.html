@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Putting a message on a carrier</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+  --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+}
+body {
+  background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; font-weight: 600;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #31B6FD; color: #31B6FD; }
+input:focus-visible, button:focus-visible { outline: 2px solid #31B6FD; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-primary); }
+.sm { font-size: 13.5px; color: var(--text-primary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 700; }
+.sec b::after { content: ':'; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13.5px; color: var(--text-primary); }
+.card .big { font-size: 21px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
+<h1>Putting a message on a carrier</h1>
+<p class="sub">A carrier on its own says nothing. Vary its height and you have AM, vary its rate and you have FM &mdash; and either way the message stops being at its own frequency and reappears as sidebands beside the carrier.</p>
+
+<div class="row">
+  <span class="lbl">Scheme</span>
+  <button id="m0" class="on">AM</button>
+  <button id="m1">Double sideband</button>
+  <button id="m2">Single sideband</button>
+  <button id="m3">FM</button>
+  <button id="m4">PM</button>
+</div>
+<div class="row">
+  <label class="lbl" for="fc" style="min-width: 128px;">Carrier</label>
+  <input type="range" id="fc" min="8" max="40" step="1" value="20" style="flex: 1;">
+  <input type="number" id="fcn" min="8" max="40" step="1" value="20" style="width: 74px;">
+  <span class="sm">kHz</span>
+</div>
+<div class="row">
+  <label class="lbl" for="fm" style="min-width: 128px;">Message</label>
+  <input type="range" id="fm" min="1" max="5" step="0.5" value="2" style="flex: 1;">
+  <input type="number" id="fmn" min="1" max="5" step="0.5" value="2" style="width: 74px;">
+  <span class="sm">kHz</span>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="dp" id="dpLbl" style="min-width: 128px;">Depth</label>
+  <input type="range" id="dp" min="0" max="3" step="0.01" value="0.8" style="flex: 1;">
+  <input type="number" id="dpn" min="0" max="3" step="0.01" value="0.8" style="width: 74px;">
+  <span class="sm" id="dpNote"></span>
+</div>
+
+<p class="sec"><b>1 &middot; What the carrier does about it</b> <span>The message on top, the carrier underneath it, and what actually goes out at the bottom</span></p>
+<canvas id="tim" style="height: 340px;"></canvas>
+<div class="legend">
+  <span><span class="dot" style="background:#A5D028"></span>The message</span>
+  <span><span class="dot" style="background:#5BD078"></span>The bare carrier</span>
+  <span><span class="dot" style="background:#31B6FD"></span>What is transmitted</span>
+  <span><span class="dot" style="background:#F5C040"></span>Its envelope</span>
+</div>
+
+<p class="sec"><b>2 &middot; Where the power ends up</b> <span>The message is gone from its own frequency and sitting beside the carrier instead</span></p>
+<canvas id="spec" style="height: 300px;"></canvas>
+
+<p class="sec"><b>3 &middot; What it costs</b> <span>Bandwidth to send it, and how much of your power carries anything</span></p>
+<div class="cards" id="cards"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  // Office "Waveform" palette
+  var BLUE = '#31B6FD', INDIGO = '#4584D3', GREEN = '#5BD078', LIME = '#A5D028',
+      AMBER = '#F5C040', CYAN = '#05E0DB';
+
+  // 0 AM, 1 double sideband suppressed carrier, 2 single sideband, 3 FM, 4 PM
+  var S = { kind: 0, fc: 20, fm: 2, d: 0.8 };
+  var NAMES = ['AM', 'Double sideband', 'Single sideband', 'FM', 'PM'];
+
+  // ---- Bessel of the first kind, for the FM sidebands ----
+  function besselJ(n, x) {
+    n = Math.abs(n);
+    var sum = 0;
+    for (var k = 0; k < 40; k++) {
+      var t = Math.pow(-1, k) / (fact(k) * fact(n + k)) * Math.pow(x / 2, 2 * k + n);
+      sum += t;
+      if (Math.abs(t) < 1e-14 && k > n) break;
+    }
+    return sum;
+  }
+  var FT = [1];
+  function fact(n) {
+    for (var i = FT.length; i <= n; i++) FT[i] = FT[i - 1] * i;
+    return FT[n];
+  }
+
+  // ---- the transmitted signal, t in ms ----
+  function sig(t) {
+    var wc = 2 * Math.PI * S.fc * t, wm = 2 * Math.PI * S.fm * t;
+    if (S.kind === 0) return (1 + S.d * Math.cos(wm)) * Math.cos(wc);
+    if (S.kind === 1) return S.d * Math.cos(wm) * Math.cos(wc);
+    // one sideband only: the carrier times the message, minus its quadrature pair
+    if (S.kind === 2) return S.d * (Math.cos(wm) * Math.cos(wc) - Math.sin(wm) * Math.sin(wc));
+    if (S.kind === 3) return Math.cos(wc + S.d * Math.sin(wm));
+    return Math.cos(wc + S.d * Math.cos(wm));
+  }
+  function envelope(t) {
+    if (S.kind === 0) return 1 + S.d * Math.cos(2 * Math.PI * S.fm * t);
+    if (S.kind === 1) return Math.abs(S.d * Math.cos(2 * Math.PI * S.fm * t));
+    if (S.kind === 2) return Math.abs(S.d);
+    return 1;                                      // angle modulation keeps a flat envelope
+  }
+  // ---- the lines it puts on the air ----
+  function lines() {
+    var out = [];
+    if (S.kind === 0) {
+      out.push({ f: S.fc, a: 1, carrier: true });
+      out.push({ f: S.fc - S.fm, a: S.d / 2 });
+      out.push({ f: S.fc + S.fm, a: S.d / 2 });
+    } else if (S.kind === 1) {
+      out.push({ f: S.fc - S.fm, a: S.d / 2 });
+      out.push({ f: S.fc + S.fm, a: S.d / 2 });
+    } else if (S.kind === 2) {
+      out.push({ f: S.fc + S.fm, a: S.d });
+    } else {
+      for (var n = 0; n <= 14; n++) {
+        var a = besselJ(n, S.d);
+        if (Math.abs(a) < 0.008) continue;
+        if (n === 0) out.push({ f: S.fc, a: Math.abs(a), carrier: true });
+        else {
+          out.push({ f: S.fc - n * S.fm, a: Math.abs(a) });
+          out.push({ f: S.fc + n * S.fm, a: Math.abs(a) });
+        }
+      }
+    }
+    return out;
+  }
+  function bandwidth() {
+    if (S.kind === 2) return S.fm;                  // one sideband, so half of AM
+    if (S.kind <= 1) return 2 * S.fm;
+    return 2 * (S.d + 1) * S.fm;                    // Carson
+  }
+  // fraction of the transmitted power that is doing any work
+  function useful() {
+    if (S.kind === 0) return S.d * S.d / (2 + S.d * S.d);
+    if (S.kind <= 2) return 1;
+    var tot = 0, j0 = besselJ(0, S.d);
+    for (var n = 1; n <= 20; n++) tot += 2 * Math.pow(besselJ(n, S.d), 2);
+    return tot / (j0 * j0 + tot);
+  }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // ---------------- 1: three traces ----------------
+  function drawTime() {
+    var cv = $('tim'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 108, r = 18, t = 14, b = 42;
+    var span = 2 / S.fm;                            // two message cycles, in ms
+    var X = function (tt) { return l + tt / span * (w - l - r); };
+    var rows = 3, rh = (h - t - b) / rows;
+
+    function row(i, label, note, col, fn, envFn) {
+      var yc = t + rh * i + rh / 2, amp = rh * 0.34;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, yc); g.lineTo(w - r, yc); g.stroke();
+      if (envFn) {
+        g.strokeStyle = AMBER; g.lineWidth = 1.4;
+        [1, -1].forEach(function (sgn) {
+          g.beginPath();
+          for (var k = 0; k <= 500; k++) {
+            var tt = k / 500 * span, y = yc - sgn * amp * envFn(tt) / 1.9;
+            if (k === 0) g.moveTo(X(tt), y); else g.lineTo(X(tt), y);
+          }
+          g.stroke();
+        });
+      }
+      g.strokeStyle = col; g.lineWidth = 1.8;
+      g.beginPath();
+      for (var j = 0; j <= 1400; j++) {
+        var t2 = j / 1400 * span, y2 = yc - amp * fn(t2) / 1.9;
+        if (j === 0) g.moveTo(X(t2), y2); else g.lineTo(X(t2), y2);
+      }
+      g.stroke();
+      g.fillStyle = col; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(label, 6, yc - 10);
+      g.fillStyle = mut; g.font = fnt(12);
+      g.fillText(note, 6, yc + 10);
+    }
+
+    row(0, 'Message', S.fm + ' kHz', LIME, function (tt) { return 1.9 * Math.cos(2 * Math.PI * S.fm * tt); });
+    row(1, 'Carrier', S.fc + ' kHz', GREEN, function (tt) { return 1.9 * Math.cos(2 * Math.PI * S.fc * tt); });
+    row(2, 'Transmitted', NAMES[S.kind], BLUE, function (tt) { return 1.9 * sig(tt) / 1.9; }, envelope);
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Time (ms)', l + (w - l - r) / 2, h - 8);
+    g.fillStyle = mut; g.font = fnt(12); g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText(span.toFixed(2) + ' ms across', w - r, h - 8);
+  }
+
+  // ---------------- 2: the spectrum ----------------
+  function drawSpec() {
+    var cv = $('spec'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 52, r = 18, t = 22, b = 52;
+    var L = lines(), bw = bandwidth();
+    var half = Math.max(bw * 0.75, S.fm * 3.2);
+    var lo = Math.max(0, S.fc - half), hi = S.fc + half;
+    var X = function (f) { return l + (f - lo) / (hi - lo) * (w - l - r); };
+    var top = 1.15;
+    L.forEach(function (e) { top = Math.max(top, e.a * 1.15); });
+    var Y = function (a) { return h - b - a / top * (h - t - b); };
+
+    g.font = fnt(12); g.fillStyle = mut;
+    for (var a2 = 0; a2 <= top; a2 += 0.25) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(a2)); g.lineTo(w - r, Y(a2)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(a2.toFixed(2), l - 10, Y(a2));
+    }
+    var stepF = Math.max(1, Math.round((hi - lo) / 6));
+    for (var f2 = Math.ceil(lo / stepF) * stepF; f2 <= hi; f2 += stepF) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(f2), t); g.lineTo(X(f2), h - b); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(f2, X(f2), h - b + 10);
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, h - t - b);
+
+    // the band it occupies
+    var b0 = Math.max(X(S.fc - bw / 2), l), b1 = Math.min(X(S.fc + bw / 2), w - r);
+    if (S.kind === 2) { b0 = X(S.fc); b1 = Math.min(X(S.fc + S.fm), w - r); }
+    g.fillStyle = AMBER; g.globalAlpha = 0.14;
+    g.fillRect(b0, t, b1 - b0, h - t - b);
+    g.globalAlpha = 1;
+    g.fillStyle = AMBER; g.font = fnt(12); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText(bw.toFixed(1) + ' kHz wide', (b0 + b1) / 2, t + 5);
+
+    L.forEach(function (e) {
+      if (e.f < lo || e.f > hi) return;
+      var col = e.carrier ? GREEN : BLUE;
+      g.strokeStyle = col; g.lineWidth = 2.6;
+      g.beginPath(); g.moveTo(X(e.f), Y(0)); g.lineTo(X(e.f), Y(e.a)); g.stroke();
+      g.fillStyle = col;
+      g.beginPath(); g.arc(X(e.f), Y(e.a), 4, 0, 7); g.fill();
+    });
+
+    // where the message used to be, before any of this
+    if (S.fm >= lo && S.fm <= hi) {
+      g.strokeStyle = LIME; g.lineWidth = 1.4; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(X(S.fm), t); g.lineTo(X(S.fm), h - b); g.stroke();
+      g.setLineDash([]);
+    }
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Frequency (kHz)', l + (w - l - r) / 2, h - 8);
+    g.save(); g.translate(13, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Amplitude', 0, 0); g.restore();
+  }
+
+  // ---------------- 3: the numbers ----------------
+  function cards() {
+    var bw = bandwidth(), u = useful();
+    var carrierA = S.kind === 3 || S.kind === 4 ? besselJ(0, S.d) : (S.kind === 0 ? 1 : 0);
+    var rows = [
+      ['Bandwidth', bw.toFixed(1) + ' kHz', S.kind >= 3 ? 'Carson: twice the deviation plus the message' : (S.kind === 2 ? 'One sideband, so half of AM' : 'Twice the message frequency')],
+      ['Sidebands', (lines().length - (S.kind === 0 || S.kind >= 3 ? 1 : 0)) + '', S.kind >= 3 ? 'In theory endless; these are the ones above 1%' : 'One each side, or just the one'],
+      ['Carrier left', Math.abs(carrierA).toFixed(3), S.kind >= 3 ? (Math.abs(carrierA) < 0.02 ? 'Gone: this is a carrier null' : 'Shrinks as you push the deviation') : (S.kind === 0 ? 'Full size, and carrying nothing' : 'Suppressed')],
+      ['Power doing work', (u * 100).toFixed(1) + '%', S.kind === 0 ? 'The rest is spent on the carrier' : 'All of it is in the sidebands']
+    ];
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (row) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<div class="hd">' + row[0] + '</div><div class="big">' + row[1] +
+        '</div><div class="ft">' + row[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  function sync() {
+    var angle = S.kind >= 3;
+    $('dpLbl').textContent = angle ? 'Deviation' : 'Depth';
+    $('dp').max = $('dpn').max = angle ? 8 : 1.5;
+    if (S.d > (angle ? 8 : 1.5)) { S.d = angle ? 2.4 : 0.8; $('dp').value = S.d; $('dpn').value = S.d; }
+    $('dpNote').textContent = angle
+      ? 'Modulation index β — try 2.40 for the carrier null'
+      : (S.d > 1 ? 'Over 1, which overmodulates and wrecks the envelope' : 'Fraction of the carrier height');
+  }
+  function redraw() { sync(); drawTime(); drawSpec(); cards(); }
+
+  var MB = ['m0', 'm1', 'm2', 'm3', 'm4'];
+  MB.forEach(function (id, k) {
+    $(id).addEventListener('click', function () {
+      S.kind = k;
+      MB.forEach(function (o) { $(o).classList.remove('on'); });
+      $(id).classList.add('on');
+      if (k >= 3 && S.d <= 1.5) S.d = 2.4;
+      if (k < 3 && S.d > 1.5) S.d = 0.8;
+      $('dp').value = S.d; $('dpn').value = S.d;
+      redraw();
+    });
+  });
+  function bind(sl, nu, key, lo, hi, dec) {
+    function set(v) {
+      if (!isFinite(v)) return;
+      v = Math.min(hi(), Math.max(lo, v));
+      S[key] = v; $(sl).value = v; $(nu).value = dec ? v.toFixed(2) : v;
+      redraw();
+    }
+    $(sl).addEventListener('input', function () { set(parseFloat($(sl).value)); });
+    $(nu).addEventListener('change', function () { set(parseFloat($(nu).value)); });
+  }
+  bind('fc', 'fcn', 'fc', 8, function () { return 40; }, false);
+  bind('fm', 'fmn', 'fm', 1, function () { return 5; }, false);
+  bind('dp', 'dpn', 'd', 0, function () { return S.kind >= 3 ? 8 : 1.5; }, true);
+  window.addEventListener('resize', redraw);
+  redraw();
+})();
+</script>
