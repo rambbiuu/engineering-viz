@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The IQ plane and how bits ride on it</title>
+<style>
+:root {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+    --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf7; --text-primary: #1e1d1a; --text-secondary: #24231f; --text-muted: #4a4944;
+  --text-warning: #854F0B; --border: #e2e0d8; --border-strong: #b9b7ae; --surface-1: #f1efe8;
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b19; --text-primary: #ececea; --text-secondary: #eae7de; --text-muted: #c4c1b8;
+  --text-warning: #FAC775; --border: #34342f; --border-strong: #56554e; --surface-1: #262624;
+}
+body {
+  background: var(--bg); color: var(--text-primary); font-family: var(--font-sans);
+  max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; font-weight: 600;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { font-size: 14.5px; color: var(--text-primary); margin: 0 0 2rem; }
+a { color: inherit; }
+.back {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 13px 5px 10px;
+}
+.back:hover { background: var(--surface-1); }
+.back svg { display: block; }
+input, button { font: inherit; color: inherit; }
+input[type="number"] {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 5px 8px; font-variant-numeric: tabular-nums;
+}
+button {
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 6px 14px; cursor: pointer;
+}
+button:hover { background: var(--surface-1); }
+button.on { border-color: #6EA0B0; color: #6EA0B0; }
+input:focus-visible, button:focus-visible { outline: 2px solid #6EA0B0; outline-offset: 2px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.lbl { font-size: 14px; color: var(--text-primary); }
+.sm { font-size: 13.5px; color: var(--text-primary); }
+.sec { margin: 1.5rem 0 6px; font-size: 14px; }
+.sec b { font-weight: 700; }
+.sec b::after { content: ':'; }
+.sec span { color: var(--text-primary); font-size: 13.5px; font-weight: 600; margin-left: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--surface-1); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.card .hd { font-size: 13.5px; color: var(--text-primary); }
+.card .big { font-size: 21px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .ft { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+canvas { width: 100%; display: block; }
+.panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.pane { text-align: center; font-size: 13px; font-weight: 700; color: var(--text-secondary); margin: 0; }
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 8px; font-size: 13px; color: var(--text-primary); font-weight: 600; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+</style>
+
+<p style="margin: 0 0 1rem;"><a class="back" href="../index.html"><svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true"><path d="M6.2 1.2 1 6.5l5.2 5.3M1.4 6.5H14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>All tools</a></p>
+<h1>The IQ plane and how bits ride on it</h1>
+<p class="sub">Two carriers at the same frequency, a quarter cycle apart, do not interfere with each other. Feed one I and the other Q and every symbol becomes a point on a plane &mdash; pack more points in and you send more bits, until the noise starts joining them up.</p>
+
+<div class="row">
+  <span class="lbl">Scheme</span>
+  <button id="s0">BPSK</button>
+  <button id="s1" class="on">QPSK</button>
+  <button id="s2">8-PSK</button>
+  <button id="s3">16-QAM</button>
+  <button id="s4">64-QAM</button>
+</div>
+<div class="row">
+  <label class="lbl" for="sn" style="min-width: 128px;">Signal to noise</label>
+  <input type="range" id="sn" min="0" max="34" step="0.5" value="18" style="flex: 1;">
+  <input type="number" id="snn" min="0" max="34" step="0.5" value="18" style="width: 74px;">
+  <span class="sm">dB</span>
+</div>
+<div class="row" style="margin-bottom: 1.25rem;">
+  <label class="lbl" for="ns" style="min-width: 128px;">Symbols shown</label>
+  <input type="range" id="ns" min="50" max="3000" step="50" value="900" style="flex: 1;">
+  <input type="number" id="nsn" min="50" max="3000" step="50" value="900" style="width: 84px;">
+  <button id="re" style="margin-left: auto;">New noise</button>
+</div>
+
+<p class="sec"><b>1 &middot; The plane, and the wave it makes</b> <span>Each dot is one symbol as it arrived; the crosses are where it was supposed to land</span></p>
+<div class="panes">
+  <div><canvas id="iq" style="height: 330px;"></canvas><p class="pane">The IQ plane</p></div>
+  <div><canvas id="wav" style="height: 330px;"></canvas><p class="pane">What goes down the wire</p></div>
+</div>
+<div class="legend">
+  <span><span class="dot" style="background:#6EA0B0"></span>Symbols received</span>
+  <span><span class="dot" style="background:#B9CDE5"></span>Where they should be</span>
+  <span><span class="dot" style="background:#DF5327"></span>Decided wrong</span>
+</div>
+
+<p class="sec"><b>2 &middot; How wrong it goes as the noise rises</b> <span>Every scheme, so you can see what the extra bits cost you</span></p>
+<canvas id="ber" style="height: 300px;"></canvas>
+
+<p class="sec"><b>3 &middot; The trade</b> <span>More bits per symbol, less room between them</span></p>
+<div class="cards" id="cards"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cvv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var fnt = function (s) { return '600 ' + s + 'px ' + (cvv('--font-sans') || 'sans-serif'); };
+  // Office "Concourse" palette
+  var BLUE = '#6EA0B0', PALE = '#B9CDE5', ORANGE = '#DF5327', GOLD = '#E8B10D',
+      GREEN = '#7BA35A', PLUM = '#8C5FA8';
+  var SCOL = [BLUE, GREEN, GOLD, PLUM, ORANGE];
+
+  var S = { kind: 1, snr: 18, n: 900, seed: 12345 };
+  var NAMES = ['BPSK', 'QPSK', '8-PSK', '16-QAM', '64-QAM'];
+  var BITS = [1, 2, 3, 4, 6];
+
+  // repeatable noise, so the picture only changes when you ask it to
+  function rnd() {
+    S.seed = (S.seed * 1103515245 + 12345) & 0x7fffffff;
+    return S.seed / 0x7fffffff;
+  }
+  function gauss() {
+    var u = Math.max(rnd(), 1e-12), v = rnd();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  // ---- the constellations, each normalised to unit average power ----
+  function points() {
+    var p = [], i, j;
+    if (S.kind === 0) { p = [[-1, 0], [1, 0]]; }
+    else if (S.kind === 1) { var a = Math.SQRT1_2; p = [[a, a], [-a, a], [-a, -a], [a, -a]]; }
+    else if (S.kind === 2) {
+      for (i = 0; i < 8; i++) p.push([Math.cos(i * Math.PI / 4), Math.sin(i * Math.PI / 4)]);
+    } else {
+      var m = S.kind === 3 ? 4 : 8, lv = [];
+      for (i = 0; i < m; i++) lv.push(2 * i - (m - 1));
+      var pw = 0;
+      for (i = 0; i < m; i++) for (j = 0; j < m; j++) pw += lv[i] * lv[i] + lv[j] * lv[j];
+      var sc = Math.sqrt((m * m) / pw);
+      for (i = 0; i < m; i++) for (j = 0; j < m; j++) p.push([lv[i] * sc, lv[j] * sc]);
+    }
+    return p;
+  }
+  // half the distance to the nearest neighbour: the room a symbol has
+  function halfSpacing(p) {
+    var best = Infinity;
+    for (var i = 0; i < p.length; i++) {
+      for (var j = i + 1; j < p.length; j++) {
+        var dx = p[i][0] - p[j][0], dy = p[i][1] - p[j][1];
+        best = Math.min(best, Math.sqrt(dx * dx + dy * dy));
+      }
+    }
+    return best / 2;
+  }
+  function noiseSigma(snrDb) {
+    // unit average symbol power, noise split evenly between the two axes
+    return Math.sqrt(Math.pow(10, -snrDb / 10) / 2);
+  }
+  function nearest(p, x, y) {
+    var bi = 0, bd = Infinity;
+    for (var i = 0; i < p.length; i++) {
+      var dx = p[i][0] - x, dy = p[i][1] - y, d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; bi = i; }
+    }
+    return bi;
+  }
+  // symbol error rate, counted rather than approximated
+  function measure(snrDb, count) {
+    var p = points(), sg = noiseSigma(snrDb), bad = 0, save = S.seed;
+    S.seed = 987654321;
+    for (var k = 0; k < count; k++) {
+      var idx = Math.floor(rnd() * p.length) % p.length;
+      var x = p[idx][0] + gauss() * sg, y = p[idx][1] + gauss() * sg;
+      if (nearest(p, x, y) !== idx) bad++;
+    }
+    S.seed = save;
+    return bad / count;
+  }
+
+  function fit(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // ---------------- 1a: the plane ----------------
+  var lastSyms = [];
+  function drawIQ() {
+    var cv = $('iq'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var cx = w / 2, cy = h / 2 - 6, R = Math.min(w, h - 20) * 0.40;
+    var p = points(), sg = noiseSigma(S.snr);
+    var X = function (v) { return cx + v * R; };
+    var Y = function (v) { return cy - v * R; };
+
+    g.strokeStyle = bd; g.lineWidth = 0.5;
+    for (var q = -1.5; q <= 1.5; q += 0.5) {
+      g.beginPath(); g.moveTo(X(-1.6), Y(q)); g.lineTo(X(1.6), Y(q)); g.stroke();
+      g.beginPath(); g.moveTo(X(q), Y(-1.6)); g.lineTo(X(q), Y(1.6)); g.stroke();
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(X(-1.6), Y(0)); g.lineTo(X(1.6), Y(0));
+    g.moveTo(X(0), Y(-1.6)); g.lineTo(X(0), Y(1.6)); g.stroke();
+    g.fillStyle = mut; g.font = fnt(12);
+    g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('I', X(1.6) - 3, Y(0) - 5);
+    g.textAlign = 'left';
+    g.fillText('Q', X(0) + 5, Y(1.6) + 12);
+
+    // the symbols as they arrived
+    S.seed = 24680 + Math.round(S.snr * 7) + S.kind * 991 + S.seedBump * 1;
+    lastSyms = [];
+    var wrong = 0;
+    for (var k = 0; k < S.n; k++) {
+      var idx = Math.floor(rnd() * p.length) % p.length;
+      var x = p[idx][0] + gauss() * sg, y = p[idx][1] + gauss() * sg;
+      var got = nearest(p, x, y), bad = got !== idx;
+      if (bad) wrong++;
+      if (k < 340) lastSyms.push([x, y]);
+      g.fillStyle = bad ? ORANGE : BLUE;
+      g.globalAlpha = bad ? 0.85 : 0.34;
+      g.beginPath(); g.arc(X(x), Y(y), bad ? 2.4 : 1.9, 0, 7); g.fill();
+    }
+    g.globalAlpha = 1;
+
+    // where they were meant to land
+    p.forEach(function (e) {
+      g.strokeStyle = PALE; g.lineWidth = 1.6;
+      g.beginPath();
+      g.moveTo(X(e[0]) - 5, Y(e[1])); g.lineTo(X(e[0]) + 5, Y(e[1]));
+      g.moveTo(X(e[0]), Y(e[1]) - 5); g.lineTo(X(e[0]), Y(e[1]) + 5);
+      g.stroke();
+    });
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText(NAMES[S.kind] + ' · ' + BITS[S.kind] + (BITS[S.kind] === 1 ? ' bit' : ' bits') + ' a symbol', 6, 4);
+    g.fillStyle = wrong ? ORANGE : sub; g.textAlign = 'right';
+    g.fillText(wrong + ' of ' + S.n + ' landed wrong', w - 6, 4);
+  }
+
+  // ---------------- 1b: the wave it becomes ----------------
+  function drawWave() {
+    var cv = $('wav'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 30, r = 14, t = 16, b = 44, NS = 6, CY = 3;
+    var p = points();
+    var rows = 3, rh = (h - t - b) / rows;
+    var X = function (u) { return l + u / NS * (w - l - r); };
+
+    // a handful of symbols, the same each time so it can be read
+    S.seed = 555 + S.kind * 37 + S.seedBump;
+    var seq = [];
+    for (var i = 0; i < NS; i++) seq.push(p[Math.floor(rnd() * p.length) % p.length]);
+
+    function row(ri, label, pick, col) {
+      var yc = t + rh * ri + rh / 2, amp = rh * 0.33;
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, yc); g.lineTo(w - r, yc); g.stroke();
+      g.strokeStyle = col; g.lineWidth = 1.8;
+      g.beginPath();
+      for (var k = 0; k <= 700; k++) {
+        var u = k / 700 * NS, si = Math.min(NS - 1, Math.floor(u));
+        var v = pick(seq[si], (u - si));
+        var y = yc - amp * v;
+        if (k === 0) g.moveTo(X(u), y); else g.lineTo(X(u), y);
+      }
+      g.stroke();
+      g.fillStyle = col; g.font = fnt(12.5); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(label, 4, yc - rh * 0.40);
+    }
+    row(0, 'I', function (s) { return s[0] / 1.42; }, GREEN);
+    row(1, 'Q', function (s) { return s[1] / 1.42; }, GOLD);
+    row(2, 'On the carrier', function (s, f) {
+      var ph = 2 * Math.PI * CY * f;
+      return (s[0] * Math.cos(ph) - s[1] * Math.sin(ph)) / 1.42;
+    }, BLUE);
+
+    // symbol boundaries
+    for (var m = 0; m <= NS; m++) {
+      g.strokeStyle = bd; g.lineWidth = m === 0 || m === NS ? 1 : 0.5;
+      g.setLineDash([3, 4]);
+      g.beginPath(); g.moveTo(X(m), t); g.lineTo(X(m), h - b); g.stroke();
+      g.setLineDash([]);
+    }
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('One symbol at a time', l + (w - l - r) / 2, h - 8);
+  }
+
+  // ---------------- 2: errors against noise ----------------
+  function drawBer() {
+    var cv = $('ber'), wh = fit(cv), w = wh[0], h = wh[1], g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    var sub = cvv('--text-secondary'), mut = cvv('--text-muted'), bd = cvv('--border');
+    var l = 58, r = 96, t = 18, b = 50, LO = 0, HI = 34, EMIN = -4;
+    var X = function (s) { return l + (s - LO) / (HI - LO) * (w - l - r); };
+    var Y = function (e) {
+      var v = Math.max(Math.log10(Math.max(e, 1e-9)), EMIN);
+      return t + (0 - v) / (0 - EMIN) * (h - t - b);
+    };
+
+    g.font = fnt(12); g.fillStyle = mut;
+    for (var e2 = 0; e2 >= EMIN; e2--) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(l, Y(Math.pow(10, e2))); g.lineTo(w - r, Y(Math.pow(10, e2))); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.fillText(e2 === 0 ? '1' : '10' + String(e2).replace('-', '⁻').replace(/\d/g, function (c) {
+        return '⁰¹²³⁴⁵⁶⁷⁸⁹'[+c];
+      }), l - 10, Y(Math.pow(10, e2)));
+    }
+    for (var s2 = LO; s2 <= HI; s2 += 5) {
+      g.strokeStyle = bd; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(X(s2), t); g.lineTo(X(s2), h - b); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'top';
+      g.fillText(s2, X(s2), h - b + 10);
+    }
+    g.strokeStyle = cvv('--border-strong'); g.lineWidth = 1;
+    g.strokeRect(l, t, w - l - r, h - t - b);
+
+    var saveKind = S.kind, placed = [];
+    for (var m = 0; m < 5; m++) {
+      S.kind = m;
+      var col = SCOL[m], on = m === saveKind;
+      g.strokeStyle = col; g.lineWidth = on ? 2.2 : 1.3;
+      g.globalAlpha = on ? 1 : 0.45;
+      g.beginPath();
+      var lastX = 0, lastY = 0, drawing = false;
+      for (var s3 = LO; s3 <= HI; s3 += 1) {
+        var er = measure(s3, 4000);
+        if (er < Math.pow(10, EMIN)) { drawing = false; continue; }
+        var px = X(s3), py = Y(er);
+        if (!drawing) { g.moveTo(px, py); drawing = true; } else g.lineTo(px, py);
+        lastX = px; lastY = py;
+      }
+      g.stroke(); g.globalAlpha = 1;
+      if (lastX) {
+        // curves that end close together would print their names on top of
+        // each other, so nudge each one clear of the last
+        var ly = lastY;
+        for (var z = 0; z < placed.length; z++) {
+          if (Math.abs(ly - placed[z]) < 15) { ly = placed[z] + 15; z = -1; }
+        }
+        placed.push(ly);
+        g.fillStyle = col; g.font = fnt(on ? 13 : 12);
+        g.textAlign = 'left'; g.textBaseline = 'middle';
+        g.fillText(NAMES[m], Math.min(lastX + 7, w - r + 6), ly);
+      }
+    }
+    S.kind = saveKind;
+
+    g.strokeStyle = ORANGE; g.lineWidth = 1.4; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(X(S.snr), t); g.lineTo(X(S.snr), h - b); g.stroke();
+    g.setLineDash([]);
+
+    g.fillStyle = sub; g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.fillText('Signal to noise (dB)', l + (w - l - r) / 2, h - 8);
+    g.save(); g.translate(13, t + (h - t - b) / 2); g.rotate(-Math.PI / 2);
+    g.font = fnt(13); g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillText('Symbols got wrong', 0, 0); g.restore();
+  }
+
+  // ---------------- 3: the numbers ----------------
+  function cards() {
+    var p = points(), hs = halfSpacing(p), sg = noiseSigma(S.snr);
+    var er = measure(S.snr, 20000);
+    var rows = [
+      ['Points', p.length + '', BITS[S.kind] + (BITS[S.kind] === 1 ? ' bit' : ' bits') + ' per symbol'],
+      ['Room each way', hs.toFixed(3), 'Half the gap to the nearest neighbour'],
+      ['Noise each way', sg.toFixed(3), 'At ' + S.snr + ' dB signal to noise'],
+      ['Margin', (hs / sg).toFixed(2) + '×', hs / sg > 3 ? 'Comfortable' : hs / sg > 2 ? 'Getting tight' : 'Not enough'],
+      ['Symbols wrong', er === 0 ? 'None in 20 000' : (er * 100).toFixed(2) + '%', 'Counted, not predicted']
+    ];
+    var box = $('cards');
+    box.innerHTML = '';
+    rows.forEach(function (row, i) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      var col = i === 3 ? (hs / sg > 3 ? GREEN : hs / sg > 2 ? GOLD : ORANGE) : '';
+      el.innerHTML = '<div class="hd">' + row[0] + '</div>' +
+        '<div class="big"' + (col ? ' style="color:' + col + '"' : '') + '>' + row[1] + '</div>' +
+        '<div class="ft">' + row[2] + '</div>';
+      box.appendChild(el);
+    });
+  }
+
+  S.seedBump = 0;
+  function redraw() { drawIQ(); drawWave(); drawBer(); cards(); }
+
+  var SB = ['s0', 's1', 's2', 's3', 's4'];
+  SB.forEach(function (id, k) {
+    $(id).addEventListener('click', function () {
+      S.kind = k;
+      SB.forEach(function (o) { $(o).classList.remove('on'); });
+      $(id).classList.add('on');
+      redraw();
+    });
+  });
+  function bind(sl, nu, key, lo, hi, dec) {
+    function set(v) {
+      if (!isFinite(v)) return;
+      v = Math.min(hi, Math.max(lo, v));
+      S[key] = v; $(sl).value = v; $(nu).value = dec ? v.toFixed(1) : v;
+      redraw();
+    }
+    $(sl).addEventListener('input', function () { set(parseFloat($(sl).value)); });
+    $(nu).addEventListener('change', function () { set(parseFloat($(nu).value)); });
+  }
+  bind('sn', 'snn', 'snr', 0, 34, true);
+  bind('ns', 'nsn', 'n', 50, 3000, false);
+  $('re').addEventListener('click', function () { S.seedBump += 7919; redraw(); });
+  window.addEventListener('resize', redraw);
+  redraw();
+})();
+</script>
